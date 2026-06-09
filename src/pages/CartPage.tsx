@@ -5,7 +5,7 @@ import { toast, Toaster } from 'sonner'
 import { createOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
-  const { cart, removeFromCart, addToCart, clearCart, getTotalPrice, currency, exchangeRate, language } = useStore()
+  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
   const formatPrice = (usd: number) => {
@@ -203,7 +203,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
       console.log('Отправляем заказ:', orderData)
 
-      const { data, error } = await createOrder(orderData)
+      const result: any = await createOrder(orderData)
+      const data = Array.isArray(result) ? result[0] : result
+      const error = null
 
       if (error) {
         console.error('Ошибка при создании заказа:', error)

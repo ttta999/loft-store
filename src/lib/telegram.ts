@@ -1,5 +1,3 @@
-import WebApp from '@twa-dev/sdk'
-
 // Инициализация Telegram Web App
 export const initTelegram = () => {
   // Проверяем, что мы внутри Telegram
@@ -67,20 +65,5 @@ export const sendDataToBot = (data: any) => {
 export const closeApp = () => {
   if (isTelegram() && window.Telegram?.WebApp) {
     window.Telegram.WebApp.close()
-  }
-}
-
-// Показать/скрыть главную кнопку Telegram
-export const showMainButton = (text: string, callback: () => void) => {
-  if (isTelegram() && window.Telegram?.WebApp?.MainButton) {
-    window.Telegram.WebApp.MainButton.setText(text)
-    window.Telegram.WebApp.MainButton.show()
-    window.Telegram.WebApp.MainButton.onClick(callback)
-  }
-}
-
-export const hideMainButton = () => {
-  if (isTelegram() && window.Telegram?.WebApp?.MainButton) {
-    window.Telegram.WebApp.MainButton.hide()
   }
 }

@@ -206,18 +206,13 @@ function ChinaRequestDetailModal({ request, onClose, language }: { request: any;
 }
 
 export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
-  const { language, currency, setLanguage, setCurrency, exchangeRate } = useStore()
+  const { language, currency, setLanguage, setCurrency } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
 
   const loadOrders = async () => {
     setLoading(true)
