@@ -263,7 +263,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser, curr
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto p-6 pb-32">
+      <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto p-6 pb-40">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}

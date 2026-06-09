@@ -4,12 +4,17 @@ import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
 // Модальное окно для просмотра деталей заказа
-function OrderDetailModal({ order, onClose, language, currency }: { order: any; onClose: () => void; language: string; currency: string }) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: { order: any; onClose: () => void; language: string; currency: string; exchangeRate: number }) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+
+  const formatPrice = (usd: number) => {
+    if (currency === 'USD') return `$${usd}`
+    return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-32">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-40">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -89,9 +94,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
                       {language === 'ru' ? 'Количество: ' : 'Miqdori: '}{item.quantity}
                     </p>
                     <p className="font-bold text-sm">
-                      {currency === 'USD' 
-                        ? `$${item.priceUsd}` 
-                        : `${(item.priceUsd * 13000).toLocaleString()} сум`}
+                      {formatPrice(item.priceUsd)}
                     </p>
                   </div>
                 </div>
@@ -105,9 +108,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
               <span className="text-xl font-bold">
-                {currency === 'USD' 
-                  ? `$${order.total_price_usd}` 
-                  : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
+                {formatPrice(order.total_price_usd)}
               </span>
             </div>
           </div>
@@ -134,13 +135,13 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
 function ChinaRequestDetailModal({ request, onClose, language }: { request: any; onClose: () => void; language: string }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-32">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-40">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-black text-2xl">
-            ✕
+            
           </button>
         </div>
         
@@ -214,13 +215,18 @@ function ChinaRequestDetailModal({ request, onClose, language }: { request: any;
 }
 
 export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
-  const { language, currency, setLanguage, setCurrency } = useStore()
+  const { language, currency, exchangeRate, setLanguage, setCurrency } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+
+  const formatPrice = (usd: number) => {
+    if (currency === 'USD') return `$${usd}`
+    return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
 
   const loadOrders = async () => {
     setLoading(true)
@@ -446,7 +452,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                   onClick={() => setSelectedOrder(order)}
                   className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
                 >
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-3">
                     <div>
                       <p className="font-bold">
                         {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
@@ -465,17 +471,17 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                   </div>
 
                   {/* Фото товаров */}
-                  <div className="flex gap-1 mb-2 mt-3">
+                  <div className="flex gap-1 mb-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
                       <img 
                         key={idx}
                         src={item.image} 
                         alt={item.name}
-                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                        className="w-12 h-12 object-cover rounded border border-gray-200"
                       />
                     ))}
                     {items.length > 2 && (
-                      <div className="relative w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-100">
+                      <div className="relative w-12 h-12 rounded border border-gray-200 overflow-hidden bg-gray-100">
                         <img 
                           src={items[2].image} 
                           alt="more"
@@ -489,9 +495,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                   </div>
 
                   <p className="text-lg font-bold">
-                    {currency === 'USD' 
-                      ? `$${order.total_price_usd}` 
-                      : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
+                    {formatPrice(order.total_price_usd)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
@@ -508,6 +512,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
             onClose={() => setSelectedOrder(null)}
             language={language}
             currency={currency}
+            exchangeRate={exchangeRate}
           />
         )}
       </div>

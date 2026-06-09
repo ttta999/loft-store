@@ -72,7 +72,7 @@ export const useStore = create<AppState>()(
       getTotalPrice: () => {
         const state = get()
         const totalUsd = state.cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0)
-        return state.currency === 'USD' ? totalUsd : totalUsd * state.exchangeRate
+        return totalUsd // Всегда возвращаем в USD (конвертация делается при отображении)
       }
     }),
     { name: 'loft-store' }
