@@ -9,7 +9,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto pb-24">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-32">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -134,7 +134,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
 function ChinaRequestDetailModal({ request, onClose, language }: { request: any; onClose: () => void; language: string }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto pb-24">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-32">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -465,24 +465,24 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                   </div>
 
                   {/* Фото товаров */}
-                  <div className="flex gap-1 mb-2">
+                  <div className="flex gap-1 mb-2 mt-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
                       <img 
                         key={idx}
                         src={item.image} 
                         alt={item.name}
-                        className="w-10 h-10 object-cover rounded"
+                        className="w-10 h-10 object-cover rounded border border-gray-200"
                       />
                     ))}
                     {items.length > 2 && (
-                      <div className="relative w-10 h-10 rounded overflow-hidden">
+                      <div className="relative w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-100">
                         <img 
                           src={items[2].image} 
                           alt="more"
-                          className="w-full h-full object-cover blur-sm"
+                          className="w-full h-full object-cover blur-sm opacity-50"
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                          <span className="text-white text-xs font-bold">+{items.length - 2}</span>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-gray-700 text-xs font-bold">+{items.length - 2}</span>
                         </div>
                       </div>
                     )}

@@ -39,7 +39,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
       </h1>
 
       {/* Список товаров */}
-      <div className="space-y-3">
+      <div className="space-y-3 mb-32">
         {cart.map((item) => (
           <div key={`${item.productId}-${item.size}`} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex gap-3">
             <img
@@ -53,9 +53,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
                 {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
               </p>
               <p className="font-bold">
-                {currency === 'USD' 
-                  ? `$${item.priceUsd}` 
-                  : `${(item.priceUsd * 13000).toLocaleString()} сум`}
+                {formatPrice(item.priceUsd)}
               </p>
             </div>
             <div className="flex flex-col items-end justify-between">
@@ -90,15 +88,13 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
       </div>
 
       {/* Итого и кнопка оформления */}
-      <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg pb-24">
         <div className="flex justify-between items-center mb-3">
           <span className="text-gray-600">
             {language === 'ru' ? 'Итого:' : 'Jami:'}
           </span>
           <span className="text-xl font-bold">
-            {currency === 'USD' 
-              ? `$${getTotalPrice()}` 
-              : `${(getTotalPrice() * 13000).toLocaleString()} сум`}
+            {formatPrice(getTotalPrice())}
           </span>
         </div>
         <button
@@ -267,7 +263,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser, curr
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto p-6 pb-32">
+      <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto p-6 pb-32">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
@@ -403,9 +399,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser, curr
                 {language === 'ru' ? 'Итого к оплате:' : 'To\'lov uchun jami:'}
               </span>
               <span className="text-xl font-bold">
-                {currency === 'USD' 
-                  ? `$${getTotalPrice()}` 
-                  : `${(getTotalPrice() * 13000).toLocaleString()} сум`}
+                {formatPrice(getTotalPrice())}
               </span>
             </div>
           </div>
