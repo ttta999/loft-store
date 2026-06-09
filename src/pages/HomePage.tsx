@@ -14,6 +14,7 @@ export default function HomePage() {
   const { language, currency, exchangeRate } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
     loadProducts()
@@ -25,6 +26,18 @@ export default function HomePage() {
     setProducts(data)
     setLoading(false)
   }
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null) // Снять фильтр
+    } else {
+      setSelectedCategory(categoryId)
+    }
+  }
+
+  const filteredProducts = selectedCategory 
+    ? products.filter(p => p.category === selectedCategory)
+    : products
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -66,7 +79,12 @@ export default function HomePage() {
         {categories.map((cat) => (
           <div
             key={cat.id}
-            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3"
+            onClick={() => handleCategoryClick(cat.id)}
+            className={`bg-white rounded-xl p-4 shadow-sm border flex items-center gap-3 cursor-pointer transition-all ${
+              selectedCategory === cat.id 
+                ? 'border-black bg-gray-100' 
+                : 'border-gray-100 hover:shadow-md'
+            }`}
           >
             <span className="text-3xl">{cat.icon}</span>
             <span className="font-medium text-sm">
@@ -76,20 +94,36 @@ export default function HomePage() {
         ))}
       </div>
 
+      {selectedCategory && (
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold">
+            {language === 'ru' ? 'Товары категории' : 'Kategoriya mahsulotlari'}
+          </h3>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className="text-sm text-gray-500 hover:text-black"
+          >
+            {language === 'ru' ? 'Сбросить' : 'Tozalash'} ✕
+          </button>
+        </div>
+      )}
+
       {/* Популярные товары */}
       <h3 className="text-lg font-bold mb-3">
-        {language === 'ru' ? 'Популярные товары' : 'Mashhur mahsulotlar'}
+        {selectedCategory 
+          ? (language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar')
+          : (language === 'ru' ? 'Популярные товары' : 'Mashhur mahsulotlar')}
       </h3>
       
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500">
-            {language === 'ru' ? 'Товары пока не добавлены' : 'Mahsulotlar hali qo\'shilmagan'}
+            {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <Link key={product.id} to={`/product/${product.id}`}>
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
                 <div className="aspect-square bg-gray-100">

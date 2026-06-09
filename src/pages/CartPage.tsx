@@ -52,7 +52,11 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               <p className="text-xs text-gray-500 mb-2">
                 {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
               </p>
-              <p className="font-bold">{formatPrice(item.priceUsd)}</p>
+              <p className="font-bold">
+                {currency === 'USD' 
+                  ? `$${item.priceUsd}` 
+                  : `${(item.priceUsd * 13000).toLocaleString()} сум`}
+              </p>
             </div>
             <div className="flex flex-col items-end justify-between">
               <button
@@ -92,7 +96,9 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
             {language === 'ru' ? 'Итого:' : 'Jami:'}
           </span>
           <span className="text-xl font-bold">
-            {formatPrice(getTotalPrice())}
+            {currency === 'USD' 
+              ? `$${getTotalPrice()}` 
+              : `${(getTotalPrice() * 13000).toLocaleString()} сум`}
           </span>
         </div>
         <button
@@ -110,6 +116,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
           formatPrice={formatPrice}
           getTotalPrice={getTotalPrice}
           telegramUser={telegramUser}
+          currency={currency}
         />
       )}
     </div>
@@ -117,8 +124,8 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
 }
 
 // Компонент модального окна оформления
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
-  const { cart, clearCart, currency, language } = useStore()
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser, currency }: any) {
+  const { cart, clearCart, language } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -259,8 +266,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50 pb-20">
-      <div className="bg-white rounded-t-3xl w-full max-h-[90vh] overflow-y-auto p-6 pb-24">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+      <div className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto p-6 pb-32">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
@@ -395,7 +402,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               <span className="font-medium">
                 {language === 'ru' ? 'Итого к оплате:' : 'To\'lov uchun jami:'}
               </span>
-              <span className="text-xl font-bold">{formatPrice(getTotalPrice())}</span>
+              <span className="text-xl font-bold">
+                {currency === 'USD' 
+                  ? `$${getTotalPrice()}` 
+                  : `${(getTotalPrice() * 13000).toLocaleString()} сум`}
+              </span>
             </div>
           </div>
 

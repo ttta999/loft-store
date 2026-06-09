@@ -9,7 +9,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pb-20">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto pb-24">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -134,7 +134,7 @@ function OrderDetailModal({ order, onClose, language, currency }: { order: any; 
 function ChinaRequestDetailModal({ request, onClose, language }: { request: any; onClose: () => void; language: string }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pb-20">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto pb-24">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -438,39 +438,67 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map((order) => (
-              <div 
-                key={order.id} 
-                onClick={() => setSelectedOrder(order)}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-bold">
-                      {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
+            {orders.map((order) => {
+              const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+              return (
+                <div 
+                  key={order.id} 
+                  onClick={() => setSelectedOrder(order)}
+                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold">
+                        {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      order.status === 'Активный' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {order.status}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    order.status === 'Активный' 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {order.status}
-                  </span>
+
+                  {/* Фото товаров */}
+                  <div className="flex gap-1 mb-2">
+                    {items.slice(0, 2).map((item: any, idx: number) => (
+                      <img 
+                        key={idx}
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ))}
+                    {items.length > 2 && (
+                      <div className="relative w-10 h-10 rounded overflow-hidden">
+                        <img 
+                          src={items[2].image} 
+                          alt="more"
+                          className="w-full h-full object-cover blur-sm"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                          <span className="text-white text-xs font-bold">+{items.length - 2}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-lg font-bold">
+                    {currency === 'USD' 
+                      ? `$${order.total_price_usd}` 
+                      : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
+                  </p>
                 </div>
-                <p className="text-lg font-bold">
-                  {currency === 'USD' 
-                    ? `$${order.total_price_usd}` 
-                    : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                </p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
