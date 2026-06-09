@@ -4,12 +4,12 @@ import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
 // Модальное окно для просмотра деталей заказа
-function OrderDetailModal({ order, onClose, language }: { order: any; onClose: () => void; language: string }) {
+function OrderDetailModal({ order, onClose, language, currency }: { order: any; onClose: () => void; language: string; currency: string }) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pb-20">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -88,7 +88,11 @@ function OrderDetailModal({ order, onClose, language }: { order: any; onClose: (
                     <p className="text-sm text-gray-600">
                       {language === 'ru' ? 'Количество: ' : 'Miqdori: '}{item.quantity}
                     </p>
-                    <p className="font-bold text-sm">${item.priceUsd}</p>
+                    <p className="font-bold text-sm">
+                      {currency === 'USD' 
+                        ? `$${item.priceUsd}` 
+                        : `${(item.priceUsd * 13000).toLocaleString()} сум`}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -100,7 +104,11 @@ function OrderDetailModal({ order, onClose, language }: { order: any; onClose: (
               <span className="font-bold">
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
-              <span className="text-xl font-bold">${order.total_price_usd}</span>
+              <span className="text-xl font-bold">
+                {currency === 'USD' 
+                  ? `$${order.total_price_usd}` 
+                  : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
+              </span>
             </div>
           </div>
 
@@ -126,7 +134,7 @@ function OrderDetailModal({ order, onClose, language }: { order: any; onClose: (
 function ChinaRequestDetailModal({ request, onClose, language }: { request: any; onClose: () => void; language: string }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pb-20">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -453,7 +461,11 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                     {order.status}
                   </span>
                 </div>
-                <p className="text-lg font-bold">${order.total_price_usd}</p>
+                <p className="text-lg font-bold">
+                  {currency === 'USD' 
+                    ? `$${order.total_price_usd}` 
+                    : `${(order.total_price_usd * 13000).toLocaleString()} сум`}
+                </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                 </p>
@@ -467,6 +479,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
             order={selectedOrder}
             onClose={() => setSelectedOrder(null)}
             language={language}
+            currency={currency}
           />
         )}
       </div>

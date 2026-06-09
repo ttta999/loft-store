@@ -5,7 +5,7 @@ import { toast, Toaster } from 'sonner'
 import { createOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
-  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
+  const { cart, removeFromCart, addToCart, clearCart, getTotalPrice, currency, exchangeRate, language } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
   const formatPrice = (usd: number) => {
@@ -196,7 +196,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         delivery_method: deliveryMethod,
         delivery_address: deliveryMethod === 'delivery' ? address : null,
         payment_method: paymentMethod,
-        total_price_usd: currency === 'USD' ? getTotalPrice() : getTotalPrice() / 13000,
+        total_price_usd: getTotalPrice(), // Всегда сохраняем в USD
         items: cart,
         status: 'Активный',
       }
@@ -216,7 +216,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
       console.log('Заказ создан:', data)
 
-      const newOrderId = data?.[0]?.id || Math.floor(Math.random() * 1000) + 500
+      const newOrderId = data?.id || Math.floor(Math.random() * 1000) + 500
       setOrderId(newOrderId)
       setOrderSuccess(true)
       clearCart()
@@ -259,8 +259,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white rounded-t-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50 pb-20">
+      <div className="bg-white rounded-t-3xl w-full max-h-[90vh] overflow-y-auto p-6 pb-24">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
