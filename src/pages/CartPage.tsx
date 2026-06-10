@@ -13,7 +13,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // Если корзина пустая
   if (cart.length === 0) {
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
@@ -38,7 +37,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>
 
-      {/* Список товаров */}
       <div className="space-y-3 mb-32">
         {cart.map((item) => (
           <div key={`${item.productId}-${item.size}`} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex gap-3">
@@ -87,7 +85,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
         ))}
       </div>
 
-      {/* Итого и кнопка оформления */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg pb-24">
         <div className="flex justify-between items-center mb-3">
           <span className="text-gray-600">
@@ -105,7 +102,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
         </button>
       </div>
 
-      {/* Модальное окно оформления заказа */}
       {showCheckout && (
         <CheckoutModal
           onClose={() => setShowCheckout(false)}
@@ -118,7 +114,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   )
 }
 
-// Компонент модального окна оформления
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
   const { cart, clearCart, language } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
@@ -160,7 +155,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   }
 
   const handleSubmit = async () => {
-    // Валидация имени (минимум 3 символа)
     if (!name || name.trim().length < 3) {
       toast.error(
         language === 'ru' 
@@ -170,7 +164,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       return
     }
 
-    // Валидация телефона (+998 и 9 цифр после)
     const phoneRegex = /^\+998\d{9}$/
     if (!phoneRegex.test(phone)) {
       toast.error(
@@ -198,7 +191,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         delivery_method: deliveryMethod,
         delivery_address: deliveryMethod === 'delivery' ? address : null,
         payment_method: paymentMethod,
-        total_price_usd: getTotalPrice(), // Всегда сохраняем в USD
+        total_price_usd: getTotalPrice(),
         items: cart,
         status: 'Активный',
       }
@@ -232,48 +225,50 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   if (orderSuccess) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center">
-          <div className="text-6xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold mb-2">
-            {language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {language === 'ru' 
-              ? `Номер вашего заказа: ` 
-              : `Sizning buyurtma raqamingiz: `}
-            <span className="font-bold text-black">№{orderId}</span>
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            {language === 'ru' 
-              ? 'Менеджер свяжется с вами в ближайшее время' 
-              : 'Menejer tez orada siz bilan bog\'lanadi'}
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full bg-black text-white py-3 rounded-xl font-bold"
-          >
-            {language === 'ru' ? 'Отлично' : 'Ajoyib'}
-          </button>
-        </div>
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6">
+        <div className="text-6xl mb-4">✅</div>
+        <h2 className="text-2xl font-bold mb-2">
+          {language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}
+        </h2>
+        <p className="text-gray-600 mb-4">
+          {language === 'ru' 
+            ? `Номер вашего заказа: ` 
+            : `Sizning buyurtma raqamingiz: `}
+          <span className="font-bold text-black">№{orderId}</span>
+        </p>
+        <p className="text-sm text-gray-500 mb-6 text-center">
+          {language === 'ru' 
+            ? 'Менеджер свяжется с вами в ближайшее время' 
+            : 'Menejer tez orada siz bilan bog\'lanadi'}
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full max-w-sm bg-black text-white py-3 rounded-xl font-bold"
+        >
+          {language === 'ru' ? 'Отлично' : 'Ajoyib'}
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto p-6 pb-40">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">
-            {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-black">
-            ✕
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Шапка */}
+      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+        <button onClick={onClose} className="text-gray-600 hover:text-black">
+          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+        </button>
+        <h1 className="text-xl font-bold">LOFT Store</h1>
+        <div className="w-16"></div>
+      </div>
+
+      {/* Контент */}
+      <div className="flex-1 overflow-y-auto p-4 pb-32">
+        <h2 className="text-2xl font-bold mb-4">
+          {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
+        </h2>
 
         <div className="space-y-4">
-          {/* Контактные данные */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               {language === 'ru' ? 'Имя' : 'Ism'}
@@ -300,7 +295,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             />
           </div>
 
-          {/* Способ получения */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">
               {language === 'ru' ? 'Способ получения' : 'Olish usuli'}
@@ -348,7 +342,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
           )}
 
-          {/* Способ оплаты */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">
               {language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}
@@ -391,7 +384,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-          {/* Итого */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="font-medium">
@@ -403,7 +395,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
           </div>
 
-          {/* Кнопка подтверждения */}
           <button
             onClick={handleSubmit}
             disabled={submitting}

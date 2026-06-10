@@ -17,10 +17,18 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(language === 'ru' ? 'Фото слишком большое (макс 5MB)' : 'Rasm juda katta (max 5MB)')
+        return
+      }
+      
       setImageFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
+      }
+      reader.onerror = () => {
+        toast.error(language === 'ru' ? 'Ошибка загрузки фото' : 'Rasm yuklashda xatolik')
       }
       reader.readAsDataURL(file)
     }
@@ -41,18 +49,28 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       let imageUrl = null
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop()
-        const fileName = `${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from('china-requests')
-          .upload(fileName, imageFile)
-
-        if (uploadError) {
-          console.error('Ошибка загрузки изображения:', uploadError)
-        } else {
-          const { data: urlData } = supabase.storage
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        
+        try {
+          const { error: uploadError } = await supabase.storage
             .from('china-requests')
-            .getPublicUrl(fileName)
-          imageUrl = urlData.publicUrl
+            .upload(fileName, imageFile, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Ошибка загрузки:', uploadError)
+            toast.error(language === 'ru' ? 'Не удалось загрузить фото' : 'Rasm yuklab bo\'lmadi')
+          } else {
+            const { data: urlData } = supabase.storage
+              .from('china-requests')
+              .getPublicUrl(fileName)
+            imageUrl = urlData.publicUrl
+            console.log('Фото загружено:', imageUrl)
+          }
+        } catch (err) {
+          console.error('Ошибка:', err)
         }
       }
 
@@ -148,7 +166,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     <div className="p-4 pb-20">
       <Toaster position="top-center" richColors />
       
-      {/* Заголовок */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">
           {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
@@ -160,9 +177,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         </p>
       </div>
 
-      {/* Форма */}
       <div className="space-y-4">
-        {/* Название или ссылка на товар */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
@@ -176,7 +191,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
           />
         </div>
 
-        {/* Размер и цвет */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
@@ -194,7 +208,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
           />
         </div>
 
-        {/* Комментарий */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             {language === 'ru' ? 'Комментарий' : 'Izoh'}
@@ -212,7 +225,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
           />
         </div>
 
-        {/* Загрузка фото */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
@@ -241,7 +253,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
           </label>
         </div>
 
-        {/* Кнопка отправки */}
         <button
           onClick={handleSubmit}
           disabled={submitting}
@@ -259,7 +270,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         </button>
       </div>
 
-      {/* Информация */}
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
           {language === 'ru' 

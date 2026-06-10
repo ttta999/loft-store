@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
-// Модальное окно для просмотра деталей заказа
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
@@ -12,9 +11,18 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Шапка как в остальных экранах */}
       <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
         <button onClick={onClose} className="text-gray-600 hover:text-black">
           ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -23,7 +31,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
         <div className="w-16"></div>
       </div>
 
-      {/* Контент со скроллингом */}
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -35,7 +42,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
               {language === 'ru' ? 'Заказ №' : 'Buyurtma №'}{order.id}
             </p>
             <p className="text-sm text-gray-600">
-              {new Date(order.created_at).toLocaleDateString()}
+              {formatDateTime(order.created_at)}
             </p>
           </div>
 
@@ -136,42 +143,58 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
   )
 }
 
-// Модальное окно для просмотра деталей спецзаказа
-function ChinaRequestDetailModal({ request, onClose, language }: { request: any; onClose: () => void; language: string }) {
+function ChinaRequestDetailModal({ request, onClose, language }: any) {
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-40">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-bold">
-            {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-black text-2xl">
-            
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+        <button onClick={onClose} className="text-gray-600 hover:text-black">
+          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+        </button>
+        <h1 className="text-xl font-bold">LOFT Store</h1>
+        <div className="w-16"></div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-4 pb-32">
+        <h2 className="text-2xl font-bold mb-4">
+          {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
+        </h2>
         
-        <div className="p-4 space-y-4">
+        <div className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">
               {language === 'ru' ? 'Спецзаказ №' : 'Maxsus buyurtma №'}{request.id}
             </p>
             <p className="text-sm text-gray-600">
-              {new Date(request.created_at).toLocaleDateString()}
+              {formatDateTime(request.created_at)}
             </p>
           </div>
 
           <div>
             <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Ссылка на товар' : 'Mahsulot havolasi'}
+              {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
             </h3>
-            <a 
-              href={request.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:underline break-all"
-            >
-              {request.link}
-            </a>
+            {request.link?.startsWith('http') ? (
+              <a 
+                href={request.link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline break-all"
+              >
+                {request.link}
+              </a>
+            ) : (
+              <p className="text-sm text-gray-700">{request.link}</p>
+            )}
           </div>
 
           {request.size_color && (
@@ -205,11 +228,11 @@ function ChinaRequestDetailModal({ request, onClose, language }: { request: any;
             </div>
           )}
 
-          <div>
+          <div className="mb-8">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
               {request.status}
             </span>
           </div>
@@ -231,6 +254,16 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
     return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   const loadOrders = async () => {
@@ -463,7 +496,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                         {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString()}
+                        {formatDateTime(order.created_at)}
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -475,7 +508,6 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                     </span>
                   </div>
 
-                  {/* Фото товаров */}
                   <div className="flex gap-1 mb-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
                       <img 
@@ -566,7 +598,7 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
                       {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {new Date(request.created_at).toLocaleDateString()}
+                      {formatDateTime(request.created_at)}
                     </p>
                   </div>
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
