@@ -5,7 +5,7 @@ import { toast, Toaster } from 'sonner'
 import { createOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
-  const { cart, removeFromCart, addToCart, clearCart, getTotalPrice, currency, exchangeRate, language } = useStore()
+  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
   const formatPrice = (usd: number) => {
@@ -112,7 +112,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
           formatPrice={formatPrice}
           getTotalPrice={getTotalPrice}
           telegramUser={telegramUser}
-          currency={currency}
         />
       )}
     </div>
@@ -120,7 +119,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
 }
 
 // Компонент модального окна оформления
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser, currency }: any) {
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
   const { cart, clearCart, language } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
