@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -28,8 +28,8 @@ function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  const [showFavorites, setShowFavorites] = useState(false)
   const { language, favorites } = useStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const tg = initTelegram()
@@ -46,10 +46,6 @@ function AppContent() {
   }, [])
 
   const renderPage = () => {
-    if (showFavorites) {
-      return <FavoritesPage />
-    }
-    
     switch (activeTab) {
       case 'home': return <HomePage />
       case 'search': return <SearchPage />
@@ -84,7 +80,7 @@ function AppContent() {
           )}
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
           <button 
-            onClick={() => setShowFavorites(true)}
+            onClick={() => navigate('/favorites')}
             className="relative text-gray-600 hover:text-red-500"
           >
             <Heart size={24} />
@@ -97,20 +93,9 @@ function AppContent() {
         </div>
       </div>
 
-      {showFavorites && (
-        <div className="fixed top-20 right-4 bg-white rounded-xl shadow-lg p-2 z-50">
-          <button
-            onClick={() => setShowFavorites(false)}
-            className="text-gray-400 hover:text-black"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {renderPage()}
 
-      {!showFavorites && <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />}
+      <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   )
 }
@@ -121,6 +106,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/product/:id" element={<ProductPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
       </Routes>
     </BrowserRouter>
   )

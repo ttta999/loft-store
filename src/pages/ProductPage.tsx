@@ -32,15 +32,16 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
-    if (!product) return
-    
-    const sizeToAdd = selectedSize || (product.sizes?.[0] || 'One Size')
+    if (!product || !selectedSize) {
+      alert(language === 'ru' ? 'Выберите размер' : 'O\'lchamni tanlang')
+      return
+    }
     
     addToCart({
       productId: product.id,
       name: language === 'ru' ? product.name_ru : product.name_uz,
       priceUsd: product.price_usd,
-      size: sizeToAdd,
+      size: selectedSize,
       quantity: 1,
       image: product.images?.[0] || ''
     })
@@ -61,15 +62,6 @@ export default function ProductPage() {
         image: product.images?.[0] || ''
       })
     }
-  }
-
-  const getSizeType = () => {
-    if (!product) return 'numeric'
-    if (product.size_type) return product.size_type
-    if (product.category === 'shoes') return 'numeric'
-    if (product.category === 'clothes') return 'alphabetical'
-    if (product.sizes?.length === 1 && product.sizes[0] === 'One Size') return 'one_size'
-    return 'numeric'
   }
 
   if (loading) {
@@ -153,8 +145,11 @@ export default function ProductPage() {
 
           {product.sizes && product.sizes.length > 0 && (
             <div className="mb-6">
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Размер' : 'O\'lcham'}
+              </h3>
               <SizeSelector
-                sizeType={getSizeType()}
+                sizeType={product.size_type || 'numeric'}
                 availableSizes={product.sizes}
                 onSelect={setSelectedSize}
                 language={language as 'ru' | 'uz'}
@@ -164,10 +159,21 @@ export default function ProductPage() {
 
           <button
             onClick={handleAddToCart}
-            className="w-full py-4 rounded-xl font-bold text-lg bg-black text-white hover:bg-gray-800 transition-colors"
+            disabled={!selectedSize}
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-colors ${
+              selectedSize
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             {language === 'ru' ? 'Добавить в корзину' : 'Savatga qo\'shish'}
           </button>
+
+          {!selectedSize && product.sizes && product.sizes.length > 0 && (
+            <p className="text-sm text-gray-500 text-center mt-2">
+              {language === 'ru' ? 'Выберите размер' : 'O\'lchamni tanlang'}
+            </p>
+          )}
         </div>
       </div>
     </div>
