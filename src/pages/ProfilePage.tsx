@@ -33,6 +33,20 @@ function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Шапка */}
+      <div className="bg-white p-4 border-b sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => onClose()} 
+            className="text-gray-600 hover:text-black"
+          >
+            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+          </button>
+          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <div className="w-16"></div>
+        </div>
+      </div>
+      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -171,6 +185,20 @@ function ChinaRequestDetailModal({ request, language }: any) {
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Шапка */}
+      <div className="bg-white p-4 border-b sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => onClose()} 
+            className="text-gray-600 hover:text-black"
+          >
+            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+          </button>
+          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <div className="w-16"></div>
+        </div>
+      </div>
+      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
