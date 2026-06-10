@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import { useStore } from '../store/useStore'
@@ -34,7 +34,6 @@ export default function ProductPage() {
       console.error('Ошибка при загрузке товара:', error)
       setProduct(null)
     } else {
-      console.log('Товар из базы:', data) // Отладка
       setProduct(data)
     }
     setLoading(false)
@@ -88,25 +87,17 @@ export default function ProductPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // Нормализуем images — может быть строка или массив
   const getImages = (): string[] => {
     if (!product) return ['https://via.placeholder.com/500']
-    
-    // Если images — массив
     if (Array.isArray(product.images)) {
       return product.images.filter((img: string) => img)
     }
-    
-    // Если images — строка (один URL)
     if (typeof product.images === 'string' && product.images) {
       return [product.images]
     }
-    
-    // Если есть image (старое поле)
     if (product.image) {
       return [product.image]
     }
-    
     return ['https://via.placeholder.com/500']
   }
 
@@ -171,6 +162,34 @@ export default function ProductPage() {
     }
   }
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href
+    const shareTitle = language === 'ru' ? product.name_ru : product.name_uz
+    const shareText = `${shareTitle} — ${formatPrice(product.price_usd)}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        })
+      } catch (err) {
+        console.log('Поделиться отменено:', err)
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        toast.success(
+          language === 'ru' ? 'Ссылка скопирована!' : 'Havola nusxalandi!',
+          { duration: 2000 }
+        )
+      } catch (err) {
+        console.error('Ошибка копирования:', err)
+      }
+    }
+  }
+
   const goToPreviousImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
@@ -183,7 +202,6 @@ export default function ProductPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
       
-      {/* Шапка с кнопкой назад */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <button
           onClick={() => window.history.back()}
@@ -195,7 +213,6 @@ export default function ProductPage() {
       </div>
 
       <div className="p-4">
-        {/* Галерея фото товара */}
         <div className="bg-white rounded-2xl overflow-hidden mb-4">
           <div className="relative">
             <img
@@ -204,7 +221,6 @@ export default function ProductPage() {
               className="w-full aspect-square object-cover"
             />
             
-            {/* Кнопки навигации (только если больше 1 фото) */}
             {images.length > 1 && (
               <>
                 <button
@@ -222,18 +238,24 @@ export default function ProductPage() {
               </>
             )}
 
-            {/* Кнопка избранного */}
-            <button
-              onClick={handleToggleFavorite}
-              className="absolute top-4 right-4 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
-            >
-              <Heart 
-                size={24} 
-                className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
-              />
-            </button>
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button
+                onClick={handleToggleFavorite}
+                className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+              >
+                <Heart 
+                  size={24} 
+                  className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                />
+              </button>
+              <button
+                onClick={handleShare}
+                className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+              >
+                <Share2 size={24} className="text-gray-600" />
+              </button>
+            </div>
 
-            {/* Индикаторы фото */}
             {images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {images.map((_: string, index: number) => (
@@ -250,7 +272,6 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* Миниатюры (только если больше 1 фото) */}
           {images.length > 1 && (
             <div className="p-3 flex gap-2 overflow-x-auto">
               {images.map((image: string, index: number) => (
@@ -272,7 +293,6 @@ export default function ProductPage() {
           )}
         </div>
 
-        {/* Информация о товаре */}
         <div className="bg-white rounded-2xl p-4 mb-4">
           <h1 className="text-xl font-bold mb-2">
             {language === 'ru' ? product.name_ru : product.name_uz}
@@ -281,7 +301,6 @@ export default function ProductPage() {
             {formatPrice(product.price_usd)}
           </p>
 
-          {/* Выбор размера */}
           <SizeSelector
             sizeType={product.size_type}
             availableSizes={sizes.length > 0 ? sizes : ['One Size']}
@@ -289,7 +308,6 @@ export default function ProductPage() {
             language={language}
           />
 
-          {/* Кнопка добавить в корзину */}
           <button
             onClick={handleAddToCart}
             className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
