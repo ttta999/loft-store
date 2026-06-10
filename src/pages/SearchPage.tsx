@@ -1,111 +1,235 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search as SearchIcon, X } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { mockProducts } from '../data/mockProducts'
+import { getProducts } from '../lib/supabase'
+import { Search, Filter, X, Heart } from 'lucide-react'
 
 export default function SearchPage() {
-  const { language, currency, exchangeRate } = useStore()
+  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const [products, setProducts] = useState<any[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeSubcategory, setActiveSubcategory] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedBrand, setSelectedBrand] = useState<string>('')
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [showFilters, setShowFilters] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const categories = [
+    { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim' },
+    { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim' },
+    { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar' },
+    { id: 'brands', name_ru: 'Бренды', name_uz: 'Brendlar' },
+  ]
+
+  const brands = ['Nike', 'Adidas', 'Puma', 'Zara', 'H&M', 'Supreme', 'Other']
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, products])
+
+  const loadProducts = async () => {
+    setLoading(true)
+    const data = await getProducts()
+    setProducts(data)
+    setFilteredProducts(data)
+    setLoading(false)
+  }
+
+  const applyFilters = () => {
+    let filtered = products
+
+    // Поиск по названию
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p => 
+        (language === 'ru' ? p.name_ru : p.name_uz).toLowerCase().includes(query)
+      )
+    }
+
+    // Фильтр по категории
+    if (selectedCategory) {
+      filtered = filtered.filter(p => p.category === selectedCategory)
+    }
+
+    // Фильтр по бренду
+    if (selectedBrand) {
+      filtered = filtered.filter(p => p.brand === selectedBrand)
+    }
+
+    // Фильтр по цене
+    filtered = filtered.filter(p => 
+      p.price_usd >= priceRange[0] && p.price_usd <= priceRange[1]
+    )
+
+    setFilteredProducts(filtered)
+  }
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // Получаем все уникальные подкатегории
-  const subcategories = useMemo(() => {
-    const subs = new Set(mockProducts.map(p => p.subcategory))
-    return ['all', ...Array.from(subs)]
-  }, [])
+  const clearFilters = () => {
+    setSearchQuery('')
+    setSelectedCategory('')
+    setSelectedBrand('')
+    setPriceRange([0, 1000])
+  }
 
-  // Фильтрация товаров
-  const filteredProducts = useMemo(() => {
-    return mockProducts.filter(product => {
-      const matchesSearch = 
-        product.name_ru.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.name_uz.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.subcategory.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesSubcategory = 
-        activeSubcategory === 'all' || 
-        product.subcategory === activeSubcategory
-      
-      return matchesSearch && matchesSubcategory
-    })
-  }, [searchQuery, activeSubcategory])
+  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange[0] > 0 || priceRange[1] < 1000
 
-  // Перевод подкатегорий
-  const getSubcategoryName = (sub: string) => {
-    const names: Record<string, string> = {
-      'all': language === 'ru' ? 'Все' : 'Barchasi',
-      'sneakers': language === 'ru' ? 'Кроссовки' : 'Krossovkalar',
-      't-shirts': language === 'ru' ? 'Футболки' : 'Futbolkalar',
-      'hoodies': language === 'ru' ? 'Худи' : 'Xudilar',
-      'caps': language === 'ru' ? 'Кепки' : 'Kepkalar',
-      'belts': language === 'ru' ? 'Ремни' : 'Kamarlar',
-    }
-    return names[sub] || sub
+  if (loading) {
+    return (
+      <div className="p-4 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-500">
+            {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="p-4 pb-20">
-      {/* Поисковая строка */}
+      {/* Поиск */}
       <div className="relative mb-4">
-        <SearchIcon 
-          size={20} 
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
-        />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={language === 'ru' ? 'Поиск товаров...' : 'Mahsulotlarni qidirish...'}
-          className="w-full pl-10 pr-10 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
+          className="w-full p-3 pl-10 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:border-black"
         />
+        <Search size={20} className="absolute left-3 top-3.5 text-gray-400" />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+            className="absolute right-3 top-3.5 text-gray-400 hover:text-black"
           >
             <X size={20} />
           </button>
         )}
       </div>
 
-      {/* Быстрые теги подкатегорий */}
-      <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-        {subcategories.map((sub) => (
+      {/* Кнопка фильтров */}
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className={`w-full p-3 rounded-xl border flex items-center justify-between mb-4 ${
+          hasActiveFilters ? 'bg-black text-white border-black' : 'bg-white border-gray-300'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <Filter size={20} />
+          <span className="font-medium">
+            {language === 'ru' ? 'Фильтры' : 'Filtrlar'}
+          </span>
+          {hasActiveFilters && (
+            <span className="bg-white text-black text-xs px-2 py-1 rounded-full">
+              {language === 'ru' ? 'Активны' : 'Faol'}
+            </span>
+          )}
+        </div>
+        {hasActiveFilters && (
           <button
-            key={sub}
-            onClick={() => setActiveSubcategory(sub)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-              activeSubcategory === sub
-                ? 'bg-black text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            onClick={clearFilters}
+            className="text-sm underline"
           >
-            {getSubcategoryName(sub)}
+            {language === 'ru' ? 'Сбросить' : 'Tozalash'}
           </button>
-        ))}
-      </div>
+        )}
+      </button>
 
-      {/* Результаты поиска */}
-      <div className="mb-2">
+      {/* Панель фильтров */}
+      {showFilters && (
+        <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+          {/* Категория */}
+          <div className="mb-4">
+            <h3 className="font-bold mb-2">
+              {language === 'ru' ? 'Категория' : 'Kategoriya'}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(selectedCategory === cat.id ? '' : cat.id)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedCategory === cat.id
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {language === 'ru' ? cat.name_ru : cat.name_uz}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Бренд */}
+          <div className="mb-4">
+            <h3 className="font-bold mb-2">
+              {language === 'ru' ? 'Бренд' : 'Brend'}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {brands.map((brand) => (
+                <button
+                  key={brand}
+                  onClick={() => setSelectedBrand(selectedBrand === brand ? '' : brand)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedBrand === brand
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Цена */}
+          <div>
+            <h3 className="font-bold mb-2">
+              {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={priceRange[0]}
+                onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                placeholder="От"
+                className="w-full p-2 border border-gray-300 rounded-lg"
+              />
+              <input
+                type="number"
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                placeholder="До"
+                className="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Результаты */}
+      <div className="mb-3">
         <p className="text-sm text-gray-500">
-          {filteredProducts.length} 
-          {language === 'ru' ? ' товаров найдено' : ' mahsulot topildi'}
+          {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
         </p>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400 text-lg">
-            {language === 'ru' ? 'Ничего не найдено' : 'Hech narsa topilmadi'}
-          </p>
-          <p className="text-gray-400 text-sm mt-2">
-            {language === 'ru' ? 'Попробуйте другой запрос' : 'Boshqa so\'z bilan qidiring'}
+          <Search size={64} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">
+            {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
           </p>
         </div>
       ) : (
@@ -113,19 +237,37 @@ export default function SearchPage() {
           {filteredProducts.map((product) => (
             <Link key={product.id} to={`/product/${product.id}`}>
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                <div className="aspect-square bg-gray-100">
+                <div className="aspect-square bg-gray-100 relative">
                   <img
-                    src={product.images[0]}
-                    alt={product.name_ru}
+                    src={product.images?.[0] || 'https://via.placeholder.com/500'}
+                    alt={language === 'ru' ? product.name_ru : product.name_uz}
                     className="w-full h-full object-cover"
                   />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (isFavorite(product.id)) {
+                        removeFromFavorites(product.id)
+                      } else {
+                        addToFavorites({
+                          productId: product.id,
+                          name: language === 'ru' ? product.name_ru : product.name_uz,
+                          priceUsd: product.price_usd,
+                          image: product.images?.[0] || ''
+                        })
+                      }
+                    }}
+                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                  >
+                    <Heart 
+                      size={20} 
+                      className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                    />
+                  </button>
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium truncate">
                     {language === 'ru' ? product.name_ru : product.name_uz}
-                  </p>
-                  <p className="text-xs text-gray-500 capitalize">
-                    {getSubcategoryName(product.subcategory)}
                   </p>
                   <p className="text-black font-bold mt-1">
                     {formatPrice(product.price_usd)}
