@@ -55,6 +55,14 @@ export const createOrder = async (orderData: any) => {
 export const notifyNewOrder = async (order: any) => {
   const MANAGER_CHAT_ID = '6150570809'
   
+  // Формируем список товаров
+  const itemsList = order.items.map((item: any, index: number) => {
+    return `${index + 1}. ${item.name}
+   Размер: ${item.size}
+   Количество: ${item.quantity} шт.
+   Цена: $${item.priceUsd}`
+  }).join('\n\n')
+
   const message = `
 🛍 <b>Новый заказ №${order.id}</b>
 
@@ -62,7 +70,10 @@ export const notifyNewOrder = async (order: any) => {
 📞 Телефон: ${order.client_phone}
 💰 Сумма: $${order.total_price_usd}
 
-📦 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
+📦 <b>Товары:</b>
+${itemsList}
+
+🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
 💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
