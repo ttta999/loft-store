@@ -23,9 +23,10 @@ interface TelegramUser {
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabType>('home')
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
+  const [showBackButton, setShowBackButton] = useState(false)
+  const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
 
   useEffect(() => {
-    // Инициализация Telegram
     const tg = initTelegram()
     
     if (tg) {
@@ -45,7 +46,15 @@ function AppContent() {
       case 'search': return <SearchPage />
       case 'cart': return <CartPage telegramUser={telegramUser} />
       case 'china': return <ChinaPage telegramUser={telegramUser} />
-      case 'profile': return <ProfilePage telegramUser={telegramUser} />
+      case 'profile': return (
+        <ProfilePage 
+          telegramUser={telegramUser}
+          showBackButton={showBackButton}
+          setShowBackButton={setShowBackButton}
+          onBackClick={onBackClick}
+          setOnBackClick={setOnBackClick}
+        />
+      )
       default: return <HomePage />
     }
   }
@@ -53,7 +62,20 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-        <h1 className="text-xl font-bold text-center">LOFT Store</h1>
+        <div className="flex items-center justify-between">
+          {showBackButton && onBackClick ? (
+            <button 
+              onClick={onBackClick} 
+              className="text-gray-600 hover:text-black"
+            >
+              ← Назад
+            </button>
+          ) : (
+            <div className="w-16"></div>
+          )}
+          <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
+          <div className="w-16"></div>
+        </div>
       </div>
 
       {renderPage()}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
@@ -23,14 +23,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-        <button onClick={onClose} className="text-gray-600 hover:text-black">
-          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-        </button>
-        <h1 className="text-xl font-bold">LOFT Store</h1>
-        <div className="w-16"></div>
-      </div>
-
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
@@ -156,14 +148,6 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-        <button onClick={onClose} className="text-gray-600 hover:text-black">
-          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-        </button>
-        <h1 className="text-xl font-bold">LOFT Store</h1>
-        <div className="w-16"></div>
-      </div>
-      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -242,7 +226,21 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
   )
 }
 
-export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
+interface ProfilePageProps {
+  telegramUser?: any
+  showBackButton: boolean
+  setShowBackButton: (show: boolean) => void
+  onBackClick: (() => void) | null
+  setOnBackClick: (fn: (() => void) | null) => void
+}
+
+export default function ProfilePage({ 
+  telegramUser, 
+  showBackButton, 
+  setShowBackButton, 
+  onBackClick, 
+  setOnBackClick 
+}: ProfilePageProps) {
   const { language, currency, exchangeRate, setLanguage, setCurrency } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
@@ -250,6 +248,27 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (activeSection === 'main') {
+      setShowBackButton(false)
+      setOnBackClick(null)
+    } else if (activeSection === 'orders') {
+      setShowBackButton(true)
+      setOnBackClick(() => () => setActiveSection('main'))
+    } else if (activeSection === 'china') {
+      setShowBackButton(true)
+      setOnBackClick(() => () => setActiveSection('main'))
+    }
+
+    if (selectedOrder || selectedChinaRequest) {
+      setShowBackButton(true)
+      setOnBackClick(() => () => {
+        setSelectedOrder(null)
+        setSelectedChinaRequest(null)
+      })
+    }
+  }, [activeSection, selectedOrder, selectedChinaRequest])
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -455,13 +474,6 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
   if (activeSection === 'orders') {
     return (
       <div className="p-4 pb-20">
-        <button
-          onClick={() => setActiveSection('main')}
-          className="text-gray-600 hover:text-black mb-4 flex items-center gap-2"
-        >
-          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-        </button>
-
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
         </h2>
@@ -559,13 +571,6 @@ export default function ProfilePage({ telegramUser }: { telegramUser?: any }) {
   if (activeSection === 'china') {
     return (
       <div className="p-4 pb-20">
-        <button
-          onClick={() => setActiveSection('main')}
-          className="text-gray-600 hover:text-black mb-4 flex items-center gap-2"
-        >
-          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-        </button>
-
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
         </h2>
