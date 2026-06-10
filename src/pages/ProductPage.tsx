@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import { useStore } from '../store/useStore'
@@ -13,6 +13,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<any>(null)
   const [sizes, setSizes] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   useEffect(() => {
     if (id) {
@@ -145,6 +146,39 @@ export default function ProductPage() {
     }
   }
 
+  const images = product.images || [product.images?.[0] || 'https://via.placeholder.com/500']
+
+  const goToPreviousImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+
+  const goToNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    const startX = touch.clientX
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touch = e.changedTouches[0]
+      const endX = touch.clientX
+      const diff = startX - endX
+      
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) {
+          goToNextImage()
+        } else {
+          goToPreviousImage()
+        }
+      }
+      
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+    
+    document.addEventListener('touchend', handleTouchEnd)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
@@ -161,22 +195,82 @@ export default function ProductPage() {
       </div>
 
       <div className="p-4">
-        {/* Фото товара */}
+        {/* Галерея фото товара */}
         <div className="bg-white rounded-2xl overflow-hidden mb-4 relative">
-          <img
-            src={product.images?.[0] || 'https://via.placeholder.com/500'}
-            alt={language === 'ru' ? product.name_ru : product.name_uz}
-            className="w-full aspect-square object-cover"
-          />
-          <button
-            onClick={handleToggleFavorite}
-            className="absolute top-4 right-4 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+          <div 
+            className="relative"
+            onTouchStart={handleTouchStart}
           >
-            <Heart 
-              size={24} 
-              className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+            <img
+              src={images[currentImageIndex]}
+              alt={language === 'ru' ? product.name_ru : product.name_uz}
+              className="w-full aspect-square object-cover"
             />
-          </button>
+            
+            {/* Кнопки навигации */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={goToPreviousImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={goToNextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
+
+            {/* Кнопка избранного */}
+            <button
+              onClick={handleToggleFavorite}
+              className="absolute top-4 right-4 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+            >
+              <Heart 
+                size={24} 
+                className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+              />
+            </button>
+
+            {/* Индикаторы фото */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {images.map((_: any, index: number) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Миниатюры */}
+          {images.length > 1 && (
+            <div className="p-3 flex gap-2 overflow-x-auto">
+              {images.map((image: string, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    index === currentImageIndex ? 'border-black' : 'border-transparent'
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Информация о товаре */}
