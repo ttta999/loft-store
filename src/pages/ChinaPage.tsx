@@ -29,7 +29,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
   const handleSubmit = async () => {
     if (!link) {
       toast.error(
-        language === 'ru' ? 'Вставьте ссылку на товар' : 'Mahsulot havolasini kiriting',
+        language === 'ru' ? 'Введите название или ссылку на товар' : 'Mahsulot nomi yoki havolasini kiriting',
         { duration: 3000 }
       )
       return
@@ -56,7 +56,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         }
       }
 
-      // Используем реальный ID из Telegram, если приложение открыто в Telegram
       const userId = telegramUser?.id?.toString() || 'guest-user'
 
       const requestData = {
@@ -163,16 +162,16 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
 
       {/* Форма */}
       <div className="space-y-4">
-        {/* Ссылка на товар */}
+        {/* Название или ссылка на товар */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
-            {language === 'ru' ? 'Ссылка на товар *' : 'Mahsulot havolasi *'}
+            {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
           </label>
           <input
-            type="url"
+            type="text"
             value={link}
             onChange={(e) => setLink(e.target.value)}
-            placeholder="https://..."
+            placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
           />
         </div>
@@ -265,7 +264,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         <p className="text-sm text-yellow-800">
           {language === 'ru' 
             ? '⏱ Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
-            : ' O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
+            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
         </p>
       </div>
     </div>

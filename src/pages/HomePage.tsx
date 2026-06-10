@@ -5,8 +5,8 @@ import { getProducts } from '../lib/supabase'
 
 const categories = [
   { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim', icon: '👟' },
-  { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim', icon: '👕' },
-  { id: 'caps', name_ru: 'Кепки', name_uz: 'Kepkalar', icon: '🧢' },
+  { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim', icon: '' },
+  { id: 'brands', name_ru: 'Бренды', name_uz: 'Brendlar', icon: '🏷️' },
   { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar', icon: '⌚' },
 ]
 

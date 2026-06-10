@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
 // Модальное окно для просмотра деталей заказа
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: { order: any; onClose: () => void; language: string; currency: string; exchangeRate: number }) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   const formatPrice = (usd: number) => {
@@ -13,18 +13,23 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto pb-40">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-bold">
-            {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-black text-2xl">
-            ✕
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Шапка как в остальных экранах */}
+      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+        <button onClick={onClose} className="text-gray-600 hover:text-black">
+          ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+        </button>
+        <h1 className="text-xl font-bold">LOFT Store</h1>
+        <div className="w-16"></div>
+      </div>
+
+      {/* Контент со скроллингом */}
+      <div className="flex-1 overflow-y-auto p-4 pb-32">
+        <h2 className="text-2xl font-bold mb-4">
+          {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
+        </h2>
         
-        <div className="p-4 space-y-4">
+        <div className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">
               {language === 'ru' ? 'Заказ №' : 'Buyurtma №'}{order.id}
@@ -38,7 +43,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
-            <p className="text-sm">📞 {order.client_phone}</p>
+            <p className="text-sm"> {order.client_phone}</p>
           </div>
 
           <div>
@@ -113,11 +118,11 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
             </div>
           </div>
 
-          <div>
+          <div className="mb-8">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
               order.status === 'Активный' 
                 ? 'bg-blue-100 text-blue-800' 
                 : 'bg-green-100 text-green-800'
