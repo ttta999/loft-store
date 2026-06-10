@@ -26,6 +26,7 @@ interface AppState {
   exchangeRate: number
   cart: CartItem[]
   favorites: FavoriteItem[]
+  chatId: string | null
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   addToCart: (item: CartItem) => void
@@ -35,6 +36,7 @@ interface AppState {
   addToFavorites: (item: FavoriteItem) => void
   removeFromFavorites: (productId: string) => void
   isFavorite: (productId: string) => boolean
+  setChatId: (id: string | null) => void
 }
 
 export const useStore = create<AppState>()(
@@ -45,6 +47,7 @@ export const useStore = create<AppState>()(
       exchangeRate: 13000,
       cart: [],
       favorites: [],
+      chatId: null,
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
@@ -100,7 +103,9 @@ export const useStore = create<AppState>()(
       isFavorite: (productId) => {
         const state = get()
         return state.favorites.some(i => i.productId === productId)
-      }
+      },
+
+      setChatId: (id) => set({ chatId: id }),
     }),
     { name: 'loft-store' }
   )

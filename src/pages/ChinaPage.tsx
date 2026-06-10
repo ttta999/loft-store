@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { Upload, Send, CheckCircle } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import { supabase } from '../lib/supabase'
+import { supabase, notifyNewChinaRequest } from '../lib/supabase'
 
 export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
   const { language } = useStore()
@@ -104,6 +104,11 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
 
       console.log('Спецзаказ создан:', data)
 
+      // Отправляем уведомление
+      if (data && data[0]) {
+        await notifyNewChinaRequest(data[0])
+      }
+
       setSubmitted(true)
       toast.success(
         language === 'ru' ? 'Спецзаказ отправлен!' : 'Maxsus buyurtma yuborildi!',
@@ -168,7 +173,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">
-          {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
+          {language === 'ru' ? '🌍 Спецзаказ' : ' Maxsus buyurtma'}
         </h1>
         <p className="text-gray-600 text-sm">
           {language === 'ru' 
@@ -273,8 +278,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
           {language === 'ru' 
-            ? '⏱ Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
-            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
+            ? ' Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
+            : ' O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
         </p>
       </div>
     </div>

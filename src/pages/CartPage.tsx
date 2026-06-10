@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import { createOrder } from '../lib/supabase'
+import { createOrder, notifyNewOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
@@ -199,8 +199,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       console.log('Отправляем заказ:', orderData)
 
       const result: any = await createOrder(orderData)
-      const data = Array.isArray(result) ? result[0] : result
-      const error = null
+      const data = Array.isArray(result.data) ? result.data[0] : result.data
+      const error = result.error
 
       if (error) {
         console.error('Ошибка при создании заказа:', error)
@@ -210,6 +210,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       }
 
       console.log('Заказ создан:', data)
+
+      // Отправляем уведомление
+      await notifyNewOrder(data)
 
       const newOrderId = data?.id || Math.floor(Math.random() * 1000) + 500
       setOrderId(newOrderId)
@@ -253,7 +256,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Шапка */}
       <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
         <button onClick={onClose} className="text-gray-600 hover:text-black">
           ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -262,7 +264,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         <div className="w-16"></div>
       </div>
 
-      {/* Контент */}
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}

@@ -8,7 +8,7 @@ import ChinaPage from './pages/ChinaPage'
 import ProfilePage from './pages/ProfilePage'
 import ProductPage from './pages/ProductPage'
 import FavoritesPage from './pages/FavoritesPage'
-import { initTelegram, getUserData } from './lib/telegram'
+import { initTelegram, getUserData, getChatId } from './lib/telegram'
 import { Heart } from 'lucide-react'
 import { useStore } from './store/useStore'
 
@@ -39,6 +39,13 @@ function AppContent() {
       if (userData) {
         setTelegramUser(userData)
         console.log('Telegram пользователь:', userData)
+        
+        // Сохраняем chat_id для уведомлений
+        const chatId = getChatId()
+        if (chatId && chatId !== useStore.getState().chatId) {
+          useStore.getState().setChatId(chatId)
+          console.log('Chat ID сохранён:', chatId)
+        }
       }
     } else {
       console.log('Приложение открыто в браузере (не в Telegram)')

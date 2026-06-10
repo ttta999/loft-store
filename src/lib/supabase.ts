@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendNotification } from './telegram'
 
-const supabaseUrl = 'https://kmbmsbydxnxxiwypaxwm.supabase.co'
-const supabaseAnonKey = 'sb_publishable_AHafjKFu3UCrUdefb0uRpQ_7i-AFyf1'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Получение всех товаров
+// Получить все товары
 export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
@@ -20,11 +21,11 @@ export const getProducts = async () => {
   return data
 }
 
-// Получение размеров для товара
+// Получить размеры товара
 export const getProductSizes = async (productId: string) => {
   const { data, error } = await supabase
     .from('product_variants')
-    .select('size_value, stock')
+    .select('size_value')
     .eq('product_id', productId)
   
   if (error) {
@@ -35,7 +36,7 @@ export const getProductSizes = async (productId: string) => {
   return data
 }
 
-// Создание заказа
+// Создать заказ
 export const createOrder = async (orderData: any) => {
   const { data, error } = await supabase
     .from('orders')
@@ -44,23 +45,41 @@ export const createOrder = async (orderData: any) => {
   
   if (error) {
     console.error('Ошибка при создании заказа:', error)
-    throw error
+    return { data: null, error }
   }
   
-  return data
+  return { data, error: null }
 }
 
-// Создание спецзаказа
-export const createChinaRequest = async (requestData: any) => {
-  const { data, error } = await supabase
-    .from('china_requests')
-    .insert(requestData)
-    .select()
+// Функция отправки уведомления о новом заказе
+export const notifyNewOrder = async (order: any) => {
+  const MANAGER_CHAT_ID = '6150570809' // ← ВСТАВЬ СВОЙ chat_id сюда!
   
-  if (error) {
-    console.error('Ошибка при создании спецзаказа:', error)
-    throw error
-  }
+  const message = `
+🛍 <b>Новый заказ №${order.id}</b>
+
+👤 Клиент: ${order.client_name}
+📞 Телефон: ${order.client_phone}
+💰 Сумма: $${order.total_price_usd}
+
+📦 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
+💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+  `.trim()
+
+  await sendNotification(message, MANAGER_CHAT_ID)
+}
+
+// Функция отправки уведомления о новом спецзаказе
+export const notifyNewChinaRequest = async (request: any) => {
+  const MANAGER_CHAT_ID = '6150570809' // ← ТОТ ЖЕ chat_id!
   
-  return data
+  const message = `
+🌍 <b>Новый спецзаказ №${request.id}</b>
+
+📎 Ссылка: ${request.link}
+📏 Размер/Цвет: ${request.size_color || 'Не указан'}
+💬 Комментарий: ${request.comment || 'Нет'}
+  `.trim()
+
+  await sendNotification(message, MANAGER_CHAT_ID)
 }
