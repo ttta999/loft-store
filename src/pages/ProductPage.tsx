@@ -34,6 +34,7 @@ export default function ProductPage() {
       console.error('Ошибка при загрузке товара:', error)
       setProduct(null)
     } else {
+      console.log('Товар из базы:', data) // Отладка
       setProduct(data)
     }
     setLoading(false)
@@ -87,6 +88,30 @@ export default function ProductPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  // Нормализуем images — может быть строка или массив
+  const getImages = (): string[] => {
+    if (!product) return ['https://via.placeholder.com/500']
+    
+    // Если images — массив
+    if (Array.isArray(product.images)) {
+      return product.images.filter((img: string) => img)
+    }
+    
+    // Если images — строка (один URL)
+    if (typeof product.images === 'string' && product.images) {
+      return [product.images]
+    }
+    
+    // Если есть image (старое поле)
+    if (product.image) {
+      return [product.image]
+    }
+    
+    return ['https://via.placeholder.com/500']
+  }
+
+  const images = getImages()
+
   const handleAddToCart = () => {
     if (product.size_type !== 'one_size' && !selectedSize) {
       toast.error(
@@ -109,7 +134,7 @@ export default function ProductPage() {
       priceUsd: product.price_usd,
       size: sizeToAdd,
       quantity: 1,
-      image: product.images?.[0] || '',
+      image: images[0] || '',
     })
 
     toast.success(
@@ -137,7 +162,7 @@ export default function ProductPage() {
         productId: product.id,
         name: language === 'ru' ? product.name_ru : product.name_uz,
         priceUsd: product.price_usd,
-        image: product.images?.[0] || '',
+        image: images[0] || '',
       })
       toast.success(
         language === 'ru' ? 'Добавлено в избранное ❤️' : 'Sevimlilarga qo\'shildi ❤️',
@@ -146,37 +171,12 @@ export default function ProductPage() {
     }
   }
 
-  const images = product.images || [product.images?.[0] || 'https://via.placeholder.com/500']
-
   const goToPreviousImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
 
   const goToNextImage = () => {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    const startX = touch.clientX
-    
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touch = e.changedTouches[0]
-      const endX = touch.clientX
-      const diff = startX - endX
-      
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) {
-          goToNextImage()
-        } else {
-          goToPreviousImage()
-        }
-      }
-      
-      document.removeEventListener('touchend', handleTouchEnd)
-    }
-    
-    document.addEventListener('touchend', handleTouchEnd)
   }
 
   return (
@@ -196,18 +196,15 @@ export default function ProductPage() {
 
       <div className="p-4">
         {/* Галерея фото товара */}
-        <div className="bg-white rounded-2xl overflow-hidden mb-4 relative">
-          <div 
-            className="relative"
-            onTouchStart={handleTouchStart}
-          >
+        <div className="bg-white rounded-2xl overflow-hidden mb-4">
+          <div className="relative">
             <img
               src={images[currentImageIndex]}
               alt={language === 'ru' ? product.name_ru : product.name_uz}
               className="w-full aspect-square object-cover"
             />
             
-            {/* Кнопки навигации */}
+            {/* Кнопки навигации (только если больше 1 фото) */}
             {images.length > 1 && (
               <>
                 <button
@@ -218,7 +215,7 @@ export default function ProductPage() {
                 </button>
                 <button
                   onClick={goToNextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                  className="absolute right-14 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -239,11 +236,13 @@ export default function ProductPage() {
             {/* Индикаторы фото */}
             {images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {images.map((_: any, index: number) => (
+                {images.map((_: string, index: number) => (
                   <div
                     key={index}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
+                    className={`h-2 rounded-full transition-all ${
+                      index === currentImageIndex 
+                        ? 'bg-white w-6' 
+                        : 'bg-white/50 w-2'
                     }`}
                   />
                 ))}
@@ -251,7 +250,7 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* Миниатюры */}
+          {/* Миниатюры (только если больше 1 фото) */}
           {images.length > 1 && (
             <div className="p-3 flex gap-2 overflow-x-auto">
               {images.map((image: string, index: number) => (
@@ -259,7 +258,7 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === currentImageIndex ? 'border-black' : 'border-transparent'
+                    index === currentImageIndex ? 'border-black' : 'border-gray-200'
                   }`}
                 >
                   <img
