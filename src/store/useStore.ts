@@ -13,17 +13,28 @@ interface CartItem {
   image: string
 }
 
+interface FavoriteItem {
+  productId: string
+  name: string
+  priceUsd: number
+  image: string
+}
+
 interface AppState {
   language: Language
   currency: Currency
   exchangeRate: number
   cart: CartItem[]
+  favorites: FavoriteItem[]
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
   getTotalPrice: () => number
+  addToFavorites: (item: FavoriteItem) => void
+  removeFromFavorites: (productId: string) => void
+  isFavorite: (productId: string) => boolean
 }
 
 export const useStore = create<AppState>()(
@@ -33,12 +44,12 @@ export const useStore = create<AppState>()(
       currency: 'USD',
       exchangeRate: 13000,
       cart: [],
+      favorites: [],
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
 
       addToCart: (item) => set((state) => {
-        // Если quantity отрицательный - уменьшаем количество
         if (item.quantity < 0) {
           return {
             cart: state.cart.map(i => 
@@ -49,7 +60,6 @@ export const useStore = create<AppState>()(
           }
         }
         
-        // Иначе ищем существующий товар
         const existing = state.cart.find(i => i.productId === item.productId && i.size === item.size)
         if (existing) {
           return {
@@ -72,7 +82,24 @@ export const useStore = create<AppState>()(
       getTotalPrice: () => {
         const state = get()
         const totalUsd = state.cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0)
-        return totalUsd // Всегда возвращаем в USD (конвертация делается при отображении)
+        return totalUsd
+      },
+
+      addToFavorites: (item) => set((state) => {
+        const exists = state.favorites.find(i => i.productId === item.productId)
+        if (exists) {
+          return state
+        }
+        return { favorites: [...state.favorites, item] }
+      }),
+
+      removeFromFavorites: (productId) => set((state) => ({
+        favorites: state.favorites.filter(i => i.productId !== productId)
+      })),
+
+      isFavorite: (productId) => {
+        const state = get()
+        return state.favorites.some(i => i.productId === productId)
       }
     }),
     { name: 'loft-store' }

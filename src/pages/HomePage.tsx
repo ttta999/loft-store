@@ -2,16 +2,17 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
+import { Heart } from 'lucide-react'
 
 const categories = [
   { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim', icon: '👟' },
-  { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim', icon: '' },
+  { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim', icon: '👕' },
   { id: 'brands', name_ru: 'Бренды', name_uz: 'Brendlar', icon: '🏷️' },
   { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar', icon: '⌚' },
 ]
 
 export default function HomePage() {
-  const { language, currency, exchangeRate } = useStore()
+  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -29,7 +30,7 @@ export default function HomePage() {
 
   const handleCategoryClick = (categoryId: string) => {
     if (selectedCategory === categoryId) {
-      setSelectedCategory(null) // Снять фильтр
+      setSelectedCategory(null)
     } else {
       setSelectedCategory(categoryId)
     }
@@ -59,7 +60,6 @@ export default function HomePage() {
 
   return (
     <div className="p-4">
-      {/* Баннер */}
       <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
         <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
@@ -71,7 +71,6 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Категории */}
       <h3 className="text-lg font-bold mb-3">
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
       </h3>
@@ -108,7 +107,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Популярные товары */}
       <h3 className="text-lg font-bold mb-3">
         {selectedCategory 
           ? (language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar')
@@ -126,12 +124,33 @@ export default function HomePage() {
           {filteredProducts.map((product) => (
             <Link key={product.id} to={`/product/${product.id}`}>
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                <div className="aspect-square bg-gray-100">
+                <div className="aspect-square bg-gray-100 relative">
                   <img
                     src={product.images?.[0] || 'https://via.placeholder.com/500'}
                     alt={language === 'ru' ? product.name_ru : product.name_uz}
                     className="w-full h-full object-cover"
                   />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (isFavorite(product.id)) {
+                        removeFromFavorites(product.id)
+                      } else {
+                        addToFavorites({
+                          productId: product.id,
+                          name: language === 'ru' ? product.name_ru : product.name_uz,
+                          priceUsd: product.price_usd,
+                          image: product.images?.[0] || ''
+                        })
+                      }
+                    }}
+                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                  >
+                    <Heart 
+                      size={20} 
+                      className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                    />
+                  </button>
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium truncate">

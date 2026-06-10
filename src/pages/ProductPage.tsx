@@ -1,84 +1,29 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart } from 'lucide-react'
-import { Toaster, toast } from 'sonner'
-import SizeSelector from '../components/SizeSelector'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { supabase, getProductSizes } from '../lib/supabase'
+import { getProducts } from '../lib/supabase'
+import { ChevronLeft, Heart } from 'lucide-react'
+import SizeSelector from '../components/SizeSelector'
 
 export default function ProductPage() {
   const { id } = useParams()
-  const { language, currency, exchangeRate, addToCart } = useStore()
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const { language, currency, exchangeRate, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [product, setProduct] = useState<any>(null)
-  const [sizes, setSizes] = useState<string[]>([])
+  const [selectedSize, setSelectedSize] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (id) {
-      loadProduct()
-      loadSizes()
-    }
+    loadProduct()
   }, [id])
 
   const loadProduct = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
-    
-    if (error) {
-      console.error('Ошибка при загрузке товара:', error)
-      setProduct(null)
-    } else {
-      setProduct(data)
-    }
-    setLoading(false)
-  }
-
-  const loadSizes = async () => {
     if (!id) return
-    const variants = await getProductSizes(id)
-    const sizeValues = variants.map((v: any) => v.size_value)
-    setSizes(sizeValues)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-500">
-              {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-black"
-          >
-            <ArrowLeft size={20} />
-            <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-          </button>
-        </div>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <p className="text-gray-500">
-            {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
-          </p>
-        </div>
-      </div>
-    )
+    setLoading(true)
+    const allProducts = await getProducts()
+    const foundProduct = allProducts.find(p => p.id === id)
+    setProduct(foundProduct || null)
+    setLoading(false)
   }
 
   const formatPrice = (usd: number) => {
@@ -87,90 +32,141 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
-    if (product.size_type !== 'one_size' && !selectedSize) {
-      toast.error(
-        language === 'ru' ? 'Пожалуйста, выберите размер' : 'Iltimos, o\'lchamni tanlang',
-        {
-          description: language === 'ru' 
-            ? 'Без этого мы не сможем отправить товар' 
-            : 'Bunsiz mahsulotni yubora olmaymiz',
-          duration: 3000,
-        }
-      )
-      return
-    }
-
-    const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
-
+    if (!product) return
+    
+    const sizeToAdd = selectedSize || (product.sizes?.[0] || 'One Size')
+    
     addToCart({
       productId: product.id,
       name: language === 'ru' ? product.name_ru : product.name_uz,
       priceUsd: product.price_usd,
       size: sizeToAdd,
       quantity: 1,
-      image: product.images?.[0] || '',
+      image: product.images?.[0] || ''
     })
+    
+    alert(language === 'ru' ? 'Товар добавлен в корзину' : 'Mahsulot savatga qo\'shildi')
+  }
 
-    toast.success(
-      language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!',
-      {
-        description: language === 'ru' 
-          ? 'Нажмите на иконку корзины внизу' 
-          : 'Pastdagi savat belgisini bosing',
-        duration: 3000,
-      }
+  const handleToggleFavorite = () => {
+    if (!product) return
+    
+    if (isFavorite(product.id)) {
+      removeFromFavorites(product.id)
+    } else {
+      addToFavorites({
+        productId: product.id,
+        name: language === 'ru' ? product.name_ru : product.name_uz,
+        priceUsd: product.price_usd,
+        image: product.images?.[0] || ''
+      })
+    }
+  }
+
+  const getSizeType = () => {
+    if (!product) return 'numeric'
+    if (product.size_type) return product.size_type
+    if (product.category === 'shoes') return 'numeric'
+    if (product.category === 'clothes') return 'alphabetical'
+    if (product.sizes?.length === 1 && product.sizes[0] === 'One Size') return 'one_size'
+    return 'numeric'
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-500">
+            {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="p-4">
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">
+            {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-black text-white px-6 py-3 rounded-xl font-bold"
+          >
+            {language === 'ru' ? 'На главную' : 'Bosh sahifa'}
+          </button>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Toaster position="top-center" richColors />
-      
-      {/* Шапка с кнопкой назад */}
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-        <button
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-black"
-        >
-          <ArrowLeft size={20} />
-          <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-        </button>
-      </div>
+    <div className="p-4 pb-20">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-gray-600 hover:text-black mb-4"
+      >
+        <ChevronLeft size={20} />
+        {language === 'ru' ? 'Назад' : 'Orqaga'}
+      </button>
 
-      <div className="p-4">
-        {/* Фото товара */}
-        <div className="bg-white rounded-2xl overflow-hidden mb-4">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+        <div className="aspect-square bg-gray-100 relative">
           <img
             src={product.images?.[0] || 'https://via.placeholder.com/500'}
             alt={language === 'ru' ? product.name_ru : product.name_uz}
-            className="w-full aspect-square object-cover"
+            className="w-full h-full object-cover"
           />
+          <button
+            onClick={handleToggleFavorite}
+            className="absolute top-4 right-4 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+          >
+            <Heart 
+              size={24} 
+              className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+            />
+          </button>
         </div>
 
-        {/* Информация о товаре */}
-        <div className="bg-white rounded-2xl p-4 mb-4">
-          <h1 className="text-xl font-bold mb-2">
+        <div className="p-4">
+          <h1 className="text-2xl font-bold mb-2">
             {language === 'ru' ? product.name_ru : product.name_uz}
           </h1>
+          
           <p className="text-2xl font-bold text-black mb-4">
             {formatPrice(product.price_usd)}
           </p>
 
-          {/* Выбор размера */}
-          <SizeSelector
-            sizeType={product.size_type}
-            availableSizes={sizes.length > 0 ? sizes : ['One Size']}
-            onSelect={setSelectedSize}
-            language={language}
-          />
+          {product.description && (
+            <div className="mb-4">
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Описание' : 'Tavsif'}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {language === 'ru' ? product.description_ru : product.description_uz}
+              </p>
+            </div>
+          )}
 
-          {/* Кнопка добавить в корзину */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="mb-6">
+              <SizeSelector
+                sizeType={getSizeType()}
+                availableSizes={product.sizes}
+                onSelect={setSelectedSize}
+                language={language as 'ru' | 'uz'}
+              />
+            </div>
+          )}
+
           <button
             onClick={handleAddToCart}
-            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+            className="w-full py-4 rounded-xl font-bold text-lg bg-black text-white hover:bg-gray-800 transition-colors"
           >
-            <ShoppingCart size={20} />
-            {language === 'ru' ? 'В корзину' : 'Savatga'}
+            {language === 'ru' ? 'Добавить в корзину' : 'Savatga qo\'shish'}
           </button>
         </div>
       </div>
