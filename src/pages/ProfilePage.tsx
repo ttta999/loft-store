@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
-function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   const formatPrice = (usd: number) => {
@@ -37,7 +37,7 @@ function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
       <div className="bg-white p-4 border-b sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button 
-            onClick={() => onClose()} 
+            onClick={onClose} 
             className="text-gray-600 hover:text-black"
           >
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -159,7 +159,7 @@ function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
   )
 }
 
-function ChinaRequestDetailModal({ request, language }: any) {
+function ChinaRequestDetailModal({ request, onClose, language }: any) {
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -189,7 +189,7 @@ function ChinaRequestDetailModal({ request, language }: any) {
       <div className="bg-white p-4 border-b sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button 
-            onClick={() => onClose()} 
+            onClick={onClose} 
             className="text-gray-600 hover:text-black"
           >
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -632,6 +632,7 @@ export default function ProfilePage({
         {selectedOrder && (
           <OrderDetailModal
             order={selectedOrder}
+            onClose={() => setSelectedOrder(null)}
             language={language}
             currency={currency}
             exchangeRate={exchangeRate}
@@ -695,6 +696,7 @@ export default function ProfilePage({
         {selectedChinaRequest && (
           <ChinaRequestDetailModal
             request={selectedChinaRequest}
+            onClose={() => setSelectedChinaRequest(null)}
             language={language}
           />
         )}
