@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
 
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
+function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   const formatPrice = (usd: number) => {
@@ -42,7 +42,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
-            <p className="text-sm"> {order.client_phone}</p>
+            <p className="text-sm">📞 {order.client_phone}</p>
           </div>
 
           <div>
@@ -135,7 +135,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
   )
 }
 
-function ChinaRequestDetailModal({ request, onClose, language }: any) {
+function ChinaRequestDetailModal({ request, language }: any) {
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -228,18 +228,14 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
 
 interface ProfilePageProps {
   telegramUser?: any
-  showBackButton: boolean
   setShowBackButton: (show: boolean) => void
-  onBackClick: (() => void) | null
   setOnBackClick: (fn: (() => void) | null) => void
 }
 
-export default function ProfilePage({ 
-  telegramUser, 
-  showBackButton, 
-  setShowBackButton, 
-  onBackClick, 
-  setOnBackClick 
+export default function ProfilePage({
+  telegramUser,
+  setShowBackButton,
+  setOnBackClick
 }: ProfilePageProps) {
   const { language, currency, exchangeRate, setLanguage, setCurrency } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
@@ -268,7 +264,7 @@ export default function ProfilePage({
         setSelectedChinaRequest(null)
       })
     }
-  }, [activeSection, selectedOrder, selectedChinaRequest])
+  }, [activeSection, selectedOrder, selectedChinaRequest, setShowBackButton, setOnBackClick])
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -558,7 +554,6 @@ export default function ProfilePage({
         {selectedOrder && (
           <OrderDetailModal
             order={selectedOrder}
-            onClose={() => setSelectedOrder(null)}
             language={language}
             currency={currency}
             exchangeRate={exchangeRate}
@@ -622,7 +617,6 @@ export default function ProfilePage({
         {selectedChinaRequest && (
           <ChinaRequestDetailModal
             request={selectedChinaRequest}
-            onClose={() => setSelectedChinaRequest(null)}
             language={language}
           />
         )}
