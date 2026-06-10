@@ -9,7 +9,7 @@ interface BottomNavbarProps {
 }
 
 export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarProps) {
-  const { language } = useStore()
+  const { language, cart } = useStore()
 
   const tabs = [
     { 
@@ -39,6 +39,8 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
     },
   ]
 
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-6 pt-2 px-2 z-50">
       <div className="flex justify-around items-center">
@@ -49,7 +51,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex flex-col items-center gap-1 px-2 py-1"
+              className="flex flex-col items-center gap-1 px-2 py-1 relative"
             >
               <Icon
                 size={24}
@@ -63,6 +65,11 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
               >
                 {tab.label}
               </span>
+              {tab.id === 'cart' && cartItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartItemsCount}
+                </span>
+              )}
             </button>
           )
         })}
