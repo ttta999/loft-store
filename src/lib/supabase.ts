@@ -63,6 +63,11 @@ export const notifyNewOrder = async (order: any) => {
    Цена: $${item.priceUsd}`
   }).join('\n\n')
 
+  // Адрес доставки (если есть)
+  const deliveryAddress = order.delivery_method === 'delivery' && order.delivery_address
+    ? `\n📍 Адрес доставки: ${order.delivery_address}`
+    : ''
+
   const message = `
 🛍 <b>Новый заказ №${order.id}</b>
 
@@ -70,10 +75,10 @@ export const notifyNewOrder = async (order: any) => {
 📞 Телефон: ${order.client_phone}
 💰 Сумма: $${order.total_price_usd}
 
-📦 <b>Товары:</b>
+ <b>Товары:</b>
 ${itemsList}
 
-🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
+🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
 💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
