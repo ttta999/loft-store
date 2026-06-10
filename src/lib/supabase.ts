@@ -53,7 +53,7 @@ export const createOrder = async (orderData: any) => {
 
 // Функция отправки уведомления о новом заказе
 export const notifyNewOrder = async (order: any) => {
-  const MANAGER_CHAT_ID = '6150570809' // ← ВСТАВЬ СВОЙ chat_id сюда!
+  const MANAGER_CHAT_ID = '6150570809'
   
   const message = `
 🛍 <b>Новый заказ №${order.id}</b>
@@ -71,7 +71,7 @@ export const notifyNewOrder = async (order: any) => {
 
 // Функция отправки уведомления о новом спецзаказе
 export const notifyNewChinaRequest = async (request: any) => {
-  const MANAGER_CHAT_ID = '6150570809' // ← ТОТ ЖЕ chat_id!
+  const MANAGER_CHAT_ID = '6150570809'
   
   const message = `
 🌍 <b>Новый спецзаказ №${request.id}</b>
