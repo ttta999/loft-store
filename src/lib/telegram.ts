@@ -1,11 +1,3 @@
-import { useStore } from '../store/useStore'
-
-declare global {
-  interface Window {
-    Telegram?: any
-  }
-}
-
 export const initTelegram = () => {
   if (window.Telegram?.WebApp) {
     window.Telegram.WebApp.ready()
