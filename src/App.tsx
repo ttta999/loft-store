@@ -9,7 +9,7 @@ import ProfilePage from './pages/ProfilePage'
 import ProductPage from './pages/ProductPage'
 import FavoritesPage from './pages/FavoritesPage'
 import { initTelegram, getUserData } from './lib/telegram'
-import { Heart } from 'lucide-react'
+import { Heart, ShoppingCart } from 'lucide-react'
 import { useStore } from './store/useStore'
 
 type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
@@ -28,7 +28,7 @@ function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  const { language, favorites } = useStore()
+  const { language, favorites, cart } = useStore()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -79,17 +79,30 @@ function AppContent() {
             <div className="w-16"></div>
           )}
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <button 
-            onClick={() => navigate('/favorites')}
-            className="relative text-gray-600 hover:text-red-500"
-          >
-            <Heart size={24} />
-            {favorites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {favorites.length}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/favorites')}
+              className="relative text-gray-600 hover:text-red-500"
+            >
+              <Heart size={24} />
+              {favorites.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {favorites.length}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => navigate('/cart')}
+              className="relative text-gray-600 hover:text-black"
+            >
+              <ShoppingCart size={24} />
+              {cart.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -107,6 +120,7 @@ function App() {
         <Route path="/" element={<AppContent />} />
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/cart" element={<CartPage telegramUser={null} />} />
       </Routes>
     </BrowserRouter>
   )
