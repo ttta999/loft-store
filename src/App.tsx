@@ -49,7 +49,9 @@ function AppContent() {
       case 'profile': return (
         <ProfilePage 
           telegramUser={telegramUser}
+          showBackButton={showBackButton}
           setShowBackButton={setShowBackButton}
+          onBackClick={onBackClick}
           setOnBackClick={setOnBackClick}
         />
       )

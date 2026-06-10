@@ -21,6 +21,16 @@ function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
     })
   }
 
+  const getStatusText = (status: string) => {
+    if (status === 'Активный') {
+      return language === 'ru' ? 'Активный' : 'Faol'
+    }
+    if (status === 'Завершён') {
+      return language === 'ru' ? 'Завершён' : 'Yakunlangan'
+    }
+    return status
+  }
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       <div className="flex-1 overflow-y-auto p-4 pb-32">
@@ -126,7 +136,7 @@ function OrderDetailModal({ order, language, currency, exchangeRate }: any) {
                 ? 'bg-blue-100 text-blue-800' 
                 : 'bg-green-100 text-green-800'
             }`}>
-              {order.status}
+              {getStatusText(order.status)}
             </span>
           </div>
         </div>
@@ -144,6 +154,19 @@ function ChinaRequestDetailModal({ request, language }: any) {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const getStatusText = (status: string) => {
+    if (status === 'На рассмотрении') {
+      return language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'
+    }
+    if (status === 'Одобрен') {
+      return language === 'ru' ? 'Одобрен' : 'Tasdiqlandi'
+    }
+    if (status === 'Отменён') {
+      return language === 'ru' ? 'Отменён' : 'Bekor qilindi'
+    }
+    return status
   }
 
   return (
@@ -217,7 +240,7 @@ function ChinaRequestDetailModal({ request, language }: any) {
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
             <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              {request.status}
+              {getStatusText(request.status)}
             </span>
           </div>
         </div>
@@ -228,13 +251,17 @@ function ChinaRequestDetailModal({ request, language }: any) {
 
 interface ProfilePageProps {
   telegramUser?: any
+  showBackButton: boolean
   setShowBackButton: (show: boolean) => void
+  onBackClick: (() => void) | null
   setOnBackClick: (fn: (() => void) | null) => void
 }
 
 export default function ProfilePage({
   telegramUser,
+  showBackButton: _showBackButton,
   setShowBackButton,
+  onBackClick: _onBackClick,
   setOnBackClick
 }: ProfilePageProps) {
   const { language, currency, exchangeRate, setLanguage, setCurrency } = useStore()
@@ -279,6 +306,29 @@ export default function ProfilePage({
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const getOrderStatusText = (status: string) => {
+    if (status === 'Активный') {
+      return language === 'ru' ? 'Активный' : 'Faol'
+    }
+    if (status === 'Завершён') {
+      return language === 'ru' ? 'Завершён' : 'Yakunlangan'
+    }
+    return status
+  }
+
+  const getChinaStatusText = (status: string) => {
+    if (status === 'На рассмотрении') {
+      return language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'
+    }
+    if (status === 'Одобрен') {
+      return language === 'ru' ? 'Одобрен' : 'Tasdiqlandi'
+    }
+    if (status === 'Отменён') {
+      return language === 'ru' ? 'Отменён' : 'Bekor qilindi'
+    }
+    return status
   }
 
   const loadOrders = async () => {
@@ -458,7 +508,7 @@ export default function ProfilePage({
              +998 93 378 87 70
           </p>
           <p className="text-sm text-blue-800">
-            ⏰ {language === 'ru' 
+             {language === 'ru' 
               ? 'Ежедневно 10:00 - 20:00' 
               : 'Har kuni 10:00 - 20:00'}
           </p>
@@ -512,7 +562,7 @@ export default function ProfilePage({
                         ? 'bg-blue-100 text-blue-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {order.status}
+                      {getOrderStatusText(order.status)}
                     </span>
                   </div>
 
@@ -602,7 +652,7 @@ export default function ProfilePage({
                     </p>
                   </div>
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    {request.status}
+                    {getChinaStatusText(request.status)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 truncate">{request.link}</p>
