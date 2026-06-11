@@ -22,13 +22,14 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
   }
 
   const getStatusText = (status: string) => {
-    if (status === 'Активный') {
-      return language === 'ru' ? 'Активный' : 'Faol'
+    const statusLabels: Record<string, string> = {
+      'Активный': 'Принят 📄',
+      'В обработке': 'Собирается 📦',
+      'Готов': 'Упакован 🛍️',
+      'Выдан': 'Передан курьеру 🚀',
+      'Отменён': 'Отменен 🚫',
     }
-    if (status === 'Завершён') {
-      return language === 'ru' ? 'Завершён' : 'Yakunlangan'
-    }
-    return status
+    return statusLabels[status] || status
   }
 
   return (
@@ -345,13 +346,14 @@ export default function ProfilePage({
   }
 
   const getOrderStatusText = (status: string) => {
-    if (status === 'Активный') {
-      return language === 'ru' ? 'Активный' : 'Faol'
+    const statusLabels: Record<string, string> = {
+      'Активный': 'Принят 📄',
+      'В обработке': 'Собирается 📦',
+      'Готов': 'Упакован 🛍️',
+      'Выдан': 'Передан курьеру 🚀',
+      'Отменён': 'Отменен 🚫',
     }
-    if (status === 'Завершён') {
-      return language === 'ru' ? 'Завершён' : 'Yakunlangan'
-    }
-    return status
+    return statusLabels[status] || status
   }
 
   const getChinaStatusText = (status: string) => {
@@ -405,17 +407,17 @@ export default function ProfilePage({
     return (
       <div className="p-4 pb-20">
         <div className="bg-white rounded-2xl p-6 mb-6 text-center">
-          if (telegramUser?.photoUrl) {
+          {telegramUser?.photoUrl ? (
             <img 
               src={telegramUser.photoUrl} 
               alt="Avatar" 
               className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
             />
-          } else {
+          ) : (
             <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
               <User size={40} className="text-gray-400" />
             </div>
-          }
+          )}
           <h2 className="text-xl font-bold mb-1">
             {telegramUser 
               ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
