@@ -154,6 +154,46 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setPhone(cleaned)
   }
 
+  // Функция валидации адреса
+  const validateAddress = (addr: string): string | null => {
+    if (!addr.trim()) {
+      return language === 'ru' 
+        ? 'Введите адрес доставки' 
+        : 'Yetkazib berish manzilini kiriting'
+    }
+    
+    if (addr.trim().length < 10) {
+      return language === 'ru' 
+        ? 'Адрес слишком короткий (минимум 10 символов)' 
+        : 'Manzil juda qisqa (kamida 10 ta belgi)'
+    }
+    
+    // Проверяем что адрес не состоит только из цифр
+    const lettersOnly = addr.replace(/[^а-яА-Яa-zA-Z]/g, '')
+    if (lettersOnly.length === 0) {
+      return language === 'ru' 
+        ? 'Адрес должен содержать буквы (укажите улицу, дом)' 
+        : 'Manzilda harflar bo\'lishi kerak (ko\'cha, uyni ko\'rsating)'
+    }
+    
+    // Проверяем что есть хотя бы одно слово из букв
+    const words = addr.match(/[а-яА-Яa-zA-Z]+/g) || []
+    if (words.length === 0) {
+      return language === 'ru' 
+        ? 'Адрес должен содержать название улицы или ориентир' 
+        : 'Manzilda ko\'cha nomi yoki orientir bo\'lishi kerak'
+    }
+    
+    // Проверяем что адрес не состоит только из одного слова
+    if (words.length === 1 && words[0].length < 3) {
+      return language === 'ru' 
+        ? 'Укажите полный адрес (улица, дом, квартира)' 
+        : 'To\'liq manzilni kiriting (ko\'cha, uy, kvartira)'
+    }
+    
+    return null
+  }
+
   const handleSubmit = async () => {
     if (!name || name.trim().length < 3) {
       toast.error(
@@ -174,9 +214,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       return
     }
 
-    if (deliveryMethod === 'delivery' && !address) {
-      toast.error(language === 'ru' ? 'Укажите адрес доставки' : 'Yetkazib berish manzilini kiriting')
-      return
+    if (deliveryMethod === 'delivery') {
+      const addressError = validateAddress(address)
+      if (addressError) {
+        toast.error(addressError)
+        return
+      }
     }
 
     setSubmitting(true)
@@ -189,7 +232,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         client_name: name.trim(),
         client_phone: phone,
         delivery_method: deliveryMethod,
-        delivery_address: deliveryMethod === 'delivery' ? address : null,
+        delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
         payment_method: paymentMethod,
         total_price_usd: getTotalPrice(),
         items: cart,
@@ -340,6 +383,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 rows={3}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                {language === 'ru' 
+                  ? 'Пример: ул. Навои, дом 15, квартира 23' 
+                  : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}
+              </p>
             </div>
           )}
 
