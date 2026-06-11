@@ -146,9 +146,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
             <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-              order.status === 'Активный' 
-                ? 'bg-blue-100 text-blue-800' 
-                : 'bg-green-100 text-green-800'
+              order.status === 'Активный' ? 'bg-blue-100 text-blue-800' :
+              order.status === 'В обработке' ? 'bg-yellow-100 text-yellow-800' :
+              order.status === 'Готов' ? 'bg-green-100 text-green-800' :
+              order.status === 'Выдан' ? 'bg-gray-100 text-gray-800' :
+              order.status === 'Отменён' ? 'bg-red-100 text-red-800' :
+              'bg-green-100 text-green-800'
             }`}>
               {getStatusText(order.status)}
             </span>
@@ -267,7 +270,12 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
+              request.status === 'На рассмотрении' ? 'bg-yellow-100 text-yellow-800' :
+              request.status === 'Одобрен' ? 'bg-green-100 text-green-800' :
+              request.status === 'Отменён' ? 'bg-red-100 text-red-800' :
+              'bg-yellow-100 text-yellow-800'
+            }`}>
               {getStatusText(request.status)}
             </span>
           </div>
@@ -397,17 +405,17 @@ export default function ProfilePage({
     return (
       <div className="p-4 pb-20">
         <div className="bg-white rounded-2xl p-6 mb-6 text-center">
-          {telegramUser?.photoUrl ? (
+          if (telegramUser?.photoUrl) {
             <img 
               src={telegramUser.photoUrl} 
               alt="Avatar" 
               className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
             />
-          ) : (
+          } else {
             <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
               <User size={40} className="text-gray-400" />
             </div>
-          )}
+          }
           <h2 className="text-xl font-bold mb-1">
             {telegramUser 
               ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
@@ -586,9 +594,12 @@ export default function ProfilePage({
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Активный' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-green-100 text-green-800'
+                      order.status === 'Активный' ? 'bg-blue-100 text-blue-800' :
+                      order.status === 'В обработке' ? 'bg-yellow-100 text-yellow-800' :
+                      order.status === 'Готов' ? 'bg-green-100 text-green-800' :
+                      order.status === 'Выдан' ? 'bg-gray-100 text-gray-800' :
+                      order.status === 'Отменён' ? 'bg-red-100 text-red-800' :
+                      'bg-green-100 text-green-800'
                     }`}>
                       {getOrderStatusText(order.status)}
                     </span>
@@ -680,7 +691,12 @@ export default function ProfilePage({
                       {formatDateTime(request.created_at)}
                     </p>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    request.status === 'На рассмотрении' ? 'bg-yellow-100 text-yellow-800' :
+                    request.status === 'Одобрен' ? 'bg-green-100 text-green-800' :
+                    request.status === 'Отменён' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
                     {getChinaStatusText(request.status)}
                   </span>
                 </div>
