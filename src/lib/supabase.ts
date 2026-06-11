@@ -51,6 +51,50 @@ export const createOrder = async (orderData: any) => {
   return { data, error: null }
 }
 
+// Создать заказ из спецзаказа (с привязкой special_order_id)
+export const createOrderFromSpecial = async (specialRequestId: string, orderData: any) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .insert({
+      ...orderData,
+      special_order_id: specialRequestId,
+    })
+    .select()
+  
+  if (error) {
+    console.error('Ошибка создания заказа из спецзаказа:', error)
+    return { data: null, error }
+  }
+
+  // Обновляем статус спецзаказа на "Оплачен" и привязываем к заказу
+  const createdOrder = Array.isArray(data) ? data[0] : data
+  await supabase
+    .from('china_requests')
+    .update({ 
+      status: 'Оплачен',
+      converted_to_order_id: createdOrder.id 
+    })
+    .eq('id', specialRequestId)
+
+  return { data, error: null }
+}
+
+// Обновить статус спецзаказа
+export const updateChinaRequestStatus = async (requestId: string, status: string, extraData?: any) => {
+  const { data, error } = await supabase
+    .from('china_requests')
+    .update({ status, ...extraData })
+    .eq('id', requestId)
+    .select()
+  
+  if (error) {
+    console.error('Ошибка обновления статуса спецзаказа:', error)
+    return null
+  }
+  
+  return Array.isArray(data) ? data[0] : data
+}
+
 // Функция отправки уведомления о новом заказе
 export const notifyNewOrder = async (order: any) => {
   const MANAGER_CHAT_ID = '6150570809'
@@ -68,14 +112,17 @@ export const notifyNewOrder = async (order: any) => {
     ? `\n📍 Адрес доставки: ${order.delivery_address}`
     : ''
 
+  // Пометка если это спецзаказ
+  const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
+
   const message = `
-🛍 <b>Новый заказ №${order.id}</b>
+🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 
 👤 Клиент: ${order.client_name}
 📞 Телефон: ${order.client_phone}
 💰 Сумма: $${order.total_price_usd}
 
- <b>Товары:</b>
+📦 <b>Товары:</b>
 ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}

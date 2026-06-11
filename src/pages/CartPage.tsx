@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import { createOrder, notifyNewOrder } from '../lib/supabase'
+import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
@@ -53,6 +53,12 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               <p className="font-bold">
                 {formatPrice(item.priceUsd)}
               </p>
+              {/* Плашка спецзаказа */}
+              {item.isSpecialOrder && (
+                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                </span>
+              )}
             </div>
             <div className="flex flex-col items-end justify-between">
               <button
@@ -61,25 +67,27 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               >
                 <Trash2 size={18} />
               </button>
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-                <button
-                  onClick={() => {
-                    if (item.quantity > 1) {
-                      addToCart({ ...item, quantity: -1 })
-                    }
-                  }}
-                  className="text-gray-600"
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="font-medium text-sm">{item.quantity}</span>
-                <button
-                  onClick={() => addToCart({ ...item, quantity: 1 })}
-                  className="text-gray-600"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
+              {!item.isSpecialOrder && (
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
+                  <button
+                    onClick={() => {
+                      if (item.quantity > 1) {
+                        addToCart({ ...item, quantity: -1 })
+                      }
+                    }}
+                    className="text-gray-600"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="font-medium text-sm">{item.quantity}</span>
+                  <button
+                    onClick={() => addToCart({ ...item, quantity: 1 })}
+                    className="text-gray-600"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -125,6 +133,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const [orderId, setOrderId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Проверяем, есть ли спецзаказ в корзине
+  const specialItem = cart.find((i: any) => i.isSpecialOrder)
+  const isSpecialOrder = !!specialItem
+
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
     if (method === 'delivery') {
@@ -154,63 +166,36 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setPhone(cleaned)
   }
 
-  // Функция валидации адреса
   const validateAddress = (addr: string): string | null => {
     if (!addr.trim()) {
-      return language === 'ru' 
-        ? 'Введите адрес доставки' 
-        : 'Yetkazib berish manzilini kiriting'
+      return language === 'ru' ? 'Введите адрес доставки' : 'Yetkazib berish manzilini kiriting'
     }
-    
     if (addr.trim().length < 10) {
-      return language === 'ru' 
-        ? 'Адрес слишком короткий (минимум 10 символов)' 
-        : 'Manzil juda qisqa (kamida 10 ta belgi)'
+      return language === 'ru' ? 'Адрес слишком короткий (минимум 10 символов)' : 'Manzil juda qisqa (kamida 10 ta belgi)'
     }
-    
-    // Проверяем что адрес не состоит только из цифр
     const lettersOnly = addr.replace(/[^а-яА-Яa-zA-Z]/g, '')
     if (lettersOnly.length === 0) {
-      return language === 'ru' 
-        ? 'Адрес должен содержать буквы (укажите улицу, дом)' 
-        : 'Manzilda harflar bo\'lishi kerak (ko\'cha, uyni ko\'rsating)'
+      return language === 'ru' ? 'Адрес должен содержать буквы (укажите улицу, дом)' : 'Manzilda harflar bo\'lishi kerak'
     }
-    
-    // Проверяем что есть хотя бы одно слово из букв
     const words = addr.match(/[а-яА-Яa-zA-Z]+/g) || []
     if (words.length === 0) {
-      return language === 'ru' 
-        ? 'Адрес должен содержать название улицы или ориентир' 
-        : 'Manzilda ko\'cha nomi yoki orientir bo\'lishi kerak'
+      return language === 'ru' ? 'Адрес должен содержать название улицы или ориентир' : 'Manzilda ko\'cha nomi yoki orientir bo\'lishi kerak'
     }
-    
-    // Проверяем что адрес не состоит только из одного слова
     if (words.length === 1 && words[0].length < 3) {
-      return language === 'ru' 
-        ? 'Укажите полный адрес (улица, дом, квартира)' 
-        : 'To\'liq manzilni kiriting (ko\'cha, uy, kvartira)'
+      return language === 'ru' ? 'Укажите полный адрес (улица, дом, квартира)' : 'To\'liq manzilni kiriting'
     }
-    
     return null
   }
 
   const handleSubmit = async () => {
     if (!name || name.trim().length < 3) {
-      toast.error(
-        language === 'ru' 
-          ? 'Имя должно содержать минимум 3 символа' 
-          : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak'
-      )
+      toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
     }
 
     const phoneRegex = /^\+998\d{9}$/
     if (!phoneRegex.test(phone)) {
-      toast.error(
-        language === 'ru' 
-          ? 'Телефон должен быть в формате +998XXXXXXXX (9 цифр после +998)' 
-          : 'Telefon +998XXXXXXXX formatida bo\'lishi kerak (+998 dan keyin 9 ta raqam)'
-      )
+      toast.error(language === 'ru' ? 'Телефон должен быть в формате +998XXXXXXXX' : 'Telefon +998XXXXXXXX formatida bo\'lishi kerak')
       return
     }
 
@@ -239,20 +224,24 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         status: 'Активный',
       }
 
-      console.log('Отправляем заказ:', orderData)
+      let result: any
 
-      const result: any = await createOrder(orderData)
+      // Если это спецзаказ — используем специальную функцию
+      if (isSpecialOrder && specialItem.specialRequestId) {
+        result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
+      } else {
+        result = await createOrder(orderData)
+      }
+
       const data = Array.isArray(result.data) ? result.data[0] : result.data
       const error = result.error
 
-      if (error) {
+      if (error || !data) {
         console.error('Ошибка при создании заказа:', error)
         toast.error(language === 'ru' ? 'Ошибка при создании заказа' : 'Buyurtma yaratishda xatolik')
         setSubmitting(false)
         return
       }
-
-      console.log('Заказ создан:', data)
 
       // Отправляем уведомление
       await notifyNewOrder(data)
@@ -277,11 +266,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           {language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}
         </h2>
         <p className="text-gray-600 mb-4">
-          {language === 'ru' 
-            ? `Номер вашего заказа: ` 
-            : `Sizning buyurtma raqamingiz: `}
+          {language === 'ru' ? `Номер вашего заказа: ` : `Sizning buyurtma raqamingiz: `}
           <span className="font-bold text-black">№{orderId}</span>
         </p>
+        {isSpecialOrder && (
+          <p className="text-sm text-purple-700 mb-2 font-medium">
+            🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+          </p>
+        )}
         <p className="text-sm text-gray-500 mb-6 text-center">
           {language === 'ru' 
             ? 'Менеджер свяжется с вами в ближайшее время' 
@@ -311,6 +303,19 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         <h2 className="text-2xl font-bold mb-4">
           {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
         </h2>
+
+        {isSpecialOrder && (
+          <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <p className="text-sm text-purple-800 font-medium">
+              🌍 {language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}
+            </p>
+            <p className="text-xs text-purple-600 mt-1">
+              {language === 'ru' 
+                ? 'После оплаты менеджер приступит к заказу товара из Китая' 
+                : 'To\'lovdan so\'ng menejer Xitoydan mahsulot buyurtma qiladi'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>

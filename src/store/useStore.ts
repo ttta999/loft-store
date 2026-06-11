@@ -11,6 +11,8 @@ interface CartItem {
   size: string
   quantity: number
   image: string
+  isSpecialOrder?: boolean      // ← НОВОЕ: флаг что это спецзаказ
+  specialRequestId?: string     // ← НОВОЕ: ID спецзаказа
 }
 
 interface FavoriteItem {
@@ -53,6 +55,11 @@ export const useStore = create<AppState>()(
       setCurrency: (curr) => set({ currency: curr }),
 
       addToCart: (item) => set((state) => {
+        // Спецзаказы всегда добавляются как новый товар (не объединяем)
+        if (item.isSpecialOrder) {
+          return { cart: [...state.cart, item] }
+        }
+
         if (item.quantity < 0) {
           return {
             cart: state.cart.map(i => 

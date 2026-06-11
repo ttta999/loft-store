@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
+import { toast } from 'sonner'
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -21,26 +22,45 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
     })
   }
 
-  const getStatusText = (status: string) => {
-    const statusLabels: Record<string, string> = {
+  const getStatusText = (status: string, deliveryMethod: string) => {
+    if (deliveryMethod === 'pickup') {
+      const labels: Record<string, string> = {
+        'Активный': 'Принят 📄',
+        'В обработке': 'Собирается 📦',
+        'Готов': 'Готов к выдаче 🎉',
+        'Выдан': 'Получен 🤝',
+        'Отменён': 'Отменен 🚫',
+      }
+      return labels[status] || status
+    }
+    const labels: Record<string, string> = {
       'Активный': 'Принят 📄',
       'В обработке': 'Собирается 📦',
       'Готов': 'Упакован 🛍️',
       'Выдан': 'Передан курьеру 🚀',
+      'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
     }
-    return statusLabels[status] || status
+    return labels[status] || status
+  }
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'Активный': 'bg-blue-100 text-blue-800',
+      'В обработке': 'bg-yellow-100 text-yellow-800',
+      'Готов': 'bg-green-100 text-green-800',
+      'Выдан': 'bg-gray-100 text-gray-800',
+      'Доставлен': 'bg-emerald-100 text-emerald-800',
+      'Отменён': 'bg-red-100 text-red-800',
+    }
+    return colors[status] || 'bg-green-100 text-green-800'
   }
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Шапка */}
       <div className="bg-white p-4 border-b sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={onClose} 
-            className="text-gray-600 hover:text-black"
-          >
+          <button onClick={onClose} className="text-gray-600 hover:text-black">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold">LOFT Store</h1>
@@ -53,6 +73,13 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
         </h2>
         
+        {/* Плашка "Спецзаказ" */}
+        {order.special_order_id && (
+          <div className="mb-4 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
+            🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">
@@ -146,15 +173,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-              order.status === 'Активный' ? 'bg-blue-100 text-blue-800' :
-              order.status === 'В обработке' ? 'bg-yellow-100 text-yellow-800' :
-              order.status === 'Готов' ? 'bg-green-100 text-green-800' :
-              order.status === 'Выдан' ? 'bg-gray-100 text-gray-800' :
-              order.status === 'Отменён' ? 'bg-red-100 text-red-800' :
-              'bg-green-100 text-green-800'
-            }`}>
-              {getStatusText(order.status)}
+            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+              {getStatusText(order.status, order.delivery_method)}
             </span>
           </div>
         </div>
@@ -163,7 +183,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
   )
 }
 
-function ChinaRequestDetailModal({ request, onClose, language }: any) {
+function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) {
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -175,27 +195,32 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
   }
 
   const getStatusText = (status: string) => {
-    if (status === 'На рассмотрении') {
-      return language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'
+    const labels: Record<string, string> = {
+      'На рассмотрении': 'Принят 📄',
+      'Оценён': 'Оценён 💎',
+      'Оплачен': 'Оплачен ✅',
+      'Отменён клиентом': 'Отменён вами 🙅‍♂️',
+      'Отклонён': 'Отклонён 🛑',
     }
-    if (status === 'Одобрен') {
-      return language === 'ru' ? 'Одобрен' : 'Tasdiqlandi'
+    return labels[status] || status
+  }
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'На рассмотрении': 'bg-yellow-100 text-yellow-800',
+      'Оценён': 'bg-purple-100 text-purple-800',
+      'Оплачен': 'bg-green-100 text-green-800',
+      'Отменён клиентом': 'bg-orange-100 text-orange-800',
+      'Отклонён': 'bg-red-100 text-red-800',
     }
-    if (status === 'Отменён') {
-      return language === 'ru' ? 'Отменён' : 'Bekor qilindi'
-    }
-    return status
+    return colors[status] || 'bg-gray-100 text-gray-800'
   }
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Шапка */}
       <div className="bg-white p-4 border-b sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={onClose} 
-            className="text-gray-600 hover:text-black"
-          >
+          <button onClick={onClose} className="text-gray-600 hover:text-black">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold">LOFT Store</h1>
@@ -223,12 +248,7 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
               {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
             </h3>
             {request.link?.startsWith('http') ? (
-              <a 
-                href={request.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline break-all"
-              >
+              <a href={request.link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">
                 {request.link}
               </a>
             ) : (
@@ -259,11 +279,21 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
               <h3 className="font-bold mb-2">
                 {language === 'ru' ? 'Фото товара' : 'Mahsulot fotosurati'}
               </h3>
-              <img 
-                src={request.image_url} 
-                alt="Product" 
-                className="w-full rounded-lg"
-              />
+              <img src={request.image_url} alt="Product" className="w-full rounded-lg" />
+            </div>
+          )}
+
+          {/* Блок с оценкой менеджера */}
+          {request.manager_price && (
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <p className="text-lg font-bold text-purple-900 mb-1">
+                💰 {language === 'ru' ? 'Оценка менеджера:' : 'Menejer bahosi:'} ${request.manager_price}
+              </p>
+              {request.manager_comment && (
+                <p className="text-sm text-purple-700">
+                  📝 {request.manager_comment}
+                </p>
+              )}
             </div>
           )}
 
@@ -271,15 +301,20 @@ function ChinaRequestDetailModal({ request, onClose, language }: any) {
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-              request.status === 'На рассмотрении' ? 'bg-yellow-100 text-yellow-800' :
-              request.status === 'Одобрен' ? 'bg-green-100 text-green-800' :
-              request.status === 'Отменён' ? 'bg-red-100 text-red-800' :
-              'bg-yellow-100 text-yellow-800'
-            }`}>
+            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
               {getStatusText(request.status)}
             </span>
           </div>
+
+          {/* Кнопка "Согласиться и оплатить" для оценённых спецзаказов */}
+          {request.status === 'Оценён' && request.manager_price && (
+            <button
+              onClick={() => onAccept(request)}
+              className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors"
+            >
+              💳 {language === 'ru' ? `Согласиться и оплатить $${request.manager_price}` : `Rozilik bildirish va to'lash $${request.manager_price}`}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -301,7 +336,7 @@ export default function ProfilePage({
   onBackClick: _onBackClick,
   setOnBackClick
 }: ProfilePageProps) {
-  const { language, currency, exchangeRate, setLanguage, setCurrency } = useStore()
+  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
@@ -345,28 +380,60 @@ export default function ProfilePage({
     })
   }
 
-  const getOrderStatusText = (status: string) => {
-    const statusLabels: Record<string, string> = {
+  const getOrderStatusText = (status: string, deliveryMethod: string) => {
+    if (deliveryMethod === 'pickup') {
+      const labels: Record<string, string> = {
+        'Активный': 'Принят 📄',
+        'В обработке': 'Собирается 📦',
+        'Готов': 'Готов к выдаче 🎉',
+        'Выдан': 'Получен 🤝',
+        'Отменён': 'Отменен 🚫',
+      }
+      return labels[status] || status
+    }
+    const labels: Record<string, string> = {
       'Активный': 'Принят 📄',
       'В обработке': 'Собирается 📦',
       'Готов': 'Упакован 🛍️',
       'Выдан': 'Передан курьеру 🚀',
+      'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
     }
-    return statusLabels[status] || status
+    return labels[status] || status
+  }
+
+  const getOrderStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'Активный': 'bg-blue-100 text-blue-800',
+      'В обработке': 'bg-yellow-100 text-yellow-800',
+      'Готов': 'bg-green-100 text-green-800',
+      'Выдан': 'bg-gray-100 text-gray-800',
+      'Доставлен': 'bg-emerald-100 text-emerald-800',
+      'Отменён': 'bg-red-100 text-red-800',
+    }
+    return colors[status] || 'bg-green-100 text-green-800'
   }
 
   const getChinaStatusText = (status: string) => {
-    if (status === 'На рассмотрении') {
-      return language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'
+    const labels: Record<string, string> = {
+      'На рассмотрении': 'Принят 📄',
+      'Оценён': 'Оценён 💎',
+      'Оплачен': 'Оплачен ✅',
+      'Отменён клиентом': 'Отменён вами 🙅‍♂️',
+      'Отклонён': 'Отклонён 🛑',
     }
-    if (status === 'Одобрен') {
-      return language === 'ru' ? 'Одобрен' : 'Tasdiqlandi'
+    return labels[status] || status
+  }
+
+  const getChinaStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'На рассмотрении': 'bg-yellow-100 text-yellow-800',
+      'Оценён': 'bg-purple-100 text-purple-800',
+      'Оплачен': 'bg-green-100 text-green-800',
+      'Отменён клиентом': 'bg-orange-100 text-orange-800',
+      'Отклонён': 'bg-red-100 text-red-800',
     }
-    if (status === 'Отменён') {
-      return language === 'ru' ? 'Отменён' : 'Bekor qilindi'
-    }
-    return status
+    return colors[status] || 'bg-gray-100 text-gray-800'
   }
 
   const loadOrders = async () => {
@@ -401,6 +468,28 @@ export default function ProfilePage({
       setChinaRequests(data || [])
     }
     setLoading(false)
+  }
+
+  // Обработчик нажатия "Согласиться и оплатить"
+  const handleAcceptSpecialOrder = (request: any) => {
+    const specialItem = {
+      productId: `special-${request.id}-${Date.now()}`,
+      name: `Спецзаказ №${request.id}`,
+      size: request.size_color || '—',
+      quantity: 1,
+      priceUsd: request.manager_price,
+      image: request.image_url || '',
+      isSpecialOrder: true,
+      specialRequestId: request.id,
+    }
+    
+    addToCart(specialItem)
+    setSelectedChinaRequest(null)
+    toast.success(
+      language === 'ru' 
+        ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.' 
+        : 'Maxsus buyurtma savatga qo\'shildi! Savatga o\'ting.'
+    )
   }
 
   if (activeSection === 'main') {
@@ -595,17 +684,17 @@ export default function ProfilePage({
                         {formatDateTime(order.created_at)}
                       </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Активный' ? 'bg-blue-100 text-blue-800' :
-                      order.status === 'В обработке' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'Готов' ? 'bg-green-100 text-green-800' :
-                      order.status === 'Выдан' ? 'bg-gray-100 text-gray-800' :
-                      order.status === 'Отменён' ? 'bg-red-100 text-red-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {getOrderStatusText(order.status)}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
+                      {getOrderStatusText(order.status, order.delivery_method)}
                     </span>
                   </div>
+
+                  {/* Плашка "Спецзаказ" */}
+                  {order.special_order_id && (
+                    <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
+                      🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                    </div>
+                  )}
 
                   <div className="flex gap-1 mb-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
@@ -693,16 +782,16 @@ export default function ProfilePage({
                       {formatDateTime(request.created_at)}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    request.status === 'На рассмотрении' ? 'bg-yellow-100 text-yellow-800' :
-                    request.status === 'Одобрен' ? 'bg-green-100 text-green-800' :
-                    request.status === 'Отменён' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
                     {getChinaStatusText(request.status)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 truncate">{request.link}</p>
+                {request.manager_price && (
+                  <p className="text-sm text-purple-700 font-medium mt-1">
+                    💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} ${request.manager_price}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                 </p>
@@ -716,6 +805,7 @@ export default function ProfilePage({
             request={selectedChinaRequest}
             onClose={() => setSelectedChinaRequest(null)}
             language={language}
+            onAccept={handleAcceptSpecialOrder}
           />
         )}
       </div>
