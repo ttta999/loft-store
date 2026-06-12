@@ -24,7 +24,6 @@ export default function HomePage() {
   }
 
   const handleCategoryClick = (categoryId: string) => {
-    // Если это бренды - переходим на страницу брендов
     if (categoryId === 'brands') {
       navigate('/brands')
       return
