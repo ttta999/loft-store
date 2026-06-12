@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart } from 'lucide-react'
-import { CATEGORIES, BRANDS } from '../data/categories'
+import { CATEGORIES } from '../data/categories'
 
 export default function HomePage() {
   const navigate = useNavigate()
