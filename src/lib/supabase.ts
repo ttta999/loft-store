@@ -50,34 +50,50 @@ export const createOrder = async (orderData: any) => {
 }
 
 export const createOrderFromSpecial = async (specialRequestId: string, orderData: any) => {
-  console.log('Создаём заказ из спецзаказа:', { specialRequestId, orderData })
+  console.log('Создаём заказ из спецзаказа:', { 
+    specialRequestId, 
+    type: typeof specialRequestId,
+    orderData 
+  })
+  
+  // Преобразуем ID в строку, так как в базе числовые ID
+  const specialOrderIdStr = specialRequestId.toString()
   
   const { data, error } = await supabase
     .from('orders')
     .insert({
       ...orderData,
-      special_order_id: specialRequestId,
+      special_order_id: specialOrderIdStr,
     })
     .select()
   
   if (error) {
-    console.error('Ошибка создания заказа из спецзаказа:', error)
+    console.error('❌ Ошибка создания заказа из спецзаказа:', error)
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    })
     return { data: null, error }
   }
 
   const createdOrder = Array.isArray(data) ? data[0] : data
-  console.log('Заказ создан, обновляем спецзаказ:', createdOrder)
+  console.log('✅ Заказ создан:', createdOrder)
   
+  // Обновляем спецзаказ
   const { error: updateError } = await supabase
     .from('china_requests')
     .update({ 
       status: 'Оплачен',
-      converted_to_order_id: createdOrder.id 
+      converted_to_order_id: createdOrder.id.toString()
     })
     .eq('id', specialRequestId)
 
   if (updateError) {
-    console.error('Ошибка обновления спецзаказа:', updateError)
+    console.error('❌ Ошибка обновления спецзаказа:', updateError)
+  } else {
+    console.log('✅ Спецзаказ обновлён на "Оплачен"')
   }
 
   return { data, error: null }
@@ -124,8 +140,8 @@ export const notifyNewOrder = async (order: any) => {
 📦 <b>Товары:</b>
 ${itemsList}
 
-🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
-💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+ Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
+ Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
   await sendNotification(message, MANAGER_CHAT_ID)
