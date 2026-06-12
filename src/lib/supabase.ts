@@ -6,7 +6,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Получить все товары
 export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
@@ -21,7 +20,6 @@ export const getProducts = async () => {
   return data
 }
 
-// Получить размеры товара
 export const getProductSizes = async (productId: string) => {
   const { data, error } = await supabase
     .from('product_variants')
@@ -36,8 +34,8 @@ export const getProductSizes = async (productId: string) => {
   return data
 }
 
-// Создать заказ
 export const createOrder = async (orderData: any) => {
+  console.log('Создаём заказ:', orderData)
   const { data, error } = await supabase
     .from('orders')
     .insert(orderData)
@@ -51,8 +49,9 @@ export const createOrder = async (orderData: any) => {
   return { data, error: null }
 }
 
-// Создать заказ из спецзаказа (с привязкой special_order_id)
 export const createOrderFromSpecial = async (specialRequestId: string, orderData: any) => {
+  console.log('Создаём заказ из спецзаказа:', { specialRequestId, orderData })
+  
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -66,9 +65,10 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
     return { data: null, error }
   }
 
-  // Обновляем статус спецзаказа на "Оплачен" и привязываем к заказу
   const createdOrder = Array.isArray(data) ? data[0] : data
-  await supabase
+  console.log('Заказ создан, обновляем спецзаказ:', createdOrder)
+  
+  const { error: updateError } = await supabase
     .from('china_requests')
     .update({ 
       status: 'Оплачен',
@@ -76,10 +76,13 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
     })
     .eq('id', specialRequestId)
 
+  if (updateError) {
+    console.error('Ошибка обновления спецзаказа:', updateError)
+  }
+
   return { data, error: null }
 }
 
-// Обновить статус спецзаказа
 export const updateChinaRequestStatus = async (requestId: string, status: string, extraData?: any) => {
   const { data, error } = await supabase
     .from('china_requests')
@@ -95,11 +98,9 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
   return Array.isArray(data) ? data[0] : data
 }
 
-// Функция отправки уведомления о новом заказе
 export const notifyNewOrder = async (order: any) => {
   const MANAGER_CHAT_ID = '6150570809'
   
-  // Формируем список товаров
   const itemsList = order.items.map((item: any, index: number) => {
     return `${index + 1}. ${item.name}
    Размер: ${item.size}
@@ -107,12 +108,10 @@ export const notifyNewOrder = async (order: any) => {
    Цена: $${item.priceUsd}`
   }).join('\n\n')
 
-  // Адрес доставки (если есть)
   const deliveryAddress = order.delivery_method === 'delivery' && order.delivery_address
     ? `\n📍 Адрес доставки: ${order.delivery_address}`
     : ''
 
-  // Пометка если это спецзаказ
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
   const message = `
@@ -132,7 +131,6 @@ ${itemsList}
   await sendNotification(message, MANAGER_CHAT_ID)
 }
 
-// Функция отправки уведомления о новом спецзаказе
 export const notifyNewChinaRequest = async (request: any) => {
   const MANAGER_CHAT_ID = '6150570809'
   

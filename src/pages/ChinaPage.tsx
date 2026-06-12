@@ -104,7 +104,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
 
       console.log('Спецзаказ создан:', data)
 
-      // Отправляем уведомление
       if (data && data[0]) {
         await notifyNewChinaRequest(data[0])
       }
@@ -141,25 +140,42 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
 
   if (submitted) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="p-4 flex flex-col items-center justify-center min-h-[80vh] text-center">
         <Toaster position="top-center" richColors />
-        <CheckCircle size={64} className="text-green-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">
+        
+        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle size={56} className="text-green-500" />
+        </div>
+        
+        <h2 className="text-3xl font-bold mb-4 text-gray-900">
           {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
         </h2>
-        <p className="text-gray-600 text-center mb-6">
+        
+        <p className="text-gray-600 text-lg mb-8 max-w-md">
           {language === 'ru' 
             ? 'Менеджер рассмотрит ваш спецзаказ и свяжется с вами' 
             : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi va siz bilan bog\'lanadi'}
         </p>
-        <p className="text-sm text-gray-500 mb-6">
-          {language === 'ru' 
-            ? 'Статус заявки можно посмотреть в разделе "Профиль" → "Мои спецзаказы"' 
-            : 'Ariza holatini "Profil" → "Maxsus buyurtmalarim" bo\'limida ko\'rishingiz mumkin'}
-        </p>
+        
+        <div className="bg-gray-50 rounded-xl p-6 mb-8 max-w-sm w-full">
+          <p className="text-gray-500 text-sm leading-relaxed">
+            {language === 'ru' ? (
+              <>
+                Статус заявки можно посмотреть в разделе<br />
+                <span className="font-semibold text-gray-700">"Профиль"</span> → <span className="font-semibold text-gray-700">"Мои спецзаказы"</span>
+              </>
+            ) : (
+              <>
+                Ariza holatini bo'limdan ko'rishingiz mumkin<br />
+                <span className="font-semibold text-gray-700">"Profil"</span> → <span className="font-semibold text-gray-700">"Maxsus buyurtmalarim"</span>
+              </>
+            )}
+          </p>
+        </div>
+        
         <button
           onClick={handleReset}
-          className="bg-black text-white px-6 py-3 rounded-xl font-bold"
+          className="bg-black text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors"
         >
           {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
         </button>
@@ -173,7 +189,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">
-          {language === 'ru' ? '🌍 Спецзаказ' : ' Maxsus buyurtma'}
+          {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
         </h1>
         <p className="text-gray-600 text-sm">
           {language === 'ru' 
@@ -278,8 +294,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
           {language === 'ru' 
-            ? ' Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
-            : ' O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
+            ? '⏱ Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
+            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
         </p>
       </div>
     </div>

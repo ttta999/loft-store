@@ -73,7 +73,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
         </h2>
         
-        {/* Плашка "Спецзаказ" */}
         {order.special_order_id && (
           <div className="mb-4 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
             🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
@@ -297,24 +296,27 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
             </div>
           )}
 
+          {/* Статус и кнопка в одной строке */}
           <div className="mb-8">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
-              {getStatusText(request.status)}
-            </span>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+                {getStatusText(request.status)}
+              </span>
+              
+              {/* Кнопка справа от статуса */}
+              {request.status === 'Оценён' && request.manager_price && (
+                <button
+                  onClick={() => onAccept(request)}
+                  className="bg-black text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap"
+                >
+                  💳 {language === 'ru' ? `Согласиться и оплатить $${request.manager_price}` : `Rozilik bildirish va to'lash $${request.manager_price}`}
+                </button>
+              )}
+            </div>
           </div>
-
-          {/* Кнопка "Согласиться и оплатить" для оценённых спецзаказов */}
-          {request.status === 'Оценён' && request.manager_price && (
-            <button
-              onClick={() => onAccept(request)}
-              className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors"
-            >
-              💳 {language === 'ru' ? `Согласиться и оплатить $${request.manager_price}` : `Rozilik bildirish va to'lash $${request.manager_price}`}
-            </button>
-          )}
         </div>
       </div>
     </div>
@@ -470,7 +472,6 @@ export default function ProfilePage({
     setLoading(false)
   }
 
-  // Обработчик нажатия "Согласиться и оплатить"
   const handleAcceptSpecialOrder = (request: any) => {
     const specialItem = {
       productId: `special-${request.id}-${Date.now()}`,
@@ -689,7 +690,6 @@ export default function ProfilePage({
                     </span>
                   </div>
 
-                  {/* Плашка "Спецзаказ" */}
                   {order.special_order_id && (
                     <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
                       🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
