@@ -24,25 +24,25 @@ export default function HomePage() {
   }
 
   const handleCategoryClick = (categoryId: string) => {
+    // Если это бренды - переходим на страницу брендов
     if (categoryId === 'brands') {
       navigate('/brands')
       return
     }
     
-    if (selectedCategory === categoryId) {
-      setSelectedCategory(null)
-    } else {
-      setSelectedCategory(categoryId)
-    }
+    // Для остальных категорий - показываем подкатегории
+    setSelectedCategory(categoryId)
   }
 
-  const handleSubcategoryClick = (categoryId: string, subcategoryId: string) => {
-    navigate('/catalog', { 
-      state: { 
-        category: categoryId, 
-        subcategory: subcategoryId 
-      } 
-    })
+  const handleSubcategoryClick = (subcategoryId: string) => {
+    if (selectedCategory) {
+      navigate('/catalog', { 
+        state: { 
+          category: selectedCategory, 
+          subcategory: subcategoryId 
+        } 
+      })
+    }
   }
 
   const filteredProducts = selectedCategory 
@@ -124,16 +124,19 @@ export default function HomePage() {
 
   return (
     <div className="p-4 pb-24">
-      <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">
-          {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
-        </h2>
-        <p className="text-gray-300 text-sm">
-          {language === 'ru' 
-            ? 'Стильная одежда и обувь в Ташкенте' 
-            : 'Toshkentdagi zamonaviy kiyim va poyabzal'}
-        </p>
-      </div>
+      {/* Приветственный баннер - показываем только если категория не выбрана */}
+      {!selectedCategory && (
+        <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
+          <h2 className="text-2xl font-bold mb-2">
+            {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
+          </h2>
+          <p className="text-gray-300 text-sm">
+            {language === 'ru' 
+              ? 'Стильная одежда и обувь в Ташкенте' 
+              : 'Toshkentdagi zamonaviy kiyim va poyabzal'}
+          </p>
+        </div>
+      )}
 
       <h3 className="text-lg font-bold mb-3">
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
@@ -155,6 +158,7 @@ export default function HomePage() {
             </span>
           </div>
         ))}
+        {/* Кнопка Бренды */}
         <div
           onClick={() => navigate('/brands')}
           className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md flex items-center gap-3 cursor-pointer"
@@ -168,42 +172,52 @@ export default function HomePage() {
 
       {selectedCategory && (
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">
-              {language === 'ru' ? 'Подкатегории' : 'Quyi kategoriyalar'}
-            </h3>
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="text-sm text-gray-500 hover:text-black"
-            >
-              {language === 'ru' ? 'Сбросить' : 'Tozalash'} ✕
-            </button>
-          </div>
-          
+          {/* Показываем подкатегории */}
           {(() => {
             const category = CATEGORIES.find(c => c.id === selectedCategory)
             if (!category?.subcategories) return null
             
             return (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {category.subcategories.map(sub => (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold">
+                    {language === 'ru' ? 'Подкатегории' : 'Quyi kategoriyalar'}
+                  </h3>
                   <button
-                    key={sub.id}
-                    onClick={() => handleSubcategoryClick(selectedCategory!, sub.id)}
-                    className="bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors text-left"
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-sm text-gray-500 hover:text-black"
                   >
-                    <p className="font-medium">
-                      {language === 'ru' ? sub.name_ru : sub.name_uz}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {products.filter(p => p.category === selectedCategory && p.subcategory === sub.id).length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
-                    </p>
+                    {language === 'ru' ? 'Сбросить' : 'Tozalash'} ✕
                   </button>
-                ))}
-              </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {category.subcategories.map(sub => {
+                    const count = products.filter(p => 
+                      p.category === selectedCategory && p.subcategory === sub.id
+                    ).length
+                    
+                    return (
+                      <button
+                        key={sub.id}
+                        onClick={() => handleSubcategoryClick(sub.id)}
+                        className="bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors text-left"
+                      >
+                        <p className="font-medium">
+                          {language === 'ru' ? sub.name_ru : sub.name_uz}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {count} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
             )
           })()}
           
+          {/* Все товары категории */}
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold">
               {language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'}
@@ -217,6 +231,7 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Показываем новые/популярные товары только если категория не выбрана */}
       {!selectedCategory && (
         <>
           {getNewProducts().length > 0 && (
