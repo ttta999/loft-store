@@ -298,10 +298,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
 
           {/* Статус и кнопка в одной строке */}
           <div className="mb-8">
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-3">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
                 {getStatusText(request.status)}
               </span>
@@ -310,7 +310,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
               {request.status === 'Оценён' && request.manager_price && (
                 <button
                   onClick={() => onAccept(request)}
-                  className="bg-black text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap"
+                  className="bg-black text-white px-6 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
                   💳 {language === 'ru' ? `Согласиться и оплатить $${request.manager_price}` : `Rozilik bildirish va to'lash $${request.manager_price}`}
                 </button>
@@ -421,7 +421,7 @@ export default function ProfilePage({
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅‍♂️',
+      'Отменён клиентом': 'Отменён вами 🙅‍️',
       'Отклонён': 'Отклонён 🛑',
     }
     return labels[status] || status

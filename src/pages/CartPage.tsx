@@ -53,7 +53,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               <p className="font-bold">
                 {formatPrice(item.priceUsd)}
               </p>
-              {/* Плашка спецзаказа */}
               {item.isSpecialOrder && (
                 <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
                   🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
@@ -70,11 +69,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               {!item.isSpecialOrder && (
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
                   <button
-                    onClick={() => {
-                      if (item.quantity > 1) {
-                        addToCart({ ...item, quantity: -1 })
-                      }
-                    }}
+                    onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })}
                     className="text-gray-600"
                   >
                     <Minus size={16} />
@@ -133,7 +128,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const [orderId, setOrderId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Проверяем, есть ли спецзаказ в корзине
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
 
@@ -146,23 +140,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   const handlePhoneChange = (value: string) => {
     let cleaned = value.replace(/[^\d+]/g, '')
-    
     if (!cleaned.startsWith('+998') && cleaned.length > 0) {
-      if (cleaned.startsWith('+')) {
-        cleaned = '+998' + cleaned.slice(1)
-      } else {
-        cleaned = '+998' + cleaned
-      }
+      cleaned = cleaned.startsWith('+') ? '+998' + cleaned.slice(1) : '+998' + cleaned
     }
-    
-    if (cleaned.startsWith('+') && !cleaned.startsWith('+998')) {
-      cleaned = '+998'
-    }
-    
-    if (cleaned.length > 13) {
-      cleaned = cleaned.slice(0, 13)
-    }
-    
+    if (cleaned.startsWith('+') && !cleaned.startsWith('+998')) cleaned = '+998'
+    if (cleaned.length > 13) cleaned = cleaned.slice(0, 13)
     setPhone(cleaned)
   }
 
@@ -170,24 +152,19 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     if (!addr.trim()) {
       return language === 'ru' ? 'Введите адрес доставки' : 'Yetkazib berish manzilini kiriting'
     }
-    if (addr.trim().length < 10) {
-      return language === 'ru' ? 'Адрес слишком короткий (минимум 10 символов)' : 'Manzil juda qisqa (kamida 10 ta belgi)'
+    if (addr.trim().length < 5) {
+      return language === 'ru' ? 'Адрес слишком короткий (минимум 5 символов)' : 'Manzil juda qisqa (kamida 5 ta belgi)'
     }
-    const lettersOnly = addr.replace(/[^а-яА-Яa-zA-Z]/g, '')
-    if (lettersOnly.length === 0) {
-      return language === 'ru' ? 'Адрес должен содержать буквы (укажите улицу, дом)' : 'Manzilda harflar bo\'lishi kerak'
-    }
-    const words = addr.match(/[а-яА-Яa-zA-Z]+/g) || []
-    if (words.length === 0) {
-      return language === 'ru' ? 'Адрес должен содержать название улицы или ориентир' : 'Manzilda ko\'cha nomi yoki orientir bo\'lishi kerak'
-    }
-    if (words.length === 1 && words[0].length < 3) {
-      return language === 'ru' ? 'Укажите полный адрес (улица, дом, квартира)' : 'To\'liq manzilni kiriting'
+    const hasLetters = /[а-яА-Яa-zA-Zа-ёА-Ё]/.test(addr)
+    if (!hasLetters) {
+      return language === 'ru' ? 'Адрес должен содержать буквы (укажите улицу или ориентир)' : 'Manzilda harflar bo\'lishi kerak'
     }
     return null
   }
 
   const handleSubmit = async () => {
+    console.log('Начинаем создание заказа...')
+    
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -202,6 +179,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     if (deliveryMethod === 'delivery') {
       const addressError = validateAddress(address)
       if (addressError) {
+        console.error('Ошибка валидации адреса:', addressError)
         toast.error(addressError)
         return
       }
@@ -224,26 +202,33 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         status: 'Активный',
       }
 
+      console.log('Отправляем заказ:', orderData)
+
       let result: any
 
-      // Если это спецзаказ — используем специальную функцию
       if (isSpecialOrder && specialItem.specialRequestId) {
+        console.log('Создаём заказ из спецзаказа:', specialItem.specialRequestId)
         result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
       } else {
+        console.log('Создаём обычный заказ')
         result = await createOrder(orderData)
       }
 
       const data = Array.isArray(result.data) ? result.data[0] : result.data
-      const error = result.error
+      
+      console.log('Результат:', { data, error: result.error })
 
-      if (error || !data) {
-        console.error('Ошибка при создании заказа:', error)
-        toast.error(language === 'ru' ? 'Ошибка при создании заказа' : 'Buyurtma yaratishda xatolik')
+      if (result.error || !data) {
+        console.error('Ошибка Supabase:', result.error)
+        toast.error(
+          language === 'ru' 
+            ? 'Ошибка при создании заказа: ' + (result.error?.message || 'Неизвестная ошибка')
+            : 'Buyurtma yaratishda xatolik'
+        )
         setSubmitting(false)
         return
       }
 
-      // Отправляем уведомление
       await notifyNewOrder(data)
 
       const newOrderId = data?.id || Math.floor(Math.random() * 1000) + 500
@@ -251,8 +236,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       setOrderSuccess(true)
       clearCart()
     } catch (error) {
-      console.error('Ошибка:', error)
-      toast.error(language === 'ru' ? 'Произошла ошибка' : 'Xatolik yuz berdi')
+      console.error('Полная ошибка:', error)
+      toast.error(language === 'ru' ? 'Произошла ошибка: ' + error : 'Xatolik yuz berdi')
     } finally {
       setSubmitting(false)
     }
