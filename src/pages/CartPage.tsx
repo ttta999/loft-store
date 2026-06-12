@@ -155,7 +155,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     if (addr.trim().length < 5) {
       return language === 'ru' ? 'Адрес слишком короткий (минимум 5 символов)' : 'Manzil juda qisqa (kamida 5 ta belgi)'
     }
-    const hasLetters = /[а-яА-Яa-zA-Zа-ёА-Ё]/.test(addr)
+    const hasLetters = /[a-zA-Zа-яА-Я]/.test(addr)
     if (!hasLetters) {
       return language === 'ru' ? 'Адрес должен содержать буквы (укажите улицу или ориентир)' : 'Manzilda harflar bo\'lishi kerak'
     }
