@@ -40,12 +40,15 @@ export const CATEGORIES = [
 ]
 
 export const BRANDS = [
-  { id: 'nike', name: 'Nike', logo: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200' },
-  { id: 'adidas', name: 'Adidas', logo: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=200' },
-  { id: 'zegna', name: 'Zegna', logo: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=200' },
-  { id: 'hermes', name: 'Hermès', logo: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200' },
-  { id: 'louis-vuitton', name: 'Louis Vuitton', logo: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=200' },
-  { id: 'gucci', name: 'Gucci', logo: 'https://images.unsplash.com/photo-1548863227-3af567e9589d?w=200' },
-  { id: 'balenciaga', name: 'Balenciaga', logo: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=200' },
-  { id: 'brunello-cucinelli', name: 'Brunello Cucinelli', logo: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=200' },
+  { id: 'loro-piana', name: 'Loro Piana' },
+  { id: 'brunello-cucinelli', name: 'Brunello Cucinelli' },
+  { id: 'tods', name: 'Tod\'s' },
+  { id: 'hermes', name: 'Hermès' },
+  { id: 'kiton', name: 'Kiton' },
+  { id: 'dior', name: 'Dior' },
+  { id: 'ferragamo', name: 'Ferragamo' },
+  { id: 'zegna', name: 'Zegna' },
+  { id: 'dolce-gabbana', name: 'Dolce & Gabbana' },
+  { id: 'fendi', name: 'Fendi' },
+  { id: 'louis-vuitton', name: 'Louis Vuitton' },
 ]

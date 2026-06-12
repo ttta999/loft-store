@@ -64,36 +64,20 @@ export default function BrandsPage() {
                 <button
                   key={brand.id}
                   onClick={() => handleBrandClick(brand.id)}
-                  className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="aspect-square bg-gray-100 rounded-lg mb-3 overflow-hidden">
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="w-full h-full object-contain p-2"
-                    />
-                  </div>
-                  <p className="font-medium text-center">{brand.name}</p>
+                  <p className="font-medium text-center text-lg">{brand.name}</p>
                 </button>
               ))}
             </div>
           </>
         ) : (
           <>
-            <div className="mb-4 flex items-center gap-3">
-              {brand?.logo && (
-                <img 
-                  src={brand.logo} 
-                  alt={brand.name}
-                  className="w-12 h-12 object-contain"
-                />
-              )}
-              <div>
-                <h2 className="text-xl font-bold">{brand?.name}</h2>
-                <p className="text-sm text-gray-500">
-                  {products.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
-                </p>
-              </div>
+            <div className="mb-4">
+              <h2 className="text-xl font-bold">{brand?.name}</h2>
+              <p className="text-sm text-gray-500">
+                {products.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+              </p>
             </div>
             
             {loading ? (

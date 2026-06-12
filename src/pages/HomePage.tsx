@@ -29,7 +29,6 @@ export default function HomePage() {
       return
     }
     
-    // Для остальных категорий - показываем подкатегории
     setSelectedCategory(categoryId)
   }
 
@@ -123,7 +122,7 @@ export default function HomePage() {
 
   return (
     <div className="p-4 pb-24">
-      {/* Приветственный баннер - показываем только если категория не выбрана */}
+      {/* Приветственный баннер */}
       {!selectedCategory && (
         <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
           <h2 className="text-2xl font-bold mb-2">
@@ -171,7 +170,7 @@ export default function HomePage() {
 
       {selectedCategory && (
         <div className="mb-6">
-          {/* Показываем подкатегории */}
+          {/* Подкатегории */}
           {(() => {
             const category = CATEGORIES.find(c => c.id === selectedCategory)
             if (!category?.subcategories) return null
@@ -230,7 +229,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Показываем новые/популярные товары только если категория не выбрана */}
+      {/* Новые/популярные товары */}
       {!selectedCategory && (
         <>
           {getNewProducts().length > 0 && (
