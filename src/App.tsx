@@ -8,6 +8,8 @@ import ChinaPage from './pages/ChinaPage'
 import ProfilePage from './pages/ProfilePage'
 import ProductPage from './pages/ProductPage'
 import FavoritesPage from './pages/FavoritesPage'
+import CatalogPage from './pages/CatalogPage'
+import BrandsPage from './pages/BrandsPage'
 import { initTelegram, getUserData, getChatId } from './lib/telegram'
 import { Heart } from 'lucide-react'
 import { useStore } from './store/useStore'
@@ -114,6 +116,8 @@ function App() {
         <Route path="/" element={<AppContent />} />
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/catalog" element={<CatalogPage />} />
+        <Route path="/brands" element={<BrandsPage />} />
       </Routes>
     </BrowserRouter>
   )

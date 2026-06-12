@@ -1,17 +1,12 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart } from 'lucide-react'
-
-const categories = [
-  { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim', icon: '👟' },
-  { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar', icon: '⌚' },
-  { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim', icon: '👕' },
-  { id: 'brands', name_ru: 'Бренды', name_uz: 'Brendlar', icon: '🏷️' },
-]
+import { CATEGORIES, BRANDS } from '../data/categories'
 
 export default function HomePage() {
+  const navigate = useNavigate()
   const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,11 +24,25 @@ export default function HomePage() {
   }
 
   const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === 'brands') {
+      navigate('/brands')
+      return
+    }
+    
     if (selectedCategory === categoryId) {
       setSelectedCategory(null)
     } else {
       setSelectedCategory(categoryId)
     }
+  }
+
+  const handleSubcategoryClick = (categoryId: string, subcategoryId: string) => {
+    navigate('/catalog', { 
+      state: { 
+        category: categoryId, 
+        subcategory: subcategoryId 
+      } 
+    })
   }
 
   const filteredProducts = selectedCategory 
@@ -46,18 +55,14 @@ export default function HomePage() {
   }
 
   const getNewProducts = () => {
-    // Сортируем по дате создания (новые первые)
     return [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6)
   }
 
   const getPopularProducts = () => {
-    // Здесь можно добавить логику популярных товаров (по количеству заказов)
-    // Пока просто берем первые 6 товаров
     return products.slice(0, 6)
   }
 
   const getDiscountProducts = () => {
-    // Фильтруем товары со скидкой (где есть поле discount или sale_price)
     return products.filter(p => p.discount || p.sale_price || p.is_on_sale).slice(0, 6)
   }
 
@@ -118,7 +123,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 pb-24">
       <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
         <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
@@ -134,7 +139,7 @@ export default function HomePage() {
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
       </h3>
       <div className="grid grid-cols-2 gap-3 mb-6">
-        {categories.map((cat) => (
+        {CATEGORIES.map((cat) => (
           <div
             key={cat.id}
             onClick={() => handleCategoryClick(cat.id)}
@@ -150,31 +155,70 @@ export default function HomePage() {
             </span>
           </div>
         ))}
+        <div
+          onClick={() => navigate('/brands')}
+          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md flex items-center gap-3 cursor-pointer"
+        >
+          <span className="text-3xl">🏷️</span>
+          <span className="font-medium text-sm">
+            {language === 'ru' ? 'Бренды' : 'Brendlar'}
+          </span>
+        </div>
       </div>
 
       {selectedCategory && (
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold">
-            {language === 'ru' ? 'Товары категории' : 'Kategoriya mahsulotlari'}
-          </h3>
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="text-sm text-gray-500 hover:text-black"
-          >
-            {language === 'ru' ? 'Сбросить' : 'Tozalash'} ✕
-          </button>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold">
+              {language === 'ru' ? 'Подкатегории' : 'Quyi kategoriyalar'}
+            </h3>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="text-sm text-gray-500 hover:text-black"
+            >
+              {language === 'ru' ? 'Сбросить' : 'Tozalash'} ✕
+            </button>
+          </div>
+          
+          {(() => {
+            const category = CATEGORIES.find(c => c.id === selectedCategory)
+            if (!category?.subcategories) return null
+            
+            return (
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {category.subcategories.map(sub => (
+                  <button
+                    key={sub.id}
+                    onClick={() => handleSubcategoryClick(selectedCategory!, sub.id)}
+                    className="bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors text-left"
+                  >
+                    <p className="font-medium">
+                      {language === 'ru' ? sub.name_ru : sub.name_uz}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {products.filter(p => p.category === selectedCategory && p.subcategory === sub.id).length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )
+          })()}
+          
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold">
+              {language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
       )}
 
-      {selectedCategory ? (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : (
+      {!selectedCategory && (
         <>
-          {/* Новые товары */}
           {getNewProducts().length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-3">
@@ -188,7 +232,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Популярные товары */}
           {getPopularProducts().length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-3">
@@ -202,7 +245,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Скидки */}
           {getDiscountProducts().length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-3">
