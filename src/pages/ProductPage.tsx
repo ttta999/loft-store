@@ -198,6 +198,8 @@ export default function ProductPage() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
+  const description = language === 'ru' ? product.description_ru : product.description_uz
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
@@ -300,6 +302,18 @@ export default function ProductPage() {
           <p className="text-2xl font-bold text-black mb-4">
             {formatPrice(product.price_usd)}
           </p>
+
+          {/* Описание товара */}
+          {description && (
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Описание' : 'Tavsif'}
+              </h3>
+              <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">
+                {description}
+              </p>
+            </div>
+          )}
 
           <SizeSelector
             sizeType={product.size_type}
