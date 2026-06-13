@@ -8,7 +8,7 @@ export const CATEGORIES = [
       { id: 'sneakers', name_ru: 'Кроссовки', name_uz: 'Krossovkalar' },
       { id: 'boots', name_ru: 'Ботинки', name_uz: 'Botinkalar' },
       { id: 'loafers', name_ru: 'Лоферы', name_uz: 'Loaferlar' },
-      { id: 'sandals', name_ru: 'Сандалии', name_uz: 'Sandallar' },
+      { id: 'sandals-shlapantsy', name_ru: 'Сандали и Шлепанцы', name_uz: 'Sandallar va Shlyopansilar' },
     ]
   },
   { 
@@ -19,22 +19,23 @@ export const CATEGORIES = [
     subcategories: [
       { id: 't-shirts', name_ru: 'Футболки', name_uz: 'Futbolkalar' },
       { id: 'shirts', name_ru: 'Рубашки', name_uz: 'Rubashkalar' },
-      { id: 'hoodies', name_ru: 'Худи', name_uz: 'Xudilar' },
+      { id: 'sweaters-cardigans', name_ru: 'Джемперы и Кардиганы', name_uz: 'Jemperlar va Kardiganlar' },
       { id: 'pants', name_ru: 'Брюки', name_uz: 'Shimlar' },
       { id: 'jeans', name_ru: 'Джинсы', name_uz: 'Jinsilar' },
-      { id: 'jackets', name_ru: 'Куртки', name_uz: 'Kurtkalar' },
+      { id: 'tracksuits', name_ru: 'Спортивные костюмы', name_uz: 'Sport kostyumlari' },
+      { id: 'outerwear', name_ru: 'Верхняя одежда', name_uz: 'Ustki kiyimlar' },
     ]
   },
   { 
     id: 'accessories', 
     name_ru: 'Аксессуары', 
     name_uz: 'Aksessuarlar', 
-    icon: '⌚',
+    icon: '🧢',
     subcategories: [
       { id: 'belts', name_ru: 'Ремни', name_uz: 'Kamarlar' },
-      { id: 'bags', name_ru: 'Сумки', name_uz: 'Sumkalar' },
-      { id: 'watches', name_ru: 'Часы', name_uz: 'Soatlar' },
-      { id: 'sunglasses', name_ru: 'Очки', name_uz: 'Ko\'zoynaklar' },
+      { id: 'caps', name_ru: 'Кепки', name_uz: 'Kepkalar' },
+      { id: 'hats', name_ru: 'Шапки', name_uz: 'Shapkalar' },
+      { id: 'bags-backpacks', name_ru: 'Сумки и Рюкзаки', name_uz: 'Sumkalar va Ryukzaklar' },
     ]
   },
 ]
