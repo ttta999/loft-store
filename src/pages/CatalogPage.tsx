@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES, BRANDS } from '../data/categories'
 import { useState, useEffect } from 'react'
-import { Filter, X } from 'lucide-react'
+import { Filter } from 'lucide-react'
 
 export default function CatalogPage() {
   const navigate = useNavigate()
