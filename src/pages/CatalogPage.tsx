@@ -42,6 +42,7 @@ export default function CatalogPage() {
       .select('*')
       .eq('category', categoryId)
       .eq('subcategory', subcategoryId)
+      .eq('is_active', true)
     
     setProducts(data || [])
     setFilteredProducts(data || [])

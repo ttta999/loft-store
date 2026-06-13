@@ -27,6 +27,7 @@ export default function BrandsPage() {
       .from('products')
       .select('*')
       .ilike('name_ru', `%${brand.name}%`)
+      .eq('is_active', true)
     
     setProducts(data || [])
     setLoading(false)

@@ -10,6 +10,7 @@ export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
     .select('*')
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
   
   if (error) {
@@ -17,7 +18,7 @@ export const getProducts = async () => {
     return []
   }
   
-  return data
+  return data || []
 }
 
 export const getProductSizes = async (productId: string) => {
@@ -56,7 +57,6 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
     orderData 
   })
   
-  // Преобразуем ID в строку, так как в базе числовые ID
   const specialOrderIdStr = specialRequestId.toString()
   
   const { data, error } = await supabase
@@ -81,7 +81,6 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   const createdOrder = Array.isArray(data) ? data[0] : data
   console.log('✅ Заказ создан:', createdOrder)
   
-  // Обновляем спецзаказ
   const { error: updateError } = await supabase
     .from('china_requests')
     .update({ 
