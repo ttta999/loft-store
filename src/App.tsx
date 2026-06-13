@@ -10,6 +10,7 @@ import ProductPage from './pages/ProductPage'
 import FavoritesPage from './pages/FavoritesPage'
 import CatalogPage from './pages/CatalogPage'
 import BrandsPage from './pages/BrandsPage'
+import CategoryPage from './pages/CategoryPage'
 import { initTelegram, getUserData, getChatId } from './lib/telegram'
 import { Heart } from 'lucide-react'
 import { useStore } from './store/useStore'
@@ -42,7 +43,6 @@ function AppContent() {
         setTelegramUser(userData)
         console.log('Telegram пользователь:', userData)
         
-        // Сохраняем chat_id для уведомлений
         const chatId = getChatId()
         if (chatId && chatId !== useStore.getState().chatId) {
           useStore.getState().setChatId(chatId)
@@ -118,6 +118,7 @@ function App() {
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/brands" element={<BrandsPage />} />
+        <Route path="/category" element={<CategoryPage />} />
       </Routes>
     </BrowserRouter>
   )
