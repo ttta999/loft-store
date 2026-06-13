@@ -46,7 +46,7 @@ export const BRANDS = [
   { id: 'hermes', name: 'Hermès' },
   { id: 'kiton', name: 'Kiton' },
   { id: 'dior', name: 'Dior' },
-  { id: 'ferragamo', name: 'Ferragamo' },
+  { id: 'salvatore-ferragamo', name: 'Salvatore Ferragamo' },
   { id: 'zegna', name: 'Zegna' },
   { id: 'dolce-gabbana', name: 'Dolce & Gabbana' },
   { id: 'fendi', name: 'Fendi' },
