@@ -42,6 +42,7 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Шапка с LOFT Store */}
       <div className="bg-white border-b p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
@@ -50,13 +51,17 @@ export default function CatalogPage() {
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
           <div className="w-16"></div>
         </div>
-        {category && (
-          <div className="mt-2">
-            <p className="text-sm text-gray-600">
-              {language === 'ru' ? category.name_ru : category.name_uz}
-              {subcategory && ` / ${language === 'ru' ? subcategory.name_ru : subcategory.name_uz}`}
-            </p>
-          </div>
+      </div>
+
+      {/* Категория и подкатегория ПОД строкой */}
+      <div className="bg-white border-b px-4 py-3">
+        <h2 className="text-2xl font-bold">
+          {language === 'ru' ? category?.name_ru : category?.name_uz}
+        </h2>
+        {subcategory && (
+          <p className="text-sm text-gray-500 mt-1">
+            {language === 'ru' ? subcategory.name_ru : subcategory.name_uz}
+          </p>
         )}
       </div>
 
