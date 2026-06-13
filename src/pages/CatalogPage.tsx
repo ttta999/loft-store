@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft } from 'lucide-react'
+import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 
 export default function CatalogPage() {
@@ -13,6 +13,9 @@ export default function CatalogPage() {
   
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
+  
+  const category = CATEGORIES.find(c => c.id === categoryId)
+  const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
 
   useEffect(() => {
     if (categoryId && subcategoryId) {
@@ -41,12 +44,20 @@ export default function CatalogPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-white border-b p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="text-gray-600">
-            <ArrowLeft size={24} />
+          <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
+            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <div className="w-6"></div>
+          <div className="w-16"></div>
         </div>
+        {category && (
+          <div className="mt-2">
+            <p className="text-sm text-gray-600">
+              {language === 'ru' ? category.name_ru : category.name_uz}
+              {subcategory && ` / ${language === 'ru' ? subcategory.name_ru : subcategory.name_uz}`}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="p-4">
