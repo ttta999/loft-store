@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Search, Filter, X, Heart } from 'lucide-react'
+import { BRANDS } from '../data/categories'
 
 export default function SearchPage() {
   const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
@@ -19,10 +20,7 @@ export default function SearchPage() {
     { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim' },
     { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim' },
     { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar' },
-    { id: 'brands', name_ru: 'Бренды', name_uz: 'Brendlar' },
   ]
-
-  const brands = ['Nike', 'Adidas', 'Puma', 'Zara', 'H&M', 'Supreme', 'Other']
 
   useEffect(() => {
     loadProducts()
@@ -58,7 +56,12 @@ export default function SearchPage() {
 
     // Фильтр по бренду
     if (selectedBrand) {
-      filtered = filtered.filter(p => p.brand === selectedBrand)
+      const brand = BRANDS.find(b => b.id === selectedBrand)
+      if (brand) {
+        filtered = filtered.filter(p => 
+          p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
+        )
+      }
     }
 
     // Фильтр по цене
@@ -138,7 +141,10 @@ export default function SearchPage() {
         </div>
         {hasActiveFilters && (
           <button
-            onClick={clearFilters}
+            onClick={(e) => {
+              e.stopPropagation()
+              clearFilters()
+            }}
             className="text-sm underline"
           >
             {language === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -177,17 +183,17 @@ export default function SearchPage() {
               {language === 'ru' ? 'Бренд' : 'Brend'}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {brands.map((brand) => (
+              {BRANDS.map((brand) => (
                 <button
-                  key={brand}
-                  onClick={() => setSelectedBrand(selectedBrand === brand ? '' : brand)}
+                  key={brand.id}
+                  onClick={() => setSelectedBrand(selectedBrand === brand.id ? '' : brand.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedBrand === brand
+                    selectedBrand === brand.id
                       ? 'bg-black text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {brand}
+                  {brand.name}
                 </button>
               ))}
             </div>
