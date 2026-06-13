@@ -2,7 +2,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { ArrowLeft } from 'lucide-react'
-import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 
 export default function CatalogPage() {
@@ -14,9 +13,6 @@ export default function CatalogPage() {
   
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
-  
-  const category = CATEGORIES.find(c => c.id === categoryId)
-  const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
 
   useEffect(() => {
     if (categoryId && subcategoryId) {
@@ -44,20 +40,12 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-white border-b p-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600">
             <ArrowLeft size={24} />
           </button>
-          <div>
-            <h1 className="text-xl font-bold">
-              {language === 'ru' ? category?.name_ru : category?.name_uz}
-            </h1>
-            {subcategory && (
-              <p className="text-sm text-gray-500">
-                {language === 'ru' ? subcategory.name_ru : subcategory.name_uz}
-              </p>
-            )}
-          </div>
+          <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
+          <div className="w-6"></div>
         </div>
       </div>
 
@@ -67,7 +55,7 @@ export default function CatalogPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto"></div>
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-12 text-gray-500">
             {language === 'ru' ? 'В этой категории пока нет товаров' : 'Bu kategoriyada hali mahsulotlar yo\'q'}
           </div>
         ) : (
