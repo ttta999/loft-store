@@ -53,8 +53,8 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {/* Категория и подкатегория ПОД строкой */}
-      <div className="bg-white border-b px-4 py-3">
+      {/* Категория и подкатегория БЕЗ линии */}
+      <div className="bg-white px-4 py-3">
         <h2 className="text-2xl font-bold">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
