@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
@@ -9,6 +9,7 @@ import { supabase, getProductSizes } from '../lib/supabase'
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { language, currency, exchangeRate, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [product, setProduct] = useState<any>(null)
@@ -17,6 +18,9 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showFullScreen, setShowFullScreen] = useState(false)
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(0)
+  
+  // ✅ Проверяем, пришли ли мы из корзины
+  const cameFromCart = location.state?.fromCart
 
   useEffect(() => {
     if (id) {
@@ -49,13 +53,24 @@ export default function ProductPage() {
     setSizes(sizeValues)
   }
 
+  const handleBack = () => {
+    // ✅ Если пришли из корзины — возвращаемся туда
+    if (cameFromCart) {
+      navigate('/cart', { state: location.state?.fromCheckout })
+    } else {
+      // Иначе используем стандартную навигацию назад
+      navigate(-1)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
+        {/* ✅ Шапка с LOFT Store даже при загрузке */}
         <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="flex items-center gap-2 text-gray-600 hover:text-black"
             >
               <ArrowLeft size={20} />
@@ -80,10 +95,11 @@ export default function ProductPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
+        {/* ✅ Шапка с LOFT Store даже при ошибке */}
         <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="flex items-center gap-2 text-gray-600 hover:text-black"
             >
               <ArrowLeft size={20} />
@@ -241,11 +257,11 @@ export default function ProductPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
       
-      {/* Шапка с LOFT Store */}
+      {/* ✅ ШАПКА С LOFT STORE — ВСЕГДА ВИДНА */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 hover:text-black"
           >
             <ArrowLeft size={20} />

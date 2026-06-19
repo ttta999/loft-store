@@ -46,11 +46,11 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               src={item.image}
               alt={item.name}
               className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate(`/product/${item.productId}`)}
+              onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}
             />
             <div 
               className="flex-1 cursor-pointer"
-              onClick={() => navigate(`/product/${item.productId}`)}
+              onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}
             >
               <h3 className="font-medium text-sm mb-1">{item.name}</h3>
               <p className="text-xs text-gray-500 mb-2">
