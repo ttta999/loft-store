@@ -27,17 +27,23 @@ export default function ProductPage() {
 
   const loadProduct = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
-    
-    if (error) {
-      console.error('Ошибка при загрузке товара:', error)
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) {
+        console.error('Ошибка при загрузке товара:', error)
+        setProduct(null)
+      } else {
+        console.log('✅ Товар загружен:', data)
+        setProduct(data || null)
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки:', err)
       setProduct(null)
-    } else {
-      setProduct(data)
     }
     setLoading(false)
   }
@@ -53,8 +59,12 @@ export default function ProductPage() {
     navigate('/')
   }
 
-  // ✅ ПРОВЕРКА ОСТАТКОВ ПЕРЕД ДОБАВЛЕНИЕМ В КОРЗИНУ
   const handleAddToCart = async () => {
+    if (!product) {
+      toast.error('Товар недоступен')
+      return
+    }
+
     if (product.size_type !== 'one_size' && !selectedSize) {
       toast.error(
         language === 'ru' ? 'Пожалуйста, выберите размер' : 'Iltimos, o\'lchamni tanlang',
@@ -70,11 +80,9 @@ export default function ProductPage() {
 
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
 
-    // ✅ Проверяем наличие перед добавлением
     const stockCheck = await checkProductStock(product.id, sizeToAdd, 1)
     
     if (!stockCheck.available) {
-      // ❌ Товара нет в наличии
       toast.error(stockCheck.error || 'Товар недоступен', {
         description: language === 'ru' 
           ? 'Попробуйте выбрать другой размер или посмотрите другие товары' 
@@ -84,11 +92,10 @@ export default function ProductPage() {
       return
     }
 
-    // ✅ Всё ок, добавляем в корзину
     addToCart({
       productId: product.id,
-      name: language === 'ru' ? product.name_ru : product.name_uz,
-      priceUsd: product.price_usd,
+      name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
+      priceUsd: product.price_usd || 0,
       size: sizeToAdd,
       quantity: 1,
       image: product.images?.[0] || '',
@@ -117,8 +124,8 @@ export default function ProductPage() {
     } else {
       addToFavorites({
         productId: product.id,
-        name: language === 'ru' ? product.name_ru : product.name_uz,
-        priceUsd: product.price_usd,
+        name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
+        priceUsd: product.price_usd || 0,
         image: product.images?.[0] || '',
       })
       toast.success(
@@ -129,9 +136,11 @@ export default function ProductPage() {
   }
 
   const handleShare = async () => {
+    if (!product) return
+    
     const shareUrl = window.location.href
-    const shareTitle = language === 'ru' ? product.name_ru : product.name_uz
-    const shareText = `${shareTitle} — ${formatPrice(product.price_usd)}`
+    const shareTitle = language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')
+    const shareText = `${shareTitle} — ${formatPrice(product.price_usd || 0)}`
 
     if (navigator.share) {
       try {
@@ -202,10 +211,16 @@ export default function ProductPage() {
 
   const images = getImages()
   
-  // ✅ ИСПРАВЛЕНО: Проверка на null/undefined
-  const description = language === 'ru' 
-    ? (product.description_ru || '') 
-    : (product.description_uz || '')
+  // ✅ БЕЗОПАСНОЕ получение описания
+  const getDescription = () => {
+    if (!product) return ''
+    if (language === 'ru') {
+      return product.description_ru || ''
+    }
+    return product.description_uz || ''
+  }
+  
+  const description = getDescription()
 
   if (loading) {
     return (
@@ -283,7 +298,7 @@ export default function ProductPage() {
           <div className="relative">
             <img
               src={images[currentImageIndex]}
-              alt={language === 'ru' ? product.name_ru : product.name_uz}
+              alt={language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
               className="w-full aspect-square object-cover cursor-pointer"
               onClick={() => openFullScreen(currentImageIndex)}
             />
@@ -362,13 +377,13 @@ export default function ProductPage() {
 
         <div className="bg-white rounded-2xl p-4 mb-4">
           <h1 className="text-xl font-bold mb-2">
-            {language === 'ru' ? product.name_ru : product.name_uz}
+            {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
           <p className="text-2xl font-bold text-black mb-4">
-            {formatPrice(product.price_usd)}
+            {formatPrice(product.price_usd || 0)}
           </p>
 
-          {/* ✅ ИСПРАВЛЕНО: Показываем описание только если оно есть */}
+          {/* ✅ Показываем описание только если оно есть */}
           {description && description.trim() !== '' && (
             <div className="mb-4 pb-4 border-b border-gray-100">
               <h3 className="font-bold mb-2">
@@ -381,7 +396,7 @@ export default function ProductPage() {
           )}
 
           <SizeSelector
-            sizeType={product.size_type}
+            sizeType={product.size_type || 'numeric'}
             availableSizes={sizes.length > 0 ? sizes : ['One Size']}
             onSelect={setSelectedSize}
             language={language}
