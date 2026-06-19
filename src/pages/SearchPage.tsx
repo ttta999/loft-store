@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Search, Filter, X, Heart } from 'lucide-react'
+import { Search, Filter, X, Heart, ArrowUpDown } from 'lucide-react'
 import { BRANDS } from '../data/categories'
 
 export default function SearchPage() {
@@ -12,7 +12,8 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedBrand, setSelectedBrand] = useState<string>('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
+  const [sortBy, setSortBy] = useState<string>('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -27,8 +28,8 @@ export default function SearchPage() {
   }, [])
 
   useEffect(() => {
-    applyFilters()
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, products])
+    applyFiltersAndSort()
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -38,8 +39,8 @@ export default function SearchPage() {
     setLoading(false)
   }
 
-  const applyFilters = () => {
-    let filtered = products
+  const applyFiltersAndSort = () => {
+    let filtered = [...products]
 
     // Поиск по названию
     if (searchQuery) {
@@ -69,6 +70,22 @@ export default function SearchPage() {
       p.price_usd >= priceRange[0] && p.price_usd <= priceRange[1]
     )
 
+    // ✅ Сортировка
+    switch (sortBy) {
+      case 'price_asc':
+        filtered.sort((a, b) => a.price_usd - b.price_usd)
+        break
+      case 'price_desc':
+        filtered.sort((a, b) => b.price_usd - a.price_usd)
+        break
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        break
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        break
+    }
+
     setFilteredProducts(filtered)
   }
 
@@ -81,10 +98,24 @@ export default function SearchPage() {
     setSearchQuery('')
     setSelectedCategory('')
     setSelectedBrand('')
-    setPriceRange([0, 1000])
+    setPriceRange([0, 10000])
+    setSortBy('newest')
   }
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange[0] > 0 || priceRange[1] < 1000
+  const hasActiveFilters = 
+    searchQuery || 
+    selectedCategory || 
+    selectedBrand || 
+    priceRange[0] > 0 || 
+    priceRange[1] < 10000 ||
+    sortBy !== 'newest'
+
+  const activeFiltersCount = 
+    (searchQuery ? 1 : 0) +
+    (selectedCategory ? 1 : 0) + 
+    (selectedBrand ? 1 : 0) +
+    (priceRange[0] > 0 || priceRange[1] < 10000 ? 1 : 0) +
+    (sortBy !== 'newest' ? 1 : 0)
 
   if (loading) {
     return (
@@ -131,11 +162,11 @@ export default function SearchPage() {
         <div className="flex items-center gap-2">
           <Filter size={20} />
           <span className="font-medium">
-            {language === 'ru' ? 'Фильтры' : 'Filtrlar'}
+            {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
           </span>
-          {hasActiveFilters && (
+          {activeFiltersCount > 0 && (
             <span className="bg-white text-black text-xs px-2 py-1 rounded-full">
-              {language === 'ru' ? 'Активны' : 'Faol'}
+              {activeFiltersCount}
             </span>
           )}
         </div>
@@ -161,6 +192,14 @@ export default function SearchPage() {
               {language === 'ru' ? 'Категория' : 'Kategoriya'}
             </h3>
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategory('')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  selectedCategory === '' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Все' : 'Barchasi'}
+              </button>
               {categories.map((cat) => (
                 <button
                   key={cat.id}
@@ -183,6 +222,14 @@ export default function SearchPage() {
               {language === 'ru' ? 'Бренд' : 'Brend'}
             </h3>
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedBrand('')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  selectedBrand === '' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Все' : 'Barchasi'}
+              </button>
               {BRANDS.map((brand) => (
                 <button
                   key={brand.id}
@@ -200,7 +247,7 @@ export default function SearchPage() {
           </div>
 
           {/* Цена */}
-          <div>
+          <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
             </h3>
@@ -219,6 +266,48 @@ export default function SearchPage() {
                 placeholder="До"
                 className="w-full p-2 border border-gray-300 rounded-lg"
               />
+            </div>
+          </div>
+
+          {/* ✅ Сортировка */}
+          <div>
+            <h3 className="font-bold mb-2 flex items-center gap-2">
+              <ArrowUpDown size={16} />
+              {language === 'ru' ? 'Сортировка' : 'Saralash'}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSortBy('newest')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
+              </button>
+              <button
+                onClick={() => setSortBy('oldest')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'oldest' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
+              </button>
+              <button
+                onClick={() => setSortBy('price_asc')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
+              </button>
+              <button
+                onClick={() => setSortBy('price_desc')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
+              </button>
             </div>
           </div>
         </div>
