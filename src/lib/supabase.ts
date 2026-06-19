@@ -365,3 +365,40 @@ export const sendClientNotification = async (clientChatId: string, message: stri
   if (!clientChatId) return false
   return sendNotificationToClient(message, clientChatId)
 }
+
+// ✅ НОВАЯ ФУНКЦИЯ: Проверка наличия конкретного размера
+export const checkProductStock = async (
+  productId: string, 
+  size: string, 
+  quantity: number
+): Promise<{ available: boolean; error?: string }> => {
+  const { data: variant, error } = await supabase
+    .from('product_variants')
+    .select('stock')
+    .eq('product_id', productId)
+    .eq('size_value', size)
+    .single()
+  
+  if (error || !variant) {
+    return { 
+      available: false, 
+      error: `К сожалению, размер "${size}" временно отсутствует` 
+    }
+  }
+  
+  if ((variant.stock || 0) < quantity) {
+    if (variant.stock === 0) {
+      return { 
+        available: false, 
+        error: `Размер "${size}" закончился. Мы уже работаем над пополнением! 🙏` 
+      }
+    } else {
+      return { 
+        available: false, 
+        error: `Осталось только ${variant.stock} шт.` 
+      }
+    }
+  }
+  
+  return { available: true }
+}

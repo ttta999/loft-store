@@ -4,7 +4,7 @@ import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } 
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import { useStore } from '../store/useStore'
-import { supabase, getProductSizes } from '../lib/supabase'
+import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -53,81 +53,8 @@ export default function ProductPage() {
     navigate('/')
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-black"
-            >
-              <ArrowLeft size={20} />
-              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-            </button>
-            <h1 className="text-xl font-bold">LOFT Store</h1>
-            <div className="w-16"></div>
-          </div>
-        </div>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-500">
-              {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-black"
-            >
-              <ArrowLeft size={20} />
-              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-            </button>
-            <h1 className="text-xl font-bold">LOFT Store</h1>
-            <div className="w-16"></div>
-          </div>
-        </div>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <p className="text-gray-500">
-            {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
-
-  const getImages = (): string[] => {
-    if (!product) return ['https://via.placeholder.com/500']
-    if (Array.isArray(product.images)) {
-      return product.images.filter((img: string) => img)
-    }
-    if (typeof product.images === 'string' && product.images) {
-      return [product.images]
-    }
-    if (product.image) {
-      return [product.image]
-    }
-    return ['https://via.placeholder.com/500']
-  }
-
-  const images = getImages()
-
-  const handleAddToCart = () => {
+  // ✅ ПРОВЕРКА ОСТАТКОВ ПЕРЕД ДОБАВЛЕНИЕМ В КОРЗИНУ
+  const handleAddToCart = async () => {
     if (product.size_type !== 'one_size' && !selectedSize) {
       toast.error(
         language === 'ru' ? 'Пожалуйста, выберите размер' : 'Iltimos, o\'lchamni tanlang',
@@ -143,13 +70,28 @@ export default function ProductPage() {
 
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
 
+    // ✅ Проверяем наличие перед добавлением
+    const stockCheck = await checkProductStock(product.id, sizeToAdd, 1)
+    
+    if (!stockCheck.available) {
+      // ❌ Товара нет в наличии
+      toast.error(stockCheck.error || 'Товар недоступен', {
+        description: language === 'ru' 
+          ? 'Попробуйте выбрать другой размер или посмотрите другие товары' 
+          : 'Boshqa o\'lchamni tanlang yoki boshqa mahsulotlarga qarang',
+        duration: 4000,
+      })
+      return
+    }
+
+    // ✅ Всё ок, добавляем в корзину
     addToCart({
       productId: product.id,
       name: language === 'ru' ? product.name_ru : product.name_uz,
       priceUsd: product.price_usd,
       size: sizeToAdd,
       quantity: 1,
-      image: images[0] || '',
+      image: product.images?.[0] || '',
     })
 
     toast.success(
@@ -177,7 +119,7 @@ export default function ProductPage() {
         productId: product.id,
         name: language === 'ru' ? product.name_ru : product.name_uz,
         priceUsd: product.price_usd,
-        image: images[0] || '',
+        image: product.images?.[0] || '',
       })
       toast.success(
         language === 'ru' ? 'Добавлено в избранное ❤️' : 'Sevimlilarga qo\'shildi ❤️',
@@ -239,7 +181,80 @@ export default function ProductPage() {
     setFullScreenImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
+  const formatPrice = (usd: number) => {
+    if (currency === 'USD') return `$${usd}`
+    return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
+
+  const getImages = (): string[] => {
+    if (!product) return ['https://via.placeholder.com/500']
+    if (Array.isArray(product.images)) {
+      return product.images.filter((img: string) => img)
+    }
+    if (typeof product.images === 'string' && product.images) {
+      return [product.images]
+    }
+    if (product.image) {
+      return [product.image]
+    }
+    return ['https://via.placeholder.com/500']
+  }
+
+  const images = getImages()
   const description = language === 'ru' ? product.description_ru : product.description_uz
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-black"
+            >
+              <ArrowLeft size={20} />
+              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
+            </button>
+            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <div className="w-16"></div>
+          </div>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-500">
+              {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-black"
+            >
+              <ArrowLeft size={20} />
+              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
+            </button>
+            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <div className="w-16"></div>
+          </div>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[60vh]">
+          <p className="text-gray-500">
+            {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -369,11 +384,27 @@ export default function ProductPage() {
 
           <button
             onClick={handleAddToCart}
-            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+            disabled={sizes.length === 0}
+            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
+              sizes.length === 0
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-black text-white hover:bg-gray-800'
+            }`}
           >
             <ShoppingCart size={20} />
-            {language === 'ru' ? 'В корзину' : 'Savatga'}
+            {sizes.length === 0
+              ? (language === 'ru' ? 'Нет в наличии' : 'Mavjud emas')
+              : (language === 'ru' ? 'В корзину' : 'Savatga')
+            }
           </button>
+
+          {sizes.length === 0 && (
+            <p className="text-center text-sm text-gray-500 mt-2">
+              {language === 'ru' 
+                ? 'Этот товар временно отсутствует' 
+                : 'Bu mahsulot vaqtincha mavjud emas'}
+            </p>
+          )}
         </div>
       </div>
 
