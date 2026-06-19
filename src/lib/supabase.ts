@@ -21,13 +21,13 @@ export const getProducts = async () => {
   return data || []
 }
 
-// ✅ ИСПРАВЛЕНО: Возвращаем только размеры с остатком > 0
+// ✅ Возвращаем только размеры с остатком > 0
 export const getProductSizes = async (productId: string) => {
   const { data, error } = await supabase
     .from('product_variants')
     .select('size_value')
     .eq('product_id', productId)
-    .gt('stock', 0) // ✅ Только размеры с остатком больше 0
+    .gt('stock', 0)
   
   if (error) {
     console.error('Ошибка при загрузке размеров:', error)
@@ -37,62 +37,50 @@ export const getProductSizes = async (productId: string) => {
   return data || []
 }
 
-// ✅ НОВАЯ ФУНКЦИЯ: Проверка общего остатка товара и скрытие/показ
-const checkAndHideOutOfStockProducts = async (productId: string) => {
-  console.log(`🔍 Проверяем общий остаток товара ${productId}`)
-  
-  // Получаем все варианты товара
-  const { data: variants } = await supabase
+// ✅ Проверка наличия конкретного размера
+export const checkProductStock = async (
+  productId: string, 
+  size: string, 
+  quantity: number
+): Promise<{ available: boolean; error?: string }> => {
+  const { data: variant, error } = await supabase
     .from('product_variants')
     .select('stock')
     .eq('product_id', productId)
+    .eq('size_value', size)
+    .single()
   
-  if (!variants) {
-    console.warn(`⚠️ Варианты не найдены для товара ${productId}`)
-    return
-  }
-  
-  // Считаем общий остаток
-  const totalStock = variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0)
-  
-  console.log(`📊 Товар ${productId}: общий остаток = ${totalStock}`)
-  
-  if (totalStock === 0) {
-    // ✅ Если общий остаток 0 — скрываем товар
-    console.log(`🙈 Товар ${productId} полностью закончился, скрываем`)
-    await supabase
-      .from('products')
-      .update({ is_active: false })
-      .eq('id', productId)
-  } else {
-    // ✅ Если есть остаток — показываем товар (если был скрыт)
-    const { data: product } = await supabase
-      .from('products')
-      .select('is_active')
-      .eq('id', productId)
-      .single()
-    
-    if (product && !product.is_active) {
-      console.log(`✅ Товар ${productId} снова в наличии, показываем`)
-      await supabase
-        .from('products')
-        .update({ is_active: true })
-        .eq('id', productId)
+  if (error || !variant) {
+    return { 
+      available: false, 
+      error: `К сожалению, размер "${size}" временно отсутствует` 
     }
   }
+  
+  if ((variant.stock || 0) < quantity) {
+    if (variant.stock === 0) {
+      return { 
+        available: false, 
+        error: `Размер "${size}" закончился. Мы уже работаем над пополнением! 🙏` 
+      }
+    } else {
+      return { 
+        available: false, 
+        error: `Осталось только ${variant.stock} шт.` 
+      }
+    }
+  }
+  
+  return { available: true }
 }
 
-// ✅ Функция уменьшения остатков после заказа
+// ✅ Уменьшение остатков после заказа (БЕЗ авто-скрытия)
 const updateStockAfterOrder = async (items: any[]) => {
   console.log('📦 Обновляем остатки после заказа:', items)
-  
-  // Собираем уникальные productId чтобы не проверять один товар несколько раз
-  const processedProducts = new Set<string>()
   
   for (const item of items) {
     if (!item.productId || item.isSpecialOrder) continue
     
-    // Находим вариант товара
     const { data: variants, error: variantsError } = await supabase
       .from('product_variants')
       .select('*')
@@ -114,7 +102,6 @@ const updateStockAfterOrder = async (items: any[]) => {
     
     console.log(`📉 Товар ${item.productId} (${item.size}): ${variant.stock} → ${newStock}`)
     
-    // Обновляем остаток
     const { error: updateError } = await supabase
       .from('product_variants')
       .update({ stock: newStock })
@@ -123,18 +110,10 @@ const updateStockAfterOrder = async (items: any[]) => {
     if (updateError) {
       console.error('❌ Ошибка обновления остатка:', updateError)
     }
-    
-    // Добавляем productId в список для проверки
-    processedProducts.add(item.productId)
-  }
-  
-  // ✅ Проверяем общий остаток для каждого товара
-  for (const productId of processedProducts) {
-    await checkAndHideOutOfStockProducts(productId)
   }
 }
 
-// ✅ Функция проверки наличия товара перед заказом
+// ✅ Проверка наличия товара перед заказом
 const checkStockAvailability = async (items: any[]): Promise<{ available: boolean; error?: string }> => {
   for (const item of items) {
     if (!item.productId || item.isSpecialOrder) continue
@@ -174,7 +153,6 @@ const checkStockAvailability = async (items: any[]): Promise<{ available: boolea
 export const createOrder = async (orderData: any) => {
   console.log('Создаём заказ:', orderData)
   
-  // ✅ Проверяем наличие товара перед созданием заказа
   if (orderData.items && orderData.items.length > 0) {
     const stockCheck = await checkStockAvailability(orderData.items)
     if (!stockCheck.available) {
@@ -197,7 +175,6 @@ export const createOrder = async (orderData: any) => {
     return { data: null, error }
   }
   
-  // ✅ Уменьшаем остатки после успешного создания заказа
   if (orderData.items && orderData.items.length > 0) {
     await updateStockAfterOrder(orderData.items)
   }
@@ -214,7 +191,6 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   
   const specialOrderIdStr = specialRequestId.toString()
   
-  // ✅ Для спецзаказов НЕ проверяем остатки (товар из Китая)
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -224,7 +200,7 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
     .select()
   
   if (error) {
-    console.error('❌ Ошибка создания заказа из спецзаказа:', error)
+    console.error(' Ошибка создания заказа из спецзаказа:', error)
     return { data: null, error }
   }
 
@@ -248,11 +224,9 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   return { data, error: null }
 }
 
-// ✅ Функция возврата остатков при отмене заказа
+// ✅ Возврат остатков при отмене заказа (БЕЗ авто-показа)
 export const restoreStockAfterCancel = async (items: any[]) => {
   console.log('📈 Возвращаем остатки после отмены:', items)
-  
-  const processedProducts = new Set<string>()
   
   for (const item of items) {
     if (!item.productId || item.isSpecialOrder) continue
@@ -274,13 +248,6 @@ export const restoreStockAfterCancel = async (items: any[]) => {
       .from('product_variants')
       .update({ stock: newStock })
       .eq('id', variant.id)
-    
-    processedProducts.add(item.productId)
-  }
-  
-  // ✅ Проверяем общий остаток для каждого товара
-  for (const productId of processedProducts) {
-    await checkAndHideOutOfStockProducts(productId)
   }
 }
 
@@ -324,7 +291,7 @@ export const notifyNewOrder = async (order: any) => {
 ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
-💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+ Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
   await sendNotificationToManager(managerMessage)
@@ -334,13 +301,13 @@ ${itemsList}
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
 
-💰 Сумма: $${order.total_price_usd}
+ Сумма: $${order.total_price_usd}
 
 📦 <b>Товары:</b>
 ${itemsList}
 
 🚚 ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
-💳 ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
+ ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
 
 📞 Менеджер свяжется с вами в ближайшее время
     `.trim()
@@ -364,41 +331,4 @@ export const notifyNewChinaRequest = async (request: any) => {
 export const sendClientNotification = async (clientChatId: string, message: string): Promise<boolean> => {
   if (!clientChatId) return false
   return sendNotificationToClient(message, clientChatId)
-}
-
-// ✅ НОВАЯ ФУНКЦИЯ: Проверка наличия конкретного размера
-export const checkProductStock = async (
-  productId: string, 
-  size: string, 
-  quantity: number
-): Promise<{ available: boolean; error?: string }> => {
-  const { data: variant, error } = await supabase
-    .from('product_variants')
-    .select('stock')
-    .eq('product_id', productId)
-    .eq('size_value', size)
-    .single()
-  
-  if (error || !variant) {
-    return { 
-      available: false, 
-      error: `К сожалению, размер "${size}" временно отсутствует` 
-    }
-  }
-  
-  if ((variant.stock || 0) < quantity) {
-    if (variant.stock === 0) {
-      return { 
-        available: false, 
-        error: `Размер "${size}" закончился. Мы уже работаем над пополнением! 🙏` 
-      }
-    } else {
-      return { 
-        available: false, 
-        error: `Осталось только ${variant.stock} шт.` 
-      }
-    }
-  }
-  
-  return { available: true }
 }
