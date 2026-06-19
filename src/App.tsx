@@ -35,7 +35,6 @@ function AppContent() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // ✅ Синхронизация activeTab с URL при возврате из товара
   useEffect(() => {
     const path = location.pathname
     if (path === '/' || path === '/home') {
