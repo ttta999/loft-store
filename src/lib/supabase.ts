@@ -35,8 +35,103 @@ export const getProductSizes = async (productId: string) => {
   return data
 }
 
+// ✅ НОВАЯ ФУНКЦИЯ: Проверка наличия товара и уменьшение остатков
+const updateStockAfterOrder = async (items: any[]) => {
+  console.log('📦 Обновляем остатки после заказа:', items)
+  
+  for (const item of items) {
+    // Пропускаем спецзаказы (у них нет productId)
+    if (!item.productId || item.isSpecialOrder) continue
+    
+    // Находим вариант товара
+    const { data: variants, error: variantsError } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', item.productId)
+      .eq('size_value', item.size)
+    
+    if (variantsError) {
+      console.error('❌ Ошибка поиска варианта:', variantsError)
+      continue
+    }
+    
+    if (!variants || variants.length === 0) {
+      console.warn(`⚠️ Вариант не найден: товар ${item.productId}, размер ${item.size}`)
+      continue
+    }
+    
+    const variant = variants[0]
+    const newStock = Math.max(0, (variant.stock || 0) - item.quantity)
+    
+    console.log(`📉 Товар ${item.productId} (${item.size}): ${variant.stock} → ${newStock}`)
+    
+    // Обновляем остаток
+    const { error: updateError } = await supabase
+      .from('product_variants')
+      .update({ stock: newStock })
+      .eq('id', variant.id)
+    
+    if (updateError) {
+      console.error('❌ Ошибка обновления остатка:', updateError)
+    }
+    
+    // ✅ Если остаток стал 0 — скрываем товар
+    if (newStock === 0) {
+      console.log(`🙈 Товар ${item.productId} закончился, скрываем`)
+      await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', item.productId)
+    }
+  }
+}
+
+// ✅ НОВАЯ ФУНКЦИЯ: Проверка наличия товара перед заказом
+const checkStockAvailability = async (items: any[]): Promise<{ available: boolean; error?: string }> => {
+  for (const item of items) {
+    if (!item.productId || item.isSpecialOrder) continue
+    
+    const { data: variants, error } = await supabase
+      .from('product_variants')
+      .select('stock')
+      .eq('product_id', item.productId)
+      .eq('size_value', item.size)
+      .single()
+    
+    if (error || !variants) {
+      return { 
+        available: false, 
+        error: `Товар "${item.name}" (${item.size}) не найден` 
+      }
+    }
+    
+    if ((variants.stock || 0) < item.quantity) {
+      return { 
+        available: false, 
+        error: `Недостаточно товара "${item.name}" (${item.size}). Осталось: ${variants.stock} шт.` 
+      }
+    }
+  }
+  
+  return { available: true }
+}
+
 export const createOrder = async (orderData: any) => {
   console.log('Создаём заказ:', orderData)
+  
+  // ✅ Проверяем наличие товара перед созданием заказа
+  if (orderData.items && orderData.items.length > 0) {
+    const stockCheck = await checkStockAvailability(orderData.items)
+    if (!stockCheck.available) {
+      console.error('❌ Недостаточно товара:', stockCheck.error)
+      return { 
+        data: null, 
+        error: { message: stockCheck.error },
+        stockError: true
+      }
+    }
+  }
+  
   const { data, error } = await supabase
     .from('orders')
     .insert(orderData)
@@ -45,6 +140,11 @@ export const createOrder = async (orderData: any) => {
   if (error) {
     console.error('Ошибка при создании заказа:', error)
     return { data: null, error }
+  }
+  
+  // ✅ Уменьшаем остатки после успешного создания заказа
+  if (orderData.items && orderData.items.length > 0) {
+    await updateStockAfterOrder(orderData.items)
   }
   
   return { data, error: null }
@@ -59,6 +159,7 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   
   const specialOrderIdStr = specialRequestId.toString()
   
+  // ✅ Для спецзаказов НЕ проверяем остатки (товар из Китая)
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -69,12 +170,6 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   
   if (error) {
     console.error('❌ Ошибка создания заказа из спецзаказа:', error)
-    console.error('Error details:', {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint
-    })
     return { data: null, error }
   }
 
@@ -96,6 +191,41 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   }
 
   return { data, error: null }
+}
+
+// ✅ НОВАЯ ФУНКЦИЯ: Возврат остатков при отмене заказа
+export const restoreStockAfterCancel = async (items: any[]) => {
+  console.log('📈 Возвращаем остатки после отмены:', items)
+  
+  for (const item of items) {
+    if (!item.productId || item.isSpecialOrder) continue
+    
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', item.productId)
+      .eq('size_value', item.size)
+    
+    if (!variants || variants.length === 0) continue
+    
+    const variant = variants[0]
+    const newStock = (variant.stock || 0) + item.quantity
+    
+    console.log(`📈 Товар ${item.productId} (${item.size}): ${variant.stock} → ${newStock}`)
+    
+    await supabase
+      .from('product_variants')
+      .update({ stock: newStock })
+      .eq('id', variant.id)
+    
+    // ✅ Если товар был скрыт — снова показываем
+    if (variant.stock === 0 && newStock > 0) {
+      await supabase
+        .from('products')
+        .update({ is_active: true })
+        .eq('id', item.productId)
+    }
+  }
 }
 
 export const updateChinaRequestStatus = async (requestId: string, status: string, extraData?: any) => {
@@ -127,7 +257,6 @@ export const notifyNewOrder = async (order: any) => {
 
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
-  // ✅ СООБЩЕНИЕ МЕНЕДЖЕРУ (через БОТА МЕНЕДЖЕРА)
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 
@@ -142,10 +271,8 @@ ${itemsList}
 💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
-  // Отправляем менеджеру через БОТА МЕНЕДЖЕРА
   await sendNotificationToManager(managerMessage)
 
-  // ✅ СООБЩЕНИЕ КЛИЕНТУ (через ОТДЕЛЬНЫЙ БОТ КЛИЕНТОВ)
   const clientChatId = order.user_chat_id || order.user_id
   if (clientChatId && clientChatId !== 'guest-user') {
     const clientMessage = `
@@ -162,7 +289,6 @@ ${itemsList}
 📞 Менеджер свяжется с вами в ближайшее время
     `.trim()
 
-    // ✅ Отправляем клиенту через БОТА КЛИЕНТОВ
     await sendNotificationToClient(clientMessage, clientChatId)
   }
 }
@@ -176,11 +302,9 @@ export const notifyNewChinaRequest = async (request: any) => {
 💬 Комментарий: ${request.comment || 'Нет'}
   `.trim()
 
-  // ✅ Отправляем ТОЛЬКО менеджеру
   await sendNotificationToManager(message)
 }
 
-// ✅ ФУНКЦИЯ ДЛЯ ОТПРАВКИ УВЕДОМЛЕНИЯ КЛИЕНТУ ИЗ АДМИНКИ
 export const sendClientNotification = async (clientChatId: string, message: string): Promise<boolean> => {
   if (!clientChatId) return false
   return sendNotificationToClient(message, clientChatId)
