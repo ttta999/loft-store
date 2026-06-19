@@ -35,6 +35,15 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     <div className="p-4 pb-32">
       <Toaster position="top-center" richColors />
       
+      {/* ✅ Добавляем шапку с LOFT Store */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-40 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="w-16"></div>
+          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <div className="w-16"></div>
+        </div>
+      </div>
+      
       <h1 className="text-2xl font-bold mb-4">
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>
@@ -46,11 +55,17 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               src={item.image}
               alt={item.name}
               className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}
+              onClick={() => navigate(`/product/${item.productId}`, { 
+                state: { fromCart: true },
+                replace: false // ✅ Сохраняем историю
+              })}
             />
             <div 
               className="flex-1 cursor-pointer"
-              onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}
+              onClick={() => navigate(`/product/${item.productId}`, { 
+                state: { fromCart: true },
+                replace: false
+              })}
             >
               <h3 className="font-medium text-sm mb-1">{item.name}</h3>
               <p className="text-xs text-gray-500 mb-2">
@@ -191,12 +206,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setSubmitting(true)
 
     try {
-      // ✅ Сохраняем chat_id клиента (его Telegram user_id)
       const userId = telegramUser?.id?.toString() || 'guest-user'
       
       const orderData = {
         user_id: userId,
-        user_chat_id: userId, // ✅ Для отправки уведомлений именно этому клиенту
+        user_chat_id: userId,
         client_name: name.trim(),
         client_phone: phone,
         delivery_method: deliveryMethod,
