@@ -18,15 +18,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   if (cart.length === 0) {
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
-        {/* ✅ Добавляем шапку для пустой корзины */}
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="w-16"></div>
-            <h1 className="text-xl font-bold">LOFT Store</h1>
-            <div className="w-16"></div>
-          </div>
-        </div>
-        
         <ShoppingBag size={64} className="text-gray-300 mb-4" />
         <h2 className="text-xl font-bold mb-2">
           {language === 'ru' ? 'Корзина пуста' : 'Savat bo\'sh'}
@@ -44,15 +35,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     <div className="p-4 pb-32">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ Добавляем шапку с LOFT Store */}
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="w-16"></div>
-          <h1 className="text-xl font-bold">LOFT Store</h1>
-          <div className="w-16"></div>
-        </div>
-      </div>
-      
+      {/* ✅ УБРАЛ дублирующую шапку - она уже есть в App.tsx */}
       <h1 className="text-2xl font-bold mb-4">
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>

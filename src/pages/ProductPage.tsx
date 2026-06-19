@@ -53,20 +53,23 @@ export default function ProductPage() {
     setSizes(sizeValues)
   }
 
+  // ✅ ИСПРАВЛЕННАЯ навигация назад
   const handleBack = () => {
-    // ✅ Если пришли из корзины — возвращаемся туда
     if (cameFromCart) {
-      navigate('/cart', { state: location.state?.fromCheckout })
-    } else {
-      // Иначе используем стандартную навигацию назад
+      // ✅ Если пришли из корзины — ВСЕГДА возвращаемся в корзину
+      navigate('/cart')
+    } else if (window.history.length > 1) {
+      // Если есть история браузера — идём назад
       navigate(-1)
+    } else {
+      // Если истории нет — на главную
+      navigate('/')
     }
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
-        {/* ✅ Шапка с LOFT Store даже при загрузке */}
         <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <button
@@ -95,7 +98,6 @@ export default function ProductPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
-        {/* ✅ Шапка с LOFT Store даже при ошибке */}
         <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <button
@@ -257,7 +259,6 @@ export default function ProductPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ ШАПКА С LOFT STORE — ВСЕГДА ВИДНА */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button
@@ -390,7 +391,6 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Полноэкранный просмотр фото */}
       {showFullScreen && (
         <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
           <button
