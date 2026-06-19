@@ -201,7 +201,11 @@ export default function ProductPage() {
   }
 
   const images = getImages()
-  const description = language === 'ru' ? product.description_ru : product.description_uz
+  
+  // ✅ ИСПРАВЛЕНО: Проверка на null/undefined
+  const description = language === 'ru' 
+    ? (product.description_ru || '') 
+    : (product.description_uz || '')
 
   if (loading) {
     return (
@@ -364,7 +368,8 @@ export default function ProductPage() {
             {formatPrice(product.price_usd)}
           </p>
 
-          {description && (
+          {/* ✅ ИСПРАВЛЕНО: Показываем описание только если оно есть */}
+          {description && description.trim() !== '' && (
             <div className="mb-4 pb-4 border-b border-gray-100">
               <h3 className="font-bold mb-2">
                 {language === 'ru' ? 'Описание' : 'Tavsif'}
