@@ -35,15 +35,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     <div className="p-4 pb-32">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ Добавляем шапку с LOFT Store */}
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="w-16"></div>
-          <h1 className="text-xl font-bold">LOFT Store</h1>
-          <div className="w-16"></div>
-        </div>
-      </div>
-      
+      {/* ✅ УБРАЛ дублирующийся заголовок - теперь только h1 */}
       <h1 className="text-2xl font-bold mb-4">
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>
@@ -56,15 +48,13 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               alt={item.name}
               className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate(`/product/${item.productId}`, { 
-                state: { fromCart: true },
-                replace: false // ✅ Сохраняем историю
+                state: { fromCart: true }
               })}
             />
             <div 
               className="flex-1 cursor-pointer"
               onClick={() => navigate(`/product/${item.productId}`, { 
-                state: { fromCart: true },
-                replace: false
+                state: { fromCart: true }
               })}
             >
               <h3 className="font-medium text-sm mb-1">{item.name}</h3>
