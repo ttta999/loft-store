@@ -35,7 +35,22 @@ function AppContent() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // ✅ Инициализация Telegram
+  // ✅ Синхронизация activeTab с URL при возврате из товара
+  useEffect(() => {
+    const path = location.pathname
+    if (path === '/' || path === '/home') {
+      setActiveTab('home')
+    } else if (path === '/search') {
+      setActiveTab('search')
+    } else if (path === '/cart') {
+      setActiveTab('cart')
+    } else if (path === '/china') {
+      setActiveTab('china')
+    } else if (path === '/profile') {
+      setActiveTab('profile')
+    }
+  }, [location.pathname])
+
   useEffect(() => {
     const tg = initTelegram()
     
@@ -57,78 +72,27 @@ function AppContent() {
     }
   }, [])
 
-  // ✅ Синхронизация activeTab с URL - ВАЖНО для возврата из товара в корзину
-  useEffect(() => {
-    const path = location.pathname
-    
-    // Определяем таб по пути
-    if (path === '/' || path === '/home') {
-      setActiveTab('home')
-    } else if (path === '/search') {
-      setActiveTab('search')
-    } else if (path === '/cart') {
-      setActiveTab('cart')
-    } else if (path === '/china') {
-      setActiveTab('china')
-    } else if (path === '/profile') {
-      setActiveTab('profile')
-    }
-    // Для /product/:id, /catalog, /brands, /category, /favorites - оставляем текущий таб
-  }, [location.pathname])
-
-  // Обработка переключения табов
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab)
-    
-    // Навигация по табам
-    switch (tab) {
-      case 'home':
-        navigate('/')
-        break
-      case 'search':
-        navigate('/search')
-        break
-      case 'cart':
-        navigate('/cart')
-        break
-      case 'china':
-        navigate('/china')
-        break
-      case 'profile':
-        navigate('/profile')
-        break
-    }
-  }
-
-  // Рендер страницы в зависимости от activeTab
   const renderPage = () => {
     switch (activeTab) {
-      case 'home':
-        return <HomePage />
-      case 'search':
-        return <SearchPage />
-      case 'cart':
-        return <CartPage telegramUser={telegramUser} />
-      case 'china':
-        return <ChinaPage telegramUser={telegramUser} />
-      case 'profile':
-        return (
-          <ProfilePage 
-            telegramUser={telegramUser}
-            showBackButton={showBackButton}
-            setShowBackButton={setShowBackButton}
-            onBackClick={onBackClick}
-            setOnBackClick={setOnBackClick}
-          />
-        )
-      default:
-        return <HomePage />
+      case 'home': return <HomePage />
+      case 'search': return <SearchPage />
+      case 'cart': return <CartPage telegramUser={telegramUser} />
+      case 'china': return <ChinaPage telegramUser={telegramUser} />
+      case 'profile': return (
+        <ProfilePage 
+          telegramUser={telegramUser}
+          showBackButton={showBackButton}
+          setShowBackButton={setShowBackButton}
+          onBackClick={onBackClick}
+          setOnBackClick={setOnBackClick}
+        />
+      )
+      default: return <HomePage />
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Шапка с LOFT Store */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           {showBackButton && onBackClick ? (
@@ -156,11 +120,9 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Контент страницы */}
       {renderPage()}
 
-      {/* Нижняя навигация */}
-      <BottomNavbar activeTab={activeTab} setActiveTab={handleTabChange} />
+      <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   )
 }

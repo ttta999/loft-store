@@ -56,14 +56,9 @@ export default function ProductPage() {
   // ✅ ИСПРАВЛЕННАЯ навигация назад
   const handleBack = () => {
     if (cameFromCart) {
-      // ✅ Если пришли из корзины — ВСЕГДА возвращаемся в корзину
       navigate('/cart')
-    } else if (window.history.length > 1) {
-      // Если есть история браузера — идём назад
-      navigate(-1)
     } else {
-      // Если истории нет — на главную
-      navigate('/')
+      navigate(-1)
     }
   }
 
