@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { sendNotification } from './telegram'
+import { sendNotificationToManager, sendNotificationToClient } from './telegram'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -114,8 +114,6 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
 }
 
 export const notifyNewOrder = async (order: any) => {
-  const MANAGER_CHAT_ID = '6150570809'
-  
   const itemsList = order.items.map((item: any, index: number) => {
     return `${index + 1}. ${item.name}
    Размер: ${item.size}
@@ -129,7 +127,7 @@ export const notifyNewOrder = async (order: any) => {
 
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
-  // ✅ Сообщение ТОЛЬКО для менеджера
+  // ✅ СООБЩЕНИЕ МЕНЕДЖЕРУ (через БОТА МЕНЕДЖЕРА)
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 
@@ -144,10 +142,10 @@ ${itemsList}
 💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
-  // Отправляем ТОЛЬКО менеджеру
-  await sendNotification(managerMessage, MANAGER_CHAT_ID)
+  // Отправляем менеджеру через БОТА МЕНЕДЖЕРА
+  await sendNotificationToManager(managerMessage)
 
-  // ✅ Сообщение ТОЛЬКО для клиента (если он залогинен в Telegram)
+  // ✅ СООБЩЕНИЕ КЛИЕНТУ (через ОТДЕЛЬНЫЙ БОТ КЛИЕНТОВ)
   const clientChatId = order.user_chat_id || order.user_id
   if (clientChatId && clientChatId !== 'guest-user') {
     const clientMessage = `
@@ -164,14 +162,12 @@ ${itemsList}
 📞 Менеджер свяжется с вами в ближайшее время
     `.trim()
 
-    // ✅ Отправляем ТОЛЬКО этому клиенту (не всем!)
-    await sendNotification(clientMessage, clientChatId)
+    // ✅ Отправляем клиенту через БОТА КЛИЕНТОВ
+    await sendNotificationToClient(clientMessage, clientChatId)
   }
 }
 
 export const notifyNewChinaRequest = async (request: any) => {
-  const MANAGER_CHAT_ID = '6150570809'
-  
   const message = `
 🌍 <b>Новый спецзаказ №${request.id}</b>
 
@@ -181,5 +177,11 @@ export const notifyNewChinaRequest = async (request: any) => {
   `.trim()
 
   // ✅ Отправляем ТОЛЬКО менеджеру
-  await sendNotification(message, MANAGER_CHAT_ID)
+  await sendNotificationToManager(message)
+}
+
+// ✅ ФУНКЦИЯ ДЛЯ ОТПРАВКИ УВЕДОМЛЕНИЯ КЛИЕНТУ ИЗ АДМИНКИ
+export const sendClientNotification = async (clientChatId: string, message: string): Promise<boolean> => {
+  if (!clientChatId) return false
+  return sendNotificationToClient(message, clientChatId)
 }

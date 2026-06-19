@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
@@ -8,6 +8,7 @@ import { supabase, getProductSizes } from '../lib/supabase'
 
 export default function ProductPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { language, currency, exchangeRate, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [product, setProduct] = useState<any>(null)
@@ -51,6 +52,19 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 hover:text-black"
+            >
+              <ArrowLeft size={20} />
+              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
+            </button>
+            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <div className="w-16"></div>
+          </div>
+        </div>
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
@@ -67,13 +81,17 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
         <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-black"
-          >
-            <ArrowLeft size={20} />
-            <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 hover:text-black"
+            >
+              <ArrowLeft size={20} />
+              <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
+            </button>
+            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <div className="w-16"></div>
+          </div>
         </div>
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <p className="text-gray-500">
@@ -223,14 +241,19 @@ export default function ProductPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
       
+      {/* Шапка с LOFT Store */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
-        <button
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-black"
-        >
-          <ArrowLeft size={20} />
-          <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-black"
+          >
+            <ArrowLeft size={20} />
+            <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
+          </button>
+          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <div className="w-16"></div>
+        </div>
       </div>
 
       <div className="p-4">

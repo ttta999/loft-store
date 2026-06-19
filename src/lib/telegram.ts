@@ -65,21 +65,53 @@ export const subscribeUser = async () => {
   }
 }
 
-// Отправка уведомления конкретному пользователю
-export const sendNotification = async (message: string, chatId: string): Promise<boolean> => {
-  if (!chatId || !message) return false
-
+// ✅ ОТПРАВКА УВЕДОМЛЕНИЯ МЕНЕДЖЕРУ (через БОТА МЕНЕДЖЕРА)
+export const sendNotificationToManager = async (message: string): Promise<boolean> => {
+  const MANAGER_CHAT_ID = '6150570809' // ID менеджера
+  
   try {
     const response = await fetch('/api/sendNotification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId, message }),
+      body: JSON.stringify({ 
+        chatId: MANAGER_CHAT_ID, 
+        message,
+        botType: 'manager'
+      }),
     })
     
     const data = await response.json()
     return data.success
   } catch (error) {
-    console.error('Ошибка отправки уведомления:', error)
+    console.error('Ошибка отправки уведомления менеджеру:', error)
     return false
   }
+}
+
+// ✅ ОТПРАВКА УВЕДОМЛЕНИЯ КЛИЕНТУ (через БОТА КЛИЕНТОВ)
+export const sendNotificationToClient = async (message: string, clientChatId: string): Promise<boolean> => {
+  if (!clientChatId) return false
+
+  try {
+    const response = await fetch('/api/sendNotification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        chatId: clientChatId, 
+        message,
+        botType: 'client'
+      }),
+    })
+    
+    const data = await response.json()
+    return data.success
+  } catch (error) {
+    console.error('Ошибка отправки уведомления клиенту:', error)
+    return false
+  }
+}
+
+// Для обратной совместимости (отправляет менеджеру)
+export const sendNotification = async (message: string): Promise<boolean> => {
+  return sendNotificationToManager(message)
 }

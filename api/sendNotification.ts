@@ -6,15 +6,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { chatId, message } = req.body
+  const { chatId, message, botType = 'manager' } = req.body
 
   if (!chatId || !message) {
     return res.status(400).json({ error: 'chatId and message are required' })
   }
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  // Выбираем токен в зависимости от типа бота
+  const botToken = botType === 'client' 
+    ? process.env.TELEGRAM_CLIENT_BOT_TOKEN
+    : process.env.TELEGRAM_MANAGER_BOT_TOKEN
 
   if (!botToken) {
+    console.error(`Bot token not found for type: ${botType}`)
     return res.status(500).json({ error: 'Bot token not configured' })
   }
 
@@ -41,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Failed to send message', details: data })
     }
 
+    console.log(`✅ Notification sent via ${botType} bot to ${chatId}`)
     return res.status(200).json({ success: true })
   } catch (error) {
     console.error('Error sending notification:', error)
