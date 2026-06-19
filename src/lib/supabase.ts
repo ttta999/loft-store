@@ -129,7 +129,8 @@ export const notifyNewOrder = async (order: any) => {
 
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
-  const message = `
+  // ✅ Сообщение ТОЛЬКО для менеджера
+  const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 
 👤 Клиент: ${order.client_name}
@@ -139,11 +140,33 @@ export const notifyNewOrder = async (order: any) => {
 📦 <b>Товары:</b>
 ${itemsList}
 
- Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
- Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
+💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
-  await sendNotification(message, MANAGER_CHAT_ID)
+  // Отправляем ТОЛЬКО менеджеру
+  await sendNotification(managerMessage, MANAGER_CHAT_ID)
+
+  // ✅ Сообщение ТОЛЬКО для клиента (если он залогинен в Telegram)
+  const clientChatId = order.user_chat_id || order.user_id
+  if (clientChatId && clientChatId !== 'guest-user') {
+    const clientMessage = `
+✅ <b>Ваш заказ №${order.id} принят!</b>
+
+💰 Сумма: $${order.total_price_usd}
+
+📦 <b>Товары:</b>
+${itemsList}
+
+🚚 ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
+💳 ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
+
+📞 Менеджер свяжется с вами в ближайшее время
+    `.trim()
+
+    // ✅ Отправляем ТОЛЬКО этому клиенту (не всем!)
+    await sendNotification(clientMessage, clientChatId)
+  }
 }
 
 export const notifyNewChinaRequest = async (request: any) => {
@@ -157,5 +180,6 @@ export const notifyNewChinaRequest = async (request: any) => {
 💬 Комментарий: ${request.comment || 'Нет'}
   `.trim()
 
+  // ✅ Отправляем ТОЛЬКО менеджеру
   await sendNotification(message, MANAGER_CHAT_ID)
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
+  const navigate = useNavigate()
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
@@ -43,9 +45,13 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
             <img
               src={item.image}
               alt={item.name}
-              className="w-20 h-20 object-cover rounded-lg"
+              className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate(`/product/${item.productId}`)}
             />
-            <div className="flex-1">
+            <div 
+              className="flex-1 cursor-pointer"
+              onClick={() => navigate(`/product/${item.productId}`)}
+            >
               <h3 className="font-medium text-sm mb-1">{item.name}</h3>
               <p className="text-xs text-gray-500 mb-2">
                 {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
@@ -163,8 +169,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   }
 
   const handleSubmit = async () => {
-    console.log('Начинаем создание заказа...')
-    
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -179,7 +183,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     if (deliveryMethod === 'delivery') {
       const addressError = validateAddress(address)
       if (addressError) {
-        console.error('Ошибка валидации адреса:', addressError)
         toast.error(addressError)
         return
       }
@@ -188,10 +191,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setSubmitting(true)
 
     try {
+      // ✅ Сохраняем chat_id клиента (его Telegram user_id)
       const userId = telegramUser?.id?.toString() || 'guest-user'
       
       const orderData = {
         user_id: userId,
+        user_chat_id: userId, // ✅ Для отправки уведомлений именно этому клиенту
         client_name: name.trim(),
         client_phone: phone,
         delivery_method: deliveryMethod,
@@ -202,24 +207,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         status: 'Активный',
       }
 
-      console.log('Отправляем заказ:', orderData)
-
       let result: any
 
       if (isSpecialOrder && specialItem.specialRequestId) {
-        console.log('Создаём заказ из спецзаказа:', specialItem.specialRequestId)
         result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
       } else {
-        console.log('Создаём обычный заказ')
         result = await createOrder(orderData)
       }
 
       const data = Array.isArray(result.data) ? result.data[0] : result.data
       
-      console.log('Результат:', { data, error: result.error })
-
       if (result.error || !data) {
-        console.error('Ошибка Supabase:', result.error)
         toast.error(
           language === 'ru' 
             ? 'Ошибка при создании заказа: ' + (result.error?.message || 'Неизвестная ошибка')

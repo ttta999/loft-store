@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES, BRANDS } from '../data/categories'
 import { useState, useEffect } from 'react'
-import { Filter } from 'lucide-react'
+import { Filter, ArrowUpDown } from 'lucide-react'
 
 export default function CatalogPage() {
   const navigate = useNavigate()
@@ -20,10 +20,10 @@ export default function CatalogPage() {
   const category = CATEGORIES.find(c => c.id === categoryId)
   const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
 
-  // Фильтры
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(1000)
+  const [maxPrice, setMaxPrice] = useState<number>(10000)
+  const [sortBy, setSortBy] = useState<string>('newest')
 
   useEffect(() => {
     if (categoryId && subcategoryId) {
@@ -32,8 +32,8 @@ export default function CatalogPage() {
   }, [categoryId, subcategoryId])
 
   useEffect(() => {
-    applyFilters()
-  }, [selectedBrands, minPrice, maxPrice, products])
+    applyFiltersAndSort()
+  }, [selectedBrands, minPrice, maxPrice, sortBy, products])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -49,10 +49,9 @@ export default function CatalogPage() {
     setLoading(false)
   }
 
-  const applyFilters = () => {
+  const applyFiltersAndSort = () => {
     let filtered = [...products]
 
-    // Фильтр по брендам
     if (selectedBrands.length > 0) {
       filtered = filtered.filter(p => 
         selectedBrands.some(brandId => {
@@ -62,8 +61,22 @@ export default function CatalogPage() {
       )
     }
 
-    // Фильтр по цене
     filtered = filtered.filter(p => p.price_usd >= minPrice && p.price_usd <= maxPrice)
+
+    switch (sortBy) {
+      case 'price_asc':
+        filtered.sort((a, b) => a.price_usd - b.price_usd)
+        break
+      case 'price_desc':
+        filtered.sort((a, b) => b.price_usd - a.price_usd)
+        break
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        break
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        break
+    }
 
     setFilteredProducts(filtered)
   }
@@ -79,10 +92,14 @@ export default function CatalogPage() {
   const clearFilters = () => {
     setSelectedBrands([])
     setMinPrice(0)
-    setMaxPrice(1000)
+    setMaxPrice(10000)
+    setSortBy('newest')
   }
 
-  const activeFiltersCount = selectedBrands.length + (minPrice !== 0 || maxPrice !== 1000 ? 1 : 0)
+  const activeFiltersCount = 
+    selectedBrands.length + 
+    (minPrice !== 0 || maxPrice !== 10000 ? 1 : 0) +
+    (sortBy !== 'newest' ? 1 : 0)
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -91,7 +108,6 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Шапка с LOFT Store */}
       <div className="bg-white border-b p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
@@ -102,7 +118,6 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {/* Категория и подкатегория */}
       <div className="bg-white px-4 py-3">
         <h2 className="text-2xl font-bold">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
@@ -114,7 +129,6 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {/* Кнопка фильтров */}
       <div className="px-4 py-3">
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -125,12 +139,10 @@ export default function CatalogPage() {
           <div className="flex items-center gap-2">
             <Filter size={20} />
             <span className="font-medium">
-              {language === 'ru' ? 'Фильтры' : 'Filtrlar'}
+              {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
             </span>
             {activeFiltersCount > 0 && (
-              <span className={`${
-                activeFiltersCount > 0 && showFilters ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
-              } text-xs px-2 py-1 rounded-full`}>
+              <span className="bg-white text-black text-xs px-2 py-1 rounded-full">
                 {activeFiltersCount}
               </span>
             )}
@@ -149,10 +161,8 @@ export default function CatalogPage() {
         </button>
       </div>
 
-      {/* Панель фильтров */}
       {showFilters && (
         <div className="bg-white border-t border-gray-200 p-4 mb-4">
-          {/* Бренд */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Бренд' : 'Brend'}
@@ -174,8 +184,7 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          {/* Цена */}
-          <div>
+          <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
             </h3>
@@ -196,10 +205,50 @@ export default function CatalogPage() {
               />
             </div>
           </div>
+
+          <div>
+            <h3 className="font-bold mb-2 flex items-center gap-2">
+              <ArrowUpDown size={16} />
+              {language === 'ru' ? 'Сортировка' : 'Saralash'}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSortBy('newest')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
+              </button>
+              <button
+                onClick={() => setSortBy('oldest')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'oldest' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
+              </button>
+              <button
+                onClick={() => setSortBy('price_asc')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
+              </button>
+              <button
+                onClick={() => setSortBy('price_desc')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
+                }`}
+              >
+                {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Результаты */}
       <div className="px-4 mb-3">
         <p className="text-sm text-gray-500">
           {language === 'ru' 

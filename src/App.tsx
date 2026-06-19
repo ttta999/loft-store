@@ -11,7 +11,7 @@ import FavoritesPage from './pages/FavoritesPage'
 import CatalogPage from './pages/CatalogPage'
 import BrandsPage from './pages/BrandsPage'
 import CategoryPage from './pages/CategoryPage'
-import { initTelegram, getUserData, getChatId } from './lib/telegram'
+import { initTelegram, getUserData, getChatId, subscribeUser } from './lib/telegram'
 import { Heart } from 'lucide-react'
 import { useStore } from './store/useStore'
 
@@ -47,6 +47,9 @@ function AppContent() {
         if (chatId && chatId !== useStore.getState().chatId) {
           useStore.getState().setChatId(chatId)
           console.log('Chat ID сохранён:', chatId)
+          
+          // ✅ АВТОПОДПИСКА при входе в приложение
+          subscribeUser()
         }
       }
     } else {

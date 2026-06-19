@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import { useStore } from '../store/useStore'
@@ -14,6 +14,8 @@ export default function ProductPage() {
   const [sizes, setSizes] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showFullScreen, setShowFullScreen] = useState(false)
+  const [fullScreenImageIndex, setFullScreenImageIndex] = useState(0)
 
   useEffect(() => {
     if (id) {
@@ -198,6 +200,23 @@ export default function ProductPage() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
+  const openFullScreen = (index: number) => {
+    setFullScreenImageIndex(index)
+    setShowFullScreen(true)
+  }
+
+  const closeFullScreen = () => {
+    setShowFullScreen(false)
+  }
+
+  const fullScreenPrev = () => {
+    setFullScreenImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+
+  const fullScreenNext = () => {
+    setFullScreenImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
   const description = language === 'ru' ? product.description_ru : product.description_uz
 
   return (
@@ -220,7 +239,8 @@ export default function ProductPage() {
             <img
               src={images[currentImageIndex]}
               alt={language === 'ru' ? product.name_ru : product.name_uz}
-              className="w-full aspect-square object-cover"
+              className="w-full aspect-square object-cover cursor-pointer"
+              onClick={() => openFullScreen(currentImageIndex)}
             />
             
             {images.length > 1 && (
@@ -303,7 +323,6 @@ export default function ProductPage() {
             {formatPrice(product.price_usd)}
           </p>
 
-          {/* Описание товара */}
           {description && (
             <div className="mb-4 pb-4 border-b border-gray-100">
               <h3 className="font-bold mb-2">
@@ -331,6 +350,56 @@ export default function ProductPage() {
           </button>
         </div>
       </div>
+
+      {/* Полноэкранный просмотр фото */}
+      {showFullScreen && (
+        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+          <button
+            onClick={closeFullScreen}
+            className="absolute top-4 right-4 text-white z-50 bg-black/50 rounded-full p-2"
+          >
+            <X size={32} />
+          </button>
+          
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={fullScreenPrev}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button
+                onClick={fullScreenNext}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
+              >
+                <ChevronRight size={32} />
+              </button>
+            </>
+          )}
+          
+          <img
+            src={images[fullScreenImageIndex]}
+            alt="Full screen"
+            className="max-w-full max-h-full object-contain"
+          />
+          
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              {images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 rounded-full transition-all ${
+                    index === fullScreenImageIndex 
+                      ? 'bg-white w-6' 
+                      : 'bg-white/50 w-2'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

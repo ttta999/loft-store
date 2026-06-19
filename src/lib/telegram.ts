@@ -1,3 +1,5 @@
+import { supabase } from './supabase'
+
 export const initTelegram = () => {
   if (window.Telegram?.WebApp) {
     window.Telegram.WebApp.ready()
@@ -23,25 +25,54 @@ export const getUserData = () => {
   }
 }
 
-// Получаем chat_id для отправки уведомлений
 export const getChatId = (): string | null => {
   const tg = initTelegram()
   if (!tg?.initDataUnsafe?.user) return null
-  
-  // chat_id = id пользователя Telegram
   return tg.initDataUnsafe.user.id.toString()
 }
 
-// Функция отправки уведомления через нашу API
+// ✅ АВТОПОДПИСКА: сохраняем пользователя при входе в приложение
+export const subscribeUser = async () => {
+  const tg = initTelegram()
+  if (!tg?.initDataUnsafe?.user) {
+    console.log('Не в Telegram, автоподписка пропущена')
+    return
+  }
+
+  const user = tg.initDataUnsafe.user
+  const chatId = user.id.toString()
+
+  try {
+    const { error } = await supabase
+      .from('subscribers')
+      .upsert({
+        chat_id: chatId,
+        user_id: chatId,
+        username: user.username || null,
+        first_name: user.first_name || null,
+        is_subscribed: true,
+      }, {
+        onConflict: 'chat_id'
+      })
+
+    if (error) {
+      console.error('Ошибка подписки:', error)
+    } else {
+      console.log('✅ Пользователь подписан:', chatId)
+    }
+  } catch (error) {
+    console.error('Ошибка подписки:', error)
+  }
+}
+
+// Отправка уведомления конкретному пользователю
 export const sendNotification = async (message: string, chatId: string): Promise<boolean> => {
   if (!chatId || !message) return false
 
   try {
     const response = await fetch('/api/sendNotification', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId, message }),
     })
     
