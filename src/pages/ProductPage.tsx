@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
@@ -9,7 +9,6 @@ import { supabase, getProductSizes } from '../lib/supabase'
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const { language, currency, exchangeRate, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [product, setProduct] = useState<any>(null)
@@ -18,9 +17,6 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showFullScreen, setShowFullScreen] = useState(false)
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(0)
-  
-  // ✅ Проверяем, пришли ли мы из корзины
-  const cameFromCart = location.state?.fromCart
 
   useEffect(() => {
     if (id) {
@@ -53,13 +49,8 @@ export default function ProductPage() {
     setSizes(sizeValues)
   }
 
-  // ✅ ИСПРАВЛЕННАЯ навигация назад
   const handleBack = () => {
-    if (cameFromCart) {
-      navigate('/cart')
-    } else {
-      navigate(-1)
-    }
+    navigate('/')
   }
 
   if (loading) {
