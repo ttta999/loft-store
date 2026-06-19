@@ -149,14 +149,21 @@ const checkStockAvailability = async (items: any[]): Promise<{ available: boolea
     if (error || !variants) {
       return { 
         available: false, 
-        error: `Товар "${item.name}" (${item.size}) не найден` 
+        error: `К сожалению, размер "${item.size}" товара "${item.name}" временно отсутствует` 
       }
     }
     
     if ((variants.stock || 0) < item.quantity) {
-      return { 
-        available: false, 
-        error: `Недостаточно товара "${item.name}" (${item.size}). Осталось: ${variants.stock} шт.` 
+      if (variants.stock === 0) {
+        return { 
+          available: false, 
+          error: `Размер "${item.size}" (${item.name}) закончился. Мы уже работаем над пополнением! 🙏` 
+        }
+      } else {
+        return { 
+          available: false, 
+          error: `Осталось только ${variants.stock} шт. размера "${item.size}". Попробуйте уменьшить количество.` 
+        }
       }
     }
   }
