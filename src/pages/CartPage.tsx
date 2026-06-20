@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
+import { createPayment, initPaymentHandlers } from '../lib/payments'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const navigate = useNavigate()
@@ -35,7 +36,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     <div className="p-4 pb-32">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ УБРАЛ дублирующую шапку - она уже есть в App.tsx */}
       <h1 className="text-2xl font-bold mb-4">
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>
@@ -129,7 +129,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
 }
 
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
-  const { cart, clearCart, language } = useStore()
+  const { cart, clearCart, language, currency, exchangeRate } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -138,9 +138,30 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [awaitingPayment, setAwaitingPayment] = useState(false)
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
+
+  // ✅ Инициализация обработчиков платежей
+  useEffect(() => {
+    initPaymentHandlers(
+      (paidOrderId) => {
+        console.log('✅ Оплата прошла:', paidOrderId)
+        setAwaitingPayment(false)
+        setOrderSuccess(true)
+        setOrderId(Number(paidOrderId))
+        clearCart()
+        toast.success(language === 'ru' ? 'Оплата прошла успешно!' : 'To\'lov muvaffaqiyatli o\'tdi!')
+      },
+      (cancelledOrderId) => {
+        console.log(' Оплата отменена:', cancelledOrderId)
+        setAwaitingPayment(false)
+        toast.error(language === 'ru' ? 'Оплата отменена' : 'To\'lov bekor qilindi')
+      }
+    )
+  }, [language])
 
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
@@ -173,6 +194,51 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return null
   }
 
+  // ✅ Создание заказа в БД
+  const createOrderInDb = async (): Promise<any> => {
+    const userId = telegramUser?.id?.toString() || 'guest-user'
+    
+    const orderData = {
+      user_id: userId,
+      user_chat_id: userId,
+      client_name: name.trim(),
+      client_phone: phone,
+      delivery_method: deliveryMethod,
+      delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
+      payment_method: paymentMethod,
+      total_price_usd: getTotalPrice(),
+      items: cart,
+      status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
+    }
+
+    let result: any
+
+    if (isSpecialOrder && specialItem.specialRequestId) {
+      result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
+    } else {
+      result = await createOrder(orderData)
+    }
+
+    const data = Array.isArray(result.data) ? result.data[0] : result.data
+    
+    if (result.error || !data) {
+      throw new Error(result.error?.message || 'Ошибка создания заказа')
+    }
+
+    return data
+  }
+
+  // ✅ Отправка инвойса через Telegram
+  const sendInvoice = async (orderData: any) => {
+    const totalInSums = getTotalPrice() * exchangeRate
+    
+    await createPayment({
+      orderId: orderData.id.toString(),
+      amount: totalInSums,
+      description: `Заказ №${orderData.id} в LOFT Store`
+    })
+  }
+
   const handleSubmit = async () => {
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
@@ -196,53 +262,64 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setSubmitting(true)
 
     try {
-      const userId = telegramUser?.id?.toString() || 'guest-user'
+      // 1. Создаём заказ в БД
+      const orderData = await createOrderInDb()
       
-      const orderData = {
-        user_id: userId,
-        user_chat_id: userId,
-        client_name: name.trim(),
-        client_phone: phone,
-        delivery_method: deliveryMethod,
-        delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
-        payment_method: paymentMethod,
-        total_price_usd: getTotalPrice(),
-        items: cart,
-        status: 'Активный',
-      }
+      // 2. Отправляем уведомление менеджеру
+      await notifyNewOrder(orderData)
 
-      let result: any
+      const newOrderId = orderData.id
 
-      if (isSpecialOrder && specialItem.specialRequestId) {
-        result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
-      } else {
-        result = await createOrder(orderData)
-      }
-
-      const data = Array.isArray(result.data) ? result.data[0] : result.data
-      
-      if (result.error || !data) {
-        toast.error(
-          language === 'ru' 
-            ? 'Ошибка при создании заказа: ' + (result.error?.message || 'Неизвестная ошибка')
-            : 'Buyurtma yaratishda xatolik'
-        )
+      // 3. Если оплата онлайн - открываем инвойс
+      if (paymentMethod === 'online_card') {
+        setPendingOrderId(newOrderId.toString())
+        setAwaitingPayment(true)
+        await sendInvoice(orderData)
         setSubmitting(false)
         return
       }
 
-      await notifyNewOrder(data)
-
-      const newOrderId = data?.id || Math.floor(Math.random() * 1000) + 500
+      // 4. Если оплата при получении - сразу успех
       setOrderId(newOrderId)
       setOrderSuccess(true)
       clearCart()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Полная ошибка:', error)
-      toast.error(language === 'ru' ? 'Произошла ошибка: ' + error : 'Xatolik yuz berdi')
+      toast.error(language === 'ru' ? 'Ошибка: ' + error.message : 'Xatolik: ' + error.message)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Экран ожидания оплаты
+  if (awaitingPayment) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6">
+        <div className="text-6xl mb-4 animate-pulse">💳</div>
+        <h2 className="text-2xl font-bold mb-2">
+          {language === 'ru' ? 'Ожидание оплаты' : 'To\'lov kutilmoqda'}
+        </h2>
+        <p className="text-gray-600 mb-4 text-center">
+          {language === 'ru' 
+            ? 'Откройте окно оплаты в Telegram и завершите платеж' 
+            : 'Telegram\'da to\'lov oynasini oching va to\'lovni yakunlang'}
+        </p>
+        <p className="text-sm text-gray-500 mb-6">
+          {language === 'ru' ? 'Сумма: ' : 'Summa: '}{formatPrice(getTotalPrice())}
+        </p>
+        <button
+          onClick={() => {
+            setAwaitingPayment(false)
+            if (pendingOrderId) {
+              toast.info(language === 'ru' ? 'Заказ будет отменён' : 'Buyurtma bekor qilinadi')
+            }
+          }}
+          className="w-full max-w-sm bg-gray-200 text-gray-700 py-3 rounded-xl font-bold"
+        >
+          {language === 'ru' ? 'Отмена' : 'Bekor qilish'}
+        </button>
+      </div>
+    )
   }
 
   if (orderSuccess) {
@@ -258,7 +335,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         </p>
         {isSpecialOrder && (
           <p className="text-sm text-purple-700 mb-2 font-medium">
-            🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+             {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
           </p>
         )}
         <p className="text-sm text-gray-500 mb-6 text-center">
@@ -357,7 +434,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
           {deliveryMethod === 'pickup' && (
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-900">
-               {language === 'ru' 
+              📍 {language === 'ru' 
                 ? 'Рынок Малика, ТЦ Меркато (здание korzinka.uz, 2 этаж, магазин 34)' 
                 : 'Malika bozori, Mercato savdo markazi (korzinka.uz binosi, 2-qavat, 34-do\'kon)'}
             </div>
@@ -396,8 +473,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 onChange={() => setPaymentMethod('online_card')}
                 className="w-4 h-4"
               />
-              <span className="text-sm">
-                {language === 'ru' ? 'Оплата картой сейчас' : 'Karta orqali to\'lash'}
+              <CreditCard size={20} className="text-blue-600" />
+              <span className="text-sm font-medium">
+                {language === 'ru' ? 'Оплата картой (CLICK)' : 'Karta orqali to\'lash (CLICK)'}
               </span>
             </label>
 
@@ -434,12 +512,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 {formatPrice(getTotalPrice())}
               </span>
             </div>
+            {currency === 'USD' && (
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                ≈ {Math.round(getTotalPrice() * exchangeRate).toLocaleString()} сум
+              </p>
+            )}
           </div>
 
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-colors ${
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 ${
               submitting 
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
                 : 'bg-black text-white hover:bg-gray-800'
@@ -447,7 +530,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           >
             {submitting 
               ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
-              : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')
+              : paymentMethod === 'online_card'
+                ? (language === 'ru' ? 'Оплатить онлайн 💳' : 'Onlayn to\'lash 💳')
+                : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')
             }
           </button>
         </div>
