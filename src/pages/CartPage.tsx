@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
-import { createPayment, initPaymentHandlers } from '../lib/payments'
+import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const navigate = useNavigate()
@@ -138,30 +138,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [awaitingPayment, setAwaitingPayment] = useState(false)
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
+  const [showPaymentInfo, setShowPaymentInfo] = useState(false)
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
+  const [screenshotUploaded, setScreenshotUploaded] = useState(false)
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
-
-  // ✅ Инициализация обработчиков платежей
-  useEffect(() => {
-    initPaymentHandlers(
-      (paidOrderId) => {
-        console.log('✅ Оплата прошла:', paidOrderId)
-        setAwaitingPayment(false)
-        setOrderSuccess(true)
-        setOrderId(Number(paidOrderId))
-        clearCart()
-        toast.success(language === 'ru' ? 'Оплата прошла успешно!' : 'To\'lov muvaffaqiyatli o\'tdi!')
-      },
-      (cancelledOrderId) => {
-        console.log('❌ Оплата отменена:', cancelledOrderId)
-        setAwaitingPayment(false)
-        toast.error(language === 'ru' ? 'Оплата отменена' : 'To\'lov bekor qilindi')
-      }
-    )
-  }, [language, clearCart])
 
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
@@ -194,7 +177,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return null
   }
 
-  // ✅ Создание заказа в БД
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     
@@ -229,15 +211,27 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return data
   }
 
-  // ✅ Отправка инвойса через Telegram
-  const sendInvoice = async (orderData: any) => {
-    const totalInSums = getTotalPrice() * exchangeRate
-    
-    await createPayment({
-      orderId: orderData.id.toString(),
-      amount: totalInSums,
-      description: `Заказ №${orderData.id} в LOFT Store`
-    })
+  // ✅ Загрузка скриншота оплаты
+  const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentOrderId) return
+
+    setUploadingScreenshot(true)
+
+    try {
+      const screenshotUrl = await uploadPaymentScreenshot(currentOrderId, file)
+      const saved = await savePaymentScreenshot(currentOrderId, screenshotUrl)
+
+      if (saved) {
+        setScreenshotUploaded(true)
+        toast.success(language === 'ru' ? 'Скриншот загружен! Ожидайте подтверждения.' : 'Screenshot yuklandi! Tasdiqlashni kuting.')
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки:', error)
+      toast.error(language === 'ru' ? 'Ошибка загрузки скриншота' : 'Screenshot yuklashda xatolik')
+    } finally {
+      setUploadingScreenshot(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -263,24 +257,18 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     setSubmitting(true)
 
     try {
-      // 1. Создаём заказ в БД
       const orderData = await createOrderInDb()
-      
-      // 2. Отправляем уведомление менеджеру
       await notifyNewOrder(orderData)
 
       const newOrderId = orderData.id
 
-      // 3. Если оплата онлайн - открываем инвойс
       if (paymentMethod === 'online_card') {
-        setPendingOrderId(newOrderId.toString())
-        setAwaitingPayment(true)
-        await sendInvoice(orderData)
-        // Не сбрасываем submitting здесь - ждём пока пользователь закроет окно оплаты
+        setCurrentOrderId(newOrderId.toString())
+        setShowPaymentInfo(true)
+        setSubmitting(false)
         return
       }
 
-      // 4. Если оплата при получении - сразу успех
       setOrderId(newOrderId)
       setOrderSuccess(true)
       clearCart()
@@ -292,34 +280,157 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     }
   }
 
-  // Экран ожидания оплаты
-  if (awaitingPayment) {
+  // ✅ Экран с реквизитами и загрузкой скриншота
+  if (showPaymentInfo) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6">
-        <div className="text-6xl mb-4 animate-pulse">💳</div>
-        <h2 className="text-2xl font-bold mb-2">
-          {language === 'ru' ? 'Ожидание оплаты' : 'To\'lov kutilmoqda'}
-        </h2>
-        <p className="text-gray-600 mb-4 text-center">
-          {language === 'ru' 
-            ? 'Откройте окно оплаты в Telegram и завершите платеж' 
-            : 'Telegram\'da to\'lov oynasini oching va to\'lovni yakunlang'}
-        </p>
-        <p className="text-sm text-gray-500 mb-6">
-          {language === 'ru' ? 'Сумма: ' : 'Summa: '}{formatPrice(getTotalPrice())}
-        </p>
-        <button
-          onClick={() => {
-            setAwaitingPayment(false)
-            setSubmitting(false)
-            if (pendingOrderId) {
-              toast.info(language === 'ru' ? 'Заказ будет отменён' : 'Buyurtma bekor qilinadi')
-            }
-          }}
-          className="w-full max-w-sm bg-gray-200 text-gray-700 py-3 rounded-xl font-bold"
-        >
-          {language === 'ru' ? 'Отмена' : 'Bekor qilish'}
-        </button>
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="bg-white p-4 border-b sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => {
+                if (screenshotUploaded) {
+                  setShowPaymentInfo(false)
+                  setOrderSuccess(true)
+                  clearCart()
+                } else {
+                  setShowPaymentInfo(false)
+                }
+              }} 
+              className="text-gray-600 hover:text-black"
+            >
+              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+            </button>
+            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <div className="w-16"></div>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="text-6xl text-center mb-4">💳</div>
+          
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            {language === 'ru' ? 'Оплата заказа' : 'Buyurtmani to\'lash'}
+          </h2>
+
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-orange-800 font-medium text-center">
+              {language === 'ru' 
+                ? `⏳ Заказ №${currentOrderId} ожидает оплаты` 
+                : `⏳ ${currentOrderId}-buyurtma to'lovni kutmoqda`}
+            </p>
+          </div>
+          
+          {/* Реквизиты */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <h3 className="font-bold mb-3">
+              {language === 'ru' ? '📱 Реквизиты для оплаты:' : '📱 To\'lov rekvizitlari:'}
+            </h3>
+            <div className="space-y-2 text-sm">
+              <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
+              <p><b>Payme:</b> {PAYMENT_DETAILS.payme}</p>
+              <p><b>Uzum Bank:</b> {PAYMENT_DETAILS.uzum}</p>
+            </div>
+            <p className="text-lg font-bold mt-4 pt-4 border-t">
+              {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatPrice(getTotalPrice())}
+            </p>
+          </div>
+
+          {/* Загрузка скриншота */}
+          <div className="mb-4">
+            <h3 className="font-bold mb-3">
+              {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
+            </h3>
+            
+            {!screenshotUploaded ? (
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                uploadingScreenshot 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-300 hover:border-blue-500'
+              }`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {uploadingScreenshot ? (
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                  ) : (
+                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                  )}
+                  <p className="text-sm text-gray-500">
+                    {uploadingScreenshot 
+                      ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                      : (language === 'ru' ? 'Нажмите для загрузки скриншота' : 'Screenshotni yuklash uchun bosing')
+                    }
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {language === 'ru' ? 'PNG, JPG до 10MB' : 'PNG, JPG 10MB gacha'}
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadScreenshot}
+                  className="hidden"
+                  disabled={uploadingScreenshot}
+                />
+              </label>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <div className="text-4xl mb-2">✅</div>
+                <p className="text-green-800 font-bold mb-2">
+                  {language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!'}
+                </p>
+                <p className="text-sm text-green-700">
+                  {language === 'ru' 
+                    ? 'Мы проверим оплату и подтвердим заказ в течение 15 минут' 
+                    : 'To\'lovni tekshiramiz va 15 daqiqa ichida tasdiqlaymiz'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Кнопки */}
+          <div className="space-y-3">
+            <a
+              href={MANAGER_TELEGRAM_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+            >
+              📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
+            </a>
+            
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Заказ №${currentOrderId}\nСумма: ${formatPrice(getTotalPrice())}\n\nCLICK: ${PAYMENT_DETAILS.click}\nPayme: ${PAYMENT_DETAILS.payme}\nUzum: ${PAYMENT_DETAILS.uzum}`
+                )
+                toast.success(language === 'ru' ? 'Реквизиты скопированы!' : 'Rekvizitlar nusxalandi!')
+              }}
+              className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-bold"
+            >
+              📋 {language === 'ru' ? 'Скопировать реквизиты' : 'Rekvizitlarni nusxalash'}
+            </button>
+            
+            {screenshotUploaded && (
+              <button
+                onClick={() => {
+                  setShowPaymentInfo(false)
+                  setOrderSuccess(true)
+                  clearCart()
+                }}
+                className="w-full bg-black text-white py-3 rounded-xl font-bold"
+              >
+                {language === 'ru' ? 'Готово' : 'Tayyor'}
+              </button>
+            )}
+          </div>
+          
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              ⚠️ {language === 'ru' 
+                ? 'Заказ будет обработан только после подтверждения оплаты менеджером' 
+                : 'Buyurtma faqat menejer tomonidan to\'lov tasdiqlangandan so\'ng ko\'rib chiqiladi'}
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -477,7 +588,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               />
               <CreditCard size={20} className="text-blue-600" />
               <span className="text-sm font-medium">
-                {language === 'ru' ? 'Оплата картой (CLICK)' : 'Karta orqali to\'lash (CLICK)'}
+                {language === 'ru' ? 'Оплата картой' : 'Karta orqali to\'lash'}
               </span>
             </label>
 
@@ -499,7 +610,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             {deliveryMethod === 'delivery' && (
               <p className="text-xs text-red-500 mt-2">
                 {language === 'ru' 
-                  ? '* При доставке доступна только предоплата картой' 
+                  ? '* При доставке доступна только предоплата' 
                   : '* Yetkazib berishda faqat oldindan to\'lov'}
               </p>
             )}
@@ -533,7 +644,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             {submitting 
               ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
               : paymentMethod === 'online_card'
-                ? (language === 'ru' ? 'Оплатить онлайн 💳' : 'Onlayn to\'lash 💳')
+                ? (language === 'ru' ? 'Перейти к оплате 💳' : 'To\'lovga o\'tish 💳')
                 : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')
             }
           </button>

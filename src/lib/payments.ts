@@ -6,118 +6,86 @@ interface PaymentData {
   description: string
 }
 
-// Функция для создания платежа через Telegram + CLICK
-export const createPayment = async (paymentData: PaymentData): Promise<boolean> => {
-  console.log('🔍 Инициализация платежа...')
-  console.log('Payment data:', paymentData)
-  
-  // ✅ Получаем Telegram WebApp
-  const tg = (window as any).Telegram?.WebApp
-  
-  if (!tg) {
-    console.error('❌ Telegram WebApp НЕ найден!')
-    console.log('window.Telegram:', (window as any).Telegram)
-    throw new Error('Откройте приложение в Telegram')
-  }
-
-  console.log('✅ Telegram WebApp найден')
-  console.log('📋 Версия WebApp:', tg.version)
-  console.log('🔧 Доступные методы:', Object.keys(tg).filter(key => typeof tg[key] === 'function'))
-
-  // ✅ Проверяем sendInvoice
-  if (typeof tg.sendInvoice !== 'function') {
-    console.error('❌ sendInvoice НЕ доступен!')
-    console.log('tg.sendInvoice:', tg.sendInvoice)
-    
-    throw new Error(
-      'Метод оплаты недоступен. Проверьте:\n' +
-      '1. Подключены ли платежи в @BotFather\n' +
-      '2. Обновите Telegram до последней версии'
-    )
-  }
-
-  console.log('✅ sendInvoice доступен')
-
-  // ✅ Проверяем токен
-  const providerToken = import.meta.env.VITE_CLICK_PROVIDER_TOKEN
-  
-  console.log('🔑 Provider token:', providerToken ? 
-    `✅ Найден (${providerToken.substring(0, 20)}...)` : 
-    '❌ Не найден')
-  
-  if (!providerToken) {
-    console.error('❌ VITE_CLICK_PROVIDER_TOKEN не найден в .env!')
-    console.log('Все env переменные:', import.meta.env)
-    throw new Error('Ошибка конфигурации платежей')
-  }
-
-  // Подготовка invoice
-  const invoiceData = {
-    title: 'LOFT Store',
-    description: paymentData.description,
-    payload: JSON.stringify({ 
-      orderId: paymentData.orderId,
-      type: 'order_payment',
-      timestamp: Date.now()
-    }),
-    provider_token: providerToken,
-    currency: 'UZS',
-    prices: [
-      { 
-        label: 'Заказ', 
-        amount: Math.round(paymentData.amount * 100)
-      }
-    ],
-    start_parameter: 'loft_' + paymentData.orderId,
-    need_name: false,
-    need_phone_number: false,
-    need_email: false,
-    need_shipping_address: false,
-    is_flexible: false,
-  }
-
-  console.log('📤 Отправляем invoice:', JSON.stringify(invoiceData, null, 2))
-
-  try {
-    tg.sendInvoice(invoiceData)
-    console.log('✅ Invoice отправлен успешно!')
-    return true
-  } catch (error: any) {
-    console.error('❌ Ошибка отправки invoice:', error)
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    })
-    throw new Error('Не удалось открыть оплату: ' + (error.message || error))
-  }
+// ✅ Реквизиты для оплаты (настрой свои)
+export const PAYMENT_DETAILS = {
+  click: '+998 93 378 87 70',
+  payme: '+998 93 378 87 70',
+  uzum: '+998 93 378 87 70',
 }
 
-// Обработка успешной оплаты
-export const handlePaymentSuccess = async (orderId: string) => {
+// ✅ Ссылка на менеджера в Telegram
+export const MANAGER_TELEGRAM_LINK = 'https://t.me/loft_corneli' // Замени на свой username
+
+// ✅ Показать реквизиты оплаты
+export const showPaymentDetails = (paymentData: PaymentData): string => {
+  const message = `
+💳 <b>Оплата заказа №${paymentData.orderId}</b>
+
+💰 <b>Сумма:</b> ${paymentData.amount.toLocaleString()} сум
+
+📱 <b>Реквизиты для перевода:</b>
+
+• <b>CLICK:</b> ${PAYMENT_DETAILS.click}
+• <b>Payme:</b> ${PAYMENT_DETAILS.payme}
+• <b>Uzum Bank:</b> ${PAYMENT_DETAILS.uzum}
+
+📸 <b>После оплаты:</b>
+1. Сделайте скриншот перевода
+2. Загрузите его в приложении
+3. Мы подтвердим заказ в течение 15 минут
+
+⏱ <b>Важно:</b> Заказ будет обработан только после подтверждения оплаты!
+  `.trim()
+
+  return message
+}
+
+// ✅ Загрузка скриншота оплаты в Supabase Storage
+export const uploadPaymentScreenshot = async (
+  orderId: string,
+  file: File
+): Promise<string> => {
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${orderId}-${Date.now()}.${fileExt}`
+  
+  const { error } = await supabase.storage
+    .from('payment-screenshots')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    })
+
+  if (error) throw error
+
+  const { data: urlData } = supabase.storage
+    .from('payment-screenshots')
+    .getPublicUrl(fileName)
+
+  return urlData.publicUrl
+}
+
+// ✅ Сохранение ссылки на скриншот в заказе
+export const savePaymentScreenshot = async (
+  orderId: string,
+  screenshotUrl: string
+): Promise<boolean> => {
   try {
-    // Обновляем статус заказа на "Активный" только после оплаты
     const { error } = await supabase
       .from('orders')
-      .update({ 
-        status: 'Активный', // ✅ Меняем на "Активный"
-        payment_status: 'paid',
-        paid_at: new Date().toISOString(),
-        payment_provider: 'click'
+      .update({
+        payment_screenshot_url: screenshotUrl,
       })
       .eq('id', orderId)
 
     if (error) throw error
-
-    console.log('✅ Заказ оплачен:', orderId)
     return true
   } catch (error) {
-    console.error('Ошибка обновления заказа:', error)
+    console.error('Ошибка сохранения скриншота:', error)
     return false
   }
 }
 
-// Отмена заказа
+// ✅ Отмена заказа
 export const cancelOrder = async (orderId: string) => {
   try {
     const { error } = await supabase
@@ -130,8 +98,6 @@ export const cancelOrder = async (orderId: string) => {
       .eq('id', orderId)
 
     if (error) throw error
-
-    console.log('❌ Заказ отменён:', orderId)
     return true
   } catch (error) {
     console.error('Ошибка отмены заказа:', error)
@@ -139,37 +105,23 @@ export const cancelOrder = async (orderId: string) => {
   }
 }
 
-// Инициализация обработчиков платежей
-export const initPaymentHandlers = (
-  onSuccess?: (orderId: string) => void, 
-  onCancel?: (orderId: string) => void
-) => {
-  const tg = (window as any).Telegram?.WebApp
-  
-  if (!tg) {
-    console.warn('⚠️ Telegram WebApp не найден, обработчики не инициализированы')
-    return
+// ✅ Подтверждение оплаты (для менеджера)
+export const confirmPayment = async (orderId: string) => {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ 
+        status: 'Активный',
+        payment_status: 'paid',
+        paid_at: new Date().toISOString(),
+        payment_provider: 'manual'
+      })
+      .eq('id', orderId)
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Ошибка подтверждения оплаты:', error)
+    return false
   }
-
-  // Обработка закрытия invoice
-  tg.onEvent('invoiceClosed', (invoice: any) => {
-    console.log('📄 Invoice closed:', invoice)
-    
-    if (invoice.status === 'paid') {
-      // Оплата прошла успешно
-      const payload = JSON.parse(invoice.payload || '{}')
-      if (payload.orderId) {
-        handlePaymentSuccess(payload.orderId)
-        if (onSuccess) onSuccess(payload.orderId)
-      }
-    } else if (invoice.status === 'cancelled' || invoice.status === 'failed') {
-      // Оплата отменена
-      const payload = JSON.parse(invoice.payload || '{}')
-      if (payload.orderId) {
-        if (onCancel) onCancel(payload.orderId)
-      }
-    }
-  })
-
-  console.log('✅ Payment handlers initialized')
 }

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, CreditCard, X } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { createPayment, cancelOrder } from '../lib/payments'
+import { cancelOrder, showPaymentDetails, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onPayAgain, onCancelOrder }: any) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -58,6 +59,41 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       'Ожидает оплаты': 'bg-orange-100 text-orange-800',
     }
     return colors[status] || 'bg-green-100 text-green-800'
+  }
+
+  // ✅ Загрузка скриншота оплаты
+  const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingScreenshot(true)
+
+    try {
+      const screenshotUrl = await uploadPaymentScreenshot(order.id.toString(), file)
+      const saved = await savePaymentScreenshot(order.id.toString(), screenshotUrl)
+
+      if (saved) {
+        toast.success(language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!')
+        if (onScreenshotUploaded) onScreenshotUploaded()
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки:', error)
+      toast.error(language === 'ru' ? 'Ошибка загрузки скриншота' : 'Screenshot yuklashda xatolik')
+    } finally {
+      setUploadingScreenshot(false)
+    }
+  }
+
+  // ✅ Показать реквизиты
+  const handleShowPaymentDetails = () => {
+    const message = showPaymentDetails({
+      orderId: order.id.toString(),
+      amount: Math.round(order.total_price_usd * exchangeRate),
+      description: `Заказ №${order.id}`
+    })
+    
+    const cleanMessage = message.replace(/<[^>]*>/g, '')
+    alert(cleanMessage)
   }
 
   return (
@@ -172,7 +208,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
@@ -181,23 +217,106 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </span>
           </div>
 
-          {/* ✅ КНОПКИ ОПЛАТИТЬ И ОТМЕНИТЬ ЗАКАЗ */}
+          {/* ✅ БЛОК ДЛЯ ОПЛАТЫ */}
           {order.status === 'Ожидает оплаты' && order.payment_method === 'online_card' && (
-            <div className="space-y-2">
+            <div className="space-y-3 border-t pt-4">
+              <h3 className="font-bold text-lg">
+                {language === 'ru' ? '💳 Оплата заказа' : '💳 Buyurtmani to\'lash'}
+              </h3>
+
+              {/* Реквизиты */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2 text-sm">
+                  {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
+                </h4>
+                <div className="space-y-1 text-sm">
+                  <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
+                  <p><b>Payme:</b> {PAYMENT_DETAILS.payme}</p>
+                  <p><b>Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
+                </div>
+                <p className="text-lg font-bold mt-3 pt-3 border-t">
+                  {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatPrice(order.total_price_usd)}
+                </p>
+              </div>
+
+              {/* Загрузка скриншота */}
+              {!order.payment_screenshot_url ? (
+                <div>
+                  <p className="text-sm font-medium mb-2">
+                    {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
+                  </p>
+                  <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    uploadingScreenshot 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-blue-500'
+                  }`}>
+                    <div className="flex flex-col items-center justify-center">
+                      {uploadingScreenshot ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
+                      ) : (
+                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {uploadingScreenshot 
+                          ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                          : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
+                        }
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadScreenshot}
+                      className="hidden"
+                      disabled={uploadingScreenshot}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm text-green-800 font-medium mb-2">
+                    ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
+                  </p>
+                  <a 
+                    href={order.payment_screenshot_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-green-600 hover:underline block mb-2"
+                  >
+                    👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                  </a>
+                  <p className="text-xs text-green-700">
+                    {language === 'ru' 
+                      ? '⏳ Ожидайте подтверждения от менеджера' 
+                      : '⏳ Menejer tasdiqlashini kuting'}
+                  </p>
+                </div>
+              )}
+
+              {/* Кнопки */}
               <button
-                onClick={() => onPayAgain(order)}
+                onClick={handleShowPaymentDetails}
+                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+              >
+                📋 {language === 'ru' ? 'Показать реквизиты' : 'Rekvizitlarni ko\'rsatish'}
+              </button>
+
+              <a
+                href={MANAGER_TELEGRAM_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
               >
-                <CreditCard size={20} />
-                {language === 'ru' ? '💳 Оплатить заказ' : '💳 Buyurtmani to\'lash'}
-              </button>
+                <MessageCircle size={20} />
+                {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
+              </a>
               
               <button
                 onClick={() => onCancelOrder(order)}
                 className="w-full bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
               >
                 <X size={20} />
-                {language === 'ru' ? '🚫 Отменить заказ' : '🚫 Buyurtmani bekor qilish'}
+                {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
               </button>
             </div>
           )}
@@ -497,24 +616,6 @@ export default function ProfilePage({
     setLoading(false)
   }
 
-  // ✅ Функция оплаты заказа
-  const handlePayAgain = async (order: any) => {
-    try {
-      const totalInSums = order.total_price_usd * exchangeRate
-      
-      await createPayment({
-        orderId: order.id.toString(),
-        amount: totalInSums,
-        description: `Заказ №${order.id} в LOFT Store`
-      })
-      
-      toast.success(language === 'ru' ? 'Открываем окно оплаты...' : 'To\'lov oynasi ochilmoqda...')
-    } catch (error) {
-      console.error('Ошибка оплаты:', error)
-      toast.error(language === 'ru' ? 'Ошибка при оплате' : 'To\'lovda xatolik')
-    }
-  }
-
   // ✅ Функция отмены заказа
   const handleCancelOrder = async (order: any) => {
     const confirmed = confirm(
@@ -807,8 +908,13 @@ export default function ProfilePage({
             language={language}
             currency={currency}
             exchangeRate={exchangeRate}
-            onPayAgain={handlePayAgain}
             onCancelOrder={handleCancelOrder}
+            onScreenshotUploaded={() => {
+              // Перезагрузить заказ чтобы показать обновленный скриншот
+              const updatedOrder = { ...selectedOrder, payment_screenshot_url: 'uploaded' }
+              setSelectedOrder(updatedOrder)
+              loadOrders()
+            }}
           />
         )}
       </div>
