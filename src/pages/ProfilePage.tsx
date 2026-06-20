@@ -61,7 +61,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     return colors[status] || 'bg-green-100 text-green-800'
   }
 
-  // ✅ Загрузка скриншота оплаты
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -84,7 +83,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     }
   }
 
-  // ✅ Показать реквизиты
   const handleShowPaymentDetails = () => {
     const message = showPaymentDetails({
       orderId: order.id.toString(),
@@ -616,7 +614,6 @@ export default function ProfilePage({
     setLoading(false)
   }
 
-  // ✅ Функция отмены заказа
   const handleCancelOrder = async (order: any) => {
     const confirmed = confirm(
       language === 'ru' 
@@ -910,7 +907,6 @@ export default function ProfilePage({
             exchangeRate={exchangeRate}
             onCancelOrder={handleCancelOrder}
             onScreenshotUploaded={() => {
-              // Перезагрузить заказ чтобы показать обновленный скриншот
               const updatedOrder = { ...selectedOrder, payment_screenshot_url: 'uploaded' }
               setSelectedOrder(updatedOrder)
               loadOrders()

@@ -211,7 +211,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return data
   }
 
-  // ✅ Загрузка скриншота оплаты
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !currentOrderId) return
@@ -305,7 +304,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* ✅ ДОБАВЛЕН pb-32 чтобы жёлтое предупреждение было видно */}
+        <div className="flex-1 overflow-y-auto p-4 pb-40">
           <div className="text-6xl text-center mb-4">💳</div>
           
           <h2 className="text-2xl font-bold mb-4 text-center">
@@ -423,8 +423,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
           
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
+          {/* ✅ ЖЁЛТОЕ ПРЕДУПРЕЖДЕНИЕ - теперь видно благодаря pb-40 */}
+          <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+            <p className="text-sm text-yellow-800 font-medium">
               ⚠️ {language === 'ru' 
                 ? 'Заказ будет обработан только после подтверждения оплаты менеджером' 
                 : 'Buyurtma faqat menejer tomonidan to\'lov tasdiqlangandan so\'ng ko\'rib chiqiladi'}
