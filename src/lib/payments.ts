@@ -11,15 +11,19 @@ export const createPayment = async (paymentData: PaymentData) => {
   const tg = (window as any).Telegram?.WebApp
   
   if (!tg) {
+    console.error('❌ Telegram WebApp не найден!')
     alert('Telegram WebApp не доступен')
     return
   }
 
   const providerToken = import.meta.env.VITE_CLICK_PROVIDER_TOKEN
   
+  console.log('🔑 Provider token:', providerToken ? '✅ Найден' : '❌ Не найден')
+  console.log('📦 Payment data:', paymentData)
+  
   if (!providerToken) {
-    console.error('Provider token не найден!')
-    alert('Ошибка конфигурации платежей')
+    console.error('❌ Provider token не найден в .env!')
+    alert('Ошибка конфигурации платежей. Проверь .env файл')
     return
   }
 
@@ -36,7 +40,7 @@ export const createPayment = async (paymentData: PaymentData) => {
     prices: [
       { 
         label: 'Сумма заказа', 
-        amount: Math.round(paymentData.amount * 100) // Конвертируем в тийины (1 сум = 100 тийин)
+        amount: Math.round(paymentData.amount * 100)
       }
     ],
     start_parameter: 'loft_payment_' + paymentData.orderId,
@@ -47,8 +51,16 @@ export const createPayment = async (paymentData: PaymentData) => {
     is_flexible: false,
   }
 
+  console.log('📤 Отправляем invoice:', invoiceData)
+
   // Открываем окно оплаты
-  tg.sendInvoice(invoiceData)
+  try {
+    tg.sendInvoice(invoiceData)
+    console.log('✅ Invoice отправлен успешно')
+  } catch (error) {
+    console.error('❌ Ошибка отправки invoice:', error)
+    alert('Ошибка при открытии окна оплаты: ' + error)
+  }
 }
 
 // Обработка успешной оплаты
