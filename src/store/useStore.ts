@@ -44,22 +44,24 @@ interface AppState {
 }
 
 // ✅ Функция получения курса валют через НАШ API (чтобы избежать CORS)
+// ✅ Получение курса через НАШ API (который парсит CBU.uz)
 const fetchExchangeRateFromCBU = async (): Promise<number> => {
   try {
-    // Запрашиваем через наш backend (нет CORS проблем)
+    console.log('🔄 Запрашиваем курс у нашего API...')
+    
     const response = await fetch('/api/getExchangeRate')
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(`API returned ${response.status}`)
     }
     
     const data = await response.json()
-    console.log(`✅ Курс получен с ${data.source}:`, data.rate)
+    console.log('✅ Курс получен:', data.rate, 'Источник:', data.source)
+    
     return data.rate
   } catch (error) {
     console.error('❌ Ошибка получения курса:', error)
-    // Fallback на дефолтное значение
-    return 13000
+    return 13000 // Fallback
   }
 }
 
