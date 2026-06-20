@@ -156,12 +156,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         toast.success(language === 'ru' ? 'Оплата прошла успешно!' : 'To\'lov muvaffaqiyatli o\'tdi!')
       },
       (cancelledOrderId) => {
-        console.log(' Оплата отменена:', cancelledOrderId)
+        console.log('❌ Оплата отменена:', cancelledOrderId)
         setAwaitingPayment(false)
         toast.error(language === 'ru' ? 'Оплата отменена' : 'To\'lov bekor qilindi')
       }
     )
-  }, [language])
+  }, [language, clearCart])
 
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
@@ -209,6 +209,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       total_price_usd: getTotalPrice(),
       items: cart,
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
+      payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
     }
 
     let result: any
@@ -275,7 +276,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         setPendingOrderId(newOrderId.toString())
         setAwaitingPayment(true)
         await sendInvoice(orderData)
-        setSubmitting(false)
+        // Не сбрасываем submitting здесь - ждём пока пользователь закроет окно оплаты
         return
       }
 
@@ -310,6 +311,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         <button
           onClick={() => {
             setAwaitingPayment(false)
+            setSubmitting(false)
             if (pendingOrderId) {
               toast.info(language === 'ru' ? 'Заказ будет отменён' : 'Buyurtma bekor qilinadi')
             }

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
+import { createPayment } from '../lib/payments'
 
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: any) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onPayAgain }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   const formatPrice = (usd: number) => {
@@ -30,6 +31,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
         'Готов': 'Готов к выдаче 🎉',
         'Выдан': 'Получен 🤝',
         'Отменён': 'Отменен 🚫',
+        'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
       return labels[status] || status
     }
@@ -40,6 +42,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
       'Выдан': 'Передан курьеру 🚀',
       'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
+      'Ожидает оплаты': 'Ожидает оплаты ⏳',
     }
     return labels[status] || status
   }
@@ -52,6 +55,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
       'Выдан': 'bg-gray-100 text-gray-800',
       'Доставлен': 'bg-emerald-100 text-emerald-800',
       'Отменён': 'bg-red-100 text-red-800',
+      'Ожидает оплаты': 'bg-orange-100 text-orange-800',
     }
     return colors[status] || 'bg-green-100 text-green-800'
   }
@@ -176,6 +180,17 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate }: 
               {getStatusText(order.status, order.delivery_method)}
             </span>
           </div>
+
+          {/* ✅ КНОПКА ОПЛАТИТЬ СНОВА */}
+          {order.status === 'Ожидает оплаты' && order.payment_method === 'online_card' && (
+            <button
+              onClick={() => onPayAgain(order)}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+            >
+              <CreditCard size={20} />
+              {language === 'ru' ? '💳 Оплатить заказ' : '💳 Buyurtmani to\'lash'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -198,7 +213,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅‍♂️',
+      'Отменён клиентом': 'Отменён вами 🙅♂️',
       'Отклонён': 'Отклонён 🛑',
     }
     return labels[status] || status
@@ -390,6 +405,7 @@ export default function ProfilePage({
         'Готов': 'Готов к выдаче 🎉',
         'Выдан': 'Получен 🤝',
         'Отменён': 'Отменен 🚫',
+        'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
       return labels[status] || status
     }
@@ -400,6 +416,7 @@ export default function ProfilePage({
       'Выдан': 'Передан курьеру 🚀',
       'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
+      'Ожидает оплаты': 'Ожидает оплаты ⏳',
     }
     return labels[status] || status
   }
@@ -412,6 +429,7 @@ export default function ProfilePage({
       'Выдан': 'bg-gray-100 text-gray-800',
       'Доставлен': 'bg-emerald-100 text-emerald-800',
       'Отменён': 'bg-red-100 text-red-800',
+      'Ожидает оплаты': 'bg-orange-100 text-orange-800',
     }
     return colors[status] || 'bg-green-100 text-green-800'
   }
@@ -470,6 +488,24 @@ export default function ProfilePage({
       setChinaRequests(data || [])
     }
     setLoading(false)
+  }
+
+  // ✅ Функция оплаты заказа
+  const handlePayAgain = async (order: any) => {
+    try {
+      const totalInSums = order.total_price_usd * exchangeRate
+      
+      await createPayment({
+        orderId: order.id.toString(),
+        amount: totalInSums,
+        description: `Заказ №${order.id} в LOFT Store`
+      })
+      
+      toast.success(language === 'ru' ? 'Открываем окно оплаты...' : 'To\'lov oynasi ochilmoqda...')
+    } catch (error) {
+      console.error('Ошибка оплаты:', error)
+      toast.error(language === 'ru' ? 'Ошибка при оплате' : 'To\'lovda xatolik')
+    }
   }
 
   const handleAcceptSpecialOrder = (request: any) => {
@@ -738,6 +774,7 @@ export default function ProfilePage({
             language={language}
             currency={currency}
             exchangeRate={exchangeRate}
+            onPayAgain={handlePayAgain}
           />
         )}
       </div>
