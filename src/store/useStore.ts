@@ -43,49 +43,23 @@ interface AppState {
   setChatId: (id: string | null) => void
 }
 
-// ✅ Функция получения курса валют с CBU.uz
+// ✅ Функция получения курса валют через НАШ API (чтобы избежать CORS)
 const fetchExchangeRateFromCBU = async (): Promise<number> => {
   try {
-    // Вариант 1: Используем API Центрального Банка Узбекистана
-    // CBU предоставляет курсы в формате JSON
-    const response = await fetch('https://cbu.uz/ru/currency/rates/')
+    // Запрашиваем через наш backend (нет CORS проблем)
+    const response = await fetch('/api/getExchangeRate')
     
-    // Если страница HTML, парсим её
-    const html = await response.text()
-    
-    // Ищем курс USD в HTML (пример: 1 USD = 12058.45)
-    const usdMatch = html.match(/1\s*USD\s*=\s*([\d\s.,]+)/i)
-    if (usdMatch && usdMatch[1]) {
-      const rate = parseFloat(usdMatch[1].replace(/\s/g, '').replace(',', '.'))
-      if (rate > 0) {
-        console.log('✅ Курс получен с CBU.uz:', rate)
-        return rate
-      }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    // Если не нашли в HTML, используем fallback API
-    return await fetchExchangeRateFromAPI()
-    
-  } catch (error) {
-    console.error('❌ Ошибка получения курса с CBU.uz:', error)
-    // Fallback на внешний API
-    return await fetchExchangeRateFromAPI()
-  }
-}
-
-// ✅ Fallback API (если CBU.uz недоступен)
-const fetchExchangeRateFromAPI = async (): Promise<number> => {
-  try {
-    // Используем бесплатный API
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     const data = await response.json()
-    
-    const rate = data.rates?.UZS || 13000
-    console.log('✅ Курс получен с exchangerate-api.com:', rate)
-    return rate
+    console.log(`✅ Курс получен с ${data.source}:`, data.rate)
+    return data.rate
   } catch (error) {
-    console.error('❌ Ошибка получения курса с API:', error)
-    return 13000 // Дефолтное значение
+    console.error('❌ Ошибка получения курса:', error)
+    // Fallback на дефолтное значение
+    return 13000
   }
 }
 
