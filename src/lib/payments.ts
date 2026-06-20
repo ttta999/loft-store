@@ -8,27 +8,52 @@ interface PaymentData {
 
 // Функция для создания платежа через Telegram + CLICK
 export const createPayment = async (paymentData: PaymentData): Promise<boolean> => {
-  // ✅ Правильное получение Telegram WebApp
+  console.log('🔍 Инициализация платежа...')
+  console.log('Payment data:', paymentData)
+  
+  // ✅ Получаем Telegram WebApp
   const tg = (window as any).Telegram?.WebApp
   
   if (!tg) {
-    console.error('❌ Telegram WebApp не найден!')
-    throw new Error('Telegram WebApp не доступен. Откройте приложение в Telegram.')
+    console.error('❌ Telegram WebApp НЕ найден!')
+    console.log('window.Telegram:', (window as any).Telegram)
+    throw new Error('Откройте приложение в Telegram')
   }
 
+  console.log('✅ Telegram WebApp найден')
+  console.log('📋 Версия WebApp:', tg.version)
+  console.log('🔧 Доступные методы:', Object.keys(tg).filter(key => typeof tg[key] === 'function'))
+
+  // ✅ Проверяем sendInvoice
+  if (typeof tg.sendInvoice !== 'function') {
+    console.error('❌ sendInvoice НЕ доступен!')
+    console.log('tg.sendInvoice:', tg.sendInvoice)
+    
+    throw new Error(
+      'Метод оплаты недоступен. Проверьте:\n' +
+      '1. Подключены ли платежи в @BotFather\n' +
+      '2. Обновите Telegram до последней версии'
+    )
+  }
+
+  console.log('✅ sendInvoice доступен')
+
+  // ✅ Проверяем токен
   const providerToken = import.meta.env.VITE_CLICK_PROVIDER_TOKEN
   
-  console.log('🔑 Provider token:', providerToken ? '✅ Найден' : '❌ Не найден')
-  console.log('📦 Payment data:', paymentData)
+  console.log('🔑 Provider token:', providerToken ? 
+    `✅ Найден (${providerToken.substring(0, 20)}...)` : 
+    '❌ Не найден')
   
   if (!providerToken) {
-    console.error('❌ Provider token не найден в .env!')
-    throw new Error('Ошибка конфигурации платежей. Обратитесь к администратору.')
+    console.error('❌ VITE_CLICK_PROVIDER_TOKEN не найден в .env!')
+    console.log('Все env переменные:', import.meta.env)
+    throw new Error('Ошибка конфигурации платежей')
   }
 
-  // Подготовка данных для платежа
+  // Подготовка invoice
   const invoiceData = {
-    title: 'LOFT Store - Оплата заказа',
+    title: 'LOFT Store',
     description: paymentData.description,
     payload: JSON.stringify({ 
       orderId: paymentData.orderId,
@@ -39,11 +64,11 @@ export const createPayment = async (paymentData: PaymentData): Promise<boolean> 
     currency: 'UZS',
     prices: [
       { 
-        label: 'Сумма заказа', 
-        amount: Math.round(paymentData.amount * 100) // Конвертируем в тийины (1 сум = 100 тийин)
+        label: 'Заказ', 
+        amount: Math.round(paymentData.amount * 100)
       }
     ],
-    start_parameter: 'loft_pay_' + paymentData.orderId,
+    start_parameter: 'loft_' + paymentData.orderId,
     need_name: false,
     need_phone_number: false,
     need_email: false,
@@ -53,22 +78,18 @@ export const createPayment = async (paymentData: PaymentData): Promise<boolean> 
 
   console.log('📤 Отправляем invoice:', JSON.stringify(invoiceData, null, 2))
 
-  // ✅ Правильный вызов sendInvoice
   try {
-    // Проверяем существует ли метод
-    if (typeof tg.sendInvoice !== 'function') {
-      console.error('❌ tg.sendInvoice не является функцией!')
-      console.log('Доступные методы tg:', Object.keys(tg))
-      throw new Error('Метод sendInvoice недоступен. Обновите Telegram.')
-    }
-
-    // Вызываем sendInvoice
     tg.sendInvoice(invoiceData)
-    console.log('✅ Invoice отправлен успешно')
+    console.log('✅ Invoice отправлен успешно!')
     return true
   } catch (error: any) {
     console.error('❌ Ошибка отправки invoice:', error)
-    throw new Error('Не удалось открыть окно оплаты: ' + (error.message || error))
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+    throw new Error('Не удалось открыть оплату: ' + (error.message || error))
   }
 }
 
