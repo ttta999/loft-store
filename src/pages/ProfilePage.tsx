@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, CreditCard } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, CreditCard, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { createPayment } from '../lib/payments'
+import { createPayment, cancelOrder } from '../lib/payments'
 
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onPayAgain }: any) {
+function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onPayAgain, onCancelOrder }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
 
   const formatPrice = (usd: number) => {
@@ -181,15 +181,25 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </span>
           </div>
 
-          {/* ✅ КНОПКА ОПЛАТИТЬ СНОВА */}
+          {/* ✅ КНОПКИ ОПЛАТИТЬ И ОТМЕНИТЬ ЗАКАЗ */}
           {order.status === 'Ожидает оплаты' && order.payment_method === 'online_card' && (
-            <button
-              onClick={() => onPayAgain(order)}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
-            >
-              <CreditCard size={20} />
-              {language === 'ru' ? '💳 Оплатить заказ' : '💳 Buyurtmani to\'lash'}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => onPayAgain(order)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+              >
+                <CreditCard size={20} />
+                {language === 'ru' ? '💳 Оплатить заказ' : '💳 Buyurtmani to\'lash'}
+              </button>
+              
+              <button
+                onClick={() => onCancelOrder(order)}
+                className="w-full bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
+              >
+                <X size={20} />
+                {language === 'ru' ? '🚫 Отменить заказ' : '🚫 Buyurtmani bekor qilish'}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -213,7 +223,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅♂️',
+      'Отменён клиентом': 'Отменён вами 🙅‍♂️',
       'Отклонён': 'Отклонён 🛑',
     }
     return labels[status] || status
@@ -297,7 +307,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
             </div>
           )}
 
-          {/* Блок с оценкой менеджера */}
           {request.manager_price && (
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
               <p className="text-lg font-bold text-purple-900 mb-1">
@@ -311,7 +320,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
             </div>
           )}
 
-          {/* Статус и кнопка в одной строке */}
           <div className="mb-8">
             <h3 className="font-bold mb-3">
               {language === 'ru' ? 'Статус' : 'Holat'}
@@ -321,7 +329,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
                 {getStatusText(request.status)}
               </span>
               
-              {/* Кнопка справа от статуса */}
               {request.status === 'Оценён' && request.manager_price && (
                 <button
                   onClick={() => onAccept(request)}
@@ -505,6 +512,32 @@ export default function ProfilePage({
     } catch (error) {
       console.error('Ошибка оплаты:', error)
       toast.error(language === 'ru' ? 'Ошибка при оплате' : 'To\'lovda xatolik')
+    }
+  }
+
+  // ✅ Функция отмены заказа
+  const handleCancelOrder = async (order: any) => {
+    const confirmed = confirm(
+      language === 'ru' 
+        ? `Вы уверены что хотите отменить заказ №${order.id}?` 
+        : `${order.id}-buyurtmani bekor qilishga ishonchingiz komilmi?`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const success = await cancelOrder(order.id.toString())
+      
+      if (success) {
+        toast.success(language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi')
+        setSelectedOrder(null)
+        await loadOrders()
+      } else {
+        toast.error(language === 'ru' ? 'Ошибка при отмене заказа' : 'Buyurtmani bekor qilishda xatolik')
+      }
+    } catch (error) {
+      console.error('Ошибка отмены:', error)
+      toast.error(language === 'ru' ? 'Ошибка при отмене заказа' : 'Buyurtmani bekor qilishda xatolik')
     }
   }
 
@@ -775,6 +808,7 @@ export default function ProfilePage({
             currency={currency}
             exchangeRate={exchangeRate}
             onPayAgain={handlePayAgain}
+            onCancelOrder={handleCancelOrder}
           />
         )}
       </div>

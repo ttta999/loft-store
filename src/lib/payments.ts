@@ -7,13 +7,13 @@ interface PaymentData {
 }
 
 // Функция для создания платежа через Telegram + CLICK
-export const createPayment = async (paymentData: PaymentData) => {
+export const createPayment = async (paymentData: PaymentData): Promise<boolean> => {
+  // ✅ Правильное получение Telegram WebApp
   const tg = (window as any).Telegram?.WebApp
   
   if (!tg) {
     console.error('❌ Telegram WebApp не найден!')
-    alert('Telegram WebApp не доступен')
-    return
+    throw new Error('Telegram WebApp не доступен. Откройте приложение в Telegram.')
   }
 
   const providerToken = import.meta.env.VITE_CLICK_PROVIDER_TOKEN
@@ -23,8 +23,7 @@ export const createPayment = async (paymentData: PaymentData) => {
   
   if (!providerToken) {
     console.error('❌ Provider token не найден в .env!')
-    alert('Ошибка конфигурации платежей. Проверь .env файл')
-    return
+    throw new Error('Ошибка конфигурации платежей. Обратитесь к администратору.')
   }
 
   // Подготовка данных для платежа
@@ -33,17 +32,18 @@ export const createPayment = async (paymentData: PaymentData) => {
     description: paymentData.description,
     payload: JSON.stringify({ 
       orderId: paymentData.orderId,
-      type: 'order_payment'
+      type: 'order_payment',
+      timestamp: Date.now()
     }),
     provider_token: providerToken,
     currency: 'UZS',
     prices: [
       { 
         label: 'Сумма заказа', 
-        amount: Math.round(paymentData.amount * 100)
+        amount: Math.round(paymentData.amount * 100) // Конвертируем в тийины (1 сум = 100 тийин)
       }
     ],
-    start_parameter: 'loft_payment_' + paymentData.orderId,
+    start_parameter: 'loft_pay_' + paymentData.orderId,
     need_name: false,
     need_phone_number: false,
     need_email: false,
@@ -51,28 +51,38 @@ export const createPayment = async (paymentData: PaymentData) => {
     is_flexible: false,
   }
 
-  console.log('📤 Отправляем invoice:', invoiceData)
+  console.log('📤 Отправляем invoice:', JSON.stringify(invoiceData, null, 2))
 
-  // Открываем окно оплаты
+  // ✅ Правильный вызов sendInvoice
   try {
+    // Проверяем существует ли метод
+    if (typeof tg.sendInvoice !== 'function') {
+      console.error('❌ tg.sendInvoice не является функцией!')
+      console.log('Доступные методы tg:', Object.keys(tg))
+      throw new Error('Метод sendInvoice недоступен. Обновите Telegram.')
+    }
+
+    // Вызываем sendInvoice
     tg.sendInvoice(invoiceData)
     console.log('✅ Invoice отправлен успешно')
-  } catch (error) {
+    return true
+  } catch (error: any) {
     console.error('❌ Ошибка отправки invoice:', error)
-    alert('Ошибка при открытии окна оплаты: ' + error)
+    throw new Error('Не удалось открыть окно оплаты: ' + (error.message || error))
   }
 }
 
 // Обработка успешной оплаты
 export const handlePaymentSuccess = async (orderId: string) => {
   try {
-    // Обновляем статус заказа на "Оплачен"
+    // Обновляем статус заказа на "Активный" только после оплаты
     const { error } = await supabase
       .from('orders')
       .update({ 
-        status: 'Оплачен',
+        status: 'Активный', // ✅ Меняем на "Активный"
         payment_status: 'paid',
-        paid_at: new Date().toISOString()
+        paid_at: new Date().toISOString(),
+        payment_provider: 'click'
       })
       .eq('id', orderId)
 
@@ -86,15 +96,15 @@ export const handlePaymentSuccess = async (orderId: string) => {
   }
 }
 
-// Обработка отмены оплаты
-export const handlePaymentCancel = async (orderId: string) => {
+// Отмена заказа
+export const cancelOrder = async (orderId: string) => {
   try {
-    // Обновляем статус заказа на "Отменён"
     const { error } = await supabase
       .from('orders')
       .update({ 
         status: 'Отменён',
-        payment_status: 'cancelled'
+        payment_status: 'cancelled',
+        cancelled_at: new Date().toISOString()
       })
       .eq('id', orderId)
 
@@ -109,14 +119,20 @@ export const handlePaymentCancel = async (orderId: string) => {
 }
 
 // Инициализация обработчиков платежей
-export const initPaymentHandlers = (onSuccess?: (orderId: string) => void, onCancel?: (orderId: string) => void) => {
+export const initPaymentHandlers = (
+  onSuccess?: (orderId: string) => void, 
+  onCancel?: (orderId: string) => void
+) => {
   const tg = (window as any).Telegram?.WebApp
   
-  if (!tg) return
+  if (!tg) {
+    console.warn('⚠️ Telegram WebApp не найден, обработчики не инициализированы')
+    return
+  }
 
   // Обработка закрытия invoice
   tg.onEvent('invoiceClosed', (invoice: any) => {
-    console.log('Invoice closed:', invoice)
+    console.log('📄 Invoice closed:', invoice)
     
     if (invoice.status === 'paid') {
       // Оплата прошла успешно
@@ -125,13 +141,14 @@ export const initPaymentHandlers = (onSuccess?: (orderId: string) => void, onCan
         handlePaymentSuccess(payload.orderId)
         if (onSuccess) onSuccess(payload.orderId)
       }
-    } else if (invoice.status === 'cancelled') {
+    } else if (invoice.status === 'cancelled' || invoice.status === 'failed') {
       // Оплата отменена
       const payload = JSON.parse(invoice.payload || '{}')
       if (payload.orderId) {
-        handlePaymentCancel(payload.orderId)
         if (onCancel) onCancel(payload.orderId)
       }
     }
   })
+
+  console.log('✅ Payment handlers initialized')
 }
