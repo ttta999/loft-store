@@ -11,8 +11,8 @@ interface CartItem {
   size: string
   quantity: number
   image: string
-  isSpecialOrder?: boolean      // ← НОВОЕ: флаг что это спецзаказ
-  specialRequestId?: string     // ← НОВОЕ: ID спецзаказа
+  isSpecialOrder?: boolean
+  specialRequestId?: string
 }
 
 interface FavoriteItem {
@@ -31,6 +31,8 @@ interface AppState {
   chatId: string | null
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
+  setExchangeRate: (rate: number) => void
+  updateExchangeRate: () => Promise<void>
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
@@ -39,6 +41,52 @@ interface AppState {
   removeFromFavorites: (productId: string) => void
   isFavorite: (productId: string) => boolean
   setChatId: (id: string | null) => void
+}
+
+// ✅ Функция получения курса валют с CBU.uz
+const fetchExchangeRateFromCBU = async (): Promise<number> => {
+  try {
+    // Вариант 1: Используем API Центрального Банка Узбекистана
+    // CBU предоставляет курсы в формате JSON
+    const response = await fetch('https://cbu.uz/ru/currency/rates/')
+    
+    // Если страница HTML, парсим её
+    const html = await response.text()
+    
+    // Ищем курс USD в HTML (пример: 1 USD = 12058.45)
+    const usdMatch = html.match(/1\s*USD\s*=\s*([\d\s.,]+)/i)
+    if (usdMatch && usdMatch[1]) {
+      const rate = parseFloat(usdMatch[1].replace(/\s/g, '').replace(',', '.'))
+      if (rate > 0) {
+        console.log('✅ Курс получен с CBU.uz:', rate)
+        return rate
+      }
+    }
+    
+    // Если не нашли в HTML, используем fallback API
+    return await fetchExchangeRateFromAPI()
+    
+  } catch (error) {
+    console.error('❌ Ошибка получения курса с CBU.uz:', error)
+    // Fallback на внешний API
+    return await fetchExchangeRateFromAPI()
+  }
+}
+
+// ✅ Fallback API (если CBU.uz недоступен)
+const fetchExchangeRateFromAPI = async (): Promise<number> => {
+  try {
+    // Используем бесплатный API
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    const data = await response.json()
+    
+    const rate = data.rates?.UZS || 13000
+    console.log('✅ Курс получен с exchangerate-api.com:', rate)
+    return rate
+  } catch (error) {
+    console.error('❌ Ошибка получения курса с API:', error)
+    return 13000 // Дефолтное значение
+  }
 }
 
 export const useStore = create<AppState>()(
@@ -53,9 +101,18 @@ export const useStore = create<AppState>()(
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
+      setExchangeRate: (rate) => set({ exchangeRate: rate }),
+
+      // ✅ Функция обновления курса
+      updateExchangeRate: async () => {
+        const rate = await fetchExchangeRateFromCBU()
+        set({ exchangeRate: rate })
+        
+        // Сохраняем время последнего обновления
+        localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
+      },
 
       addToCart: (item) => set((state) => {
-        // Спецзаказы всегда добавляются как новый товар (не объединяем)
         if (item.isSpecialOrder) {
           return { cart: [...state.cart, item] }
         }
@@ -117,3 +174,17 @@ export const useStore = create<AppState>()(
     { name: 'loft-store' }
   )
 )
+
+// ✅ Автоматическое обновление курса при загрузке приложения
+if (typeof window !== 'undefined') {
+  // Проверяем когда последний раз обновляли курс
+  const lastUpdate = localStorage.getItem('exchangeRateUpdatedAt')
+  const now = new Date()
+  const shouldUpdate = !lastUpdate || 
+    (now.getTime() - new Date(lastUpdate).getTime()) > (60 * 60 * 1000) // Каждые 60 минут
+
+  if (shouldUpdate) {
+    console.log('🔄 Обновляем курс валют...')
+    useStore.getState().updateExchangeRate()
+  }
+}
