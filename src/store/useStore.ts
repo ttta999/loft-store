@@ -61,7 +61,7 @@ const fetchExchangeRateFromCBU = async (): Promise<number> => {
     return data.rate
   } catch (error) {
     console.error('❌ Ошибка получения курса:', error)
-    return 13000 // Fallback
+    return 12100 // Fallback
   }
 }
 
@@ -70,7 +70,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       language: 'ru',
       currency: 'USD',
-      exchangeRate: 13000,
+      exchangeRate: 12100,
       cart: [],
       favorites: [],
       chatId: null,
