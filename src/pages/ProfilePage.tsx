@@ -9,9 +9,26 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
+  // ✅ Функция форматирования цены с учётом сохранённой суммы в сумах
+  const formatOrderPrice = (order: any) => {
+    // Если есть сохранённая сумма в сумах - используем её
+    if (order.total_price_uzs) {
+      return `${Number(order.total_price_uzs).toLocaleString()} сум`
+    }
+    // Иначе считаем по текущему курсу
+    if (currency === 'USD') return `$${order.total_price_usd}`
+    return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
+  }
+
+  // ✅ Функция форматирования цены товара (с сохранённой ценой)
+  const formatItemPrice = (item: any) => {
+    // Если у товара есть сохранённая цена в сумах
+    if (item.priceUzs) {
+      return `${Number(item.priceUzs).toLocaleString()} сум`
+    }
+    // Иначе по текущему курсу
+    if (currency === 'USD') return `$${item.priceUsd}`
+    return `${(item.priceUsd * exchangeRate).toLocaleString()} сум`
   }
 
   const formatDateTime = (dateStr: string) => {
@@ -84,9 +101,14 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   }
 
   const handleShowPaymentDetails = () => {
+    // ✅ Используем сохранённую сумму в сумах если есть
+    const amount = order.total_price_uzs 
+      ? Number(order.total_price_uzs) 
+      : Math.round(order.total_price_usd * exchangeRate)
+    
     const message = showPaymentDetails({
       orderId: order.id.toString(),
-      amount: Math.round(order.total_price_usd * exchangeRate),
+      amount: amount,
       description: `Заказ №${order.id}`
     })
     
@@ -125,6 +147,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <p className="text-sm text-gray-600">
               {formatDateTime(order.created_at)}
             </p>
+            {order.exchange_rate_at_order && (
+              <p className="text-xs text-gray-400 mt-1">
+                {language === 'ru' ? 'Курс на момент заказа: ' : 'Buyurtma vaqtidagi kurs: '}
+                1 USD = {Number(order.exchange_rate_at_order).toLocaleString()} сум
+              </p>
+            )}
           </div>
 
           <div>
@@ -187,7 +215,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       {language === 'ru' ? 'Количество: ' : 'Miqdori: '}{item.quantity}
                     </p>
                     <p className="font-bold text-sm">
-                      {formatPrice(item.priceUsd)}
+                      {formatItemPrice(item)}
                     </p>
                   </div>
                 </div>
@@ -201,7 +229,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
               <span className="text-xl font-bold">
-                {formatPrice(order.total_price_usd)}
+                {formatOrderPrice(order)}
               </span>
             </div>
           </div>
@@ -233,7 +261,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                   <p><b>Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
                 </div>
                 <p className="text-lg font-bold mt-3 pt-3 border-t">
-                  {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatPrice(order.total_price_usd)}
+                  {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatOrderPrice(order)}
                 </p>
               </div>
 
@@ -506,9 +534,13 @@ export default function ProfilePage({
     }
   }, [activeSection, selectedOrder, selectedChinaRequest, setShowBackButton, setOnBackClick])
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
+  // ✅ Функция форматирования цены заказа с учётом сохранённой суммы
+  const formatOrderPrice = (order: any) => {
+    if (order.total_price_uzs) {
+      return `${Number(order.total_price_uzs).toLocaleString()} сум`
+    }
+    if (currency === 'USD') return `$${order.total_price_usd}`
+    return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
   }
 
   const formatDateTime = (dateStr: string) => {
@@ -886,8 +918,9 @@ export default function ProfilePage({
                     )}
                   </div>
 
+                  {/* ✅ Используем сохранённую цену */}
                   <p className="text-lg font-bold">
-                    {formatPrice(order.total_price_usd)}
+                    {formatOrderPrice(order)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}

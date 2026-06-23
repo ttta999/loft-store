@@ -180,6 +180,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     
+    const totalInSums = getTotalPrice() * exchangeRate
+    
     const orderData = {
       user_id: userId,
       user_chat_id: userId,
@@ -189,25 +191,27 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
       payment_method: paymentMethod,
       total_price_usd: getTotalPrice(),
+      total_price_uzs: totalInSums,
+      exchange_rate_at_order: exchangeRate,
       items: cart,
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
     }
-
+    
     let result: any
-
+    
     if (isSpecialOrder && specialItem.specialRequestId) {
       result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
     } else {
       result = await createOrder(orderData)
     }
-
+    
     const data = Array.isArray(result.data) ? result.data[0] : result.data
     
     if (result.error || !data) {
       throw new Error(result.error?.message || 'Ошибка создания заказа')
     }
-
+    
     return data
   }
 
