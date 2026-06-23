@@ -177,10 +177,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return null
   }
 
+  // ✅ СОХРАНЯЕМ ЦЕНЫ ТОВАРОВ В СУМАХ
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     
-    const totalInSums = getTotalPrice() * exchangeRate
+    const totalInSums = Math.round(getTotalPrice() * exchangeRate)
+    
+    // ✅ Добавляем цену в сумах для каждого товара
+    const itemsWithPrices = cart.map(item => ({
+      ...item,
+      priceUzs: Math.round(item.priceUsd * exchangeRate),
+    }))
     
     const orderData = {
       user_id: userId,
@@ -193,7 +200,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       total_price_usd: getTotalPrice(),
       total_price_uzs: totalInSums,
       exchange_rate_at_order: exchangeRate,
-      items: cart,
+      items: itemsWithPrices, // ✅ Товары с сохранёнными ценами в сумах
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
     }
@@ -283,7 +290,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     }
   }
 
-  // ✅ Экран с реквизитами и загрузкой скриншота
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -308,7 +314,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
         
-        {/* ✅ ДОБАВЛЕН pb-32 чтобы жёлтое предупреждение было видно */}
         <div className="flex-1 overflow-y-auto p-4 pb-40">
           <div className="text-6xl text-center mb-4">💳</div>
           
@@ -324,7 +329,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </p>
           </div>
           
-          {/* Реквизиты */}
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
             <h3 className="font-bold mb-3">
               {language === 'ru' ? '📱 Реквизиты для оплаты:' : '📱 To\'lov rekvizitlari:'}
@@ -339,7 +343,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </p>
           </div>
 
-          {/* Загрузка скриншота */}
           <div className="mb-4">
             <h3 className="font-bold mb-3">
               {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
@@ -390,7 +393,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-          {/* Кнопки */}
           <div className="space-y-3">
             <a
               href={MANAGER_TELEGRAM_LINK}
@@ -427,7 +429,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
           
-          {/* ✅ ЖЁЛТОЕ ПРЕДУПРЕЖДЕНИЕ - теперь видно благодаря pb-40 */}
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
             <p className="text-sm text-yellow-800 font-medium">
               ⚠️ {language === 'ru' 

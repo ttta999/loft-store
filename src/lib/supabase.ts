@@ -21,7 +21,6 @@ export const getProducts = async () => {
   return data || []
 }
 
-// ✅ Возвращаем только размеры с остатком > 0
 export const getProductSizes = async (productId: string) => {
   const { data, error } = await supabase
     .from('product_variants')
@@ -37,7 +36,6 @@ export const getProductSizes = async (productId: string) => {
   return data || []
 }
 
-// ✅ Проверка наличия конкретного размера
 export const checkProductStock = async (
   productId: string, 
   size: string, 
@@ -74,7 +72,6 @@ export const checkProductStock = async (
   return { available: true }
 }
 
-// ✅ Уменьшение остатков после заказа (БЕЗ авто-скрытия)
 const updateStockAfterOrder = async (items: any[]) => {
   console.log('📦 Обновляем остатки после заказа:', items)
   
@@ -113,7 +110,6 @@ const updateStockAfterOrder = async (items: any[]) => {
   }
 }
 
-// ✅ Проверка наличия товара перед заказом
 const checkStockAvailability = async (items: any[]): Promise<{ available: boolean; error?: string }> => {
   for (const item of items) {
     if (!item.productId || item.isSpecialOrder) continue
@@ -224,7 +220,6 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
   return { data, error: null }
 }
 
-// ✅ Возврат остатков при отмене заказа (БЕЗ авто-показа)
 export const restoreStockAfterCancel = async (items: any[]) => {
   console.log('📈 Возвращаем остатки после отмены:', items)
   
@@ -266,12 +261,18 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
   return Array.isArray(data) ? data[0] : data
 }
 
+// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (с правильной валютой)
 export const notifyNewOrder = async (order: any) => {
   const itemsList = order.items.map((item: any, index: number) => {
+    // ✅ Используем сохранённую цену в сумах если есть
+    const priceText = item.priceUzs 
+      ? `${Number(item.priceUzs).toLocaleString()} сум`
+      : `$${item.priceUsd}`
+    
     return `${index + 1}. ${item.name}
    Размер: ${item.size}
    Количество: ${item.quantity} шт.
-   Цена: $${item.priceUsd}`
+   Цена: ${priceText}`
   }).join('\n\n')
 
   const deliveryAddress = order.delivery_method === 'delivery' && order.delivery_address
@@ -280,18 +281,23 @@ export const notifyNewOrder = async (order: any) => {
 
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
+  // ✅ Определяем валюту и сумму заказа
+  const totalText = order.total_price_uzs
+    ? `${Number(order.total_price_uzs).toLocaleString()} сум`
+    : `$${order.total_price_usd}`
+
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 
 👤 Клиент: ${order.client_name}
 📞 Телефон: ${order.client_phone}
-💰 Сумма: $${order.total_price_usd}
+💰 Сумма: ${totalText}
 
 📦 <b>Товары:</b>
 ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
- Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
   `.trim()
 
   await sendNotificationToManager(managerMessage)
@@ -301,13 +307,13 @@ ${itemsList}
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
 
- Сумма: $${order.total_price_usd}
+💰 Сумма: ${totalText}
 
 📦 <b>Товары:</b>
 ${itemsList}
 
 🚚 ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
- ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
+💳 ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
 
 📞 Менеджер свяжется с вами в ближайшее время
     `.trim()

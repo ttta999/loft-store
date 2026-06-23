@@ -31,7 +31,6 @@ export const getChatId = (): string | null => {
   return tg.initDataUnsafe.user.id.toString()
 }
 
-// ✅ АВТОПОДПИСКА: сохраняем пользователя при входе в приложение
 export const subscribeUser = async () => {
   const tg = initTelegram()
   if (!tg?.initDataUnsafe?.user) {
@@ -65,9 +64,8 @@ export const subscribeUser = async () => {
   }
 }
 
-// ✅ ОТПРАВКА УВЕДОМЛЕНИЯ МЕНЕДЖЕРУ (через БОТА МЕНЕДЖЕРА)
 export const sendNotificationToManager = async (message: string): Promise<boolean> => {
-  const MANAGER_CHAT_ID = '6150570809' // ID менеджера
+  const MANAGER_CHAT_ID = '6150570809'
   
   try {
     const response = await fetch('/api/sendNotification', {
@@ -88,7 +86,6 @@ export const sendNotificationToManager = async (message: string): Promise<boolea
   }
 }
 
-// ✅ ОТПРАВКА УВЕДОМЛЕНИЯ КЛИЕНТУ (через БОТА КЛИЕНТОВ)
 export const sendNotificationToClient = async (message: string, clientChatId: string): Promise<boolean> => {
   if (!clientChatId) return false
 
@@ -111,7 +108,6 @@ export const sendNotificationToClient = async (message: string, clientChatId: st
   }
 }
 
-// Для обратной совместимости (отправляет менеджеру)
 export const sendNotification = async (message: string): Promise<boolean> => {
   return sendNotificationToManager(message)
 }
