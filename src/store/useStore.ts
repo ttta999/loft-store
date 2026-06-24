@@ -196,14 +196,16 @@ export const useStore = create<AppState>()(
 )
 
 // ✅ Автоматическое обновление курса при загрузке приложения
+// ✅ Автоматическое обновление курса при загрузке приложения
 if (typeof window !== 'undefined') {
+  console.log('🔄 Инициализация курса валют...')
+  
+  // Проверяем когда последний раз обновляли курс
   const lastUpdate = localStorage.getItem('exchangeRateUpdatedAt')
-  const now = new Date()
-  const shouldUpdate = !lastUpdate || 
-    (now.getTime() - new Date(lastUpdate).getTime()) > (60 * 60 * 1000) // Каждые 60 минут
-
-  if (shouldUpdate) {
-    console.log('🔄 Обновляем курс валют...')
-    useStore.getState().updateExchangeRate()
-  }
+  
+  // Для теста - всегда обновляем (убираем проверку времени)
+  console.log(' Последнее обновление:', lastUpdate)
+  console.log('🔄 Принудительно обновляем курс...')
+  
+  useStore.getState().updateExchangeRate()
 }
