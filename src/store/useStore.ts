@@ -45,7 +45,7 @@ interface AppState {
 }
 
 // ✅ Получение курса из Supabase settings
-const fetchExchangeRateFromDB = async (): Promise<number> => {
+const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: number } | null> => {
   try {
     console.log('🔄 Запрашиваем курс из Supabase settings...')
     
@@ -59,27 +59,28 @@ const fetchExchangeRateFromDB = async (): Promise<number> => {
     
     if (error) {
       console.error('❌ Ошибка Supabase:', error)
-      throw new Error('Settings query failed')
+      return null
     }
     
     if (!data) {
       console.warn('⚠️ Запись exchange_rate не найдена в БД')
-      throw new Error('Курс не найден в БД')
+      return null
     }
     
     const rate = (data.value as any)?.rate
-    console.log('✅ Курс из БД:', rate)
+    const version = (data.value as any)?.version || 0
+    
+    console.log('✅ Курс из БД:', rate, 'Версия:', version)
     
     if (!rate || rate <= 0) {
       console.warn('⚠️ Неверный курс в БД:', rate)
-      throw new Error('Invalid rate in DB')
+      return null
     }
     
-    return rate
+    return { rate, version }
   } catch (error) {
     console.error('❌ Ошибка получения курса из БД:', error)
-    // Fallback на API
-    return await fetchExchangeRateFromAPI()
+    return null
   }
 }
 
@@ -117,20 +118,38 @@ export const useStore = create<AppState>()(
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
 
-      // ✅ Функция обновления курса из БД
+      // ✅ Функция обновления курса из БД с проверкой версии
       updateExchangeRate: async () => {
-  console.log('🔄 Начинаем обновление курса...')
-  
-  const rate = await fetchExchangeRateFromDB()
-  console.log('✅ Получен курс:', rate)
-  
-  set({ exchangeRate: rate })
-  
-  // Сохраняем время последнего обновления
-  const now = new Date().toISOString()
-  localStorage.setItem('exchangeRateUpdatedAt', now)
-  console.log('💾 Курс сохранён в localStorage, время:', now)
-},
+        console.log('🔄 Начинаем обновление курса...')
+        
+        const dbData = await fetchExchangeRateFromDB()
+        
+        if (!dbData) {
+          console.warn('⚠️ Не удалось получить курс из БД, используем API')
+          const fallbackRate = await fetchExchangeRateFromAPI()
+          set({ exchangeRate: fallbackRate })
+          localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
+          return
+        }
+        
+        const { rate, version } = dbData
+        const storedVersion = localStorage.getItem('exchangeRateVersion')
+        
+        // ✅ Проверяем изменилась ли версия курса
+        if (storedVersion && Number(storedVersion) === version) {
+          console.log('✅ Курс не изменился (версия:', version, ')')
+        } else {
+          console.log('🆕 Курс обновлён! Версия:', storedVersion, '→', version)
+          set({ exchangeRate: rate })
+          localStorage.setItem('exchangeRateVersion', version.toString())
+          toast.info(`Курс обновлён: ${rate.toLocaleString()} сум`)
+        }
+        
+        // Сохраняем время последнего обновления
+        const now = new Date().toISOString()
+        localStorage.setItem('exchangeRateUpdatedAt', now)
+        console.log('💾 Курс сохранён в localStorage, время:', now)
+      },
 
       addToCart: (item) => set((state) => {
         if (item.isSpecialOrder) {
@@ -199,15 +218,30 @@ export const useStore = create<AppState>()(
 if (typeof window !== 'undefined') {
   console.log('🔄 Инициализация курса валют...')
   
-  const lastUpdate = localStorage.getItem('exchangeRateUpdatedAt')
-  const now = new Date()
-  const shouldUpdate = !lastUpdate || 
-    (now.getTime() - new Date(lastUpdate).getTime()) > (60 * 60 * 1000) // Каждые 60 минут
-
-  if (shouldUpdate) {
-    console.log('🔄 Обновляем курс валют...')
+  // ✅ Обновляем курс сразу при загрузке
+  useStore.getState().updateExchangeRate()
+  
+  // ✅ Периодическая проверка каждые 5 минут
+  setInterval(() => {
+    console.log('⏰ Периодическая проверка курса...')
     useStore.getState().updateExchangeRate()
-  } else {
-    console.log('✅ Курс актуальный, обновление не требуется')
+  }, 5 * 60 * 1000) // 5 минут
+  
+  // ✅ Обновление при возврате на вкладку
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      console.log('👁️ Вкладка активна, проверяем курс...')
+      useStore.getState().updateExchangeRate()
+    }
+  })
+}
+
+// ✅ Функция для показа toast (добавляем если нет)
+const toast = {
+  info: (message: string) => {
+    console.log('ℹ️', message)
+    // Если используешь sonner, замени на:
+    // import { toast } from 'sonner'
+    // toast.info(message)
   }
 }
