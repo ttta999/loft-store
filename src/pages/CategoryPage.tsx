@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { CATEGORIES } from '../data/categories'
-import { ChevronRight, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 
 export default function CategoryPage() {
   const navigate = useNavigate()
@@ -32,12 +32,12 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель - только LOFT Store */}
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+      {/* ✅ Верхняя панель - точно как в BrandsPage */}
+      <div className="bg-white border-b p-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)} 
-            className="text-gray-600 hover:text-black"
+            className="text-gray-600 hover:text-black flex items-center gap-1"
           >
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
@@ -57,18 +57,17 @@ export default function CategoryPage() {
       </div>
 
       <div className="p-4">
-        {/* ✅ Название категории крупным шрифтом слева */}
-        <h2 className="text-3xl font-bold mb-1">
+        {/* ✅ ТОЧНО КАК В BRANDSPAGE */}
+        <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? category.name_ru : category.name_uz}
         </h2>
-        {/* ✅ Подпись мелким серым текстом */}
-        <p className="text-gray-500 text-base mb-6">
+        <p className="text-sm text-gray-500 mb-6">
           {language === 'ru' 
             ? 'Выберите подкатегорию' 
             : 'Pastki kategoriyani tanlang'}
         </p>
 
-        {/* Список подкатегорий */}
+        {/* Список подкатегорий - точно как в BrandsPage */}
         <div className="bg-white rounded-xl overflow-hidden shadow-sm">
           {category.subcategories.map((sub, index) => (
             <button
@@ -84,7 +83,7 @@ export default function CategoryPage() {
                   {language === 'ru' ? sub.name_ru : sub.name_uz}
                 </span>
               </div>
-              <ChevronRight size={20} className="text-gray-400" />
+              <span className="text-gray-400 text-xl">›</span>
             </button>
           ))}
         </div>
