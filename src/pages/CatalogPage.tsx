@@ -33,8 +33,9 @@ export default function CatalogPage() {
     loadBrands()
   }, [])
 
+  // ✅ ИСПРАВЛЕНО: загружаем товары всегда когда есть categoryId
   useEffect(() => {
-    if (categoryId && subcategoryId) {
+    if (categoryId) {
       loadProducts()
     }
   }, [categoryId, subcategoryId])
@@ -60,15 +61,29 @@ export default function CatalogPage() {
 
   const loadProducts = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('category', categoryId)
-      .eq('subcategory', subcategoryId)
-      .eq('is_active', true)
-    
-    setProducts(data || [])
-    setFilteredProducts(data || [])
+    try {
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('category', categoryId)
+        .eq('is_active', true)
+      
+      // ✅ Если есть подкатегория - фильтруем по ней
+      if (subcategoryId) {
+        query = query.eq('subcategory', subcategoryId)
+      }
+      
+      const { data, error } = await query
+      
+      if (error) throw error
+      
+      setProducts(data || [])
+      setFilteredProducts(data || [])
+    } catch (error) {
+      console.error('Ошибка загрузки товаров:', error)
+      setProducts([])
+      setFilteredProducts([])
+    }
     setLoading(false)
   }
 
