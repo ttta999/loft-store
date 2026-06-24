@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart, ArrowLeft, Filter } from 'lucide-react'
+import { Heart, Filter } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite, favorites } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,7 +50,6 @@ export default function AllProductsPage() {
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     } else if (sortBy === 'popular') {
-      // Временно: случайная сортировка, потом можно по количеству заказов
       filtered.sort(() => Math.random() - 0.5)
     } else if (sortBy === 'price_asc') {
       filtered.sort((a, b) => a.price_usd - b.price_usd)
@@ -121,7 +120,7 @@ export default function AllProductsPage() {
 
   if (loading) {
     return (
-      <div className="p-4 flex items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
           <p className="text-gray-500">
@@ -133,26 +132,39 @@ export default function AllProductsPage() {
   }
 
   return (
-    <div className="p-4 pb-24">
-      <div className="bg-white border-b p-4 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 pb-24">
+      {/* ✅ Верхняя панель с LOFT Store */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)} 
-            className="text-gray-600 flex items-center gap-1"
+            className="text-gray-600 hover:text-black"
           >
-            <ArrowLeft size={20} />
-            {language === 'ru' ? 'Назад' : 'Orqaga'}
+            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
-          <h1 className="text-xl font-bold">{getTitle()}</h1>
-          <div className="w-16"></div>
+          <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
+          <button 
+            onClick={() => navigate('/favorites')}
+            className="relative text-gray-600 hover:text-red-500"
+          >
+            <Heart size={24} />
+            {favorites.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {favorites.length}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Кнопка фильтров */}
-      <div className="my-4">
+      <div className="p-4">
+        {/* Заголовок страницы */}
+        <h2 className="text-2xl font-bold mb-4">{getTitle()}</h2>
+
+        {/* Кнопка фильтров */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="w-full p-3 rounded-xl border border-gray-300 flex items-center justify-between bg-white"
+          className="w-full p-3 rounded-xl border border-gray-300 flex items-center justify-between bg-white mb-4"
         >
           <div className="flex items-center gap-2">
             <Filter size={20} />
@@ -161,116 +173,116 @@ export default function AllProductsPage() {
             </span>
           </div>
         </button>
-      </div>
 
-      {/* Панель фильтров */}
-      {showFilters && (
-        <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200 space-y-4">
-          {/* Категория */}
-          <div>
-            <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Категория' : 'Kategoriya'}
-            </h3>
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value)
-                setSelectedSubcategory('all')
-              }}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            >
-              <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {language === 'ru' ? cat.name_ru : cat.name_uz}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Подкатегория */}
-          {selectedCategory !== 'all' && (
+        {/* Панель фильтров */}
+        {showFilters && (
+          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200 space-y-4">
+            {/* Категория */}
             <div>
               <h3 className="font-bold mb-2">
-                {language === 'ru' ? 'Подкатегория' : 'Pastki kategoriya'}
+                {language === 'ru' ? 'Категория' : 'Kategoriya'}
               </h3>
               <select
-                value={selectedSubcategory}
-                onChange={(e) => setSelectedSubcategory(e.target.value)}
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value)
+                  setSelectedSubcategory('all')
+                }}
                 className="w-full p-3 border border-gray-300 rounded-lg"
               >
                 <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-                {CATEGORIES.find(c => c.id === selectedCategory)?.subcategories.map(sub => (
-                  <option key={sub.id} value={sub.id}>
-                    {language === 'ru' ? sub.name_ru : sub.name_uz}
+                {CATEGORIES.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {language === 'ru' ? cat.name_ru : cat.name_uz}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          {/* Сортировка */}
-          <div>
-            <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Сортировка' : 'Saralash'}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSortBy('newest')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
-              </button>
-              <button
-                onClick={() => setSortBy('popular')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'popular' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Популярные' : 'Mashhur'}
-              </button>
-              <button
-                onClick={() => setSortBy('price_asc')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
-              </button>
-              <button
-                onClick={() => setSortBy('price_desc')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
-              </button>
+            {/* Подкатегория */}
+            {selectedCategory !== 'all' && (
+              <div>
+                <h3 className="font-bold mb-2">
+                  {language === 'ru' ? 'Подкатегория' : 'Pastki kategoriya'}
+                </h3>
+                <select
+                  value={selectedSubcategory}
+                  onChange={(e) => setSelectedSubcategory(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
+                  {CATEGORIES.find(c => c.id === selectedCategory)?.subcategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {language === 'ru' ? sub.name_ru : sub.name_uz}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Сортировка */}
+            <div>
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Сортировка' : 'Saralash'}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSortBy('newest')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
+                </button>
+                <button
+                  onClick={() => setSortBy('popular')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'popular' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Популярные' : 'Mashhur'}
+                </button>
+                <button
+                  onClick={() => setSortBy('price_asc')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
+                </button>
+                <button
+                  onClick={() => setSortBy('price_desc')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Счетчик */}
-      <p className="text-sm text-gray-500 mb-3">
-        {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
-      </p>
+        {/* Счетчик */}
+        <p className="text-sm text-gray-500 mb-3">
+          {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
+        </p>
 
-      {/* Товары */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">
-            {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
+        {/* Товары */}
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
