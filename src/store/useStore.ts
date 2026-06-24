@@ -119,10 +119,18 @@ export const useStore = create<AppState>()(
 
       // ✅ Функция обновления курса из БД
       updateExchangeRate: async () => {
-        const rate = await fetchExchangeRateFromDB()
-        set({ exchangeRate: rate })
-        localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
-      },
+  console.log('🔄 Начинаем обновление курса...')
+  
+  const rate = await fetchExchangeRateFromDB()
+  console.log('✅ Получен курс:', rate)
+  
+  set({ exchangeRate: rate })
+  
+  // Сохраняем время последнего обновления
+  const now = new Date().toISOString()
+  localStorage.setItem('exchangeRateUpdatedAt', now)
+  console.log('💾 Курс сохранён в localStorage, время:', now)
+},
 
       addToCart: (item) => set((state) => {
         if (item.isSpecialOrder) {
