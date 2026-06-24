@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { getProducts } from '../lib/supabase'
+import { getProducts, supabase } from '../lib/supabase'
 import { Search, Filter, X, Heart, ArrowUpDown } from 'lucide-react'
-import { BRANDS } from '../data/categories'
+
+// ✅ Тип для бренда
+interface Brand {
+  id: string
+  name: string
+  is_active: boolean
+}
 
 export default function SearchPage() {
   const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
@@ -16,6 +22,9 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState<string>('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
+  
+  // ✅ Бренды теперь загружаются из Supabase
+  const [brands, setBrands] = useState<Brand[]>([])
 
   const categories = [
     { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim' },
@@ -23,13 +32,34 @@ export default function SearchPage() {
     { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar' },
   ]
 
+  // ✅ Загружаем бренды из Supabase при монтировании
   useEffect(() => {
+    loadBrands()
     loadProducts()
   }, [])
 
+  const loadBrands = async () => {
+    try {
+      console.log('🔄 Загружаем бренды в SearchPage...')
+      
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) throw error
+      
+      console.log('✅ Бренды загружены:', data?.length || 0)
+      setBrands(data || [])
+    } catch (error) {
+      console.error('❌ Ошибка загрузки брендов:', error)
+    }
+  }
+
   useEffect(() => {
     applyFiltersAndSort()
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products])
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -45,44 +75,44 @@ export default function SearchPage() {
     // Поиск по названию
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter((p: any) => 
         (language === 'ru' ? p.name_ru : p.name_uz).toLowerCase().includes(query)
       )
     }
 
     // Фильтр по категории
     if (selectedCategory) {
-      filtered = filtered.filter(p => p.category === selectedCategory)
+      filtered = filtered.filter((p: any) => p.category === selectedCategory)
     }
 
-    // Фильтр по бренду
+    // ✅ Фильтр по бренду (из Supabase)
     if (selectedBrand) {
-      const brand = BRANDS.find(b => b.id === selectedBrand)
+      const brand = brands.find((b: Brand) => b.id === selectedBrand)
       if (brand) {
-        filtered = filtered.filter(p => 
+        filtered = filtered.filter((p: any) => 
           p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
         )
       }
     }
 
     // Фильтр по цене
-    filtered = filtered.filter(p => 
+    filtered = filtered.filter((p: any) => 
       p.price_usd >= priceRange[0] && p.price_usd <= priceRange[1]
     )
 
     // ✅ Сортировка
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => a.price_usd - b.price_usd)
+        filtered.sort((a: any, b: any) => a.price_usd - b.price_usd)
         break
       case 'price_desc':
-        filtered.sort((a, b) => b.price_usd - a.price_usd)
+        filtered.sort((a: any, b: any) => b.price_usd - a.price_usd)
         break
       case 'newest':
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        filtered.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         break
       case 'oldest':
-        filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        filtered.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
 
@@ -216,7 +246,7 @@ export default function SearchPage() {
             </div>
           </div>
 
-          {/* Бренд */}
+          {/* ✅ Бренд - теперь из Supabase */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Бренд' : 'Brend'}
@@ -230,7 +260,7 @@ export default function SearchPage() {
               >
                 {language === 'ru' ? 'Все' : 'Barchasi'}
               </button>
-              {BRANDS.map((brand) => (
+              {brands.map((brand: Brand) => (
                 <button
                   key={brand.id}
                   onClick={() => setSelectedBrand(selectedBrand === brand.id ? '' : brand.id)}
@@ -329,7 +359,7 @@ export default function SearchPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {filteredProducts.map((product) => (
+          {filteredProducts.map((product: any) => (
             <Link key={product.id} to={`/product/${product.id}`}>
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
                 <div className="aspect-square bg-gray-100 relative">
