@@ -32,18 +32,16 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель с LOFT Store */}
+      {/* ✅ Верхняя панель - только LOFT Store */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)} 
-            className="text-gray-600 hover:text-black flex items-center gap-1"
+            className="text-gray-600 hover:text-black"
           >
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
-          <h1 className="text-xl font-bold text-center flex-1">
-            {language === 'ru' ? category.name_ru : category.name_uz}
-          </h1>
+          <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
           <button 
             onClick={() => navigate('/favorites')}
             className="relative text-gray-600 hover:text-red-500"
@@ -59,12 +57,18 @@ export default function CategoryPage() {
       </div>
 
       <div className="p-4">
-        <p className="text-sm text-gray-500 mb-6">
+        {/* ✅ Название категории крупным шрифтом слева */}
+        <h2 className="text-3xl font-bold mb-1">
+          {language === 'ru' ? category.name_ru : category.name_uz}
+        </h2>
+        {/* ✅ Подпись мелким серым текстом */}
+        <p className="text-gray-500 text-base mb-6">
           {language === 'ru' 
             ? 'Выберите подкатегорию' 
             : 'Pastki kategoriyani tanlang'}
         </p>
 
+        {/* Список подкатегорий */}
         <div className="bg-white rounded-xl overflow-hidden shadow-sm">
           {category.subcategories.map((sub, index) => (
             <button
