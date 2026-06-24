@@ -141,21 +141,20 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      <div className="bg-white px-4 py-3">
-        <h2 className="text-2xl font-bold">
+      <div className="p-4">
+        {/* ✅ Заголовок как в брендах - одинаковый размер шрифта */}
+        <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
         {subcategory && (
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mb-6">
             {language === 'ru' ? subcategory.name_ru : subcategory.name_uz}
           </p>
         )}
-      </div>
 
-      <div className="px-4 py-3">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`w-full p-3 rounded-xl border flex items-center justify-between ${
+          className={`w-full p-3 rounded-xl border flex items-center justify-between mb-4 ${
             activeFiltersCount > 0 ? 'bg-black text-white border-black' : 'bg-white border-gray-300'
           }`}
         >
@@ -182,105 +181,101 @@ export default function CatalogPage() {
             </button>
           )}
         </button>
-      </div>
 
-      {showFilters && (
-        <div className="bg-white border-t border-gray-200 p-4 mb-4">
-          <div className="mb-4">
-            <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Бренд' : 'Brend'}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {brands.map((brand) => (
+        {showFilters && (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+            <div className="mb-4">
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Бренд' : 'Brend'}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {brands.map((brand) => (
+                  <button
+                    key={brand.id}
+                    onClick={() => toggleBrand(brand.id)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      selectedBrands.includes(brand.id)
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {brand.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="font-bold mb-2">
+                {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
+              </h3>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(Number(e.target.value))}
+                  placeholder="От"
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+                <input
+                  type="number"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  placeholder="До"
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 flex items-center gap-2">
+                <ArrowUpDown size={16} />
+                {language === 'ru' ? 'Сортировка' : 'Saralash'}
+              </h3>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={brand.id}
-                  onClick={() => toggleBrand(brand.id)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedBrands.includes(brand.id)
-                      ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  onClick={() => setSortBy('newest')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
                   }`}
                 >
-                  {brand.name}
+                  {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
                 </button>
-              ))}
+                <button
+                  onClick={() => setSortBy('oldest')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'oldest' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
+                </button>
+                <button
+                  onClick={() => setSortBy('price_asc')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
+                </button>
+                <button
+                  onClick={() => setSortBy('price_desc')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
+                </button>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="mb-4">
-            <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
-            </h3>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={minPrice}
-                onChange={(e) => setMinPrice(Number(e.target.value))}
-                placeholder="От"
-                className="w-full p-2 border border-gray-300 rounded-lg"
-              />
-              <input
-                type="number"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                placeholder="До"
-                className="w-full p-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-2 flex items-center gap-2">
-              <ArrowUpDown size={16} />
-              {language === 'ru' ? 'Сортировка' : 'Saralash'}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSortBy('newest')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
-              </button>
-              <button
-                onClick={() => setSortBy('oldest')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'oldest' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
-              </button>
-              <button
-                onClick={() => setSortBy('price_asc')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
-              </button>
-              <button
-                onClick={() => setSortBy('price_desc')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
-                }`}
-              >
-                {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="px-4 mb-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 mb-3">
           {language === 'ru' 
             ? `Найдено: ${filteredProducts.length}` 
             : `Topildi: ${filteredProducts.length}`}
         </p>
-      </div>
 
-      <div className="p-4 pt-0">
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto"></div>
