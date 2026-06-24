@@ -47,7 +47,7 @@ interface AppState {
 // ✅ Получение курса из Supabase settings
 const fetchExchangeRateFromDB = async (): Promise<number> => {
   try {
-    console.log('🔄 Запрашиваем курс из БД...')
+    console.log('🔄 Запрашиваем курс из Supabase settings...')
     
     const { data, error } = await supabase
       .from('settings')
@@ -55,12 +55,26 @@ const fetchExchangeRateFromDB = async (): Promise<number> => {
       .eq('key', 'exchange_rate')
       .single()
     
-    if (error || !data) {
+    console.log('📊 Ответ от Supabase:', { data, error })
+    
+    if (error) {
+      console.error('❌ Ошибка Supabase:', error)
+      throw new Error('Settings query failed')
+    }
+    
+    if (!data) {
+      console.warn('⚠️ Запись exchange_rate не найдена в БД')
       throw new Error('Курс не найден в БД')
     }
     
-    const rate = (data.value as any)?.rate || 12100
+    const rate = (data.value as any)?.rate
     console.log('✅ Курс из БД:', rate)
+    
+    if (!rate || rate <= 0) {
+      console.warn('⚠️ Неверный курс в БД:', rate)
+      throw new Error('Invalid rate in DB')
+    }
+    
     return rate
   } catch (error) {
     console.error('❌ Ошибка получения курса из БД:', error)
