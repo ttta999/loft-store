@@ -11,7 +11,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
 
-  // ✅ Функция форматирования цены с учётом сохранённой суммы в сумах
   const formatOrderPrice = (order: any) => {
     if (order.total_price_uzs) {
       return `${Number(order.total_price_uzs).toLocaleString()} сум`
@@ -20,7 +19,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Функция форматирования цены товара (с сохранённой ценой)
   const formatItemPrice = (item: any) => {
     if (item.priceUzs) {
       return `${Number(item.priceUzs).toLocaleString()} сум`
@@ -45,7 +43,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен 🤝',
+        'Выдан': 'Получен ',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
@@ -156,7 +154,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
-            <p className="text-sm">📞 {order.client_phone}</p>
+            <p className="text-sm"> {order.client_phone}</p>
           </div>
 
           <div>
@@ -240,14 +238,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </span>
           </div>
 
-          {/* ✅ БЛОК ДЛЯ ОПЛАТЫ - показывается для ВСЕХ заказов с оплатой переводом */}
           {order.payment_method === 'online_card' && (
             <div className="space-y-3 border-t pt-4">
               <h3 className="font-bold text-lg">
                 {language === 'ru' ? '💳 Оплата заказа' : '💳 Buyurtmani to\'lash'}
               </h3>
 
-              {/* ✅ Если заказ отменён */}
               {order.status === 'Отменён' ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm text-red-800 font-medium mb-2">
@@ -259,7 +255,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       : 'To\'lov talab qilinmaydi. Agar mablag\'lar yechib olingan bo\'lsa, qaytarish uchun menejer bilan bog\'laning.'}
                   </p>
                   
-                  {/* Показываем скриншот если он был загружен */}
                   {order.payment_screenshot_url && (
                     <div className="mt-3 pt-3 border-t border-red-200">
                       <p className="text-xs text-red-700 mb-2">
@@ -276,10 +271,9 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 </div>
               ) : (
                 <>
-                  {/* Реквизиты */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">
-                      {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
+                      {language === 'ru' ? ' Реквизиты:' : ' Rekvizitlar:'}
                     </h4>
                     <div className="space-y-1 text-sm">
                       <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
@@ -291,7 +285,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </p>
                   </div>
 
-                  {/* Загрузка скриншота */}
                   {!order.payment_screenshot_url ? (
                     <div>
                       <p className="text-sm font-medium mb-2">
@@ -350,7 +343,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </div>
                   )}
 
-                  {/* Кнопки - показываем только если заказ не оплачен и не отменён */}
                   {order.status === 'Ожидает оплаты' && (
                     <>
                       <button
@@ -386,14 +378,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         </div>
       </div>
 
-      {/* ✅ МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА СКРИНШОТА */}
       {showScreenshotModal && order.payment_screenshot_url && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
           onClick={() => setShowScreenshotModal(false)}
         >
           <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
-            {/* Кнопка закрытия */}
             <button
               onClick={() => setShowScreenshotModal(false)}
               className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
@@ -402,7 +392,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               {language === 'ru' ? 'Закрыть' : 'Yopish'}
             </button>
             
-            {/* Изображение */}
             <img
               src={order.payment_screenshot_url}
               alt="Screenshot"
@@ -411,7 +400,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               onClick={(e) => e.stopPropagation()}
             />
             
-            {/* Кнопка открыть в новой вкладке */}
             <div className="mt-4 flex justify-center">
               <a
                 href={order.payment_screenshot_url}
@@ -613,7 +601,6 @@ export default function ProfilePage({
     }
   }, [activeSection, selectedOrder, selectedChinaRequest, setShowBackButton, setOnBackClick])
 
-  // ✅ Функция форматирования цены заказа с учётом сохранённой суммы
   const formatOrderPrice = (order: any) => {
     if (order.total_price_uzs) {
       return `${Number(order.total_price_uzs).toLocaleString()} сум`
@@ -646,11 +633,11 @@ export default function ProfilePage({
     }
     const labels: Record<string, string> = {
       'Активный': 'Принят 📄',
-      'В обработке': 'Собирается 📦',
+      'В обработке': 'Собирается ',
       'Готов': 'Упакован 🛍️',
       'Выдан': 'Передан курьеру 🚀',
       'Доставлен': 'Доставлен ✅',
-      'Отменён': 'Отменен 🚫',
+      'Отменён': 'Отменен ',
       'Ожидает оплаты': 'Ожидает оплаты ⏳',
     }
     return labels[status] || status
@@ -800,6 +787,71 @@ export default function ProfilePage({
           )}
         </div>
 
+        {/* ✅ 1. ИЗБРАННОЕ (первое) */}
+        <h3 className="text-lg font-bold mb-3">
+          {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+        </h3>
+        <div className="bg-white rounded-xl overflow-hidden mb-6">
+          <button
+            onClick={() => navigate('/favorites')}
+            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <Heart size={20} className="text-gray-600" />
+              <span className="font-medium">
+                {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {favorites.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  {favorites.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+                </span>
+              )}
+              <ChevronRight size={20} className="text-gray-400" />
+            </div>
+          </button>
+        </div>
+
+        {/* ✅ 2. МОИ ЗАКАЗЫ (второе) */}
+        <h3 className="text-lg font-bold mb-3">
+          {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
+        </h3>
+        <div className="bg-white rounded-xl overflow-hidden mb-6">
+          <button
+            onClick={() => {
+              setActiveSection('orders')
+              loadOrders()
+            }}
+            className="flex items-center justify-between w-full p-4 border-b border-gray-100 hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <Package size={20} className="text-gray-600" />
+              <span className="font-medium">
+                {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
+              </span>
+            </div>
+            <ChevronRight size={20} className="text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveSection('china')
+              loadChinaRequests()
+            }}
+            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <Globe size={20} className="text-gray-600" />
+              <span className="font-medium">
+                {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
+              </span>
+            </div>
+            <ChevronRight size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        {/* ✅ 3. НАСТРОЙКИ (третье) */}
         <h3 className="text-lg font-bold mb-3">
           {language === 'ru' ? 'Настройки' : 'Sozlamalar'}
         </h3>
@@ -859,92 +911,31 @@ export default function ProfilePage({
           </div>
         </div>
 
-        <h3 className="text-lg font-bold mb-3">
-          {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
-        </h3>
-        <div className="bg-white rounded-xl overflow-hidden mb-6">
-          <button
-            onClick={() => {
-              setActiveSection('orders')
-              loadOrders()
-            }}
-            className="flex items-center justify-between w-full p-4 border-b border-gray-100 hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-3">
-              <Package size={20} className="text-gray-600" />
-              <span className="font-medium">
-                {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-              </span>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveSection('china')
-              loadChinaRequests()
-            }}
-            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-3">
-              <Globe size={20} className="text-gray-600" />
-              <span className="font-medium">
-                {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-              </span>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
-        </div>
-
-        {/* ✅ НОВАЯ СЕКЦИЯ: ИЗБРАННОЕ */}
-        <h3 className="text-lg font-bold mb-3">
-          {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
-        </h3>
-        <div className="bg-white rounded-xl overflow-hidden mb-6">
-          <button
-            onClick={() => navigate('/favorites')}
-            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-3">
-              <Heart size={20} className="text-gray-600" />
-              <span className="font-medium">
-                {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {favorites.length > 0 && (
-                <span className="text-sm text-gray-500">
-                  {favorites.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
-                </span>
-              )}
-              <ChevronRight size={20} className="text-gray-400" />
-            </div>
-          </button>
-        </div>
-
+        {/* ✅ 4. АДРЕС МАГАЗИНА (в самом низу) */}
+        {/* 📝 ЗАПОЛНИ ЭТОТ БЛОК СВОИМ АДРЕСОМ */}
         <div className="mt-6 bg-blue-50 rounded-xl p-4">
-          <h4 className="font-bold mb-2 text-blue-900">
-            {language === 'ru' ? 'Контакты LOFT' : 'LOFT aloqa'}
-          </h4>
-          <p className="text-sm text-blue-800 mb-1">
-             {language === 'ru' 
-              ? 'Рынок Малика, ТЦ Меркато' 
-              : 'Malika bozori, Mercato savdo markazi'}
-          </p>
-          <p className="text-sm text-blue-800 mb-1">
-            {language === 'ru'
-              ? '(здание korzinka.uz, 2 этаж, магазин 34)'
-              : '(korzinka.uz binosi, 2-qavat, 34-do\'kon)'}
-          </p>
-          <p className="text-sm text-blue-800 mb-1">
-             +998 93 378 87 70
-          </p>
-          <p className="text-sm text-blue-800">
-             {language === 'ru' 
-              ? 'Ежедневно 10:00 - 20:00' 
-              : 'Har kuni 10:00 - 20:00'}
-          </p>
-        </div>
+  <h4 className="font-bold mb-2 text-blue-900">
+    {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
+  </h4>
+  <p className="text-sm text-blue-800 mb-1">
+    {language === 'ru' 
+      ? 'Рынок Малика, ТЦ Меркато' 
+      : 'Malika bozori, Mercato savdo markazi'}
+  </p>
+  <p className="text-sm text-blue-800 mb-1">
+    {language === 'ru'
+      ? '2 этаж, магазин 34'
+      : '2-qavat, 34-do\'kon'}
+  </p>
+  <p className="text-sm text-blue-800 mb-1">
+    📞 +998 93 378 87 70
+  </p>
+  <p className="text-sm text-blue-800">
+    🕐 {language === 'ru' 
+      ? 'Ежедневно 10:00 - 20:00' 
+      : 'Har kuni 10:00 - 20:00'}
+  </p>
+</div>
       </div>
     )
   }
