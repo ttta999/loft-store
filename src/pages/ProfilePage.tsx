@@ -8,25 +8,22 @@ import { cancelOrder, showPaymentDetails, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
+  const [showScreenshotModal, setShowScreenshotModal] = useState(false)
 
   // ✅ Функция форматирования цены с учётом сохранённой суммы в сумах
   const formatOrderPrice = (order: any) => {
-    // Если есть сохранённая сумма в сумах - используем её
     if (order.total_price_uzs) {
       return `${Number(order.total_price_uzs).toLocaleString()} сум`
     }
-    // Иначе считаем по текущему курсу
     if (currency === 'USD') return `$${order.total_price_usd}`
     return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
   }
 
   // ✅ Функция форматирования цены товара (с сохранённой ценой)
   const formatItemPrice = (item: any) => {
-    // Если у товара есть сохранённая цена в сумах
     if (item.priceUzs) {
       return `${Number(item.priceUzs).toLocaleString()} сум`
     }
-    // Иначе по текущему курсу
     if (currency === 'USD') return `$${item.priceUsd}`
     return `${(item.priceUsd * exchangeRate).toLocaleString()} сум`
   }
@@ -101,7 +98,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   }
 
   const handleShowPaymentDetails = () => {
-    // ✅ Используем сохранённую сумму в сумах если есть
     const amount = order.total_price_uzs 
       ? Number(order.total_price_uzs) 
       : Math.round(order.total_price_usd * exchangeRate)
@@ -191,7 +187,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </h3>
             <p className="text-sm">
               {order.payment_method === 'online_card'
-                ? (language === 'ru' ? 'Оплата картой' : 'Karta orqali to\'lash')
+                ? (language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash')
                 : (language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash')}
             </p>
           </div>
@@ -303,14 +299,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                   <p className="text-sm text-green-800 font-medium mb-2">
                     ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
                   </p>
-                  <a 
-                    href={order.payment_screenshot_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-green-600 hover:underline block mb-2"
+                  
+                  {/* ✅ КНОПКА ПРОСМОТРА СКРИНШОТА (открывает модалку) */}
+                  <button
+                    onClick={() => setShowScreenshotModal(true)}
+                    className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
                   >
                     👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
-                  </a>
+                  </button>
+                  
                   <p className="text-xs text-green-700">
                     {language === 'ru' 
                       ? '⏳ Ожидайте подтверждения от менеджера' 
@@ -348,6 +345,47 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           )}
         </div>
       </div>
+
+      {/* ✅ МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА СКРИНШОТА */}
+      {showScreenshotModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
+          onClick={() => setShowScreenshotModal(false)}
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Кнопка закрытия */}
+            <button
+              onClick={() => setShowScreenshotModal(false)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+            >
+              <X size={24} />
+              {language === 'ru' ? 'Закрыть' : 'Yopish'}
+            </button>
+            
+            {/* Изображение */}
+            <img
+              src={order.payment_screenshot_url}
+              alt="Screenshot"
+              className="w-full h-auto rounded-lg object-contain"
+              style={{ maxHeight: '80vh' }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {/* Кнопка скачать */}
+            <div className="mt-4 flex justify-center">
+              <a
+                href={order.payment_screenshot_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -918,7 +956,6 @@ export default function ProfilePage({
                     )}
                   </div>
 
-                  {/* ✅ Используем сохранённую цену */}
                   <p className="text-lg font-bold">
                     {formatOrderPrice(order)}
                   </p>
