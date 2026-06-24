@@ -239,115 +239,154 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </span>
           </div>
 
-          {/* ✅ БЛОК ДЛЯ ОПЛАТЫ */}
-          {order.status === 'Ожидает оплаты' && order.payment_method === 'online_card' && (
+          {/* ✅ БЛОК ДЛЯ ОПЛАТЫ - показывается для ВСЕХ заказов с оплатой переводом */}
+          {order.payment_method === 'online_card' && (
             <div className="space-y-3 border-t pt-4">
               <h3 className="font-bold text-lg">
                 {language === 'ru' ? '💳 Оплата заказа' : '💳 Buyurtmani to\'lash'}
               </h3>
 
-              {/* Реквизиты */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2 text-sm">
-                  {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
-                </h4>
-                <div className="space-y-1 text-sm">
-                  <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
-                  <p><b>Payme:</b> {PAYMENT_DETAILS.payme}</p>
-                  <p><b>Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
-                </div>
-                <p className="text-lg font-bold mt-3 pt-3 border-t">
-                  {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatOrderPrice(order)}
-                </p>
-              </div>
-
-              {/* Загрузка скриншота */}
-              {!order.payment_screenshot_url ? (
-                <div>
-                  <p className="text-sm font-medium mb-2">
-                    {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
+              {/* ✅ Если заказ отменён */}
+              {order.status === 'Отменён' ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-800 font-medium mb-2">
+                    🚫 {language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi'}
                   </p>
-                  <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                    uploadingScreenshot 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-300 hover:border-blue-500'
-                  }`}>
-                    <div className="flex flex-col items-center justify-center">
-                      {uploadingScreenshot ? (
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
-                      ) : (
-                        <Upload className="w-6 h-6 mb-2 text-gray-400" />
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {uploadingScreenshot 
-                          ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
-                          : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
+                  <p className="text-xs text-red-700">
+                    {language === 'ru' 
+                      ? 'Оплата не требуется. Если были списаны средства, свяжитесь с менеджером для возврата.' 
+                      : 'To\'lov talab qilinmaydi. Agar mablag\'lar yechib olingan bo\'lsa, qaytarish uchun menejer bilan bog\'laning.'}
+                  </p>
+                  
+                  {/* Показываем скриншот если он был загружен */}
+                  {order.payment_screenshot_url && (
+                    <div className="mt-3 pt-3 border-t border-red-200">
+                      <p className="text-xs text-red-700 mb-2">
+                        {language === 'ru' ? '📸 Скриншот оплаты:' : '📸 To\'lov screenshoti:'}
+                      </p>
+                      <button
+                        onClick={() => setShowScreenshotModal(true)}
+                        className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+                      >
+                        👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Реквизиты */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2 text-sm">
+                      {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
+                    </h4>
+                    <div className="space-y-1 text-sm">
+                      <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
+                      <p><b>Payme:</b> {PAYMENT_DETAILS.payme}</p>
+                      <p><b>Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
+                    </div>
+                    <p className="text-lg font-bold mt-3 pt-3 border-t">
+                      {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatOrderPrice(order)}
+                    </p>
+                  </div>
+
+                  {/* Загрузка скриншота */}
+                  {!order.payment_screenshot_url ? (
+                    <div>
+                      <p className="text-sm font-medium mb-2">
+                        {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
+                      </p>
+                      <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                        uploadingScreenshot 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-300 hover:border-blue-500'
+                      }`}>
+                        <div className="flex flex-col items-center justify-center">
+                          {uploadingScreenshot ? (
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
+                          ) : (
+                            <Upload className="w-6 h-6 mb-2 text-gray-400" />
+                          )}
+                          <p className="text-xs text-gray-500">
+                            {uploadingScreenshot 
+                              ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                              : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
+                            }
+                          </p>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleUploadScreenshot}
+                          className="hidden"
+                          disabled={uploadingScreenshot}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-sm text-green-800 font-medium mb-2">
+                        ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
+                      </p>
+                      
+                      <button
+                        onClick={() => setShowScreenshotModal(true)}
+                        className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
+                      >
+                        👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                      </button>
+                      
+                      <p className="text-xs text-green-700">
+                        {order.status === 'Ожидает оплаты'
+                          ? (language === 'ru' 
+                              ? '⏳ Ожидайте подтверждения от менеджера' 
+                              : '⏳ Menejer tasdiqlashini kuting')
+                          : (language === 'ru'
+                              ? '✅ Оплата подтверждена менеджером'
+                              : '✅ To\'lov menejer tomonidan tasdiqlandi')
                         }
                       </p>
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadScreenshot}
-                      className="hidden"
-                      disabled={uploadingScreenshot}
-                    />
-                  </label>
-                </div>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-800 font-medium mb-2">
-                    ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
-                  </p>
-                  
-                  {/* ✅ КНОПКА ПРОСМОТРА СКРИНШОТА (открывает модалку) */}
-                  <button
-                    onClick={() => setShowScreenshotModal(true)}
-                    className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
-                  >
-                    👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
-                  </button>
-                  
-                  <p className="text-xs text-green-700">
-                    {language === 'ru' 
-                      ? '⏳ Ожидайте подтверждения от менеджера' 
-                      : '⏳ Menejer tasdiqlashini kuting'}
-                  </p>
-                </div>
+                  )}
+
+                  {/* Кнопки - показываем только если заказ не оплачен и не отменён */}
+                  {order.status === 'Ожидает оплаты' && (
+                    <>
+                      <button
+                        onClick={handleShowPaymentDetails}
+                        className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+                      >
+                        📋 {language === 'ru' ? 'Показать реквизиты' : 'Rekvizitlarni ko\'rsatish'}
+                      </button>
+
+                      <a
+                        href={MANAGER_TELEGRAM_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                      >
+                        <MessageCircle size={20} />
+                        {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
+                      </a>
+                      
+                      <button
+                        onClick={() => onCancelOrder(order)}
+                        className="w-full bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
+                      >
+                        <X size={20} />
+                        {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
+                      </button>
+                    </>
+                  )}
+                </>
               )}
-
-              {/* Кнопки */}
-              <button
-                onClick={handleShowPaymentDetails}
-                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
-              >
-                📋 {language === 'ru' ? 'Показать реквизиты' : 'Rekvizitlarni ko\'rsatish'}
-              </button>
-
-              <a
-                href={MANAGER_TELEGRAM_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
-              >
-                <MessageCircle size={20} />
-                {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
-              </a>
-              
-              <button
-                onClick={() => onCancelOrder(order)}
-                className="w-full bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
-              >
-                <X size={20} />
-                {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
-              </button>
             </div>
           )}
         </div>
       </div>
 
       {/* ✅ МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА СКРИНШОТА */}
-      {showScreenshotModal && (
+      {showScreenshotModal && order.payment_screenshot_url && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
           onClick={() => setShowScreenshotModal(false)}
@@ -371,7 +410,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               onClick={(e) => e.stopPropagation()}
             />
             
-            {/* Кнопка скачать */}
+            {/* Кнопка открыть в новой вкладке */}
             <div className="mt-4 flex justify-center">
               <a
                 href={order.payment_screenshot_url}
