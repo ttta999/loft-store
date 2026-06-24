@@ -5,6 +5,7 @@ export const CATEGORIES = [
     name_uz: 'Oyoq kiyim', 
     icon: '👟',
     subcategories: [
+      { id: 'all', name_ru: 'Все товары', name_uz: 'Barcha mahsulotlar' },
       { id: 'sneakers', name_ru: 'Кроссовки', name_uz: 'Krossovkalar' },
       { id: 'boots', name_ru: 'Ботинки', name_uz: 'Botinkalar' },
       { id: 'loafers', name_ru: 'Лоферы', name_uz: 'Loaferlar' },
@@ -17,6 +18,7 @@ export const CATEGORIES = [
     name_uz: 'Kiyim', 
     icon: '👕',
     subcategories: [
+      { id: 'all', name_ru: 'Все товары', name_uz: 'Barcha mahsulotlar' },
       { id: 't-shirts', name_ru: 'Футболки', name_uz: 'Futbolkalar' },
       { id: 'shirts', name_ru: 'Рубашки', name_uz: 'Rubashkalar' },
       { id: 'sweaters-cardigans', name_ru: 'Джемперы и Кардиганы', name_uz: 'Jemperlar va Kardiganlar' },
@@ -32,6 +34,7 @@ export const CATEGORIES = [
     name_uz: 'Aksessuarlar', 
     icon: '🧢',
     subcategories: [
+      { id: 'all', name_ru: 'Все товары', name_uz: 'Barcha mahsulotlar' },
       { id: 'belts', name_ru: 'Ремни', name_uz: 'Kamarlar' },
       { id: 'caps', name_ru: 'Кепки', name_uz: 'Kepkalar' },
       { id: 'hats', name_ru: 'Шапки', name_uz: 'Shapkalar' },

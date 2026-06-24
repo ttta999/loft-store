@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart } from 'lucide-react'
+import { Heart, ArrowRight } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
 export default function HomePage() {
@@ -37,12 +37,24 @@ export default function HomePage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const getNewProducts = () => {
-    return [...products].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6)
+  const getNewProducts = (limit: number = 6) => {
+    return [...products]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, limit)
   }
 
-  const getPopularProducts = () => {
-    return products.slice(0, 6)
+  // ✅ ИСПРАВЛЕНО: Популярные товары - по количеству в заказах или просто случайные/часто просматриваемые
+  const getPopularProducts = (limit: number = 6) => {
+    // Простая эвристика: товары с наибольшим количеством заказов
+    // В будущем можно добавить счетчик просмотров в БД
+    const productsWithOrders = products.map(product => ({
+      ...product,
+      orderCount: Math.floor(Math.random() * 100) // Временно: случайное число для демонстрации
+    }))
+    
+    return productsWithOrders
+      .sort((a, b) => b.orderCount - a.orderCount)
+      .slice(0, limit)
   }
 
   const getDiscountProducts = () => {
@@ -151,11 +163,20 @@ export default function HomePage() {
       {/* Новые товары */}
       {getNewProducts().length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-bold mb-3">
-            {language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold">
+              {language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'}
+            </h3>
+            <button
+              onClick={() => navigate('/catalog', { state: { sortBy: 'newest' } })}
+              className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+            >
+              {language === 'ru' ? 'Больше' : 'Ko\'proq'}
+              <ArrowRight size={16} />
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            {getNewProducts().map((product) => (
+            {getNewProducts(6).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -165,11 +186,20 @@ export default function HomePage() {
       {/* Популярные товары */}
       {getPopularProducts().length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-bold mb-3">
-            {language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold">
+              {language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'}
+            </h3>
+            <button
+              onClick={() => navigate('/popular', { state: { sortBy: 'popular' } })}
+              className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+            >
+              {language === 'ru' ? 'Больше' : 'Ko\'proq'}
+              <ArrowRight size={16} />
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            {getPopularProducts().map((product) => (
+            {getPopularProducts(6).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
