@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { supabase } from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
@@ -43,11 +44,35 @@ interface AppState {
   setChatId: (id: string | null) => void
 }
 
-// ✅ Функция получения курса валют через НАШ API (чтобы избежать CORS)
-// ✅ Получение курса через НАШ API (который парсит CBU.uz)
-const fetchExchangeRateFromCBU = async (): Promise<number> => {
+// ✅ Получение курса из Supabase settings
+const fetchExchangeRateFromDB = async (): Promise<number> => {
   try {
-    console.log('🔄 Запрашиваем курс у нашего API...')
+    console.log('🔄 Запрашиваем курс из БД...')
+    
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'exchange_rate')
+      .single()
+    
+    if (error || !data) {
+      throw new Error('Курс не найден в БД')
+    }
+    
+    const rate = (data.value as any)?.rate || 12100
+    console.log('✅ Курс из БД:', rate)
+    return rate
+  } catch (error) {
+    console.error('❌ Ошибка получения курса из БД:', error)
+    // Fallback на API
+    return await fetchExchangeRateFromAPI()
+  }
+}
+
+// ✅ Fallback: получение курса через API
+const fetchExchangeRateFromAPI = async (): Promise<number> => {
+  try {
+    console.log('🔄 Запрашиваем курс через API...')
     
     const response = await fetch('/api/getExchangeRate')
     
@@ -56,11 +81,10 @@ const fetchExchangeRateFromCBU = async (): Promise<number> => {
     }
     
     const data = await response.json()
-    console.log('✅ Курс получен:', data.rate, 'Источник:', data.source)
-    
+    console.log('✅ Курс из API:', data.rate)
     return data.rate
   } catch (error) {
-    console.error('❌ Ошибка получения курса:', error)
+    console.error('❌ Ошибка получения курса через API:', error)
     return 12100 // Fallback
   }
 }
@@ -69,7 +93,7 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       language: 'ru',
-      currency: 'USD',
+      currency: 'UZS', // ✅ ИЗМЕНЕНО: валюта по умолчанию UZS
       exchangeRate: 12100,
       cart: [],
       favorites: [],
@@ -79,12 +103,10 @@ export const useStore = create<AppState>()(
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
 
-      // ✅ Функция обновления курса
+      // ✅ Функция обновления курса из БД
       updateExchangeRate: async () => {
-        const rate = await fetchExchangeRateFromCBU()
+        const rate = await fetchExchangeRateFromDB()
         set({ exchangeRate: rate })
-        
-        // Сохраняем время последнего обновления
         localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
       },
 
@@ -153,7 +175,6 @@ export const useStore = create<AppState>()(
 
 // ✅ Автоматическое обновление курса при загрузке приложения
 if (typeof window !== 'undefined') {
-  // Проверяем когда последний раз обновляли курс
   const lastUpdate = localStorage.getItem('exchangeRateUpdatedAt')
   const now = new Date()
   const shouldUpdate = !lastUpdate || 

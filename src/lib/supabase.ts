@@ -261,10 +261,9 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
   return Array.isArray(data) ? data[0] : data
 }
 
-// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (с правильной валютой)
+// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (с правильной валютой и "Оплата переводом")
 export const notifyNewOrder = async (order: any) => {
   const itemsList = order.items.map((item: any, index: number) => {
-    // ✅ Используем сохранённую цену в сумах если есть
     const priceText = item.priceUzs 
       ? `${Number(item.priceUzs).toLocaleString()} сум`
       : `$${item.priceUsd}`
@@ -281,10 +280,14 @@ export const notifyNewOrder = async (order: any) => {
 
   const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
 
-  // ✅ Определяем валюту и сумму заказа
   const totalText = order.total_price_uzs
     ? `${Number(order.total_price_uzs).toLocaleString()} сум`
     : `$${order.total_price_usd}`
+
+  // ✅ ИЗМЕНЕНО: "Оплата переводом" вместо "Оплата картой"
+  const paymentText = order.payment_method === 'online_card' 
+    ? 'Переводом' 
+    : 'При получении'
 
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
@@ -297,7 +300,7 @@ export const notifyNewOrder = async (order: any) => {
 ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
-💳 Оплата: ${order.payment_method === 'online_card' ? 'Картой' : 'При получении'}
+💳 Оплата: ${paymentText}
   `.trim()
 
   await sendNotificationToManager(managerMessage)
@@ -313,7 +316,7 @@ ${itemsList}
 ${itemsList}
 
 🚚 ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
-💳 ${order.payment_method === 'online_card' ? 'Оплата картой' : 'Оплата при получении'}
+💳 ${paymentText === 'Переводом' ? 'Оплата переводом' : 'Оплата при получении'}
 
 📞 Менеджер свяжется с вами в ближайшее время
     `.trim()

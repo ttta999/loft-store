@@ -177,13 +177,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return null
   }
 
-  // ✅ СОХРАНЯЕМ ЦЕНЫ ТОВАРОВ В СУМАХ
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     
     const totalInSums = Math.round(getTotalPrice() * exchangeRate)
     
-    // ✅ Добавляем цену в сумах для каждого товара
     const itemsWithPrices = cart.map(item => ({
       ...item,
       priceUzs: Math.round(item.priceUsd * exchangeRate),
@@ -200,7 +198,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       total_price_usd: getTotalPrice(),
       total_price_uzs: totalInSums,
       exchange_rate_at_order: exchangeRate,
-      items: itemsWithPrices, // ✅ Товары с сохранёнными ценами в сумах
+      items: itemsWithPrices,
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
     }
@@ -584,6 +582,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               {language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}
             </label>
             
+            {/* ✅ ИЗМЕНЕНО: "Оплата переводом" вместо "Оплата картой" */}
             <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-black transition-colors">
               <input
                 type="radio"
@@ -594,7 +593,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               />
               <CreditCard size={20} className="text-blue-600" />
               <span className="text-sm font-medium">
-                {language === 'ru' ? 'Оплата картой' : 'Karta orqali to\'lash'}
+                {language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}
               </span>
             </label>
 
@@ -616,8 +615,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             {deliveryMethod === 'delivery' && (
               <p className="text-xs text-red-500 mt-2">
                 {language === 'ru' 
-                  ? '* При доставке доступна только предоплата' 
-                  : '* Yetkazib berishda faqat oldindan to\'lov'}
+                  ? '* При доставке доступна только предоплата переводом' 
+                  : '* Yetkazib berishda faqat oldindan pul o\'tkazish'}
               </p>
             )}
           </div>

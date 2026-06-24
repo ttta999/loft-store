@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { CATEGORIES, BRANDS } from '../data/categories'
+import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 import { Filter, ArrowUpDown } from 'lucide-react'
 
@@ -14,6 +14,9 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   
+  // ✅ Бренды теперь загружаются из Supabase
+  const [brands, setBrands] = useState<any[]>([])
+  
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
   
@@ -25,6 +28,11 @@ export default function CatalogPage() {
   const [maxPrice, setMaxPrice] = useState<number>(10000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
+  // ✅ Загрузка брендов из Supabase
+  useEffect(() => {
+    loadBrands()
+  }, [])
+
   useEffect(() => {
     if (categoryId && subcategoryId) {
       loadProducts()
@@ -34,6 +42,21 @@ export default function CatalogPage() {
   useEffect(() => {
     applyFiltersAndSort()
   }, [selectedBrands, minPrice, maxPrice, sortBy, products])
+
+  const loadBrands = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+      
+      if (error) throw error
+      setBrands(data || [])
+    } catch (error) {
+      console.error('Ошибка загрузки брендов:', error)
+    }
+  }
 
   const loadProducts = async () => {
     setLoading(true)
@@ -55,7 +78,7 @@ export default function CatalogPage() {
     if (selectedBrands.length > 0) {
       filtered = filtered.filter(p => 
         selectedBrands.some(brandId => {
-          const brand = BRANDS.find(b => b.id === brandId)
+          const brand = brands.find(b => b.id === brandId)
           return brand && p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
         })
       )
@@ -168,7 +191,7 @@ export default function CatalogPage() {
               {language === 'ru' ? 'Бренд' : 'Brend'}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {BRANDS.map((brand) => (
+              {brands.map((brand) => (
                 <button
                   key={brand.id}
                   onClick={() => toggleBrand(brand.id)}
