@@ -1,16 +1,24 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { BRANDS, CATEGORIES } from '../data/categories'
-import { useState } from 'react'
-import { Filter, ArrowUpDown } from 'lucide-react'
+import { CATEGORIES } from '../data/categories'
+import { useState, useEffect } from 'react'
+import { Filter, ArrowUpDown, Loader2 } from 'lucide-react'
+
+interface Brand {
+  id: string
+  name: string
+  is_active: boolean
+}
 
 export default function BrandsPage() {
   const navigate = useNavigate()
   const { language, currency, exchangeRate } = useStore()
   const [products, setProducts] = useState<any[]>([])
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingBrands, setLoadingBrands] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   
   // Фильтры
@@ -19,25 +27,59 @@ export default function BrandsPage() {
   const [maxPrice, setMaxPrice] = useState<number>(10000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
+  // ✅ Загружаем бренды из Supabase
+  useEffect(() => {
+    loadBrands()
+  }, [])
+
+  const loadBrands = async () => {
+    setLoadingBrands(true)
+    try {
+      console.log('🔄 Загружаем бренды из Supabase...')
+      
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) throw error
+      
+      console.log('✅ Бренды загружены:', data?.length || 0)
+      setBrands(data || [])
+    } catch (error) {
+      console.error('❌ Ошибка загрузки брендов:', error)
+    }
+    setLoadingBrands(false)
+  }
+
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const handleBrandClick = async (brandId: string) => {
-    setSelectedBrand(brandId)
+  const handleBrandClick = async (brand: Brand) => {
+    setSelectedBrand(brand)
     setLoading(true)
     
-    const brand = BRANDS.find(b => b.id === brandId)
-    if (!brand) return
+    console.log(`🔍 Ищем товары бренда: ${brand.name}`)
     
-    const { data } = await supabase
+    // ✅ Ищем товары по полю brand (а не по имени)
+    const { data, error } = await supabase
       .from('products')
       .select('*')
-      .ilike('name_ru', `%${brand.name}%`)
+      .eq('brand', brand.name)
       .eq('is_active', true)
+      .order('created_at', { ascending: false })
     
-    setProducts(data || [])
+    if (error) {
+      console.error('❌ Ошибка поиска товаров:', error)
+      setProducts([])
+    } else {
+      console.log(`✅ Найдено товаров: ${data?.length || 0}`)
+      setProducts(data || [])
+    }
+    
     setLoading(false)
   }
 
@@ -88,7 +130,6 @@ export default function BrandsPage() {
     return filtered
   }
 
-  const brand = selectedBrand ? BRANDS.find(b => b.id === selectedBrand) : null
   const filteredProducts = getFilteredAndSortedProducts()
   
   const activeFiltersCount = 
@@ -119,25 +160,45 @@ export default function BrandsPage() {
                 ? 'Выберите бренд чтобы увидеть товары' 
                 : 'Mahsulotlarni ko\'rish uchun brendni tanlang'}
             </p>
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {BRANDS.map((brand, index) => (
+            
+            {loadingBrands ? (
+              <div className="text-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500">
+                  {language === 'ru' ? 'Загрузка брендов...' : 'Brendlar yuklanmoqda...'}
+                </p>
+              </div>
+            ) : brands.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                {language === 'ru' ? 'Бренды не найдены' : 'Brendlar topilmadi'}
                 <button
-                  key={brand.id}
-                  onClick={() => handleBrandClick(brand.id)}
-                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
-                    index !== BRANDS.length - 1 ? 'border-b border-gray-100' : ''
-                  }`}
+                  onClick={loadBrands}
+                  className="mt-4 px-4 py-2 bg-black text-white rounded-lg text-sm"
                 >
-                  <span className="font-medium text-base">{brand.name}</span>
-                  <span className="text-gray-400 text-xl">›</span>
+                  🔄 {language === 'ru' ? 'Повторить' : 'Qayta urinish'}
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+                {brands.map((brand, index) => (
+                  <button
+                    key={brand.id}
+                    onClick={() => handleBrandClick(brand)}
+                    className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                      index !== brands.length - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                  >
+                    <span className="font-medium text-base">{brand.name}</span>
+                    <span className="text-gray-400 text-xl">›</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <>
             <div className="mb-4">
-              <h2 className="text-xl font-bold">{brand?.name}</h2>
+              <h2 className="text-xl font-bold">{selectedBrand.name}</h2>
               <p className="text-sm text-gray-500">
                 {filteredProducts.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
               </p>

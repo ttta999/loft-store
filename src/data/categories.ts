@@ -39,17 +39,3 @@ export const CATEGORIES = [
     ]
   },
 ]
-
-export const BRANDS = [
-  { id: 'loro-piana', name: 'Loro Piana' },
-  { id: 'brunello-cucinelli', name: 'Brunello Cucinelli' },
-  { id: 'tods', name: 'Tod\'s' },
-  { id: 'hermes', name: 'Hermès' },
-  { id: 'kiton', name: 'Kiton' },
-  { id: 'dior', name: 'Dior' },
-  { id: 'salvatore-ferragamo', name: 'Salvatore Ferragamo' },
-  { id: 'zegna', name: 'Zegna' },
-  { id: 'dolce-gabbana', name: 'Dolce & Gabbana' },
-  { id: 'fendi', name: 'Fendi' },
-  { id: 'louis-vuitton', name: 'Louis Vuitton' },
-]
