@@ -492,8 +492,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </p>
             <p className="text-xs text-purple-600 mt-1">
               {language === 'ru' 
-                ? 'После оплаты менеджер приступит к заказу товара из Китая' 
-                : 'To\'lovdan so\'ng menejer Xitoydan mahsulot buyurtma qiladi'}
+                ? 'После оплаты менеджер приступит к заказу товара' 
+                : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}
             </p>
           </div>
         )}
