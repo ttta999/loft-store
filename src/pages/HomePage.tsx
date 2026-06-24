@@ -168,7 +168,7 @@ export default function HomePage() {
               {language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'}
             </h3>
             <button
-              onClick={() => navigate('/catalog', { state: { sortBy: 'newest' } })}
+              onClick={() => navigate('/all-products', { state: { sortBy: 'newest' } })}
               className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
             >
               {language === 'ru' ? 'Больше' : 'Ko\'proq'}
@@ -191,7 +191,7 @@ export default function HomePage() {
               {language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'}
             </h3>
             <button
-              onClick={() => navigate('/popular', { state: { sortBy: 'popular' } })}
+              onClick={() => navigate('/all-products', { state: { sortBy: 'popular' } })}
               className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
             >
               {language === 'ru' ? 'Больше' : 'Ko\'proq'}
