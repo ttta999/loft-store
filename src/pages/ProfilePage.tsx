@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, showPaymentDetails, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
@@ -582,7 +583,8 @@ export default function ProfilePage({
   onBackClick: _onBackClick,
   setOnBackClick
 }: ProfilePageProps) {
-  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart } = useStore()
+  const navigate = useNavigate()
+  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
@@ -672,7 +674,7 @@ export default function ProfilePage({
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅‍️',
+      'Отменён клиентом': 'Отменён вами 🙅️',
       'Отклонён': 'Отклонён 🛑',
     }
     return labels[status] || status
@@ -860,7 +862,7 @@ export default function ProfilePage({
         <h3 className="text-lg font-bold mb-3">
           {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
         </h3>
-        <div className="bg-white rounded-xl overflow-hidden">
+        <div className="bg-white rounded-xl overflow-hidden mb-6">
           <button
             onClick={() => {
               setActiveSection('orders')
@@ -891,6 +893,32 @@ export default function ProfilePage({
               </span>
             </div>
             <ChevronRight size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        {/* ✅ НОВАЯ СЕКЦИЯ: ИЗБРАННОЕ */}
+        <h3 className="text-lg font-bold mb-3">
+          {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+        </h3>
+        <div className="bg-white rounded-xl overflow-hidden mb-6">
+          <button
+            onClick={() => navigate('/favorites')}
+            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <Heart size={20} className="text-gray-600" />
+              <span className="font-medium">
+                {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {favorites.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  {favorites.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+                </span>
+              )}
+              <ChevronRight size={20} className="text-gray-400" />
+            </div>
           </button>
         </div>
 

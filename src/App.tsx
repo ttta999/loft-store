@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -13,7 +13,6 @@ import BrandsPage from './pages/BrandsPage'
 import CategoryPage from './pages/CategoryPage'
 import AllProductsPage from './pages/AllProductsPage'
 import { initTelegram, getUserData, getChatId, subscribeUser } from './lib/telegram'
-import { Heart } from 'lucide-react'
 import { useStore } from './store/useStore'
 
 type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
@@ -32,8 +31,7 @@ function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  const { language, favorites } = useStore()
-  const navigate = useNavigate()
+  const { language } = useStore()
   const location = useLocation()
 
   useEffect(() => {
@@ -106,17 +104,7 @@ function AppContent() {
             <div className="w-16"></div>
           )}
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <button 
-            onClick={() => navigate('/favorites')}
-            className="relative text-gray-600 hover:text-red-500"
-          >
-            <Heart size={24} />
-            {favorites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {favorites.length}
-              </span>
-            )}
-          </button>
+          <div className="w-16"></div>
         </div>
       </div>
 
