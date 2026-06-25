@@ -1,12 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { CATEGORIES } from '../data/categories'
-import { Heart } from 'lucide-react'
 
 export default function CategoryPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, favorites } = useStore()
+  const { language } = useStore()
   
   const categoryId = location.state?.categoryId
   const category = CATEGORIES.find(c => c.id === categoryId)
@@ -32,7 +31,7 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель - точно как в BrandsPage */}
+      {/* ✅ Верхняя панель - БЕЗ ИЗБРАННОГО */}
       <div className="bg-white border-b p-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
@@ -42,22 +41,11 @@ export default function CategoryPage() {
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <button 
-            onClick={() => navigate('/favorites')}
-            className="relative text-gray-600 hover:text-red-500"
-          >
-            <Heart size={24} />
-            {favorites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {favorites.length}
-              </span>
-            )}
-          </button>
+          <div className="w-16"></div>
         </div>
       </div>
 
       <div className="p-4">
-        {/* ✅ ТОЧНО КАК В BRANDSPAGE */}
         <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? category.name_ru : category.name_uz}
         </h2>
@@ -67,7 +55,7 @@ export default function CategoryPage() {
             : 'Pastki kategoriyani tanlang'}
         </p>
 
-        {/* Список подкатегорий - точно как в BrandsPage */}
+        {/* Список подкатегорий */}
         <div className="bg-white rounded-xl overflow-hidden shadow-sm">
           {category.subcategories.map((sub, index) => (
             <button

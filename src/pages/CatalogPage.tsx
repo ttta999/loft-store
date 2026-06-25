@@ -21,7 +21,7 @@ export default function CatalogPage() {
   const subcategoryId = location.state?.subcategory
   
   const category = CATEGORIES.find(c => c.id === categoryId)
-  const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
+  // ✅ Удалено: const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
@@ -144,6 +144,16 @@ export default function CatalogPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  // ✅ Получаем название подкатегории для отображения
+  const getSubcategoryName = () => {
+    if (!subcategoryId) {
+      // Если подкатегория не выбрана (Все товары)
+      return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
+    }
+    const sub = category?.subcategories.find(s => s.id === subcategoryId)
+    return sub ? (language === 'ru' ? sub.name_ru : sub.name_uz) : ''
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-white border-b p-4 sticky top-0 z-10">
@@ -157,15 +167,14 @@ export default function CatalogPage() {
       </div>
 
       <div className="p-4">
-        {/* ✅ Заголовок как в брендах - одинаковый размер шрифта */}
+        {/* ✅ Заголовок категории */}
         <h2 className="text-2xl font-bold mb-2">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
-        {subcategory && (
-          <p className="text-sm text-gray-500 mb-6">
-            {language === 'ru' ? subcategory.name_ru : subcategory.name_uz}
-          </p>
-        )}
+        {/* ✅ Подкатегория (включая "Все товары") */}
+        <p className="text-sm text-gray-500 mb-6">
+          {getSubcategoryName()}
+        </p>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
