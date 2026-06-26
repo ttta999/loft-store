@@ -31,8 +31,8 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель - БЕЗ ИЗБРАННОГО */}
-      <div className="bg-white border-b p-4 sticky top-0 z-40">
+      {/* ✅ Верхняя панель - БЕЗ ЧЕРНОЙ ПОЛОСЫ (border-b удалён) */}
+      <div className="bg-white p-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)} 
@@ -46,10 +46,11 @@ export default function CategoryPage() {
       </div>
 
       <div className="p-4">
-        <h2 className="text-2xl font-bold mb-2">
+        {/* ✅ Размер шрифта и отступы как в CatalogPage */}
+        <h2 className="text-xl font-bold mb-1">
           {language === 'ru' ? category.name_ru : category.name_uz}
         </h2>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-4">
           {language === 'ru' 
             ? 'Выберите подкатегорию' 
             : 'Pastki kategoriyani tanlang'}
