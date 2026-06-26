@@ -21,7 +21,6 @@ export default function CatalogPage() {
   const subcategoryId = location.state?.subcategory
   
   const category = CATEGORIES.find(c => c.id === categoryId)
-  // ✅ Удалено: const subcategory = category?.subcategories.find(s => s.id === subcategoryId)
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
@@ -167,12 +166,12 @@ export default function CatalogPage() {
       </div>
 
       <div className="p-4">
-        {/* ✅ Заголовок категории */}
-        <h2 className="text-2xl font-bold mb-2">
+        {/* ✅ Заголовок категории - КАК В BRANDS */}
+        <h2 className="text-xl font-bold mb-1">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
-        {/* ✅ Подкатегория (включая "Все товары") */}
-        <p className="text-sm text-gray-500 mb-6">
+        {/* ✅ Подкатегория + количество товаров - КАК В BRANDS */}
+        <p className="text-sm text-gray-500 mb-4">
           {getSubcategoryName()}
         </p>
 
