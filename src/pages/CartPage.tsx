@@ -291,7 +291,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col">
-        <div className="bg-white p-4 border-b sticky top-0 z-10">
+        {/* ✅ БЕЗ border-b */}
+        <div className="bg-white p-4 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <button 
               onClick={() => {
@@ -429,7 +430,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
             <p className="text-sm text-yellow-800 font-medium">
-              ⚠️ {language === 'ru' 
+              ️ {language === 'ru' 
                 ? 'Заказ будет обработан только после подтверждения оплаты менеджером' 
                 : 'Buyurtma faqat menejer tomonidan to\'lov tasdiqlangandan so\'ng ko\'rib chiqiladi'}
             </p>
@@ -472,7 +473,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+      {/* ✅ БЕЗ border-b */}
+      <div className="p-4 flex items-center justify-between sticky top-0 bg-white z-10">
         <button onClick={onClose} className="text-gray-600 hover:text-black">
           ← {language === 'ru' ? 'Назад' : 'Orqaga'}
         </button>
@@ -582,7 +584,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               {language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}
             </label>
             
-            {/* ✅ ИЗМЕНЕНО: "Оплата переводом" вместо "Оплата картой" */}
             <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-black transition-colors">
               <input
                 type="radio"
