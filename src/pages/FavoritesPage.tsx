@@ -13,8 +13,8 @@ export default function FavoritesPage() {
   if (favorites.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Шапка - БЕЗ ЧЕРНОЙ ПОЛОСЫ (border-b удалён) */}
-        <div className="bg-white p-4 sticky top-0 z-10">
+        {/* ✅ БЕЗ border-b, с shadow-sm */}
+        <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <Link to="/" className="text-gray-600 hover:text-black">
               ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -47,8 +47,8 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Шапка - БЕЗ ЧЕРНОЙ ПОЛОСЫ (border-b удалён) */}
-      <div className="bg-white p-4 sticky top-0 z-10">
+      {/* ✅ БЕЗ border-b, с shadow-sm */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-gray-600 hover:text-black">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}

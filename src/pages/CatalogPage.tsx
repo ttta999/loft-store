@@ -155,7 +155,8 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="bg-white border-b p-4 sticky top-0 z-10">
+      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -166,11 +167,11 @@ export default function CatalogPage() {
       </div>
 
       <div className="p-4">
-        {/* ✅ Заголовок категории - КАК В BRANDS */}
+        {/* ✅ Заголовок категории */}
         <h2 className="text-xl font-bold mb-1">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
-        {/* ✅ Подкатегория + количество товаров - КАК В BRANDS */}
+        {/* ✅ Подкатегория */}
         <p className="text-sm text-gray-500 mb-4">
           {getSubcategoryName()}
         </p>

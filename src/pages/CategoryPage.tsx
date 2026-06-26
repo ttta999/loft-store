@@ -31,8 +31,8 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель - БЕЗ ЧЕРНОЙ ПОЛОСЫ (border-b удалён) */}
-      <div className="bg-white p-4 sticky top-0 z-40">
+      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate(-1)} 
@@ -67,7 +67,7 @@ export default function CategoryPage() {
               } ${sub.id === 'all' ? 'bg-blue-50 hover:bg-blue-100' : ''}`}
             >
               <div className="flex items-center gap-3">
-                {sub.id === 'all' && <span className="text-2xl">📦</span>}
+                {sub.id === 'all' && <span className="text-2xl"></span>}
                 <span className="font-medium text-base">
                   {language === 'ru' ? sub.name_ru : sub.name_uz}
                 </span>

@@ -8,7 +8,8 @@ import { CATEGORIES } from '../data/categories'
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite, favorites } = useStore()
+  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites,
+    isFavorite, favorites } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,17 +36,14 @@ export default function AllProductsPage() {
 
   const applyFiltersAndSort = () => {
     let filtered = [...products]
-
     // Фильтр по категории
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
-
     // Фильтр по подкатегории
     if (selectedSubcategory !== 'all') {
       filtered = filtered.filter(p => p.subcategory === selectedSubcategory)
     }
-
     // Сортировка
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -56,7 +54,6 @@ export default function AllProductsPage() {
     } else if (sortBy === 'price_desc') {
       filtered.sort((a, b) => b.price_usd - a.price_usd)
     }
-
     setFilteredProducts(filtered)
   }
 
@@ -101,8 +98,8 @@ export default function AllProductsPage() {
           }}
           className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
         >
-          <Heart 
-            size={20} 
+          <Heart
+            size={20}
             className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
           />
         </button>
@@ -133,17 +130,17 @@ export default function AllProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель с LOFT Store */}
+      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={() => navigate(-1)} 
+          <button
+            onClick={() => navigate(-1)}
             className="text-gray-600 hover:text-black"
           >
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <button 
+          <button
             onClick={() => navigate('/favorites')}
             className="relative text-gray-600 hover:text-red-500"
           >
