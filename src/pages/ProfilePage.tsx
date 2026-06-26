@@ -43,7 +43,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен ',
+        'Выдан': 'Получен',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
@@ -113,7 +113,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-white p-4 border-b sticky top-0 z-10">
+      {/* ✅ ИСПРАВЛЕНО: было border-b, стало shadow-sm */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-gray-600 hover:text-black">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -154,7 +155,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
-            <p className="text-sm"> {order.client_phone}</p>
+            <p className="text-sm">📞 {order.client_phone}</p>
           </div>
 
           <div>
@@ -273,7 +274,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 <>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">
-                      {language === 'ru' ? ' Реквизиты:' : ' Rekvizitlar:'}
+                      {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
                     </h4>
                     <div className="space-y-1 text-sm">
                       <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
@@ -453,7 +454,8 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-white p-4 border-b sticky top-0 z-10">
+      {/* ✅ ИСПРАВЛЕНО: было border-b, стало shadow-sm */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-gray-600 hover:text-black">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -633,11 +635,11 @@ export default function ProfilePage({
     }
     const labels: Record<string, string> = {
       'Активный': 'Принят 📄',
-      'В обработке': 'Собирается ',
+      'В обработке': 'Собирается 📦',
       'Готов': 'Упакован 🛍️',
       'Выдан': 'Передан курьеру 🚀',
       'Доставлен': 'Доставлен ✅',
-      'Отменён': 'Отменен ',
+      'Отменён': 'Отменен 🚫',
       'Ожидает оплаты': 'Ожидает оплаты ⏳',
     }
     return labels[status] || status
@@ -912,30 +914,29 @@ export default function ProfilePage({
         </div>
 
         {/* ✅ 4. АДРЕС МАГАЗИНА (в самом низу) */}
-        {/* 📝 ЗАПОЛНИ ЭТОТ БЛОК СВОИМ АДРЕСОМ */}
         <div className="mt-6 bg-blue-50 rounded-xl p-4">
-  <h4 className="font-bold mb-2 text-blue-900">
-    {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
-  </h4>
-  <p className="text-sm text-blue-800 mb-1">
-    {language === 'ru' 
-      ? 'Рынок Малика, ТЦ Меркато' 
-      : 'Malika bozori, Mercato savdo markazi'}
-  </p>
-  <p className="text-sm text-blue-800 mb-1">
-    {language === 'ru'
-      ? '2 этаж, магазин 34'
-      : '2-qavat, 34-do\'kon'}
-  </p>
-  <p className="text-sm text-blue-800 mb-1">
-    📞 +998 93 378 87 70
-  </p>
-  <p className="text-sm text-blue-800">
-    🕐 {language === 'ru' 
-      ? 'Ежедневно 10:00 - 20:00' 
-      : 'Har kuni 10:00 - 20:00'}
-  </p>
-</div>
+          <h4 className="font-bold mb-2 text-blue-900">
+            {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
+          </h4>
+          <p className="text-sm text-blue-800 mb-1">
+            {language === 'ru' 
+              ? 'Рынок Малика, ТЦ Меркато' 
+              : 'Malika bozori, Mercato savdo markazi'}
+          </p>
+          <p className="text-sm text-blue-800 mb-1">
+            {language === 'ru'
+              ? '2 этаж, магазин 34'
+              : '2-qavat, 34-do\'kon'}
+          </p>
+          <p className="text-sm text-blue-800 mb-1">
+            📞 +998 93 378 87 70
+          </p>
+          <p className="text-sm text-blue-800">
+            🕐 {language === 'ru' 
+              ? 'Ежедневно 10:00 - 20:00' 
+              : 'Har kuni 10:00 - 20:00'}
+          </p>
+        </div>
       </div>
     )
   }
