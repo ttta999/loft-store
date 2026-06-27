@@ -14,7 +14,6 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   
-  // ✅ Бренды теперь загружаются из Supabase
   const [brands, setBrands] = useState<any[]>([])
   
   const categoryId = location.state?.category
@@ -24,15 +23,13 @@ export default function CatalogPage() {
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(10000)
+  const [maxPrice, setMaxPrice] = useState<number>(100000000) // 100 млн сум
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Загрузка брендов из Supabase
   useEffect(() => {
     loadBrands()
   }, [])
 
-  // ✅ ИСПРАВЛЕНО: загружаем товары всегда когда есть categoryId
   useEffect(() => {
     if (categoryId) {
       loadProducts()
@@ -67,7 +64,6 @@ export default function CatalogPage() {
         .eq('category', categoryId)
         .eq('is_active', true)
       
-      // ✅ Если есть подкатегория - фильтруем по ней
       if (subcategoryId) {
         query = query.eq('subcategory', subcategoryId)
       }
@@ -98,7 +94,11 @@ export default function CatalogPage() {
       )
     }
 
-    filtered = filtered.filter(p => p.price_usd >= minPrice && p.price_usd <= maxPrice)
+    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+    filtered = filtered.filter(p => {
+      const priceInSums = p.price_usd * exchangeRate
+      return priceInSums >= minPrice && priceInSums <= maxPrice
+    })
 
     switch (sortBy) {
       case 'price_asc':
@@ -129,13 +129,13 @@ export default function CatalogPage() {
   const clearFilters = () => {
     setSelectedBrands([])
     setMinPrice(0)
-    setMaxPrice(10000)
+    setMaxPrice(100000000)
     setSortBy('newest')
   }
 
   const activeFiltersCount = 
     selectedBrands.length + 
-    (minPrice !== 0 || maxPrice !== 10000 ? 1 : 0) +
+    (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
   const formatPrice = (usd: number) => {
@@ -143,10 +143,8 @@ export default function CatalogPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Получаем название подкатегории для отображения
   const getSubcategoryName = () => {
     if (!subcategoryId) {
-      // Если подкатегория не выбрана (Все товары)
       return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
     }
     const sub = category?.subcategories.find(s => s.id === subcategoryId)
@@ -155,7 +153,6 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
@@ -167,11 +164,9 @@ export default function CatalogPage() {
       </div>
 
       <div className="p-4">
-        {/* ✅ Заголовок категории */}
         <h2 className="text-xl font-bold mb-1">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
-        {/* ✅ Подкатегория */}
         <p className="text-sm text-gray-500 mb-4">
           {getSubcategoryName()}
         </p>
@@ -229,26 +224,30 @@ export default function CatalogPage() {
               </div>
             </div>
 
+            {/* ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ */}
             <div className="mb-4">
               <h3 className="font-bold mb-2">
-                {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
+                {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
               </h3>
               <div className="flex gap-2">
                 <input
                   type="number"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(Number(e.target.value))}
-                  placeholder="От"
+                  value={minPrice === 0 ? '' : minPrice}
+                  onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
+                  placeholder={language === 'ru' ? 'От' : 'Dan'}
                   className="w-full p-2 border border-gray-300 rounded-lg"
                 />
                 <input
                   type="number"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  placeholder="До"
+                  value={maxPrice === 100000000 ? '' : maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value) || 100000000)}
+                  placeholder={language === 'ru' ? 'До' : 'Gacha'}
                   className="w-full p-2 border border-gray-300 rounded-lg"
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {language === 'ru' ? 'Введите цену в сумах' : 'Narxni so\'mda kiriting'}
+              </p>
             </div>
 
             <div>

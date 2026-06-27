@@ -554,8 +554,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           {deliveryMethod === 'pickup' && (
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-900">
               📍 {language === 'ru' 
-                ? 'Рынок Малика, ТЦ Меркато (здание korzinka.uz, 2 этаж, магазин 34)' 
-                : 'Malika bozori, Mercato savdo markazi (korzinka.uz binosi, 2-qavat, 34-do\'kon)'}
+                ? 'ТЦ Mercato, 2 этаж, магазин 34' 
+                : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
             </div>
           )}
 

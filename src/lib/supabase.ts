@@ -262,36 +262,36 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
 }
 
 // ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (с правильной валютой и "Оплата переводом")
-export const notifyNewOrder = async (order: any) => {
+export const notifyNewOrder = async(order: any) => {
   const itemsList = order.items.map((item: any, index: number) => {
     const priceText = item.priceUzs 
       ? `${Number(item.priceUzs).toLocaleString()} сум`
       : `$${item.priceUsd}`
     
     return `${index + 1}. ${item.name}
-   Размер: ${item.size}
-   Количество: ${item.quantity} шт.
-   Цена: ${priceText}`
+Размер: ${item.size}
+Количество: ${item.quantity} шт.
+Цена: ${priceText}`
   }).join('\n\n')
 
   const deliveryAddress = order.delivery_method === 'delivery' && order.delivery_address
     ? `\n📍 Адрес доставки: ${order.delivery_address}`
     : ''
 
-  const specialMark = order.special_order_id ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}` : ''
+  const specialMark = order.special_order_id
+    ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}`
+    : ''
 
   const totalText = order.total_price_uzs
     ? `${Number(order.total_price_uzs).toLocaleString()} сум`
     : `$${order.total_price_usd}`
 
-  // ✅ ИЗМЕНЕНО: "Оплата переводом" вместо "Оплата картой"
-  const paymentText = order.payment_method === 'online_card' 
-    ? 'Переводом' 
+  const paymentText = order.payment_method === 'online_card'
+    ? 'Переводом'
     : 'При получении'
 
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
-
 👤 Клиент: ${order.client_name}
 📞 Телефон: ${order.client_phone}
 💰 Сумма: ${totalText}
@@ -301,11 +301,13 @@ ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
 💳 Оплата: ${paymentText}
-  `.trim()
+📍 Адрес магазина: ТЦ Mercato, 2 этаж, магазин 34
+`.trim()
 
   await sendNotificationToManager(managerMessage)
 
   const clientChatId = order.user_chat_id || order.user_id
+  
   if (clientChatId && clientChatId !== 'guest-user') {
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
@@ -318,8 +320,11 @@ ${itemsList}
 🚚 ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}
 💳 ${paymentText === 'Переводом' ? 'Оплата переводом' : 'Оплата при получении'}
 
-📞 Менеджер свяжется с вами в ближайшее время
-    `.trim()
+📍 Адрес магазина: ТЦ Mercato, 2 этаж, магазин 34
+🕐 Режим работы: ежедневно 10:00 - 20:00
+
+Спасибо за заказ! 🙏
+`.trim()
 
     await sendNotificationToClient(clientMessage, clientChatId)
   }

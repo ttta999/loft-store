@@ -28,16 +28,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!chatId || !message) {
       console.error('❌ Отсутствуют обязательные параметры:', { chatId, message })
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'chatId and message are required',
         received: { chatId: !!chatId, message: !!message }
       })
     }
 
-    // Выбираем токен в зависимости от типа бота
+    // ✅ Выбираем токен в зависимости от типа бота
     const botToken = botType === 'client' 
-      ? process.env.TELEGRAM_CLIENT_BOT_TOKEN
-      : process.env.TELEGRAM_MANAGER_BOT_TOKEN
+      ? process.env.TELEGRAM_CLIENT_BOT_TOKEN      // @loftnotify_bot
+      : process.env.TELEGRAM_MANAGER_BOT_TOKEN     // @loftadminbot
 
     if (!botToken) {
       console.error(`❌ Bot token not found for type: ${botType}`)
@@ -45,14 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hasManagerToken: !!process.env.TELEGRAM_MANAGER_BOT_TOKEN,
         hasClientToken: !!process.env.TELEGRAM_CLIENT_BOT_TOKEN,
       })
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Bot token not configured',
         botType,
         hasToken: !!botToken
       })
     }
 
-    console.log(`✅ Отправляем через бота: ${botType}`)
+    console.log(`✅ Отправляем через бота: ${botType === 'client' ? '@loftnotify_bot' : '@loftadminbot'}`)
 
     // Отправляем сообщение через Telegram API
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     const data = await response.json()
-
+    
     console.log('📊 Ответ от Telegram API:', {
       ok: data.ok,
       status: response.status,
@@ -79,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!data.ok) {
       console.error('❌ Telegram API error:', data)
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to send message',
         details: data,
         chatId,
@@ -87,15 +87,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     console.log(`✅ Сообщение успешно отправлено пользователю ${chatId}`)
-    return res.status(200).json({ 
+    
+    return res.status(200).json({
       success: true,
       chatId,
       messageId: data.result?.message_id,
     })
-
   } catch (error) {
     console.error('💥 Unexpected error in sendNotification:', error)
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
