@@ -24,7 +24,7 @@ export default function BrandsPage() {
   // Фильтры
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(100000000) // 100 млн сум
+  const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
   // ✅ Загружаем бренды из Supabase
@@ -48,7 +48,7 @@ export default function BrandsPage() {
       console.log('✅ Бренды загружены:', data?.length || 0)
       setBrands(data || [])
     } catch (error) {
-      console.error('Ошибка загрузки брендов:', error)
+      console.error('❌ Ошибка загрузки брендов:', error)
     }
     setLoadingBrands(false)
   }
@@ -62,7 +62,7 @@ export default function BrandsPage() {
     setSelectedBrand(brand)
     setLoading(true)
     
-    console.log(`🔍 Ищем товары бренда: ${brand.name}`)
+    console.log(` Ищем товары бренда: ${brand.name}`)
     
     // ✅ Ищем товары по полю brand (а не по имени)
     const { data, error } = await supabase
@@ -143,7 +143,7 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
+      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={handleBack} className="text-gray-600 flex items-center gap-1">
@@ -202,12 +202,13 @@ export default function BrandsPage() {
           </>
         ) : (
           <>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold">{selectedBrand.name}</h2>
-              <p className="text-sm text-gray-500">
-                {filteredProducts.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
-              </p>
-            </div>
+            {/* ✅ ЗАГОЛОВОК КАК В КАТАЛОГЕ - одинаковый размер шрифта и отступы */}
+            <h2 className="text-xl font-bold mb-1">
+              {selectedBrand.name}
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {filteredProducts.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+            </p>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
