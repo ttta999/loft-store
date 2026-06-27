@@ -51,11 +51,11 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     }
     const labels: Record<string, string> = {
       'Активный': 'Принят 📄',
-      'В обработке': 'Собирается 📦',
+      'В обработке': 'Собирается ',
       'Готов': 'Упакован 🛍️',
       'Выдан': 'Передан курьеру 🚀',
       'Доставлен': 'Доставлен ✅',
-      'Отменён': 'Отменен 🚫',
+      'Отменён': 'Отменен ',
       'Ожидает оплаты': 'Ожидает оплаты ⏳',
     }
     return labels[status] || status
@@ -259,7 +259,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 <>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">
-                      {language === 'ru' ? '📱 Реквизиты:' : '📱 Rekvizitlar:'}
+                      {language === 'ru' ? '📱 Реквизиты:' : ' Rekvizitlar:'}
                     </h4>
                     <div className="space-y-1 text-sm">
                       <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
@@ -389,7 +389,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 className="px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
-                📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
+                 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
               </a>
             </div>
           </div>
@@ -399,9 +399,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   )
 }
 
-function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) {
-  const { exchangeRate } = useStore()
-  
+function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -433,6 +431,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
   }
+
+  // ✅ Конвертируем цену в сумы
+  const priceInSums = request.manager_price ? Math.round(request.manager_price * (exchangeRate || 12100)) : 0
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -504,16 +505,13 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
 
           {request.manager_price && (
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              {/* ✅ ПОКАЗЫВАЕМ ТОЛЬКО СУМЫ */}
               <p className="text-lg font-bold text-purple-900 mb-1">
-                💰 {language === 'ru' ? 'Оценка менеджера:' : 'Menejer bahosi:'} ${request.manager_price}
-              </p>
-              {/* ✅ ДОБАВЛЕНО: Цена в сумах */}
-              <p className="text-base font-bold text-purple-700 mb-1">
-                💰 {language === 'ru' ? 'Итого:' : 'Jami:'} {(request.manager_price * (exchangeRate || 12100)).toLocaleString()} сум
+                💰 {language === 'ru' ? 'Итого:' : 'Jami:'} {priceInSums.toLocaleString()} сум
               </p>
               {request.manager_comment && (
                 <p className="text-sm text-purple-700">
-                  📝 {request.manager_comment}
+                   {request.manager_comment}
                 </p>
               )}
             </div>
@@ -533,9 +531,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
                   onClick={() => onAccept(request)}
                   className="bg-black text-white px-6 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
+                  {/* ✅ КНОПКА ТОЖЕ ТОЛЬКО С СУММАМИ */}
                   💳 {language === 'ru' 
-                    ? `Согласиться и оплатить $${request.manager_price} (${(request.manager_price * (exchangeRate || 12100)).toLocaleString()} сум)` 
-                    : `Rozilik bildirish va to'lash $${request.manager_price} (${(request.manager_price * (exchangeRate || 12100)).toLocaleString()} so'm)`}
+                    ? `Согласиться и оплатить ${priceInSums.toLocaleString()} сум` 
+                    : `Rozilik bildirish va to'lash ${priceInSums.toLocaleString()} so'm`}
                 </button>
               )}
             </div>
@@ -615,7 +614,7 @@ export default function ProfilePage({
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен 🤝',
+        'Выдан': 'Получен ',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
@@ -1053,36 +1052,41 @@ export default function ProfilePage({
           </div>
         ) : (
           <div className="space-y-3">
-            {chinaRequests.map((request) => (
-              <div 
-                key={request.id} 
-                onClick={() => setSelectedChinaRequest(request)}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-bold">
-                      {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatDateTime(request.created_at)}
-                    </p>
+            {chinaRequests.map((request) => {
+              // ✅ Конвертируем цену в сумы для отображения в списке
+              const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
+              
+              return (
+                <div 
+                  key={request.id} 
+                  onClick={() => setSelectedChinaRequest(request)}
+                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold">
+                        {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {formatDateTime(request.created_at)}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
+                      {getChinaStatusText(request.status)}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
-                    {getChinaStatusText(request.status)}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 truncate">{request.link}</p>
-                {request.manager_price && (
-                  <p className="text-sm text-purple-700 font-medium mt-1">
-                    💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} ${request.manager_price}
+                  <p className="text-sm text-gray-600 truncate">{request.link}</p>
+                  {request.manager_price && (
+                    <p className="text-sm text-purple-700 font-medium mt-1">
+                      💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                   </p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                </p>
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -1091,6 +1095,7 @@ export default function ProfilePage({
             request={selectedChinaRequest}
             onClose={() => setSelectedChinaRequest(null)}
             language={language}
+            exchangeRate={exchangeRate}
             onAccept={handleAcceptSpecialOrder}
           />
         )}
