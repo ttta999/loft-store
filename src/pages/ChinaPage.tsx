@@ -112,9 +112,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       toast.success(
         language === 'ru' ? 'Спецзаказ отправлен!' : 'Maxsus buyurtma yuborildi!',
         {
-          description: language === 'ru' 
-            ? 'Менеджер рассмотрит вашу заявку' 
-            : 'Menejer arizangizni ko\'rib chiqadi',
           duration: 3000,
         }
       )
@@ -153,8 +150,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         
         <p className="text-gray-600 text-lg mb-8 max-w-md">
           {language === 'ru' 
-            ? 'Менеджер рассмотрит ваш спецзаказ и свяжется с вами' 
-            : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi va siz bilan bog\'lanadi'}
+            ? 'Менеджер рассмотрит ваш спецзаказ' 
+            : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
         </p>
         
         <div className="bg-gray-50 rounded-xl p-6 mb-8 max-w-sm w-full">
@@ -291,11 +288,12 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         </button>
       </div>
 
+      {/* ✅ ТЕКСТ ПО ЦЕНТРУ, БЕЗ "менеджер свяжется" */}
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
+        <p className="text-sm text-yellow-800 text-center leading-relaxed">
           {language === 'ru' 
-            ? '⏱ Среднее время доставки: 14-21 день. Менеджер свяжется с вами для уточнения деталей и стоимости.' 
-            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun. Menejer tafsilotlar va narxni aniqlash uchun siz bilan bog\'lanadi.'}
+            ? '⏱ Среднее время доставки: 14-21 день.' 
+            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
         </p>
       </div>
     </div>

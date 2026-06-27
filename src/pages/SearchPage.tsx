@@ -18,7 +18,7 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedBrand, setSelectedBrand] = useState<string>('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]) // 100 млн сум
   const [sortBy, setSortBy] = useState<string>('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -95,10 +95,11 @@ export default function SearchPage() {
       }
     }
 
-    // Фильтр по цене
-    filtered = filtered.filter((p: any) => 
-      p.price_usd >= priceRange[0] && p.price_usd <= priceRange[1]
-    )
+    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+    filtered = filtered.filter((p: any) => {
+      const priceInSums = p.price_usd * exchangeRate
+      return priceInSums >= priceRange[0] && priceInSums <= priceRange[1]
+    })
 
     // ✅ Сортировка
     switch (sortBy) {
@@ -128,7 +129,7 @@ export default function SearchPage() {
     setSearchQuery('')
     setSelectedCategory('')
     setSelectedBrand('')
-    setPriceRange([0, 10000])
+    setPriceRange([0, 100000000])
     setSortBy('newest')
   }
 
@@ -137,14 +138,14 @@ export default function SearchPage() {
     selectedCategory || 
     selectedBrand || 
     priceRange[0] > 0 || 
-    priceRange[1] < 10000 ||
+    priceRange[1] < 100000000 ||
     sortBy !== 'newest'
 
   const activeFiltersCount = 
     (searchQuery ? 1 : 0) +
     (selectedCategory ? 1 : 0) + 
     (selectedBrand ? 1 : 0) +
-    (priceRange[0] > 0 || priceRange[1] < 10000 ? 1 : 0) +
+    (priceRange[0] > 0 || priceRange[1] < 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
   if (loading) {
@@ -276,27 +277,30 @@ export default function SearchPage() {
             </div>
           </div>
 
-          {/* Цена */}
+          {/* ✅ Цена в сумах */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
-              {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
+              {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
             </h3>
             <div className="flex gap-2">
               <input
                 type="number"
-                value={priceRange[0]}
-                onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
-                placeholder="От"
+                value={priceRange[0] === 0 ? '' : priceRange[0]}
+                onChange={(e) => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
+                placeholder={language === 'ru' ? 'От' : 'Dan'}
                 className="w-full p-2 border border-gray-300 rounded-lg"
               />
               <input
                 type="number"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
-                placeholder="До"
+                value={priceRange[1] === 100000000 ? '' : priceRange[1]}
+                onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value) || 100000000])}
+                placeholder={language === 'ru' ? 'До' : 'Gacha'}
                 className="w-full p-2 border border-gray-300 rounded-lg"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {language === 'ru' ? 'Введите цену в сумах' : 'Narxni so\'mda kiriting'}
+            </p>
           </div>
 
           {/* ✅ Сортировка */}

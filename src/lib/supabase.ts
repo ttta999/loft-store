@@ -196,7 +196,7 @@ export const createOrderFromSpecial = async (specialRequestId: string, orderData
     .select()
   
   if (error) {
-    console.error(' Ошибка создания заказа из спецзаказа:', error)
+    console.error('❌ Ошибка создания заказа из спецзаказа:', error)
     return { data: null, error }
   }
 
@@ -261,7 +261,7 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
   return Array.isArray(data) ? data[0] : data
 }
 
-// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (с правильной валютой и "Оплата переводом")
+// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (без адреса магазина менеджеру, без "менеджер свяжется" клиенту)
 export const notifyNewOrder = async(order: any) => {
   const itemsList = order.items.map((item: any, index: number) => {
     const priceText = item.priceUzs 
@@ -290,6 +290,7 @@ export const notifyNewOrder = async(order: any) => {
     ? 'Переводом'
     : 'При получении'
 
+  // ✅ УБРАН АДРЕС МАГАЗИНА из сообщения менеджеру
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 👤 Клиент: ${order.client_name}
@@ -301,7 +302,6 @@ ${itemsList}
 
 🚚 Способ получения: ${order.delivery_method === 'pickup' ? 'Самовывоз' : 'Доставка'}${deliveryAddress}
 💳 Оплата: ${paymentText}
-📍 Адрес магазина: ТЦ Mercato, 2 этаж, магазин 34
 `.trim()
 
   await sendNotificationToManager(managerMessage)
@@ -309,6 +309,7 @@ ${itemsList}
   const clientChatId = order.user_chat_id || order.user_id
   
   if (clientChatId && clientChatId !== 'guest-user') {
+    // ✅ УБРАНО "Менеджер свяжется с вами"
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
 

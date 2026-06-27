@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart } from 'lucide-react'
 import { toast } from 'sonner'
-import { cancelOrder, showPaymentDetails, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -43,7 +43,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен',
+        'Выдан': 'Получен 🤝',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
       }
@@ -96,24 +96,9 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     }
   }
 
-  const handleShowPaymentDetails = () => {
-    const amount = order.total_price_uzs 
-      ? Number(order.total_price_uzs) 
-      : Math.round(order.total_price_usd * exchangeRate)
-    
-    const message = showPaymentDetails({
-      orderId: order.id.toString(),
-      amount: amount,
-      description: `Заказ №${order.id}`
-    })
-    
-    const cleanMessage = message.replace(/<[^>]*>/g, '')
-    alert(cleanMessage)
-  }
-
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* ✅ ИСПРАВЛЕНО: было border-b, стало shadow-sm */}
+      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-gray-600 hover:text-black">
@@ -169,9 +154,9 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </p>
             {order.delivery_method === 'pickup' && (
               <p className="text-sm text-gray-600 mt-1">
-                 {language === 'ru' 
-                  ? 'Рынок Малика, ТЦ Меркато (здание korzinka.uz, 2 этаж, магазин 34)' 
-                  : 'Malika bozori, Mercato savdo markazi (korzinka.uz binosi, 2-qavat, 34-do\'kon)'}
+                📍 {language === 'ru' 
+                  ? 'ТЦ Mercato, 2 этаж, магазин 34' 
+                  : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
               </p>
             )}
             {order.delivery_address && (
@@ -346,13 +331,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
                   {order.status === 'Ожидает оплаты' && (
                     <>
-                      <button
-                        onClick={handleShowPaymentDetails}
-                        className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
-                      >
-                        📋 {language === 'ru' ? 'Показать реквизиты' : 'Rekvizitlarni ko\'rsatish'}
-                      </button>
-
+                      {/* ✅ УБРАНА КНОПКА "Показать реквизиты" */}
+                      
                       <a
                         href={MANAGER_TELEGRAM_LINK}
                         target="_blank"
@@ -420,6 +400,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 }
 
 function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) {
+  const { exchangeRate } = useStore()
+  
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -454,7 +436,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* ✅ ИСПРАВЛЕНО: было border-b, стало shadow-sm */}
+      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-gray-600 hover:text-black">
@@ -525,6 +507,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
               <p className="text-lg font-bold text-purple-900 mb-1">
                 💰 {language === 'ru' ? 'Оценка менеджера:' : 'Menejer bahosi:'} ${request.manager_price}
               </p>
+              {/* ✅ ДОБАВЛЕНО: Цена в сумах */}
+              <p className="text-base font-bold text-purple-700 mb-1">
+                💰 {language === 'ru' ? 'Итого:' : 'Jami:'} {(request.manager_price * (exchangeRate || 12100)).toLocaleString()} сум
+              </p>
               {request.manager_comment && (
                 <p className="text-sm text-purple-700">
                   📝 {request.manager_comment}
@@ -547,7 +533,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept }: any) 
                   onClick={() => onAccept(request)}
                   className="bg-black text-white px-6 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
-                  💳 {language === 'ru' ? `Согласиться и оплатить $${request.manager_price}` : `Rozilik bildirish va to'lash $${request.manager_price}`}
+                  💳 {language === 'ru' 
+                    ? `Согласиться и оплатить $${request.manager_price} (${(request.manager_price * (exchangeRate || 12100)).toLocaleString()} сум)` 
+                    : `Rozilik bildirish va to'lash $${request.manager_price} (${(request.manager_price * (exchangeRate || 12100)).toLocaleString()} so'm)`}
                 </button>
               )}
             </div>
@@ -789,7 +777,6 @@ export default function ProfilePage({
           )}
         </div>
 
-        {/* ✅ 1. ИЗБРАННОЕ (первое) */}
         <h3 className="text-lg font-bold mb-3">
           {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
         </h3>
@@ -815,7 +802,6 @@ export default function ProfilePage({
           </button>
         </div>
 
-        {/* ✅ 2. МОИ ЗАКАЗЫ (второе) */}
         <h3 className="text-lg font-bold mb-3">
           {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
         </h3>
@@ -853,7 +839,6 @@ export default function ProfilePage({
           </button>
         </div>
 
-        {/* ✅ 3. НАСТРОЙКИ (третье) */}
         <h3 className="text-lg font-bold mb-3">
           {language === 'ru' ? 'Настройки' : 'Sozlamalar'}
         </h3>
@@ -913,15 +898,14 @@ export default function ProfilePage({
           </div>
         </div>
 
-        {/* ✅ 4. АДРЕС МАГАЗИНА (в самом низу) */}
         <div className="mt-6 bg-blue-50 rounded-xl p-4">
           <h4 className="font-bold mb-2 text-blue-900">
             {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
           </h4>
           <p className="text-sm text-blue-800 mb-1">
             {language === 'ru' 
-              ? 'Рынок Малика, ТЦ Меркато' 
-              : 'Malika bozori, Mercato savdo markazi'}
+              ? 'ТЦ Mercato' 
+              : 'Mercato savdo markazi'}
           </p>
           <p className="text-sm text-blue-800 mb-1">
             {language === 'ru'

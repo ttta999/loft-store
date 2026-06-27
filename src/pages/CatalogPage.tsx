@@ -153,6 +153,7 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">

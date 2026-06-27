@@ -24,7 +24,7 @@ export default function BrandsPage() {
   // Фильтры
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(10000)
+  const [maxPrice, setMaxPrice] = useState<number>(100000000) // 100 млн сум
   const [sortBy, setSortBy] = useState<string>('newest')
 
   // ✅ Загружаем бренды из Supabase
@@ -48,7 +48,7 @@ export default function BrandsPage() {
       console.log('✅ Бренды загружены:', data?.length || 0)
       setBrands(data || [])
     } catch (error) {
-      console.error(' Ошибка загрузки брендов:', error)
+      console.error('Ошибка загрузки брендов:', error)
     }
     setLoadingBrands(false)
   }
@@ -89,7 +89,7 @@ export default function BrandsPage() {
       setProducts([])
       setSelectedCategory('')
       setMinPrice(0)
-      setMaxPrice(10000)
+      setMaxPrice(100000000)
       setSortBy('newest')
     } else {
       navigate(-1)
@@ -99,7 +99,7 @@ export default function BrandsPage() {
   const clearFilters = () => {
     setSelectedCategory('')
     setMinPrice(0)
-    setMaxPrice(10000)
+    setMaxPrice(100000000)
     setSortBy('newest')
   }
 
@@ -110,7 +110,11 @@ export default function BrandsPage() {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
     
-    filtered = filtered.filter(p => p.price_usd >= minPrice && p.price_usd <= maxPrice)
+    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+    filtered = filtered.filter(p => {
+      const priceInSums = p.price_usd * exchangeRate
+      return priceInSums >= minPrice && priceInSums <= maxPrice
+    })
     
     switch (sortBy) {
       case 'price_asc':
@@ -134,7 +138,7 @@ export default function BrandsPage() {
   
   const activeFiltersCount = 
     (selectedCategory ? 1 : 0) + 
-    (minPrice !== 0 || maxPrice !== 10000 ? 1 : 0) +
+    (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
   return (
@@ -266,24 +270,27 @@ export default function BrandsPage() {
 
                 <div className="mb-4">
                   <h3 className="font-bold mb-2">
-                    {language === 'ru' ? 'Цена (USD)' : 'Narx (USD)'}
+                    {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
                   </h3>
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={minPrice}
-                      onChange={(e) => setMinPrice(Number(e.target.value))}
-                      placeholder="От"
+                      value={minPrice === 0 ? '' : minPrice}
+                      onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
+                      placeholder={language === 'ru' ? 'От' : 'Dan'}
                       className="w-full p-2 border border-gray-300 rounded-lg"
                     />
                     <input
                       type="number"
-                      value={maxPrice}
-                      onChange={(e) => setMaxPrice(Number(e.target.value))}
-                      placeholder="До"
+                      value={maxPrice === 100000000 ? '' : maxPrice}
+                      onChange={(e) => setMaxPrice(Number(e.target.value) || 100000000)}
+                      placeholder={language === 'ru' ? 'До' : 'Gacha'}
                       className="w-full p-2 border border-gray-300 rounded-lg"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {language === 'ru' ? 'Введите цену в сумах' : 'Narxni so\'mda kiriting'}
+                  </p>
                 </div>
 
                 <div>
