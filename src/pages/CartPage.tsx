@@ -291,7 +291,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col">
-        {/* ✅ БЕЗ border-b */}
         <div className="bg-white p-4 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <button 
@@ -402,17 +401,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
             </a>
             
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  `Заказ №${currentOrderId}\nСумма: ${formatPrice(getTotalPrice())}\n\nCLICK: ${PAYMENT_DETAILS.click}\nPayme: ${PAYMENT_DETAILS.payme}\nUzum: ${PAYMENT_DETAILS.uzum}`
-                )
-                toast.success(language === 'ru' ? 'Реквизиты скопированы!' : 'Rekvizitlar nusxalandi!')
-              }}
-              className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-bold"
-            >
-              📋 {language === 'ru' ? 'Скопировать реквизиты' : 'Rekvizitlarni nusxalash'}
-            </button>
+            {/* ✅ УБРАНА КНОПКА "Скопировать реквизиты" */}
             
             {screenshotUploaded && (
               <button
@@ -428,9 +417,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
           
+          {/* ✅ ТЕКСТ ПО ЦЕНТРУ */}
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-            <p className="text-sm text-yellow-800 font-medium">
-              ️ {language === 'ru' 
+            <p className="text-sm text-yellow-800 font-medium text-center leading-relaxed">
+              {language === 'ru' 
                 ? 'Заказ будет обработан только после подтверждения оплаты менеджером' 
                 : 'Buyurtma faqat menejer tomonidan to\'lov tasdiqlangandan so\'ng ko\'rib chiqiladi'}
             </p>
@@ -458,8 +448,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         )}
         <p className="text-sm text-gray-500 mb-6 text-center">
           {language === 'ru' 
-            ? 'Менеджер свяжется с вами в ближайшее время' 
-            : 'Menejer tez orada siz bilan bog\'lanadi'}
+            ? 'Спасибо за ваш заказ!' 
+            : 'Buyurtmangiz uchun rahmat!'}
         </p>
         <button
           onClick={onClose}
@@ -473,7 +463,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* ✅ БЕЗ border-b */}
       <div className="p-4 flex items-center justify-between sticky top-0 bg-white z-10">
         <button onClick={onClose} className="text-gray-600 hover:text-black">
           ← {language === 'ru' ? 'Назад' : 'Orqaga'}

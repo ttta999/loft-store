@@ -9,7 +9,7 @@ export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { language, currency, exchangeRate, addToFavorites, removeFromFavorites,
-    isFavorite, favorites } = useStore()
+    isFavorite} = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,14 +36,17 @@ export default function AllProductsPage() {
 
   const applyFiltersAndSort = () => {
     let filtered = [...products]
+
     // Фильтр по категории
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
+
     // Фильтр по подкатегории
     if (selectedSubcategory !== 'all') {
       filtered = filtered.filter(p => p.subcategory === selectedSubcategory)
     }
+
     // Сортировка
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -54,6 +57,7 @@ export default function AllProductsPage() {
     } else if (sortBy === 'price_desc') {
       filtered.sort((a, b) => b.price_usd - a.price_usd)
     }
+
     setFilteredProducts(filtered)
   }
 
@@ -130,7 +134,7 @@ export default function AllProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ БЕЗ border-b, с shadow-sm как в ProductPage */}
+      {/* ✅ Верхняя панель - БЕЗ ИЗБРАННОГО */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button
@@ -140,17 +144,7 @@ export default function AllProductsPage() {
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
           <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
-          <button
-            onClick={() => navigate('/favorites')}
-            className="relative text-gray-600 hover:text-red-500"
-          >
-            <Heart size={24} />
-            {favorites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {favorites.length}
-              </span>
-            )}
-          </button>
+          <div className="w-16"></div>
         </div>
       </div>
 
