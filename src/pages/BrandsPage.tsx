@@ -157,10 +157,12 @@ export default function BrandsPage() {
       <div className="p-4">
         {!selectedBrand ? (
           <>
-            <h2 className="text-2xl font-bold mb-2">
+            {/* ✅ ИЗМЕНЕНО: text-2xl → text-xl, mb-2 → mb-1 (как в CatalogPage) */}
+            <h2 className="text-xl font-bold mb-1">
               {language === 'ru' ? 'Бренды' : 'Brendlar'}
             </h2>
-            <p className="text-sm text-gray-500 mb-6">
+            {/* ✅ ИЗМЕНЕНО: mb-6 → mb-4 (как в CatalogPage) */}
+            <p className="text-sm text-gray-500 mb-4">
               {language === 'ru' 
                 ? 'Выберите бренд чтобы увидеть товары' 
                 : 'Mahsulotlarni ko\'rish uchun brendni tanlang'}
