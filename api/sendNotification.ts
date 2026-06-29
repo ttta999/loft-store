@@ -34,16 +34,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // ✅ Выбираем токен в зависимости от типа бота
+    // ✅ ИЗМЕНЕНО: для клиентов используем TELEGRAM_BOT_TOKEN (@loftstore_bot)
     const botToken = botType === 'client' 
-      ? process.env.TELEGRAM_CLIENT_BOT_TOKEN      // @loftnotify_bot
-      : process.env.TELEGRAM_MANAGER_BOT_TOKEN     // @loftadminbot
+      ? process.env.TELEGRAM_BOT_TOKEN           // ✅ @loftstore_bot (ОСНОВНОЙ)
+      : process.env.TELEGRAM_MANAGER_BOT_TOKEN   // @loftadminbot
 
     if (!botToken) {
       console.error(`❌ Bot token not found for type: ${botType}`)
       console.error('Доступные переменные:', {
+        hasMainToken: !!process.env.TELEGRAM_BOT_TOKEN,
         hasManagerToken: !!process.env.TELEGRAM_MANAGER_BOT_TOKEN,
-        hasClientToken: !!process.env.TELEGRAM_CLIENT_BOT_TOKEN,
       })
       return res.status(500).json({
         error: 'Bot token not configured',
@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    console.log(`✅ Отправляем через бота: ${botType === 'client' ? '@loftnotify_bot' : '@loftadminbot'}`)
+    console.log(`✅ Отправляем через бота: ${botType === 'client' ? '@loftstore_bot' : '@loftadminbot'}`)
 
     // Отправляем сообщение через Telegram API
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     const data = await response.json()
-    
+
     console.log('📊 Ответ от Telegram API:', {
       ok: data.ok,
       status: response.status,
@@ -87,12 +87,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     console.log(`✅ Сообщение успешно отправлено пользователю ${chatId}`)
-    
     return res.status(200).json({
       success: true,
       chatId,
       messageId: data.result?.message_id,
     })
+
   } catch (error) {
     console.error('💥 Unexpected error in sendNotification:', error)
     return res.status(500).json({
