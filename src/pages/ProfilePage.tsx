@@ -533,8 +533,8 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                 >
                   {/* ✅ КНОПКА ТОЖЕ ТОЛЬКО С СУММАМИ */}
                   💳 {language === 'ru' 
-                    ? `Согласиться и оплатить ${priceInSums.toLocaleString()} сум` 
-                    : `Rozilik bildirish va to'lash ${priceInSums.toLocaleString()} so'm`}
+                    ? `Оплатить ${priceInSums.toLocaleString()} сум` 
+                    : `To'lash ${priceInSums.toLocaleString()} so'm`}
                 </button>
               )}
             </div>
