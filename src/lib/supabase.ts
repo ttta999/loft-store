@@ -261,11 +261,16 @@ export const updateChinaRequestStatus = async (requestId: string, status: string
   return Array.isArray(data) ? data[0] : data
 }
 
-// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (без адреса магазина менеджеру, без "менеджер свяжется" клиенту)
-export const notifyNewOrder = async(order: any) => {
+// ✅ УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ (в той валюте, в которой оформлен заказ)
+export const notifyNewOrder = async (order: any) => {
+  // ✅ Определяем валюту заказа
+  const isUZS = order.total_price_uzs && order.total_price_uzs > 0
+  const exchangeRate = order.exchange_rate_at_order || 12100
+  
+  // ✅ Список товаров (в валюте заказа)
   const itemsList = order.items.map((item: any, index: number) => {
-    const priceText = item.priceUzs 
-      ? `${Number(item.priceUzs).toLocaleString()} сум`
+    const priceText = isUZS
+      ? `${item.priceUzs ? Number(item.priceUzs).toLocaleString() : Math.round(item.priceUsd * exchangeRate).toLocaleString()} сум`
       : `$${item.priceUsd}`
     
     return `${index + 1}. ${item.name}
@@ -282,15 +287,16 @@ export const notifyNewOrder = async(order: any) => {
     ? `\n🌍 Это заказ из спецзаказа №${order.special_order_id}`
     : ''
 
-  const totalText = order.total_price_uzs
-    ? `${Number(order.total_price_uzs).toLocaleString()} сум`
+  // ✅ Общая сумма (в валюте заказа)
+  const totalText = isUZS
+    ? `${order.total_price_uzs ? Number(order.total_price_uzs).toLocaleString() : Math.round(order.total_price_usd * exchangeRate).toLocaleString()} сум`
     : `$${order.total_price_usd}`
 
   const paymentText = order.payment_method === 'online_card'
     ? 'Переводом'
     : 'При получении'
 
-  // ✅ УБРАН АДРЕС МАГАЗИНА из сообщения менеджеру
+  // ✅ Сообщение для МЕНЕДЖЕРА
   const managerMessage = `
 🛍 <b>Новый заказ №${order.id}</b>${specialMark}
 👤 Клиент: ${order.client_name}
@@ -309,7 +315,7 @@ ${itemsList}
   const clientChatId = order.user_chat_id || order.user_id
   
   if (clientChatId && clientChatId !== 'guest-user') {
-    // ✅ УБРАНО "Менеджер свяжется с вами"
+    // ✅ Сообщение для КЛИЕНТА (в той же валюте, что и заказ)
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
 
