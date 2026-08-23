@@ -1,13 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, ArrowRight } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -27,8 +27,6 @@ export default function HomePage() {
       navigate('/brands')
       return
     }
-    
-    // Переходим на отдельную страницу с подкатегориями
     navigate('/category', { state: { categoryId } })
   }
 
@@ -43,66 +41,82 @@ export default function HomePage() {
       .slice(0, limit)
   }
 
-  // ✅ ИСПРАВЛЕНО: Популярные товары - по количеству в заказах или просто случайные/часто просматриваемые
   const getPopularProducts = (limit: number = 6) => {
-    // Простая эвристика: товары с наибольшим количеством заказов
-    // В будущем можно добавить счетчик просмотров в БД
     const productsWithOrders = products.map(product => ({
       ...product,
-      orderCount: Math.floor(Math.random() * 100) // Временно: случайное число для демонстрации
+      orderCount: Math.floor(Math.random() * 100)
     }))
-    
     return productsWithOrders
       .sort((a, b) => b.orderCount - a.orderCount)
       .slice(0, limit)
   }
 
-  const getDiscountProducts = () => {
-    return products.filter(p => p.discount || p.sale_price || p.is_on_sale).slice(0, 6)
+  // ✅ СКИДКИ: показываются ТОЛЬКО если режим скидок ВКЛ в админке
+  const getDiscountProducts = (limit: number = 6) => {
+    if (!saleModeEnabled) return []
+    return products.filter(p => isProductOnSale(p, saleModeEnabled)).slice(0, limit)
   }
 
-  const ProductCard = ({ product }: { product: any }) => (
-    <Link key={product.id} to={`/product/${product.id}`}>
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-        <div className="aspect-square bg-gray-100 relative">
-          <img
-            src={product.images?.[0] || 'https://via.placeholder.com/500'}
-            alt={language === 'ru' ? product.name_ru : product.name_uz}
-            className="w-full h-full object-cover"
-          />
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              if (isFavorite(product.id)) {
-                removeFromFavorites(product.id)
-              } else {
-                addToFavorites({
-                  productId: product.id,
-                  name: language === 'ru' ? product.name_ru : product.name_uz,
-                  priceUsd: product.price_usd,
-                  image: product.images?.[0] || ''
-                })
-              }
-            }}
-            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
-          >
-            <Heart 
-              size={20} 
-              className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+  const ProductCard = ({ product }: { product: any }) => {
+    const onSale = isProductOnSale(product, saleModeEnabled)
+    const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+    const discountPercent = onSale
+      ? Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)
+      : 0
+
+    return (
+      <Link key={product.id} to={`/product/${product.id}`}>
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+          <div className="aspect-square bg-gray-100 relative">
+            <img
+              src={product.images?.[0] || 'https://via.placeholder.com/500'}
+              alt={language === 'ru' ? product.name_ru : product.name_uz}
+              className="w-full h-full object-cover"
             />
-          </button>
+            {onSale && (
+              <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                -{discountPercent}%
+              </span>
+            )}
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                if (isFavorite(product.id)) {
+                  removeFromFavorites(product.id)
+                } else {
+                  addToFavorites({
+                    productId: product.id,
+                    name: language === 'ru' ? product.name_ru : product.name_uz,
+                    priceUsd: effectivePrice,
+                    image: product.images?.[0] || ''
+                  })
+                }
+              }}
+              className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+            >
+              <Heart
+                size={20}
+                className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+              />
+            </button>
+          </div>
+          <div className="p-3">
+            <p className="text-sm font-medium truncate">
+              {language === 'ru' ? product.name_ru : product.name_uz}
+            </p>
+            {onSale && (
+              <p className="text-gray-400 text-xs line-through mt-1">
+                {formatPrice(product.price_usd)}
+              </p>
+            )}
+            <p className={`font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+              {formatPrice(effectivePrice)}
+            </p>
+          </div>
         </div>
-        <div className="p-3">
-          <p className="text-sm font-medium truncate">
-            {language === 'ru' ? product.name_ru : product.name_uz}
-          </p>
-          <p className="text-black font-bold mt-1">
-            {formatPrice(product.price_usd)}
-          </p>
-        </div>
-      </div>
-    </Link>
-  )
+      </Link>
+    )
+  }
 
   if (loading) {
     return (
@@ -125,8 +139,8 @@ export default function HomePage() {
           {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
         </h2>
         <p className="text-gray-300 text-sm">
-          {language === 'ru' 
-            ? 'Стильная одежда и обувь в Ташкенте' 
+          {language === 'ru'
+            ? 'Стильная одежда и обувь в Ташкенте'
             : 'Toshkentdagi zamonaviy kiyim va poyabzal'}
         </p>
       </div>
@@ -148,7 +162,6 @@ export default function HomePage() {
             </span>
           </div>
         ))}
-        {/* Кнопка Бренды */}
         <div
           onClick={() => navigate('/brands')}
           className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md flex items-center gap-3 cursor-pointer"
@@ -159,6 +172,22 @@ export default function HomePage() {
           </span>
         </div>
       </div>
+
+      {/* ✅ БОКС СКИДКИ (только если режим ВКЛ и есть товары со скидкой) */}
+      {getDiscountProducts().length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-red-500">
+              {language === 'ru' ? '💰 Скидки' : '💰 Chefirmalar'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {getDiscountProducts(6).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Новые товары */}
       {getNewProducts().length > 0 && (
@@ -200,20 +229,6 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {getPopularProducts(6).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Скидки */}
-      {getDiscountProducts().length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-bold mb-3">
-            {language === 'ru' ? '💰 Скидки' : '💰 Chefirmalar'}
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {getDiscountProducts().map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

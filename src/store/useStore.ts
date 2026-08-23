@@ -27,13 +27,16 @@ interface AppState {
   language: Language
   currency: Currency
   exchangeRate: number
+  saleModeEnabled: boolean
   cart: CartItem[]
   favorites: FavoriteItem[]
   chatId: string | null
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
+  setSaleModeEnabled: (enabled: boolean) => void
   updateExchangeRate: () => Promise<void>
+  updateSaleMode: () => Promise<void>
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
@@ -47,36 +50,15 @@ interface AppState {
 // ✅ Получение курса из Supabase settings
 const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: number } | null> => {
   try {
-    console.log('🔄 Запрашиваем курс из Supabase settings...')
-    
     const { data, error } = await supabase
       .from('settings')
       .select('value')
       .eq('key', 'exchange_rate')
       .single()
-    
-    console.log('📊 Ответ от Supabase:', { data, error })
-    
-    if (error) {
-      console.error('❌ Ошибка Supabase:', error)
-      return null
-    }
-    
-    if (!data) {
-      console.warn('⚠️ Запись exchange_rate не найдена в БД')
-      return null
-    }
-    
+    if (error || !data) return null
     const rate = (data.value as any)?.rate
     const version = (data.value as any)?.version || 0
-    
-    console.log('✅ Курс из БД:', rate, 'Версия:', version)
-    
-    if (!rate || rate <= 0) {
-      console.warn('⚠️ Неверный курс в БД:', rate)
-      return null
-    }
-    
+    if (!rate || rate <= 0) return null
     return { rate, version }
   } catch (error) {
     console.error('❌ Ошибка получения курса из БД:', error)
@@ -84,32 +66,49 @@ const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: numbe
   }
 }
 
+// ✅ Получение РЕЖИМА СКИДОК из Supabase settings
+const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'sale_mode_enabled')
+      .single()
+    if (error || !data) return null
+    return Boolean((data.value as any)?.enabled)
+  } catch (error) {
+    console.error('❌ Ошибка получения режима скидок:', error)
+    return null
+  }
+}
+
 // ✅ Fallback: получение курса через API
 const fetchExchangeRateFromAPI = async (): Promise<number> => {
   try {
-    console.log('🔄 Запрашиваем курс через API...')
-    
     const response = await fetch('/api/getExchangeRate')
-    
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`)
-    }
-    
+    if (!response.ok) throw new Error(`API returned ${response.status}`)
     const data = await response.json()
-    console.log('✅ Курс из API:', data.rate)
     return data.rate
   } catch (error) {
     console.error('❌ Ошибка получения курса через API:', error)
-    return 12100 // Fallback
+    return 12100
   }
 }
+
+// ✅ ХЕЛПЕРЫ СКИДОК (используются на всех страницах)
+export const isProductOnSale = (product: any, saleModeEnabled: boolean): boolean =>
+  Boolean(saleModeEnabled && product && product.sale_price != null && Number(product.sale_price) > 0)
+
+export const getEffectivePriceUsd = (product: any, saleModeEnabled: boolean): number =>
+  isProductOnSale(product, saleModeEnabled) ? Number(product.sale_price) : (product?.price_usd || 0)
 
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       language: 'ru',
-      currency: 'UZS', // ✅ ИЗМЕНЕНО: валюта по умолчанию UZS
+      currency: 'UZS',
       exchangeRate: 12100,
+      saleModeEnabled: false,
       cart: [],
       favorites: [],
       chatId: null,
@@ -117,61 +116,53 @@ export const useStore = create<AppState>()(
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
+      setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
 
-      // ✅ Функция обновления курса из БД с проверкой версии
       updateExchangeRate: async () => {
-        console.log('🔄 Начинаем обновление курса...')
-        
         const dbData = await fetchExchangeRateFromDB()
-        
         if (!dbData) {
-          console.warn('⚠️ Не удалось получить курс из БД, используем API')
           const fallbackRate = await fetchExchangeRateFromAPI()
           set({ exchangeRate: fallbackRate })
           localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
           return
         }
-        
         const { rate, version } = dbData
         const storedVersion = localStorage.getItem('exchangeRateVersion')
-        
-        // ✅ Проверяем изменилась ли версия курса
-        if (storedVersion && Number(storedVersion) === version) {
-          console.log('✅ Курс не изменился (версия:', version, ')')
-        } else {
-          console.log('🆕 Курс обновлён! Версия:', storedVersion, '→', version)
+        if (!(storedVersion && Number(storedVersion) === version)) {
           set({ exchangeRate: rate })
           localStorage.setItem('exchangeRateVersion', version.toString())
-          toast.info(`Курс обновлён: ${rate.toLocaleString()} сум`)
         }
-        
-        // Сохраняем время последнего обновления
-        const now = new Date().toISOString()
-        localStorage.setItem('exchangeRateUpdatedAt', now)
-        console.log('💾 Курс сохранён в localStorage, время:', now)
+        localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
+      },
+
+      // ✅ Обновление режима скидок (синхронизация с админкой)
+      updateSaleMode: async () => {
+        const enabled = await fetchSaleModeFromDB()
+        if (enabled !== null && enabled !== get().saleModeEnabled) {
+          set({ saleModeEnabled: enabled })
+          console.log('🏷️ Режим скидок:', enabled ? 'ВКЛ' : 'ВЫКЛ')
+        }
       },
 
       addToCart: (item) => set((state) => {
         if (item.isSpecialOrder) {
           return { cart: [...state.cart, item] }
         }
-
         if (item.quantity < 0) {
           return {
-            cart: state.cart.map(i => 
-              (i.productId === item.productId && i.size === item.size) 
-                ? { ...i, quantity: Math.max(1, i.quantity - 1) } 
+            cart: state.cart.map(i =>
+              (i.productId === item.productId && i.size === item.size)
+                ? { ...i, quantity: Math.max(1, i.quantity - 1) }
                 : i
             )
           }
         }
-        
         const existing = state.cart.find(i => i.productId === item.productId && i.size === item.size)
         if (existing) {
           return {
-            cart: state.cart.map(i => 
-              (i.productId === item.productId && i.size === item.size) 
-                ? { ...i, quantity: i.quantity + item.quantity } 
+            cart: state.cart.map(i =>
+              (i.productId === item.productId && i.size === item.size)
+                ? { ...i, quantity: i.quantity + item.quantity }
                 : i
             )
           }
@@ -187,15 +178,12 @@ export const useStore = create<AppState>()(
 
       getTotalPrice: () => {
         const state = get()
-        const totalUsd = state.cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0)
-        return totalUsd
+        return state.cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0)
       },
 
       addToFavorites: (item) => set((state) => {
         const exists = state.favorites.find(i => i.productId === item.productId)
-        if (exists) {
-          return state
-        }
+        if (exists) return state
         return { favorites: [...state.favorites, item] }
       }),
 
@@ -214,34 +202,20 @@ export const useStore = create<AppState>()(
   )
 )
 
-// ✅ Автоматическое обновление курса при загрузке приложения
+// ✅ Автообновление курса и режима скидок
 if (typeof window !== 'undefined') {
-  console.log('🔄 Инициализация курса валют...')
-  
-  // ✅ Обновляем курс сразу при загрузке
   useStore.getState().updateExchangeRate()
-  
-  // ✅ Периодическая проверка каждые 5 минут
+  useStore.getState().updateSaleMode()
+
   setInterval(() => {
-    console.log('⏰ Периодическая проверка курса...')
     useStore.getState().updateExchangeRate()
+    useStore.getState().updateSaleMode()
   }, 5 * 60 * 1000) // 5 минут
-  
-  // ✅ Обновление при возврате на вкладку
+
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      console.log('👁️ Вкладка активна, проверяем курс...')
       useStore.getState().updateExchangeRate()
+      useStore.getState().updateSaleMode()
     }
   })
-}
-
-// ✅ Функция для показа toast (добавляем если нет)
-const toast = {
-  info: (message: string) => {
-    console.log('ℹ️', message)
-    // Если используешь sonner, замени на:
-    // import { toast } from 'sonner'
-    // toast.info(message)
-  }
 }

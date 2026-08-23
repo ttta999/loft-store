@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts, supabase } from '../lib/supabase'
 import { Search, Filter, X, Heart, ArrowUpDown } from 'lucide-react'
 
-// ✅ Тип для бренда
 interface Brand {
   id: string
   name: string
@@ -12,18 +11,16 @@ interface Brand {
 }
 
 export default function SearchPage() {
-  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedBrand, setSelectedBrand] = useState<string>('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]) // 100 млн сум
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000])
   const [sortBy, setSortBy] = useState<string>('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
-  
-  // ✅ Бренды теперь загружаются из Supabase
   const [brands, setBrands] = useState<Brand[]>([])
 
   const categories = [
@@ -32,7 +29,6 @@ export default function SearchPage() {
     { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar' },
   ]
 
-  // ✅ Загружаем бренды из Supabase при монтировании
   useEffect(() => {
     loadBrands()
     loadProducts()
@@ -40,17 +36,12 @@ export default function SearchPage() {
 
   const loadBrands = async () => {
     try {
-      console.log('🔄 Загружаем бренды в SearchPage...')
-      
       const { data, error } = await supabase
         .from('brands')
         .select('*')
         .eq('is_active', true)
         .order('name')
-
       if (error) throw error
-      
-      console.log('✅ Бренды загружены:', data?.length || 0)
       setBrands(data || [])
     } catch (error) {
       console.error('❌ Ошибка загрузки брендов:', error)
@@ -72,42 +63,38 @@ export default function SearchPage() {
   const applyFiltersAndSort = () => {
     let filtered = [...products]
 
-    // Поиск по названию
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter((p: any) => 
+      filtered = filtered.filter((p: any) =>
         (language === 'ru' ? p.name_ru : p.name_uz).toLowerCase().includes(query)
       )
     }
 
-    // Фильтр по категории
     if (selectedCategory) {
       filtered = filtered.filter((p: any) => p.category === selectedCategory)
     }
 
-    // ✅ Фильтр по бренду (из Supabase)
     if (selectedBrand) {
       const brand = brands.find((b: Brand) => b.id === selectedBrand)
       if (brand) {
-        filtered = filtered.filter((p: any) => 
+        filtered = filtered.filter((p: any) =>
           p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
         )
       }
     }
 
-    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+    // ✅ Фильтр по цене в сумах (с учётом скидочной цены)
     filtered = filtered.filter((p: any) => {
-      const priceInSums = p.price_usd * exchangeRate
+      const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= priceRange[0] && priceInSums <= priceRange[1]
     })
 
-    // ✅ Сортировка
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a: any, b: any) => a.price_usd - b.price_usd)
+        filtered.sort((a: any, b: any) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
         break
       case 'price_desc':
-        filtered.sort((a: any, b: any) => b.price_usd - a.price_usd)
+        filtered.sort((a: any, b: any) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
         break
       case 'newest':
         filtered.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -133,17 +120,17 @@ export default function SearchPage() {
     setSortBy('newest')
   }
 
-  const hasActiveFilters = 
-    searchQuery || 
-    selectedCategory || 
-    selectedBrand || 
-    priceRange[0] > 0 || 
+  const hasActiveFilters =
+    searchQuery ||
+    selectedCategory ||
+    selectedBrand ||
+    priceRange[0] > 0 ||
     priceRange[1] < 100000000 ||
     sortBy !== 'newest'
 
-  const activeFiltersCount = 
+  const activeFiltersCount =
     (searchQuery ? 1 : 0) +
-    (selectedCategory ? 1 : 0) + 
+    (selectedCategory ? 1 : 0) +
     (selectedBrand ? 1 : 0) +
     (priceRange[0] > 0 || priceRange[1] < 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
@@ -217,7 +204,6 @@ export default function SearchPage() {
       {/* Панель фильтров */}
       {showFilters && (
         <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-          {/* Категория */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Категория' : 'Kategoriya'}
@@ -247,7 +233,6 @@ export default function SearchPage() {
             </div>
           </div>
 
-          {/* ✅ Бренд - теперь из Supabase */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Бренд' : 'Brend'}
@@ -277,7 +262,6 @@ export default function SearchPage() {
             </div>
           </div>
 
-          {/* ✅ Цена в сумах */}
           <div className="mb-4">
             <h3 className="font-bold mb-2">
               {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
@@ -303,7 +287,6 @@ export default function SearchPage() {
             </p>
           </div>
 
-          {/* ✅ Сортировка */}
           <div>
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <ArrowUpDown size={16} />
@@ -363,48 +346,62 @@ export default function SearchPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {filteredProducts.map((product: any) => (
-            <Link key={product.id} to={`/product/${product.id}`}>
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                <div className="aspect-square bg-gray-100 relative">
-                  <img
-                    src={product.images?.[0] || 'https://via.placeholder.com/500'}
-                    alt={language === 'ru' ? product.name_ru : product.name_uz}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if (isFavorite(product.id)) {
-                        removeFromFavorites(product.id)
-                      } else {
-                        addToFavorites({
-                          productId: product.id,
-                          name: language === 'ru' ? product.name_ru : product.name_uz,
-                          priceUsd: product.price_usd,
-                          image: product.images?.[0] || ''
-                        })
-                      }
-                    }}
-                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
-                  >
-                    <Heart 
-                      size={20} 
-                      className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+          {filteredProducts.map((product: any) => {
+            const onSale = isProductOnSale(product, saleModeEnabled)
+            const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+            return (
+              <Link key={product.id} to={`/product/${product.id}`}>
+                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                  <div className="aspect-square bg-gray-100 relative">
+                    <img
+                      src={product.images?.[0] || 'https://via.placeholder.com/500'}
+                      alt={language === 'ru' ? product.name_ru : product.name_uz}
+                      className="w-full h-full object-cover"
                     />
-                  </button>
+                    {onSale && (
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (isFavorite(product.id)) {
+                          removeFromFavorites(product.id)
+                        } else {
+                          addToFavorites({
+                            productId: product.id,
+                            name: language === 'ru' ? product.name_ru : product.name_uz,
+                            priceUsd: effectivePrice,
+                            image: product.images?.[0] || ''
+                          })
+                        }
+                      }}
+                      className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                    >
+                      <Heart
+                        size={20}
+                        className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                      />
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm font-medium truncate">
+                      {language === 'ru' ? product.name_ru : product.name_uz}
+                    </p>
+                    {onSale && (
+                      <p className="text-gray-400 text-xs line-through mt-1">
+                        {formatPrice(product.price_usd)}
+                      </p>
+                    )}
+                    <p className={`font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+                      {formatPrice(effectivePrice)}
+                    </p>
+                  </div>
                 </div>
-                <div className="p-3">
-                  <p className="text-sm font-medium truncate">
-                    {language === 'ru' ? product.name_ru : product.name_uz}
-                  </p>
-                  <p className="text-black font-bold mt-1">
-                    {formatPrice(product.price_usd)}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>

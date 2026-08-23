@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
@@ -13,21 +13,19 @@ interface Brand {
 
 export default function BrandsPage() {
   const navigate = useNavigate()
-  const { language, currency, exchangeRate } = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingBrands, setLoadingBrands] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
-  
-  // Фильтры
+
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [minPrice, setMinPrice] = useState<number>(0)
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Загружаем бренды из Supabase
   useEffect(() => {
     loadBrands()
   }, [])
@@ -35,17 +33,12 @@ export default function BrandsPage() {
   const loadBrands = async () => {
     setLoadingBrands(true)
     try {
-      console.log('🔄 Загружаем бренды из Supabase...')
-      
       const { data, error } = await supabase
         .from('brands')
         .select('*')
         .eq('is_active', true)
         .order('name')
-
       if (error) throw error
-      
-      console.log('✅ Бренды загружены:', data?.length || 0)
       setBrands(data || [])
     } catch (error) {
       console.error('❌ Ошибка загрузки брендов:', error)
@@ -61,25 +54,18 @@ export default function BrandsPage() {
   const handleBrandClick = async (brand: Brand) => {
     setSelectedBrand(brand)
     setLoading(true)
-    
-    console.log(` Ищем товары бренда: ${brand.name}`)
-    
-    // ✅ Ищем товары по полю brand (а не по имени)
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('brand', brand.name)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-    
     if (error) {
       console.error('❌ Ошибка поиска товаров:', error)
       setProducts([])
     } else {
-      console.log(`✅ Найдено товаров: ${data?.length || 0}`)
       setProducts(data || [])
     }
-    
     setLoading(false)
   }
 
@@ -105,23 +91,23 @@ export default function BrandsPage() {
 
   const getFilteredAndSortedProducts = () => {
     let filtered = [...products]
-    
+
     if (selectedCategory) {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
-    
-    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+
+    // ✅ Фильтр по цене в сумах (с учётом скидки)
     filtered = filtered.filter(p => {
-      const priceInSums = p.price_usd * exchangeRate
+      const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= minPrice && priceInSums <= maxPrice
     })
-    
+
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => a.price_usd - b.price_usd)
+        filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
         break
       case 'price_desc':
-        filtered.sort((a, b) => b.price_usd - a.price_usd)
+        filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
         break
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -130,20 +116,19 @@ export default function BrandsPage() {
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    
+
     return filtered
   }
 
   const filteredProducts = getFilteredAndSortedProducts()
-  
-  const activeFiltersCount = 
-    (selectedCategory ? 1 : 0) + 
+
+  const activeFiltersCount =
+    (selectedCategory ? 1 : 0) +
     (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={handleBack} className="text-gray-600 flex items-center gap-1">
@@ -157,17 +142,15 @@ export default function BrandsPage() {
       <div className="p-4">
         {!selectedBrand ? (
           <>
-            {/* ✅ ИЗМЕНЕНО: text-2xl → text-xl, mb-2 → mb-1 (как в CatalogPage) */}
             <h2 className="text-xl font-bold mb-1">
               {language === 'ru' ? 'Бренды' : 'Brendlar'}
             </h2>
-            {/* ✅ ИЗМЕНЕНО: mb-6 → mb-4 (как в CatalogPage) */}
             <p className="text-sm text-gray-500 mb-4">
-              {language === 'ru' 
-                ? 'Выберите бренд чтобы увидеть товары' 
+              {language === 'ru'
+                ? 'Выберите бренд чтобы увидеть товары'
                 : 'Mahsulotlarni ko\'rish uchun brendni tanlang'}
             </p>
-            
+
             {loadingBrands ? (
               <div className="text-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
@@ -204,7 +187,6 @@ export default function BrandsPage() {
           </>
         ) : (
           <>
-            {/* ✅ ЗАГОЛОВОК КАК В КАТАЛОГЕ - одинаковый размер шрифта и отступы */}
             <h2 className="text-xl font-bold mb-1">
               {selectedBrand.name}
             </h2>
@@ -338,7 +320,7 @@ export default function BrandsPage() {
                 </div>
               </div>
             )}
-            
+
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto"></div>
@@ -349,29 +331,45 @@ export default function BrandsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {filteredProducts.map(product => (
-                  <div
-                    key={product.id}
-                    onClick={() => navigate(`/product/${product.id}`)}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
-                  >
-                    {product.images?.[0] && (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name_ru}
-                        className="w-full h-32 object-cover"
-                      />
-                    )}
-                    <div className="p-3">
-                      <p className="font-medium text-sm truncate">
-                        {language === 'ru' ? product.name_ru : product.name_uz}
-                      </p>
-                      <p className="text-lg font-bold mt-1">
-                        {formatPrice(product.price_usd)}
-                      </p>
+                {filteredProducts.map(product => {
+                  const onSale = isProductOnSale(product, saleModeEnabled)
+                  const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => navigate(`/product/${product.id}`)}
+                      className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
+                    >
+                      {product.images?.[0] && (
+                        <div className="relative">
+                          <img
+                            src={product.images[0]}
+                            alt={product.name_ru}
+                            className="w-full h-32 object-cover"
+                          />
+                          {onSale && (
+                            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="font-medium text-sm truncate">
+                          {language === 'ru' ? product.name_ru : product.name_uz}
+                        </p>
+                        {onSale && (
+                          <p className="text-gray-400 text-xs line-through mt-1">
+                            {formatPrice(product.price_usd)}
+                          </p>
+                        )}
+                        <p className={`text-lg font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+                          {formatPrice(effectivePrice)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </>

@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
 
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { language, currency, exchangeRate, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [product, setProduct] = useState<any>(null)
   const [sizes, setSizes] = useState<string[]>([])
@@ -33,12 +33,10 @@ export default function ProductPage() {
         .select('*')
         .eq('id', id)
         .single()
-      
       if (error) {
         console.error('Ошибка при загрузке товара:', error)
         setProduct(null)
       } else {
-        console.log('✅ Товар загружен:', data)
         setProduct(data || null)
       }
     } catch (err) {
@@ -59,18 +57,24 @@ export default function ProductPage() {
     navigate('/')
   }
 
+  // ✅ Цена с учётом скидки
+  const onSale = isProductOnSale(product, saleModeEnabled)
+  const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+  const discountPercent = onSale
+    ? Math.round((1 - Number(product?.sale_price) / Number(product?.price_usd)) * 100)
+    : 0
+
   const handleAddToCart = async () => {
     if (!product) {
       toast.error('Товар недоступен')
       return
     }
-
     if (product.size_type !== 'one_size' && !selectedSize) {
       toast.error(
         language === 'ru' ? 'Пожалуйста, выберите размер' : 'Iltimos, o\'lchamni tanlang',
         {
-          description: language === 'ru' 
-            ? 'Без этого мы не сможем отправить товар' 
+          description: language === 'ru'
+            ? 'Без этого мы не сможем отправить товар'
             : 'Bunsiz mahsulotni yubora olmaymiz',
           duration: 3000,
         }
@@ -79,13 +83,11 @@ export default function ProductPage() {
     }
 
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
-
     const stockCheck = await checkProductStock(product.id, sizeToAdd, 1)
-    
     if (!stockCheck.available) {
       toast.error(stockCheck.error || 'Товар недоступен', {
-        description: language === 'ru' 
-          ? 'Попробуйте выбрать другой размер или посмотрите другие товары' 
+        description: language === 'ru'
+          ? 'Попробуйте выбрать другой размер или посмотрите другие товары'
           : 'Boshqa o\'lchamni tanlang yoki boshqa mahsulotlarga qarang',
         duration: 4000,
       })
@@ -95,17 +97,16 @@ export default function ProductPage() {
     addToCart({
       productId: product.id,
       name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-      priceUsd: product.price_usd || 0,
+      priceUsd: effectivePrice, // ✅ цена со скидкой если скидка активна
       size: sizeToAdd,
       quantity: 1,
       image: product.images?.[0] || '',
     })
-
     toast.success(
       language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!',
       {
-        description: language === 'ru' 
-          ? 'Нажмите на иконку корзины внизу' 
+        description: language === 'ru'
+          ? 'Нажмите на иконку корзины внизу'
           : 'Pastdagi savat belgisini bosing',
         duration: 3000,
       }
@@ -114,7 +115,6 @@ export default function ProductPage() {
 
   const handleToggleFavorite = () => {
     if (!product) return
-    
     if (isFavorite(product.id)) {
       removeFromFavorites(product.id)
       toast.success(
@@ -125,7 +125,7 @@ export default function ProductPage() {
       addToFavorites({
         productId: product.id,
         name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-        priceUsd: product.price_usd || 0,
+        priceUsd: effectivePrice,
         image: product.images?.[0] || '',
       })
       toast.success(
@@ -137,18 +137,12 @@ export default function ProductPage() {
 
   const handleShare = async () => {
     if (!product) return
-    
     const shareUrl = window.location.href
     const shareTitle = language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')
-    const shareText = `${shareTitle} — ${formatPrice(product.price_usd || 0)}`
-
+    const shareText = `${shareTitle} — ${formatPrice(effectivePrice)}`
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        })
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
       } catch (err) {
         console.log('Поделиться отменено:', err)
       }
@@ -210,8 +204,7 @@ export default function ProductPage() {
   }
 
   const images = getImages()
-  
-  // ✅ БЕЗОПАСНОЕ получение описания
+
   const getDescription = () => {
     if (!product) return ''
     if (language === 'ru') {
@@ -219,7 +212,7 @@ export default function ProductPage() {
     }
     return product.description_uz || ''
   }
-  
+
   const description = getDescription()
 
   if (loading) {
@@ -278,7 +271,6 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster position="top-center" richColors />
-      
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button
@@ -302,7 +294,11 @@ export default function ProductPage() {
               className="w-full aspect-square object-cover cursor-pointer"
               onClick={() => openFullScreen(currentImageIndex)}
             />
-            
+            {onSale && (
+              <span className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+                -{discountPercent}%
+              </span>
+            )}
             {images.length > 1 && (
               <>
                 <button
@@ -319,14 +315,13 @@ export default function ProductPage() {
                 </button>
               </>
             )}
-
             <div className="absolute top-4 right-4 flex gap-2">
               <button
                 onClick={handleToggleFavorite}
                 className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
               >
-                <Heart 
-                  size={24} 
+                <Heart
+                  size={24}
                   className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
                 />
               </button>
@@ -337,23 +332,19 @@ export default function ProductPage() {
                 <Share2 size={24} className="text-gray-600" />
               </button>
             </div>
-
             {images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {images.map((_: string, index: number) => (
                   <div
                     key={index}
                     className={`h-2 rounded-full transition-all ${
-                      index === currentImageIndex 
-                        ? 'bg-white w-6' 
-                        : 'bg-white/50 w-2'
+                      index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50 w-2'
                     }`}
                   />
                 ))}
               </div>
             )}
           </div>
-
           {images.length > 1 && (
             <div className="p-3 flex gap-2 overflow-x-auto">
               {images.map((image: string, index: number) => (
@@ -379,11 +370,22 @@ export default function ProductPage() {
           <h1 className="text-xl font-bold mb-2">
             {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
-          <p className="text-2xl font-bold text-black mb-4">
-            {formatPrice(product.price_usd || 0)}
-          </p>
 
-          {/* ✅ Показываем описание только если оно есть */}
+          {/* ✅ ЦЕНА: старая перечёркнута + новая скидочная */}
+          {onSale && (
+            <p className="text-lg text-gray-400 line-through">
+              {formatPrice(product.price_usd || 0)}
+            </p>
+          )}
+          <p className={`text-2xl font-bold mb-2 ${onSale ? 'text-red-500' : 'text-black'}`}>
+            {formatPrice(effectivePrice)}
+          </p>
+          {onSale && (
+            <span className="inline-block bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full mb-2">
+              💰 {language === 'ru' ? `Скидка -${discountPercent}%` : `Chegirma -${discountPercent}%`}
+            </span>
+          )}
+
           {description && description.trim() !== '' && (
             <div className="mb-4 pb-4 border-b border-gray-100">
               <h3 className="font-bold mb-2">
@@ -417,11 +419,10 @@ export default function ProductPage() {
               : (language === 'ru' ? 'В корзину' : 'Savatga')
             }
           </button>
-
           {sizes.length === 0 && (
             <p className="text-center text-sm text-gray-500 mt-2">
-              {language === 'ru' 
-                ? 'Этот товар временно отсутствует' 
+              {language === 'ru'
+                ? 'Этот товар временно отсутствует'
                 : 'Bu mahsulot vaqtincha mavjud emas'}
             </p>
           )}
@@ -436,7 +437,6 @@ export default function ProductPage() {
           >
             <X size={32} />
           </button>
-          
           {images.length > 1 && (
             <>
               <button
@@ -453,22 +453,18 @@ export default function ProductPage() {
               </button>
             </>
           )}
-          
           <img
             src={images[fullScreenImageIndex]}
             alt="Full screen"
             className="max-w-full max-h-full object-contain"
           />
-          
           {images.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               {images.map((_, index) => (
                 <div
                   key={index}
                   className={`h-2 rounded-full transition-all ${
-                    index === fullScreenImageIndex 
-                      ? 'bg-white w-6' 
-                      : 'bg-white/50 w-2'
+                    index === fullScreenImageIndex ? 'bg-white w-6' : 'bg-white/50 w-2'
                   }`}
                 />
               ))}

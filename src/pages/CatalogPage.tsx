@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
@@ -8,22 +8,20 @@ import { Filter, ArrowUpDown } from 'lucide-react'
 export default function CatalogPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate } = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
-  
   const [brands, setBrands] = useState<any[]>([])
-  
+
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
-  
   const category = CATEGORIES.find(c => c.id === categoryId)
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(100000000) // 100 млн сум
+  const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export default function CatalogPage() {
         .select('*')
         .eq('is_active', true)
         .order('name')
-      
       if (error) throw error
       setBrands(data || [])
     } catch (error) {
@@ -63,15 +60,13 @@ export default function CatalogPage() {
         .select('*')
         .eq('category', categoryId)
         .eq('is_active', true)
-      
+
       if (subcategoryId) {
         query = query.eq('subcategory', subcategoryId)
       }
-      
+
       const { data, error } = await query
-      
       if (error) throw error
-      
       setProducts(data || [])
       setFilteredProducts(data || [])
     } catch (error) {
@@ -86,7 +81,7 @@ export default function CatalogPage() {
     let filtered = [...products]
 
     if (selectedBrands.length > 0) {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         selectedBrands.some(brandId => {
           const brand = brands.find(b => b.id === brandId)
           return brand && p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
@@ -94,18 +89,18 @@ export default function CatalogPage() {
       )
     }
 
-    // ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ
+    // ✅ Фильтр по цене в сумах (с учётом скидки)
     filtered = filtered.filter(p => {
-      const priceInSums = p.price_usd * exchangeRate
+      const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= minPrice && priceInSums <= maxPrice
     })
 
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => a.price_usd - b.price_usd)
+        filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
         break
       case 'price_desc':
-        filtered.sort((a, b) => b.price_usd - a.price_usd)
+        filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
         break
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -119,8 +114,8 @@ export default function CatalogPage() {
   }
 
   const toggleBrand = (brandId: string) => {
-    setSelectedBrands(prev => 
-      prev.includes(brandId) 
+    setSelectedBrands(prev =>
+      prev.includes(brandId)
         ? prev.filter(b => b !== brandId)
         : [...prev, brandId]
     )
@@ -133,8 +128,8 @@ export default function CatalogPage() {
     setSortBy('newest')
   }
 
-  const activeFiltersCount = 
-    selectedBrands.length + 
+  const activeFiltersCount =
+    selectedBrands.length +
     (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
@@ -153,7 +148,6 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ БЕЗ border-b, с shadow-sm */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-gray-600 flex items-center gap-1">
@@ -225,7 +219,6 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            {/* ✅ ФИЛЬТР ПО ЦЕНЕ В СУМАХ */}
             <div className="mb-4">
               <h3 className="font-bold mb-2">
                 {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
@@ -295,8 +288,8 @@ export default function CatalogPage() {
         )}
 
         <p className="text-sm text-gray-500 mb-3">
-          {language === 'ru' 
-            ? `Найдено: ${filteredProducts.length}` 
+          {language === 'ru'
+            ? `Найдено: ${filteredProducts.length}`
             : `Topildi: ${filteredProducts.length}`}
         </p>
 
@@ -310,29 +303,45 @@ export default function CatalogPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map(product => (
-              <div
-                key={product.id}
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
-              >
-                {product.images?.[0] && (
-                  <img
-                    src={product.images[0]}
-                    alt={product.name_ru}
-                    className="w-full h-32 object-cover"
-                  />
-                )}
-                <div className="p-3">
-                  <p className="font-medium text-sm truncate">
-                    {language === 'ru' ? product.name_ru : product.name_uz}
-                  </p>
-                  <p className="text-lg font-bold mt-1">
-                    {formatPrice(product.price_usd)}
-                  </p>
+            {filteredProducts.map(product => {
+              const onSale = isProductOnSale(product, saleModeEnabled)
+              const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+              return (
+                <div
+                  key={product.id}
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
+                >
+                  {product.images?.[0] && (
+                    <div className="relative">
+                      <img
+                        src={product.images[0]}
+                        alt={product.name_ru}
+                        className="w-full h-32 object-cover"
+                      />
+                      {onSale && (
+                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <p className="font-medium text-sm truncate">
+                      {language === 'ru' ? product.name_ru : product.name_uz}
+                    </p>
+                    {onSale && (
+                      <p className="text-gray-400 text-xs line-through mt-1">
+                        {formatPrice(product.price_usd)}
+                      </p>
+                    )}
+                    <p className={`text-lg font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+                      {formatPrice(effectivePrice)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

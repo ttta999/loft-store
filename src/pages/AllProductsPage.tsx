@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, Filter } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
@@ -8,8 +8,7 @@ import { CATEGORIES } from '../data/categories'
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate, addToFavorites, removeFromFavorites,
-    isFavorite} = useStore()
+  const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,25 +36,22 @@ export default function AllProductsPage() {
   const applyFiltersAndSort = () => {
     let filtered = [...products]
 
-    // Фильтр по категории
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
 
-    // Фильтр по подкатегории
     if (selectedSubcategory !== 'all') {
       filtered = filtered.filter(p => p.subcategory === selectedSubcategory)
     }
 
-    // Сортировка
     if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     } else if (sortBy === 'popular') {
       filtered.sort(() => Math.random() - 0.5)
     } else if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => a.price_usd - b.price_usd)
+      filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
     } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => b.price_usd - a.price_usd)
+      filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
     }
 
     setFilteredProducts(filtered)
@@ -75,49 +71,63 @@ export default function AllProductsPage() {
     return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
   }
 
-  const ProductCard = ({ product }: { product: any }) => (
-    <div
-      onClick={() => navigate(`/product/${product.id}`)}
-      className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer"
-    >
-      <div className="aspect-square bg-gray-100 relative">
-        <img
-          src={product.images?.[0] || 'https://via.placeholder.com/500'}
-          alt={language === 'ru' ? product.name_ru : product.name_uz}
-          className="w-full h-full object-cover"
-        />
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (isFavorite(product.id)) {
-              removeFromFavorites(product.id)
-            } else {
-              addToFavorites({
-                productId: product.id,
-                name: language === 'ru' ? product.name_ru : product.name_uz,
-                priceUsd: product.price_usd,
-                image: product.images?.[0] || ''
-              })
-            }
-          }}
-          className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
-        >
-          <Heart
-            size={20}
-            className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+  const ProductCard = ({ product }: { product: any }) => {
+    const onSale = isProductOnSale(product, saleModeEnabled)
+    const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+    return (
+      <div
+        onClick={() => navigate(`/product/${product.id}`)}
+        className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer"
+      >
+        <div className="aspect-square bg-gray-100 relative">
+          <img
+            src={product.images?.[0] || 'https://via.placeholder.com/500'}
+            alt={language === 'ru' ? product.name_ru : product.name_uz}
+            className="w-full h-full object-cover"
           />
-        </button>
+          {onSale && (
+            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+              -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
+            </span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (isFavorite(product.id)) {
+                removeFromFavorites(product.id)
+              } else {
+                addToFavorites({
+                  productId: product.id,
+                  name: language === 'ru' ? product.name_ru : product.name_uz,
+                  priceUsd: effectivePrice,
+                  image: product.images?.[0] || ''
+                })
+              }
+            }}
+            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+          >
+            <Heart
+              size={20}
+              className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+            />
+          </button>
+        </div>
+        <div className="p-3">
+          <p className="text-sm font-medium truncate">
+            {language === 'ru' ? product.name_ru : product.name_uz}
+          </p>
+          {onSale && (
+            <p className="text-gray-400 text-xs line-through mt-1">
+              {formatPrice(product.price_usd)}
+            </p>
+          )}
+          <p className={`font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+            {formatPrice(effectivePrice)}
+          </p>
+        </div>
       </div>
-      <div className="p-3">
-        <p className="text-sm font-medium truncate">
-          {language === 'ru' ? product.name_ru : product.name_uz}
-        </p>
-        <p className="text-black font-bold mt-1">
-          {formatPrice(product.price_usd)}
-        </p>
-      </div>
-    </div>
-  )
+    )
+  }
 
   if (loading) {
     return (
@@ -134,7 +144,6 @@ export default function AllProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* ✅ Верхняя панель - БЕЗ ИЗБРАННОГО */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <button
@@ -149,10 +158,8 @@ export default function AllProductsPage() {
       </div>
 
       <div className="p-4">
-        {/* Заголовок страницы */}
         <h2 className="text-2xl font-bold mb-4">{getTitle()}</h2>
 
-        {/* Кнопка фильтров */}
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="w-full p-3 rounded-xl border border-gray-300 flex items-center justify-between bg-white mb-4"
@@ -165,10 +172,8 @@ export default function AllProductsPage() {
           </div>
         </button>
 
-        {/* Панель фильтров */}
         {showFilters && (
           <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200 space-y-4">
-            {/* Категория */}
             <div>
               <h3 className="font-bold mb-2">
                 {language === 'ru' ? 'Категория' : 'Kategoriya'}
@@ -190,7 +195,6 @@ export default function AllProductsPage() {
               </select>
             </div>
 
-            {/* Подкатегория */}
             {selectedCategory !== 'all' && (
               <div>
                 <h3 className="font-bold mb-2">
@@ -211,7 +215,6 @@ export default function AllProductsPage() {
               </div>
             )}
 
-            {/* Сортировка */}
             <div>
               <h3 className="font-bold mb-2">
                 {language === 'ru' ? 'Сортировка' : 'Saralash'}
@@ -254,12 +257,10 @@ export default function AllProductsPage() {
           </div>
         )}
 
-        {/* Счетчик */}
         <p className="text-sm text-gray-500 mb-3">
           {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
         </p>
 
-        {/* Товары */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">
