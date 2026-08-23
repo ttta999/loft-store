@@ -135,7 +135,7 @@ export const useStore = create<AppState>()(
         localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
       },
 
-      // ✅ Обновление режима скидок (синхронизация с админкой)
+      // ✅ Обновление режима скидок из админки
       updateSaleMode: async () => {
         const enabled = await fetchSaleModeFromDB()
         if (enabled !== null && enabled !== get().saleModeEnabled) {
@@ -210,7 +210,7 @@ if (typeof window !== 'undefined') {
   setInterval(() => {
     useStore.getState().updateExchangeRate()
     useStore.getState().updateSaleMode()
-  }, 5 * 60 * 1000) // 5 минут
+  }, 5 * 60 * 1000)
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {

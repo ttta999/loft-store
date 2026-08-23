@@ -54,7 +54,7 @@ export default function HomePage() {
   // ✅ СКИДКИ: показываются ТОЛЬКО если режим скидок ВКЛ в админке
   const getDiscountProducts = (limit: number = 6) => {
     if (!saleModeEnabled) return []
-    return products.filter(p => isProductOnSale(p, saleModeEnabled)).slice(0, limit)
+    return products.filter(p => p.sale_price != null && Number(p.sale_price) > 0).slice(0, limit)
   }
 
   const ProductCard = ({ product }: { product: any }) => {
@@ -176,11 +176,9 @@ export default function HomePage() {
       {/* ✅ БОКС СКИДКИ (только если режим ВКЛ и есть товары со скидкой) */}
       {getDiscountProducts().length > 0 && (
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-red-500">
-              {language === 'ru' ? '💰 Скидки' : '💰 Chefirmalar'}
-            </h3>
-          </div>
+          <h3 className="text-lg font-bold mb-3 text-red-500">
+            {language === 'ru' ? '💰 Скидки' : '💰 Chefirmalar'}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {getDiscountProducts(6).map((product) => (
               <ProductCard key={product.id} product={product} />
