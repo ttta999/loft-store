@@ -51,7 +51,7 @@ export default function HomePage() {
       .slice(0, limit)
   }
 
-  // ✅ СКИДКИ: показываются ТОЛЬКО если режим скидок ВКЛ в админке
+  // ✅ СКИДКИ: только если режим ВКЛ и у товара есть sale_price
   const getDiscountProducts = (limit: number = 6) => {
     if (!saleModeEnabled) return []
     return products.filter(p => p.sale_price != null && Number(p.sale_price) > 0).slice(0, limit)
@@ -65,7 +65,7 @@ export default function HomePage() {
       : 0
 
     return (
-      <Link key={product.id} to={`/product/${product.id}`}>
+      <Link to={`/product/${product.id}`}>
         <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
           <div className="aspect-square bg-gray-100 relative">
             <img
@@ -173,7 +173,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ БОКС СКИДКИ (только если режим ВКЛ и есть товары со скидкой) */}
+      {/* ✅ БОКС СКИДКИ */}
       {getDiscountProducts().length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg font-bold mb-3 text-red-500">

@@ -86,7 +86,9 @@ const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
 const fetchExchangeRateFromAPI = async (): Promise<number> => {
   try {
     const response = await fetch('/api/getExchangeRate')
-    if (!response.ok) throw new Error(`API returned ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`)
+    }
     const data = await response.json()
     return data.rate
   } catch (error) {
@@ -183,7 +185,9 @@ export const useStore = create<AppState>()(
 
       addToFavorites: (item) => set((state) => {
         const exists = state.favorites.find(i => i.productId === item.productId)
-        if (exists) return state
+        if (exists) {
+          return state
+        }
         return { favorites: [...state.favorites, item] }
       }),
 

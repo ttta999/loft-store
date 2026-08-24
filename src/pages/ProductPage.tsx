@@ -37,7 +37,6 @@ export default function ProductPage() {
         console.error('Ошибка при загрузке товара:', error)
         setProduct(null)
       } else {
-        console.log('✅ Товар загружен:', data)
         setProduct(data || null)
       }
     } catch (err) {
@@ -58,7 +57,7 @@ export default function ProductPage() {
     navigate('/')
   }
 
-  // ✅ СКИДКА: старая цена перечёркнута, новая — скидочная
+  // ✅ СКИДКА
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
@@ -98,7 +97,7 @@ export default function ProductPage() {
     addToCart({
       productId: product.id,
       name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-      priceUsd: effectivePrice, // ✅ в корзину по скидочной цене
+      priceUsd: effectivePrice, // ✅ по скидочной цене
       size: sizeToAdd,
       quantity: 1,
       image: product.images?.[0] || '',
@@ -126,7 +125,7 @@ export default function ProductPage() {
       addToFavorites({
         productId: product.id,
         name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-        priceUsd: effectivePrice, // ✅ в избранное по скидочной цене
+        priceUsd: effectivePrice,
         image: product.images?.[0] || '',
       })
       toast.success(
@@ -143,11 +142,7 @@ export default function ProductPage() {
     const shareText = `${shareTitle} — ${formatPrice(effectivePrice)}`
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        })
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
       } catch (err) {
         console.log('Поделиться отменено:', err)
       }
@@ -299,7 +294,6 @@ export default function ProductPage() {
               className="w-full aspect-square object-cover cursor-pointer"
               onClick={() => openFullScreen(currentImageIndex)}
             />
-            {/* ✅ БЕЙДЖ СКИДКИ НА ФОТО */}
             {onSale && (
               <span className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full">
                 -{discountPercent}%
@@ -379,7 +373,7 @@ export default function ProductPage() {
             {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
 
-          {/* ✅ ЦЕНА: старая перечёркнута + новая скидочная красным */}
+          {/* ✅ ЦЕНА: старая перечёркнута + новая красным */}
           {onSale && (
             <p className="text-lg text-gray-400 line-through">
               {formatPrice(product.price_usd || 0)}
