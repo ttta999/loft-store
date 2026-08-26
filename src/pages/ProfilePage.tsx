@@ -411,7 +411,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 className="px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
-                 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
+                📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
               </a>
             </div>
           </div>
@@ -597,6 +597,19 @@ export default function ProfilePage({
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+
+  // ✅ ПРАВИЛЬНОЕ СКЛОНЕНИЕ: 1 товар / 2 товара / 5 товаров (RU), ta mahsulot (UZ)
+  const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
+    if (lang === 'uz') {
+      return 'ta mahsulot'
+    }
+    const lastTwo = count % 100
+    const lastOne = count % 10
+    if (lastTwo >= 11 && lastTwo <= 19) return 'товаров'
+    if (lastOne === 1) return 'товар'
+    if (lastOne >= 2 && lastOne <= 4) return 'товара'
+    return 'товаров'
+  }
 
   useEffect(() => {
     if (activeSection === 'main') {
@@ -858,7 +871,8 @@ export default function ProfilePage({
             <div className="flex items-center gap-2">
               {favorites.length > 0 && (
                 <span className="text-sm text-gray-500">
-                  {favorites.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
+                  {/* ✅ ИСПРАВЛЕНО: правильное склонение */}
+                  {favorites.length} {getItemsLabel(favorites.length, language)}
                 </span>
               )}
               <ChevronRight size={20} className="text-gray-400" />
