@@ -51,13 +51,11 @@ function AppContent() {
 
   useEffect(() => {
     const tg = initTelegram()
-    
     if (tg) {
       const userData = getUserData()
       if (userData) {
         setTelegramUser(userData)
         console.log('Telegram пользователь:', userData)
-        
         const chatId = getChatId()
         if (chatId && chatId !== useStore.getState().chatId) {
           useStore.getState().setChatId(chatId)
@@ -77,7 +75,7 @@ function AppContent() {
       case 'cart': return <CartPage telegramUser={telegramUser} />
       case 'china': return <ChinaPage telegramUser={telegramUser} />
       case 'profile': return (
-        <ProfilePage 
+        <ProfilePage
           telegramUser={telegramUser}
           showBackButton={showBackButton}
           setShowBackButton={setShowBackButton}
@@ -94,8 +92,8 @@ function AppContent() {
       <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
           {showBackButton && onBackClick ? (
-            <button 
-              onClick={onBackClick} 
+            <button
+              onClick={onBackClick}
               className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
               ← {language === 'ru' ? 'Назад' : 'Orqaga'}

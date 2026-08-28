@@ -24,8 +24,8 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
           {language === 'ru' ? 'Корзина пуста' : 'Savat bo\'sh'}
         </h2>
         <p className="text-[#8A8275] text-center px-4">
-          {language === 'ru' 
-            ? 'Добавьте товары из каталога, чтобы оформить заказ' 
+          {language === 'ru'
+            ? 'Добавьте товары из каталога, чтобы оформить заказ'
             : 'Buyurtma rasmiylashtirish uchun kataloqdan mahsulotlar qo\'shing'}
         </p>
       </div>
@@ -35,7 +35,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   return (
     <div className="p-4 pb-32">
       <Toaster position="top-center" richColors />
-      
       <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
         {language === 'ru' ? 'Корзина' : 'Savat'}
       </h1>
@@ -47,13 +46,13 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               src={item.image}
               alt={item.name}
               className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate(`/product/${item.productId}`, { 
+              onClick={() => navigate(`/product/${item.productId}`, {
                 state: { fromCart: true }
               })}
             />
-            <div 
+            <div
               className="flex-1 cursor-pointer"
-              onClick={() => navigate(`/product/${item.productId}`, { 
+              onClick={() => navigate(`/product/${item.productId}`, {
                 state: { fromCart: true }
               })}
             >
@@ -146,7 +145,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
 
-  // ✅ ЕСЛИ В КОРЗИНЕ ЕСТЬ СПЕЦЗАКАЗ — ТОЛЬКО ПОЛНАЯ ПРЕДОПЛАТА
   useEffect(() => {
     if (isSpecialOrder) {
       setPaymentMethod('online_card')
@@ -186,14 +184,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
-    
     const totalInSums = Math.round(getTotalPrice() * exchangeRate)
-    
     const itemsWithPrices = cart.map(item => ({
       ...item,
       priceUzs: Math.round(item.priceUsd * exchangeRate),
     }))
-    
     const orderData = {
       user_id: userId,
       user_chat_id: userId,
@@ -209,34 +204,26 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
     }
-    
     let result: any
-    
     if (isSpecialOrder && specialItem.specialRequestId) {
       result = await createOrderFromSpecial(specialItem.specialRequestId, orderData)
     } else {
       result = await createOrder(orderData)
     }
-    
     const data = Array.isArray(result.data) ? result.data[0] : result.data
-    
     if (result.error || !data) {
       throw new Error(result.error?.message || 'Ошибка создания заказа')
     }
-    
     return data
   }
 
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !currentOrderId) return
-
     setUploadingScreenshot(true)
-
     try {
       const screenshotUrl = await uploadPaymentScreenshot(currentOrderId, file)
       const saved = await savePaymentScreenshot(currentOrderId, screenshotUrl)
-
       if (saved) {
         setScreenshotUploaded(true)
         toast.success(language === 'ru' ? 'Скриншот загружен! Ожидайте подтверждения.' : 'Screenshot yuklandi! Tasdiqlashni kuting.')
@@ -254,13 +241,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
     }
-
     const phoneRegex = /^\+998\d{9}$/
     if (!phoneRegex.test(phone)) {
       toast.error(language === 'ru' ? 'Телефон должен быть в формате +998XXXXXXXX' : 'Telefon +998XXXXXXXX formatida bo\'lishi kerak')
       return
     }
-
     if (deliveryMethod === 'delivery') {
       const addressError = validateAddress(address)
       if (addressError) {
@@ -268,22 +253,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         return
       }
     }
-
     setSubmitting(true)
-
     try {
       const orderData = await createOrderInDb()
       await notifyNewOrder(orderData)
-
       const newOrderId = orderData.id
-
       if (paymentMethod === 'online_card') {
         setCurrentOrderId(newOrderId.toString())
         setShowPaymentInfo(true)
         setSubmitting(false)
         return
       }
-
       setOrderId(newOrderId)
       setOrderSuccess(true)
       clearCart()
@@ -300,7 +280,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
       <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
         <div className="bg-[#FBF9F4] p-4 sticky top-0 z-10 border-b border-[#E8E2D5]">
           <div className="flex items-center justify-between">
-            <button 
+            <button
               onClick={() => {
                 if (screenshotUploaded) {
                   setShowPaymentInfo(false)
@@ -309,7 +289,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 } else {
                   setShowPaymentInfo(false)
                 }
-              }} 
+              }}
               className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
               ← {language === 'ru' ? 'Назад' : 'Orqaga'}
@@ -318,22 +298,18 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             <div className="w-16"></div>
           </div>
         </div>
-        
         <div className="flex-1 overflow-y-auto p-4 pb-40">
           <div className="text-6xl text-center mb-4">💳</div>
-          
           <h2 className="text-2xl font-bold mb-4 text-center text-[#1B2A4A]">
             {language === 'ru' ? 'Оплата заказа' : 'Buyurtmani to\'lash'}
           </h2>
-
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-orange-800 font-medium text-center">
-              {language === 'ru' 
-                ? `⏳ Заказ №${currentOrderId} ожидает оплаты` 
+              {language === 'ru'
+                ? `⏳ Заказ №${currentOrderId} ожидает оплаты`
                 : `⏳ ${currentOrderId}-buyurtma to'lovni kutmoqda`}
             </p>
           </div>
-          
           <div className="bg-[#FBF9F4] p-4 rounded-lg mb-4 border border-[#E8E2D5]">
             <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? '📱 Реквизиты для оплаты:' : '📱 To\'lov rekvizitlari:'}
@@ -347,16 +323,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatPrice(getTotalPrice())}
             </p>
           </div>
-
           <div className="mb-4">
             <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
             </h3>
-            
             {!screenshotUploaded ? (
               <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                uploadingScreenshot 
-                  ? 'border-[#1B2A4A] bg-[#F5F1E8]' 
+                uploadingScreenshot
+                  ? 'border-[#1B2A4A] bg-[#F5F1E8]'
                   : 'border-[#E8E2D5] hover:border-[#1B2A4A]'
               }`}>
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -366,7 +340,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                     <Upload className="w-8 h-8 mb-2 text-[#8A8275]" />
                   )}
                   <p className="text-sm text-[#8A8275]">
-                    {uploadingScreenshot 
+                    {uploadingScreenshot
                       ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
                       : (language === 'ru' ? 'Нажмите для загрузки скриншота' : 'Screenshotni yuklash uchun bosing')
                     }
@@ -390,14 +364,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   {language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!'}
                 </p>
                 <p className="text-sm text-green-700">
-                  {language === 'ru' 
-                    ? 'Мы проверим оплату и подтвердим заказ в течение 15 минут' 
+                  {language === 'ru'
+                    ? 'Мы проверим оплату и подтвердим заказ в течение 15 минут'
                     : 'To\'lovni tekshiramiz va 15 daqiqa ichida tasdiqlaymiz'}
                 </p>
               </div>
             )}
           </div>
-
           <div className="space-y-3">
             <a
               href={MANAGER_TELEGRAM_LINK}
@@ -407,7 +380,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             >
               📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
             </a>
-            
             {screenshotUploaded && (
               <button
                 onClick={() => {
@@ -421,11 +393,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </button>
             )}
           </div>
-          
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
             <p className="text-sm text-yellow-800 font-medium text-center leading-relaxed">
-              {language === 'ru' 
-                ? 'Заказ будет обработан только после подтверждения оплаты менеджером' 
+              {language === 'ru'
+                ? 'Заказ будет обработан только после подтверждения оплаты менеджером'
                 : 'Buyurtma faqat menejer tomonidan to\'lov tasdiqlangandan so\'ng ko\'rib chiqiladi'}
             </p>
           </div>
@@ -447,12 +418,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         </p>
         {isSpecialOrder && (
           <p className="text-sm text-purple-700 mb-2 font-medium">
-             {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+            {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
           </p>
         )}
         <p className="text-sm text-[#8A8275] mb-6 text-center">
-          {language === 'ru' 
-            ? 'Спасибо за ваш заказ!' 
+          {language === 'ru'
+            ? 'Спасибо за ваш заказ!'
             : 'Buyurtmangiz uchun rahmat!'}
         </p>
         <button
@@ -474,25 +445,22 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
         <div className="w-16"></div>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
         </h2>
-
         {isSpecialOrder && (
           <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
             <p className="text-sm text-purple-800 font-medium">
               🌍 {language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}
             </p>
             <p className="text-xs text-purple-600 mt-1">
-              {language === 'ru' 
-                ? 'После оплаты менеджер приступит к заказу товара' 
+              {language === 'ru'
+                ? 'После оплаты менеджер приступит к заказу товара'
                 : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}
             </p>
           </div>
         )}
-
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
@@ -506,7 +474,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
             />
           </div>
-
           <div>
             <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
@@ -519,7 +486,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
             />
           </div>
-
           <div>
             <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
               {language === 'ru' ? 'Способ получения' : 'Olish usuli'}
@@ -543,15 +509,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </button>
             </div>
           </div>
-
           {deliveryMethod === 'pickup' && (
             <div className="bg-[#F5F1E8] p-3 rounded-lg text-sm text-[#1B2A4A] border border-[#E8E2D5]">
-              📍 {language === 'ru' 
-                ? 'ТЦ Mercato, 2 этаж, магазин 34' 
+              📍 {language === 'ru'
+                ? 'ТЦ Mercato, 2 этаж, магазин 34'
                 : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
             </div>
           )}
-
           {deliveryMethod === 'delivery' && (
             <div>
               <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
@@ -565,18 +529,16 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
               />
               <p className="text-xs text-[#8A8275] mt-1">
-                {language === 'ru' 
-                  ? 'Пример: ул. Навои, дом 15, квартира 23' 
+                {language === 'ru'
+                  ? 'Пример: ул. Навои, дом 15, квартира 23'
                   : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}
               </p>
             </div>
           )}
-
           <div>
             <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
               {language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}
             </label>
-            
             <label className="flex items-center gap-3 p-3 border border-[#E8E2D5] rounded-lg cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#FBF9F4]">
               <input
                 type="radio"
@@ -590,8 +552,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 {language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}
               </span>
             </label>
-
-            {/* ✅ СКРЫВАЕМ "ОПЛАТА ПРИ ПОЛУЧЕНИИ", ЕСЛИ В КОРЗИНЕ ЕСТЬ СПЕЦЗАКАЗ */}
             {deliveryMethod === 'pickup' && !isSpecialOrder && (
               <label className="flex items-center gap-3 p-3 border border-[#E8E2D5] rounded-lg cursor-pointer hover:border-[#1B2A4A] transition-colors mt-2 bg-[#FBF9F4]">
                 <input
@@ -606,25 +566,21 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 </span>
               </label>
             )}
-
             {deliveryMethod === 'delivery' && (
               <p className="text-xs text-[#9B3B3B] mt-2">
-                {language === 'ru' 
-                  ? '* При доставке доступна только предоплата переводом' 
+                {language === 'ru'
+                  ? '* При доставке доступна только предоплата переводом'
                   : '* Yetkazib berishda faqat oldindan pul o\'tkazish'}
               </p>
             )}
-
-            {/* ✅ ПОЯСНЕНИЕ, ЕСЛИ В КОРЗИНЕ СПЕЦЗАКАЗ */}
             {isSpecialOrder && (
               <p className="text-xs text-purple-700 mt-2">
-                {language === 'ru' 
-                  ? '* В заказе есть спецзаказ — доступна только полная предоплата переводом' 
+                {language === 'ru'
+                  ? '* В заказе есть спецзаказ — доступна только полная предоплата переводом'
                   : '* Buyurtmada maxsus buyurtma bor — faqat to\'liq oldindan to\'lov mavjud'}
               </p>
             )}
           </div>
-
           <div className="bg-[#FBF9F4] p-4 rounded-lg border border-[#E8E2D5]">
             <div className="flex justify-between items-center">
               <span className="font-medium text-[#1B2A4A]">
@@ -640,17 +596,16 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </p>
             )}
           </div>
-
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 ${
-              submitting 
-                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed' 
+              submitting
+                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
                 : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
             }`}
           >
-            {submitting 
+            {submitting
               ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
               : paymentMethod === 'online_card'
                 ? (language === 'ru' ? 'Перейти к оплате 💳' : 'To\'lovga o\'tish 💳')

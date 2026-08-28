@@ -51,7 +51,6 @@ export default function HomePage() {
       .slice(0, limit)
   }
 
-  // ✅ СКИДКИ: только если режим ВКЛ и у товара есть sale_price
   const getDiscountProducts = (limit: number = 6) => {
     if (!saleModeEnabled) return []
     return products.filter(p => p.sale_price != null && Number(p.sale_price) > 0).slice(0, limit)

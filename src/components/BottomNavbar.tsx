@@ -12,30 +12,30 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
   const { language, cart } = useStore()
 
   const tabs = [
-    { 
-      id: 'home' as TabType, 
-      label: language === 'ru' ? 'Главная' : 'Bosh sahifa', 
-      icon: Home 
+    {
+      id: 'home' as TabType,
+      label: language === 'ru' ? 'Главная' : 'Bosh sahifa',
+      icon: Home
     },
-    { 
-      id: 'search' as TabType, 
-      label: language === 'ru' ? 'Поиск' : 'Qidiruv', 
-      icon: Search 
+    {
+      id: 'search' as TabType,
+      label: language === 'ru' ? 'Поиск' : 'Qidiruv',
+      icon: Search
     },
-    { 
-      id: 'cart' as TabType, 
-      label: language === 'ru' ? 'Корзина' : 'Savat', 
-      icon: ShoppingCart 
+    {
+      id: 'cart' as TabType,
+      label: language === 'ru' ? 'Корзина' : 'Savat',
+      icon: ShoppingCart
     },
-    { 
-      id: 'china' as TabType, 
-      label: language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma', 
-      icon: Globe 
+    {
+      id: 'china' as TabType,
+      label: language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma',
+      icon: Globe
     },
-    { 
-      id: 'profile' as TabType, 
-      label: language === 'ru' ? 'Профиль' : 'Profil', 
-      icon: User 
+    {
+      id: 'profile' as TabType,
+      label: language === 'ru' ? 'Профиль' : 'Profil',
+      icon: User
     },
   ]
 

@@ -37,7 +37,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     })
   }
 
-  // ✅ СТАТУСЫ ЗАКАЗОВ (RU + UZ)
   const getStatusText = (status: string, deliveryMethod: string) => {
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
@@ -62,7 +61,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       }
       return labels[status] || status
     }
-
     if (deliveryMethod === 'pickup') {
       const labels: Record<string, string> = {
         'Активный': 'Принят 📄',
@@ -102,13 +100,10 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setUploadingScreenshot(true)
-
     try {
       const screenshotUrl = await uploadPaymentScreenshot(order.id.toString(), file)
       const saved = await savePaymentScreenshot(order.id.toString(), screenshotUrl)
-
       if (saved) {
         toast.success(language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!')
         if (onScreenshotUploaded) onScreenshotUploaded()
@@ -132,18 +127,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           <div className="w-16"></div>
         </div>
       </div>
-      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
         </h2>
-        
         {order.special_order_id && (
           <div className="mb-4 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
             🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
           </div>
         )}
-
         <div className="space-y-4">
           <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
             <p className="text-sm text-[#8A8275]">
@@ -159,27 +151,25 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </p>
             )}
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
             <p className="text-sm text-[#8A8275]">📞 {order.client_phone}</p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Способ получения' : 'Olish usuli'}
             </h3>
             <p className="text-sm text-[#8A8275]">
-              {order.delivery_method === 'pickup' 
+              {order.delivery_method === 'pickup'
                 ? (language === 'ru' ? 'Самовывоз' : "O'z-o'zini olish")
                 : (language === 'ru' ? 'Доставка' : 'Yetkazib berish')}
             </p>
             {order.delivery_method === 'pickup' && (
               <p className="text-sm text-[#8A8275] mt-1">
-                📍 {language === 'ru' 
-                  ? 'ТЦ Mercato, 2 этаж, магазин 34' 
+                📍 {language === 'ru'
+                  ? 'ТЦ Mercato, 2 этаж, магазин 34'
                   : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
               </p>
             )}
@@ -189,7 +179,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </p>
             )}
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Способ оплаты' : "To'lov usuli"}
@@ -200,7 +189,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 : (language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash')}
             </p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
@@ -227,7 +215,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               ))}
             </div>
           </div>
-
           <div className="border-t border-[#E8E2D5] pt-3">
             <div className="flex justify-between items-center">
               <span className="font-bold text-[#1B2A4A]">
@@ -238,7 +225,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </span>
             </div>
           </div>
-
           <div className="mb-4">
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
@@ -247,24 +233,21 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               {getStatusText(order.status, order.delivery_method)}
             </span>
           </div>
-
           {order.payment_method === 'online_card' && (
             <div className="space-y-3 border-t border-[#E8E2D5] pt-4">
               <h3 className="font-bold text-lg text-[#1B2A4A]">
                 {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
               </h3>
-
               {order.status === 'Отменён' ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm text-red-800 font-medium mb-2">
                     🚫 {language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi'}
                   </p>
                   <p className="text-xs text-red-700">
-                    {language === 'ru' 
-                      ? 'Оплата не требуется. Если были списаны средства, свяжитесь с менеджером для возврата.' 
+                    {language === 'ru'
+                      ? 'Оплата не требуется. Если были списаны средства, свяжитесь с менеджером для возврата.'
                       : "To'lov talab qilinmaydi. Agar mablag'lar yechib olingan bo'lsa, qaytarish uchun menejer bilan bog'laning."}
                   </p>
-                  
                   {order.payment_screenshot_url && (
                     <div className="mt-3 pt-3 border-t border-red-200">
                       <p className="text-xs text-red-700 mb-2">
@@ -294,15 +277,14 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                     </p>
                   </div>
-
                   {!order.payment_screenshot_url ? (
                     <div>
                       <p className="text-sm font-medium mb-2 text-[#1B2A4A]">
                         {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : "📸 To'lov screenshotini yuklang:"}
                       </p>
                       <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                        uploadingScreenshot 
-                          ? 'border-[#1B2A4A] bg-[#F5F1E8]' 
+                        uploadingScreenshot
+                          ? 'border-[#1B2A4A] bg-[#F5F1E8]'
                           : 'border-[#E8E2D5] hover:border-[#1B2A4A]'
                       }`}>
                         <div className="flex flex-col items-center justify-center">
@@ -312,7 +294,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                             <Upload className="w-6 h-6 mb-2 text-[#8A8275]" />
                           )}
                           <p className="text-xs text-[#8A8275]">
-                            {uploadingScreenshot 
+                            {uploadingScreenshot
                               ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
                               : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
                             }
@@ -332,18 +314,16 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       <p className="text-sm text-green-800 font-medium mb-2">
                         ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
                       </p>
-                      
                       <button
                         onClick={() => setShowScreenshotModal(true)}
                         className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
                       >
                         👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                       </button>
-                      
                       <p className="text-xs text-green-700">
                         {order.status === 'Ожидает оплаты'
-                          ? (language === 'ru' 
-                              ? '⏳ Ожидайте подтверждения от менеджера' 
+                          ? (language === 'ru'
+                              ? '⏳ Ожидайте подтверждения от менеджера'
                               : "⏳ Menejer tasdiqlashini kuting")
                           : (language === 'ru'
                               ? '✅ Оплата подтверждена менеджером'
@@ -352,7 +332,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       </p>
                     </div>
                   )}
-
                   {order.status === 'Ожидает оплаты' && (
                     <>
                       <a
@@ -364,7 +343,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                         <MessageCircle size={20} />
                         {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
                       </a>
-                      
                       <button
                         onClick={() => onCancelOrder(order)}
                         className="w-full bg-[#9B3B3B] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
@@ -380,9 +358,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           )}
         </div>
       </div>
-
       {showScreenshotModal && order.payment_screenshot_url && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
           onClick={() => setShowScreenshotModal(false)}
         >
@@ -394,7 +371,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               <X size={24} />
               {language === 'ru' ? 'Закрыть' : 'Yopish'}
             </button>
-            
             <img
               src={order.payment_screenshot_url}
               alt="Screenshot"
@@ -402,7 +378,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               style={{ maxHeight: '80vh' }}
               onClick={(e) => e.stopPropagation()}
             />
-            
             <div className="mt-4 flex justify-center">
               <a
                 href={order.payment_screenshot_url}
@@ -432,14 +407,13 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
     })
   }
 
-  // ✅ СТАТУСЫ СПЕЦЗАКАЗОВ (RU + UZ)
   const getStatusText = (status: string) => {
     if (language === 'uz') {
       const labels: Record<string, string> = {
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅‍♂️",
+        'Отменён клиентом': "Siz bekor qildingiz 🙅♂️",
         'Отклонён': "Rad etildi 🛑",
       }
       return labels[status] || status
@@ -478,12 +452,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           <div className="w-16"></div>
         </div>
       </div>
-      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
         </h2>
-        
         <div className="space-y-4">
           <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
             <p className="text-sm text-[#8A8275]">
@@ -493,7 +465,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               {formatDateTime(request.created_at)}
             </p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
@@ -506,7 +477,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.link}</p>
             )}
           </div>
-
           {request.size_color && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -515,7 +485,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.size_color}</p>
             </div>
           )}
-
           {request.comment && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -524,7 +493,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.comment}</p>
             </div>
           )}
-
           {request.image_url && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -533,7 +501,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <img src={request.image_url} alt="Product" className="w-full rounded-lg" />
             </div>
           )}
-
           {request.manager_price && (
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
               <p className="text-lg font-bold text-purple-900 mb-1">
@@ -541,12 +508,11 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               </p>
               {request.manager_comment && (
                 <p className="text-sm text-purple-700">
-                   {request.manager_comment}
+                  {request.manager_comment}
                 </p>
               )}
             </div>
           )}
-
           <div className="mb-8">
             <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
@@ -555,14 +521,13 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
                 {getStatusText(request.status)}
               </span>
-              
               {request.status === 'Оценён' && request.manager_price && (
                 <button
                   onClick={() => onAccept(request)}
                   className="bg-[#1B2A4A] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#142038] transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
-                  💳 {language === 'ru' 
-                    ? `Оплатить ${priceInSums.toLocaleString()} сум` 
+                  💳 {language === 'ru'
+                    ? `Оплатить ${priceInSums.toLocaleString()} сум`
                     : `To'lash ${priceInSums.toLocaleString()} so'm`}
                 </button>
               )}
@@ -598,7 +563,6 @@ export default function ProfilePage({
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  // ✅ ПРАВИЛЬНОЕ СКЛОНЕНИЕ: 1 товар / 2 товара / 5 товаров (RU), ta mahsulot (UZ)
   const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
     if (lang === 'uz') {
       return 'ta mahsulot'
@@ -622,7 +586,6 @@ export default function ProfilePage({
       setShowBackButton(true)
       setOnBackClick(() => () => setActiveSection('main'))
     }
-
     if (selectedOrder || selectedChinaRequest) {
       setShowBackButton(true)
       setOnBackClick(() => () => {
@@ -650,7 +613,6 @@ export default function ProfilePage({
     })
   }
 
-  // ✅ СТАТУСЫ ЗАКАЗОВ В СПИСКЕ (RU + UZ)
   const getOrderStatusText = (status: string, deliveryMethod: string) => {
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
@@ -675,7 +637,6 @@ export default function ProfilePage({
       }
       return labels[status] || status
     }
-
     if (deliveryMethod === 'pickup') {
       const labels: Record<string, string> = {
         'Активный': 'Принят 📄',
@@ -712,7 +673,6 @@ export default function ProfilePage({
     return colors[status] || 'bg-green-100 text-green-800'
   }
 
-  // ✅ СТАТУСЫ СПЕЦЗАКАЗОВ В СПИСКЕ (RU + UZ)
   const getChinaStatusText = (status: string) => {
     if (language === 'uz') {
       const labels: Record<string, string> = {
@@ -753,7 +713,6 @@ export default function ProfilePage({
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-    
     if (error) {
       console.error('Ошибка при загрузке заказов:', error)
     } else {
@@ -770,7 +729,6 @@ export default function ProfilePage({
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-    
     if (error) {
       console.error('Ошибка при загрузке спецзаказов:', error)
     } else {
@@ -781,16 +739,13 @@ export default function ProfilePage({
 
   const handleCancelOrder = async (order: any) => {
     const confirmed = confirm(
-      language === 'ru' 
-        ? `Вы уверены что хотите отменить заказ №${order.id}?` 
+      language === 'ru'
+        ? `Вы уверены что хотите отменить заказ №${order.id}?`
         : `${order.id}-buyurtmani bekor qilishga ishonchingiz komilmi?`
     )
-    
     if (!confirmed) return
-    
     try {
       const success = await cancelOrder(order.id.toString())
-      
       if (success) {
         toast.success(language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi')
         setSelectedOrder(null)
@@ -815,12 +770,11 @@ export default function ProfilePage({
       isSpecialOrder: true,
       specialRequestId: request.id,
     }
-    
     addToCart(specialItem)
     setSelectedChinaRequest(null)
     toast.success(
-      language === 'ru' 
-        ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.' 
+      language === 'ru'
+        ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.'
         : 'Maxsus buyurtma savatga qo\'shildi! Savatga o\'ting.'
     )
   }
@@ -830,9 +784,9 @@ export default function ProfilePage({
       <div className="p-4 pb-20">
         <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5]">
           {telegramUser?.photoUrl ? (
-            <img 
-              src={telegramUser.photoUrl} 
-              alt="Avatar" 
+            <img
+              src={telegramUser.photoUrl}
+              alt="Avatar"
               className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
             />
           ) : (
@@ -841,7 +795,7 @@ export default function ProfilePage({
             </div>
           )}
           <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
-            {telegramUser 
+            {telegramUser
               ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
               : (language === 'ru' ? 'Гость' : 'Mehmon')}
           </h2>
@@ -871,7 +825,6 @@ export default function ProfilePage({
             <div className="flex items-center gap-2">
               {favorites.length > 0 && (
                 <span className="text-sm text-[#8A8275]">
-                  {/* ✅ ИСПРАВЛЕНО: правильное склонение */}
                   {favorites.length} {getItemsLabel(favorites.length, language)}
                 </span>
               )}
@@ -899,7 +852,6 @@ export default function ProfilePage({
             </div>
             <ChevronRight size={20} className="text-[#8A8275]" />
           </button>
-
           <button
             onClick={() => {
               setActiveSection('china')
@@ -947,7 +899,6 @@ export default function ProfilePage({
               </button>
             </div>
           </div>
-
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <DollarSign size={20} className="text-[#8A8275]" />
@@ -981,8 +932,8 @@ export default function ProfilePage({
             {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
           </h4>
           <p className="text-sm text-[#8A8275] mb-1">
-            {language === 'ru' 
-              ? 'ТЦ Mercato' 
+            {language === 'ru'
+              ? 'ТЦ Mercato'
               : 'Mercato savdo markazi'}
           </p>
           <p className="text-sm text-[#8A8275] mb-1">
@@ -994,8 +945,8 @@ export default function ProfilePage({
             📞 +998 93 378 87 70
           </p>
           <p className="text-sm text-[#8A8275]">
-            🕐 {language === 'ru' 
-              ? 'Ежедневно 10:00 - 20:00' 
+            🕐 {language === 'ru'
+              ? 'Ежедневно 10:00 - 20:00'
               : 'Har kuni 10:00 - 20:00'}
           </p>
         </div>
@@ -1009,7 +960,6 @@ export default function ProfilePage({
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
         </h2>
-
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
@@ -1029,8 +979,8 @@ export default function ProfilePage({
             {orders.map((order) => {
               const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
               return (
-                <div 
-                  key={order.id} 
+                <div
+                  key={order.id}
                   onClick={() => setSelectedOrder(order)}
                   className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
                 >
@@ -1047,26 +997,24 @@ export default function ProfilePage({
                       {getOrderStatusText(order.status, order.delivery_method)}
                     </span>
                   </div>
-
                   {order.special_order_id && (
                     <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
                       🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                     </div>
                   )}
-
                   <div className="flex gap-1 mb-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
-                      <img 
+                      <img
                         key={idx}
-                        src={item.image} 
+                        src={item.image}
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded border border-[#E8E2D5]"
                       />
                     ))}
                     {items.length > 2 && (
                       <div className="relative w-12 h-12 rounded border border-[#E8E2D5] overflow-hidden bg-[#F5F1E8]">
-                        <img 
-                          src={items[2].image} 
+                        <img
+                          src={items[2].image}
                           alt="more"
                           className="w-full h-full object-cover blur-sm opacity-50"
                         />
@@ -1076,7 +1024,6 @@ export default function ProfilePage({
                       </div>
                     )}
                   </div>
-
                   <p className="text-lg font-bold text-[#1B2A4A]">
                     {formatOrderPrice(order)}
                   </p>
@@ -1088,7 +1035,6 @@ export default function ProfilePage({
             })}
           </div>
         )}
-
         {selectedOrder && (
           <OrderDetailModal
             order={selectedOrder}
@@ -1114,7 +1060,6 @@ export default function ProfilePage({
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
         </h2>
-
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
@@ -1133,10 +1078,9 @@ export default function ProfilePage({
           <div className="space-y-3">
             {chinaRequests.map((request) => {
               const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
-              
               return (
-                <div 
-                  key={request.id} 
+                <div
+                  key={request.id}
                   onClick={() => setSelectedChinaRequest(request)}
                   className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
                 >
@@ -1167,7 +1111,6 @@ export default function ProfilePage({
             })}
           </div>
         )}
-
         {selectedChinaRequest && (
           <ChinaRequestDetailModal
             request={selectedChinaRequest}

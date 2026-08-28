@@ -62,18 +62,15 @@ export default function SearchPage() {
 
   const applyFiltersAndSort = () => {
     let filtered = [...products]
-
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter((p: any) =>
         (language === 'ru' ? p.name_ru : p.name_uz).toLowerCase().includes(query)
       )
     }
-
     if (selectedCategory) {
       filtered = filtered.filter((p: any) => p.category === selectedCategory)
     }
-
     if (selectedBrand) {
       const brand = brands.find((b: Brand) => b.id === selectedBrand)
       if (brand) {
@@ -82,13 +79,10 @@ export default function SearchPage() {
         )
       }
     }
-
-    // ✅ Фильтр по цене в сумах (с учётом скидочной цены)
     filtered = filtered.filter((p: any) => {
       const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= priceRange[0] && priceInSums <= priceRange[1]
     })
-
     switch (sortBy) {
       case 'price_asc':
         filtered.sort((a: any, b: any) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
@@ -103,7 +97,6 @@ export default function SearchPage() {
         filtered.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-
     setFilteredProducts(filtered)
   }
 
@@ -139,8 +132,8 @@ export default function SearchPage() {
     return (
       <div className="p-4 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-500">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+          <p className="text-[#8A8275]">
             {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
           </p>
         </div>
@@ -150,31 +143,29 @@ export default function SearchPage() {
 
   return (
     <div className="p-4 pb-20">
-      {/* Поиск */}
       <div className="relative mb-4">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={language === 'ru' ? 'Поиск товаров...' : 'Mahsulotlarni qidirish...'}
-          className="w-full p-3 pl-10 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:border-black"
+          className="w-full p-3 pl-10 pr-10 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
         />
-        <Search size={20} className="absolute left-3 top-3.5 text-gray-400" />
+        <Search size={20} className="absolute left-3 top-3.5 text-[#8A8275]" />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-3.5 text-gray-400 hover:text-black"
+            className="absolute right-3 top-3.5 text-[#8A8275] hover:text-[#1B2A4A]"
           >
             <X size={20} />
           </button>
         )}
       </div>
 
-      {/* Кнопка фильтров */}
       <button
         onClick={() => setShowFilters(!showFilters)}
         className={`w-full p-3 rounded-xl border flex items-center justify-between mb-4 ${
-          hasActiveFilters ? 'bg-black text-white border-black' : 'bg-white border-gray-300'
+          hasActiveFilters ? 'bg-[#1B2A4A] text-white border-[#1B2A4A]' : 'bg-[#FBF9F4] border-[#E8E2D5]'
         }`}
       >
         <div className="flex items-center gap-2">
@@ -183,7 +174,7 @@ export default function SearchPage() {
             {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
           </span>
           {activeFiltersCount > 0 && (
-            <span className="bg-white text-black text-xs px-2 py-1 rounded-full">
+            <span className="bg-white text-[#1B2A4A] text-xs px-2 py-1 rounded-full">
               {activeFiltersCount}
             </span>
           )}
@@ -201,18 +192,17 @@ export default function SearchPage() {
         )}
       </button>
 
-      {/* Панель фильтров */}
       {showFilters && (
-        <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+        <div className="bg-[#FBF9F4] rounded-xl p-4 mb-4 border border-[#E8E2D5]">
           <div className="mb-4">
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Категория' : 'Kategoriya'}
             </h3>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedCategory('')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  selectedCategory === '' ? 'bg-black text-white' : 'bg-gray-100'
+                  selectedCategory === '' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Все' : 'Barchasi'}
@@ -223,8 +213,8 @@ export default function SearchPage() {
                   onClick={() => setSelectedCategory(selectedCategory === cat.id ? '' : cat.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedCategory === cat.id
-                      ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-[#1B2A4A] text-white'
+                      : 'bg-[#E8E2D5] text-[#1B2A4A] hover:bg-[#E8E2D5]/70'
                   }`}
                 >
                   {language === 'ru' ? cat.name_ru : cat.name_uz}
@@ -234,14 +224,14 @@ export default function SearchPage() {
           </div>
 
           <div className="mb-4">
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Бренд' : 'Brend'}
             </h3>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedBrand('')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  selectedBrand === '' ? 'bg-black text-white' : 'bg-gray-100'
+                  selectedBrand === '' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Все' : 'Barchasi'}
@@ -252,8 +242,8 @@ export default function SearchPage() {
                   onClick={() => setSelectedBrand(selectedBrand === brand.id ? '' : brand.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedBrand === brand.id
-                      ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-[#1B2A4A] text-white'
+                      : 'bg-[#E8E2D5] text-[#1B2A4A] hover:bg-[#E8E2D5]/70'
                   }`}
                 >
                   {brand.name}
@@ -263,7 +253,7 @@ export default function SearchPage() {
           </div>
 
           <div className="mb-4">
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
             </h3>
             <div className="flex gap-2">
@@ -272,23 +262,23 @@ export default function SearchPage() {
                 value={priceRange[0] === 0 ? '' : priceRange[0]}
                 onChange={(e) => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
                 placeholder={language === 'ru' ? 'От' : 'Dan'}
-                className="w-full p-2 border border-gray-300 rounded-lg"
+                className="w-full p-2 border border-[#E8E2D5] rounded-lg bg-white"
               />
               <input
                 type="number"
                 value={priceRange[1] === 100000000 ? '' : priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value) || 100000000])}
                 placeholder={language === 'ru' ? 'До' : 'Gacha'}
-                className="w-full p-2 border border-gray-300 rounded-lg"
+                className="w-full p-2 border border-[#E8E2D5] rounded-lg bg-white"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[#8A8275] mt-1">
               {language === 'ru' ? 'Введите цену в сумах' : 'Narxni so\'mda kiriting'}
             </p>
           </div>
 
           <div>
-            <h3 className="font-bold mb-2 flex items-center gap-2">
+            <h3 className="font-bold mb-2 flex items-center gap-2 text-[#1B2A4A]">
               <ArrowUpDown size={16} />
               {language === 'ru' ? 'Сортировка' : 'Saralash'}
             </h3>
@@ -296,7 +286,7 @@ export default function SearchPage() {
               <button
                 onClick={() => setSortBy('newest')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'newest' ? 'bg-black text-white' : 'bg-gray-100'
+                  sortBy === 'newest' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
@@ -304,7 +294,7 @@ export default function SearchPage() {
               <button
                 onClick={() => setSortBy('oldest')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'oldest' ? 'bg-black text-white' : 'bg-gray-100'
+                  sortBy === 'oldest' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
@@ -312,7 +302,7 @@ export default function SearchPage() {
               <button
                 onClick={() => setSortBy('price_asc')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_asc' ? 'bg-black text-white' : 'bg-gray-100'
+                  sortBy === 'price_asc' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
@@ -320,7 +310,7 @@ export default function SearchPage() {
               <button
                 onClick={() => setSortBy('price_desc')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                  sortBy === 'price_desc' ? 'bg-black text-white' : 'bg-gray-100'
+                  sortBy === 'price_desc' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
                 }`}
               >
                 {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
@@ -330,17 +320,16 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Результаты */}
       <div className="mb-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[#8A8275]">
           {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
         </p>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="text-center py-12">
-          <Search size={64} className="text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">
+          <Search size={64} className="text-[#E8E2D5] mx-auto mb-4" />
+          <p className="text-[#8A8275]">
             {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
           </p>
         </div>
@@ -351,15 +340,15 @@ export default function SearchPage() {
             const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
             return (
               <Link key={product.id} to={`/product/${product.id}`}>
-                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                  <div className="aspect-square bg-gray-100 relative">
+                <div className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+                  <div className="aspect-square bg-[#F5F1E8] relative">
                     <img
                       src={product.images?.[0] || 'https://via.placeholder.com/500'}
                       alt={language === 'ru' ? product.name_ru : product.name_uz}
                       className="w-full h-full object-cover"
                     />
                     {onSale && (
-                      <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      <span className="absolute top-2 left-2 bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full">
                         -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
                       </span>
                     )}
@@ -381,20 +370,20 @@ export default function SearchPage() {
                     >
                       <Heart
                         size={20}
-                        className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                        className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275]'}
                       />
                     </button>
                   </div>
                   <div className="p-3">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium truncate text-[#1B2A4A]">
                       {language === 'ru' ? product.name_ru : product.name_uz}
                     </p>
                     {onSale && (
-                      <p className="text-gray-400 text-xs line-through mt-1">
+                      <p className="text-[#8A8275] text-xs line-through mt-1">
                         {formatPrice(product.price_usd)}
                       </p>
                     )}
-                    <p className={`font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+                    <p className={`font-bold mt-1 ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
                       {formatPrice(effectivePrice)}
                     </p>
                   </div>

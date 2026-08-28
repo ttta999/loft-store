@@ -57,7 +57,6 @@ export default function ProductPage() {
     navigate('/')
   }
 
-  // ✅ СКИДКА
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
@@ -81,7 +80,6 @@ export default function ProductPage() {
       )
       return
     }
-
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
     const stockCheck = await checkProductStock(product.id, sizeToAdd, 1)
     if (!stockCheck.available) {
@@ -93,11 +91,10 @@ export default function ProductPage() {
       })
       return
     }
-
     addToCart({
       productId: product.id,
       name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-      priceUsd: effectivePrice, // ✅ по скидочной цене
+      priceUsd: effectivePrice,
       size: sizeToAdd,
       quantity: 1,
       image: product.images?.[0] || '',
@@ -373,7 +370,6 @@ export default function ProductPage() {
             {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
 
-          {/* ✅ ЦЕНА: старая перечёркнута + новая */}
           {onSale && (
             <p className="text-lg text-[#8A8275] line-through">
               {formatPrice(product.price_usd || 0)}
