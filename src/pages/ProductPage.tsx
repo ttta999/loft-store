@@ -217,24 +217,24 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
           <div className="flex items-center justify-between">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-black"
+              className="flex items-center gap-2 text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
               <ArrowLeft size={20} />
               <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
             </button>
-            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
             <div className="w-16"></div>
           </div>
         </div>
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-500">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+            <p className="text-[#8A8275]">
               {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
             </p>
           </div>
@@ -245,22 +245,22 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
           <div className="flex items-center justify-between">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-black"
+              className="flex items-center gap-2 text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
               <ArrowLeft size={20} />
               <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
             </button>
-            <h1 className="text-xl font-bold">LOFT Store</h1>
+            <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
             <div className="w-16"></div>
           </div>
         </div>
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <p className="text-gray-500">
+          <p className="text-[#8A8275]">
             {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
           </p>
         </div>
@@ -269,24 +269,24 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] pb-20">
       <Toaster position="top-center" richColors />
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-black"
+            className="flex items-center gap-2 text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
           >
             <ArrowLeft size={20} />
             <span>{language === 'ru' ? 'Назад' : 'Orqaga'}</span>
           </button>
-          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
           <div className="w-16"></div>
         </div>
       </div>
 
       <div className="p-4">
-        <div className="bg-white rounded-2xl overflow-hidden mb-4">
+        <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5]">
           <div className="relative">
             <img
               src={images[currentImageIndex]}
@@ -295,7 +295,7 @@ export default function ProductPage() {
               onClick={() => openFullScreen(currentImageIndex)}
             />
             {onSale && (
-              <span className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+              <span className="absolute top-4 left-4 bg-[#9B3B3B] text-white text-sm font-bold px-3 py-1.5 rounded-full">
                 -{discountPercent}%
               </span>
             )}
@@ -305,13 +305,13 @@ export default function ProductPage() {
                   onClick={goToPreviousImage}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={24} className="text-[#1B2A4A]" />
                 </button>
                 <button
                   onClick={goToNextImage}
                   className="absolute right-14 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={24} className="text-[#1B2A4A]" />
                 </button>
               </>
             )}
@@ -322,14 +322,14 @@ export default function ProductPage() {
               >
                 <Heart
                   size={24}
-                  className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                  className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275]'}
                 />
               </button>
               <button
                 onClick={handleShare}
                 className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
               >
-                <Share2 size={24} className="text-gray-600" />
+                <Share2 size={24} className="text-[#8A8275]" />
               </button>
             </div>
             {images.length > 1 && (
@@ -354,7 +354,7 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === currentImageIndex ? 'border-black' : 'border-gray-200'
+                    index === currentImageIndex ? 'border-[#1B2A4A]' : 'border-[#E8E2D5]'
                   }`}
                 >
                   <img
@@ -368,32 +368,32 @@ export default function ProductPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
-          <h1 className="text-xl font-bold mb-2">
+        <div className="bg-[#FBF9F4] rounded-2xl p-4 mb-4 shadow-sm border border-[#E8E2D5]">
+          <h1 className="text-xl font-bold mb-2 text-[#1B2A4A]">
             {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
 
-          {/* ✅ ЦЕНА: старая перечёркнута + новая красным */}
+          {/* ✅ ЦЕНА: старая перечёркнута + новая */}
           {onSale && (
-            <p className="text-lg text-gray-400 line-through">
+            <p className="text-lg text-[#8A8275] line-through">
               {formatPrice(product.price_usd || 0)}
             </p>
           )}
-          <p className={`text-2xl font-bold mb-2 ${onSale ? 'text-red-500' : 'text-black'}`}>
+          <p className={`text-2xl font-bold mb-2 ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
             {formatPrice(effectivePrice)}
           </p>
           {onSale && (
-            <span className="inline-block bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full mb-2">
+            <span className="inline-block bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full mb-2">
               💰 {language === 'ru' ? `Скидка -${discountPercent}%` : `Chegirma -${discountPercent}%`}
             </span>
           )}
 
           {description && description.trim() !== '' && (
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="font-bold mb-2">
+            <div className="mb-4 pb-4 border-b border-[#E8E2D5]">
+              <h3 className="font-bold mb-2 text-[#1B2A4A]">
                 {language === 'ru' ? 'Описание' : 'Tavsif'}
               </h3>
-              <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">
+              <p className="text-[#8A8275] whitespace-pre-line text-sm leading-relaxed">
                 {description}
               </p>
             </div>
@@ -411,8 +411,8 @@ export default function ProductPage() {
             disabled={sizes.length === 0}
             className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
               sizes.length === 0
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-800'
+                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
+                : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
             }`}
           >
             <ShoppingCart size={20} />
@@ -422,7 +422,7 @@ export default function ProductPage() {
             }
           </button>
           {sizes.length === 0 && (
-            <p className="text-center text-sm text-gray-500 mt-2">
+            <p className="text-center text-sm text-[#8A8275] mt-2">
               {language === 'ru'
                 ? 'Этот товар временно отсутствует'
                 : 'Bu mahsulot vaqtincha mavjud emas'}

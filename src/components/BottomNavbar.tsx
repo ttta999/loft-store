@@ -42,7 +42,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-6 pt-2 px-2 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#FBF9F4] border-t border-[#E8E2D5] pb-6 pt-2 px-2 z-50">
       <div className="flex justify-around items-center">
         {tabs.map((tab) => {
           const Icon = tab.icon
@@ -55,18 +55,18 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
             >
               <Icon
                 size={24}
-                className={isActive ? 'text-black' : 'text-gray-400'}
+                className={isActive ? 'text-[#1B2A4A]' : 'text-[#8A8275]'}
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span
                 className={`text-xs ${
-                  isActive ? 'text-black font-semibold' : 'text-gray-400'
+                  isActive ? 'text-[#1B2A4A] font-semibold' : 'text-[#8A8275]'
                 }`}
               >
                 {tab.label}
               </span>
               {tab.id === 'cart' && cartItemsCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#1B2A4A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {cartItemsCount}
                 </span>
               )}

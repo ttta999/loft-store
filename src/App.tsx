@@ -90,20 +90,20 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-40">
+    <div className="min-h-screen bg-[#F5F1E8] pb-20">
+      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
           {showBackButton && onBackClick ? (
             <button 
               onClick={onBackClick} 
-              className="text-gray-600 hover:text-black"
+              className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
               ← {language === 'ru' ? 'Назад' : 'Orqaga'}
             </button>
           ) : (
             <div className="w-16"></div>
           )}
-          <h1 className="text-xl font-bold text-center flex-1">LOFT Store</h1>
+          <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
           <div className="w-16"></div>
         </div>
       </div>

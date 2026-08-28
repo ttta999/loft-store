@@ -122,19 +122,19 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
+    <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
+      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-gray-600 hover:text-black">
+          <button onClick={onClose} className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
-          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
           <div className="w-16"></div>
         </div>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
         </h2>
         
@@ -145,15 +145,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         )}
 
         <div className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-600">
+          <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
+            <p className="text-sm text-[#8A8275]">
               {language === 'ru' ? 'Заказ №' : 'Buyurtma №'}{order.id}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[#8A8275]">
               {formatDateTime(order.created_at)}
             </p>
             {order.exchange_rate_at_order && (
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-[#8A8275] mt-1">
                 {language === 'ru' ? 'Курс на момент заказа: ' : 'Buyurtma vaqtidagi kurs: '}
                 1 USD = {Number(order.exchange_rate_at_order).toLocaleString()} сум
               </p>
@@ -161,40 +161,40 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
 
           <div>
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
-            <p className="text-sm">📞 {order.client_phone}</p>
+            <p className="text-sm text-[#8A8275]">📞 {order.client_phone}</p>
           </div>
 
           <div>
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Способ получения' : 'Olish usuli'}
             </h3>
-            <p className="text-sm">
+            <p className="text-sm text-[#8A8275]">
               {order.delivery_method === 'pickup' 
                 ? (language === 'ru' ? 'Самовывоз' : "O'z-o'zini olish")
                 : (language === 'ru' ? 'Доставка' : 'Yetkazib berish')}
             </p>
             {order.delivery_method === 'pickup' && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-[#8A8275] mt-1">
                 📍 {language === 'ru' 
                   ? 'ТЦ Mercato, 2 этаж, магазин 34' 
                   : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
               </p>
             )}
             {order.delivery_address && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-[#8A8275] mt-1">
                 {language === 'ru' ? 'Адрес: ' : 'Manzil: '}{order.delivery_address}
               </p>
             )}
           </div>
 
           <div>
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Способ оплаты' : "To'lov usuli"}
             </h3>
-            <p className="text-sm">
+            <p className="text-sm text-[#8A8275]">
               {order.payment_method === 'online_card'
                 ? (language === 'ru' ? 'Оплата переводом' : "Pul o'tkazish orqali to'lash")
                 : (language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash')}
@@ -202,24 +202,24 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
 
           <div>
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
             </h3>
             <div className="space-y-2">
               {items.map((item: any, index: number) => (
-                <div key={index} className="bg-gray-50 p-3 rounded-lg flex gap-3">
+                <div key={index} className="bg-[#FBF9F4] p-3 rounded-lg flex gap-3 border border-[#E8E2D5]">
                   {item.image && (
                     <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded" />
                   )}
                   <div className="flex-1">
-                    <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="font-medium text-sm text-[#1B2A4A]">{item.name}</p>
+                    <p className="text-sm text-[#8A8275]">
                       {language === 'ru' ? 'Размер: ' : "O'lcham: "}{item.size}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-[#8A8275]">
                       {language === 'ru' ? 'Количество: ' : 'Miqdori: '}{item.quantity}
                     </p>
-                    <p className="font-bold text-sm">
+                    <p className="font-bold text-sm text-[#1B2A4A]">
                       {formatItemPrice(item)}
                     </p>
                   </div>
@@ -228,19 +228,19 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             </div>
           </div>
 
-          <div className="border-t pt-3">
+          <div className="border-t border-[#E8E2D5] pt-3">
             <div className="flex justify-between items-center">
-              <span className="font-bold">
+              <span className="font-bold text-[#1B2A4A]">
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
-              <span className="text-xl font-bold">
+              <span className="text-xl font-bold text-[#1B2A4A]">
                 {formatOrderPrice(order)}
               </span>
             </div>
           </div>
 
           <div className="mb-4">
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
             <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
@@ -249,8 +249,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
 
           {order.payment_method === 'online_card' && (
-            <div className="space-y-3 border-t pt-4">
-              <h3 className="font-bold text-lg">
+            <div className="space-y-3 border-t border-[#E8E2D5] pt-4">
+              <h3 className="font-bold text-lg text-[#1B2A4A]">
                 {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
               </h3>
 
@@ -281,37 +281,37 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 </div>
               ) : (
                 <>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium mb-2 text-sm">
+                  <div className="bg-[#FBF9F4] p-4 rounded-lg border border-[#E8E2D5]">
+                    <h4 className="font-medium mb-2 text-sm text-[#1B2A4A]">
                       {language === 'ru' ? '📱 Реквизиты:' : "📱 Rekvizitlar:"}
                     </h4>
-                    <div className="space-y-1 text-sm">
-                      <p><b>CLICK:</b> {PAYMENT_DETAILS.click}</p>
-                      <p><b>Payme:</b> {PAYMENT_DETAILS.payme}</p>
-                      <p><b>Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
+                    <div className="space-y-1 text-sm text-[#8A8275]">
+                      <p><b className="text-[#1B2A4A]">CLICK:</b> {PAYMENT_DETAILS.click}</p>
+                      <p><b className="text-[#1B2A4A]">Payme:</b> {PAYMENT_DETAILS.payme}</p>
+                      <p><b className="text-[#1B2A4A]">Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
                     </div>
-                    <p className="text-lg font-bold mt-3 pt-3 border-t">
+                    <p className="text-lg font-bold mt-3 pt-3 border-t border-[#E8E2D5] text-[#1B2A4A]">
                       {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                     </p>
                   </div>
 
                   {!order.payment_screenshot_url ? (
                     <div>
-                      <p className="text-sm font-medium mb-2">
+                      <p className="text-sm font-medium mb-2 text-[#1B2A4A]">
                         {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : "📸 To'lov screenshotini yuklang:"}
                       </p>
                       <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                         uploadingScreenshot 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-300 hover:border-blue-500'
+                          ? 'border-[#1B2A4A] bg-[#F5F1E8]' 
+                          : 'border-[#E8E2D5] hover:border-[#1B2A4A]'
                       }`}>
                         <div className="flex flex-col items-center justify-center">
                           {uploadingScreenshot ? (
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B2A4A] mb-2"></div>
                           ) : (
-                            <Upload className="w-6 h-6 mb-2 text-gray-400" />
+                            <Upload className="w-6 h-6 mb-2 text-[#8A8275]" />
                           )}
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-[#8A8275]">
                             {uploadingScreenshot 
                               ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
                               : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
@@ -359,7 +359,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                         href={MANAGER_TELEGRAM_LINK}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                        className="w-full bg-[#1B2A4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] transition-colors"
                       >
                         <MessageCircle size={20} />
                         {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
@@ -367,7 +367,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       
                       <button
                         onClick={() => onCancelOrder(order)}
-                        className="w-full bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
+                        className="w-full bg-[#9B3B3B] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
                       >
                         <X size={20} />
                         {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
@@ -408,7 +408,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 href={order.payment_screenshot_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 bg-white text-[#1B2A4A] rounded-lg font-bold hover:bg-gray-100 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
                 📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
@@ -468,66 +468,66 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   const priceInSums = request.manager_price ? Math.round(request.manager_price * (exchangeRate || 12100)) : 0
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
+    <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
+      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-gray-600 hover:text-black">
+          <button onClick={onClose} className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors">
             ← {language === 'ru' ? 'Назад' : 'Orqaga'}
           </button>
-          <h1 className="text-xl font-bold">LOFT Store</h1>
+          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
           <div className="w-16"></div>
         </div>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
         </h2>
         
         <div className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-600">
+          <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
+            <p className="text-sm text-[#8A8275]">
               {language === 'ru' ? 'Спецзаказ №' : 'Maxsus buyurtma №'}{request.id}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[#8A8275]">
               {formatDateTime(request.created_at)}
             </p>
           </div>
 
           <div>
-            <h3 className="font-bold mb-2">
+            <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
             </h3>
             {request.link?.startsWith('http') ? (
-              <a href={request.link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">
+              <a href={request.link} target="_blank" rel="noopener noreferrer" className="text-sm text-[#1B2A4A] hover:underline break-all">
                 {request.link}
               </a>
             ) : (
-              <p className="text-sm text-gray-700">{request.link}</p>
+              <p className="text-sm text-[#8A8275]">{request.link}</p>
             )}
           </div>
 
           {request.size_color && (
             <div>
-              <h3 className="font-bold mb-2">
+              <h3 className="font-bold mb-2 text-[#1B2A4A]">
                 {language === 'ru' ? 'Размер / Цвет' : "O'lcham / Rang"}
               </h3>
-              <p className="text-sm text-gray-700">{request.size_color}</p>
+              <p className="text-sm text-[#8A8275]">{request.size_color}</p>
             </div>
           )}
 
           {request.comment && (
             <div>
-              <h3 className="font-bold mb-2">
+              <h3 className="font-bold mb-2 text-[#1B2A4A]">
                 {language === 'ru' ? 'Комментарий' : 'Izoh'}
               </h3>
-              <p className="text-sm text-gray-700">{request.comment}</p>
+              <p className="text-sm text-[#8A8275]">{request.comment}</p>
             </div>
           )}
 
           {request.image_url && (
             <div>
-              <h3 className="font-bold mb-2">
+              <h3 className="font-bold mb-2 text-[#1B2A4A]">
                 {language === 'ru' ? 'Фото товара' : 'Mahsulot fotosurati'}
               </h3>
               <img src={request.image_url} alt="Product" className="w-full rounded-lg" />
@@ -548,7 +548,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           )}
 
           <div className="mb-8">
-            <h3 className="font-bold mb-3">
+            <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
             </h3>
             <div className="flex items-center gap-3 flex-wrap">
@@ -559,7 +559,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               {request.status === 'Оценён' && request.manager_price && (
                 <button
                   onClick={() => onAccept(request)}
-                  className="bg-black text-white px-6 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap flex-1 sm:flex-none"
+                  className="bg-[#1B2A4A] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#142038] transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
                   💳 {language === 'ru' 
                     ? `Оплатить ${priceInSums.toLocaleString()} сум` 
@@ -828,7 +828,7 @@ export default function ProfilePage({
   if (activeSection === 'main') {
     return (
       <div className="p-4 pb-20">
-        <div className="bg-white rounded-2xl p-6 mb-6 text-center">
+        <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5]">
           {telegramUser?.photoUrl ? (
             <img 
               src={telegramUser.photoUrl} 
@@ -836,68 +836,68 @@ export default function ProfilePage({
               className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
             />
           ) : (
-            <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
-              <User size={40} className="text-gray-400" />
+            <div className="w-20 h-20 bg-[#E8E2D5] rounded-full mx-auto mb-3 flex items-center justify-center">
+              <User size={40} className="text-[#8A8275]" />
             </div>
           )}
-          <h2 className="text-xl font-bold mb-1">
+          <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
             {telegramUser 
               ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
               : (language === 'ru' ? 'Гость' : 'Mehmon')}
           </h2>
           {telegramUser?.username ? (
-            <p className="text-sm text-gray-500">@{telegramUser.username}</p>
+            <p className="text-sm text-[#8A8275]">@{telegramUser.username}</p>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#8A8275]">
               {language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring'}
             </p>
           )}
         </div>
 
-        <h3 className="text-lg font-bold mb-3">
+        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
           {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
         </h3>
-        <div className="bg-white rounded-xl overflow-hidden mb-6">
+        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
           <button
             onClick={() => navigate('/favorites')}
-            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
+            className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Heart size={20} className="text-gray-600" />
-              <span className="font-medium">
+              <Heart size={20} className="text-[#8A8275]" />
+              <span className="font-medium text-[#1B2A4A]">
                 {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
               </span>
             </div>
             <div className="flex items-center gap-2">
               {favorites.length > 0 && (
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-[#8A8275]">
                   {/* ✅ ИСПРАВЛЕНО: правильное склонение */}
                   {favorites.length} {getItemsLabel(favorites.length, language)}
                 </span>
               )}
-              <ChevronRight size={20} className="text-gray-400" />
+              <ChevronRight size={20} className="text-[#8A8275]" />
             </div>
           </button>
         </div>
 
-        <h3 className="text-lg font-bold mb-3">
+        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
           {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
         </h3>
-        <div className="bg-white rounded-xl overflow-hidden mb-6">
+        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
           <button
             onClick={() => {
               setActiveSection('orders')
               loadOrders()
             }}
-            className="flex items-center justify-between w-full p-4 border-b border-gray-100 hover:bg-gray-50"
+            className="flex items-center justify-between w-full p-4 border-b border-[#E8E2D5] hover:bg-[#F5F1E8] transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Package size={20} className="text-gray-600" />
-              <span className="font-medium">
+              <Package size={20} className="text-[#8A8275]" />
+              <span className="font-medium text-[#1B2A4A]">
                 {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
               </span>
             </div>
-            <ChevronRight size={20} className="text-gray-400" />
+            <ChevronRight size={20} className="text-[#8A8275]" />
           </button>
 
           <button
@@ -905,26 +905,26 @@ export default function ProfilePage({
               setActiveSection('china')
               loadChinaRequests()
             }}
-            className="flex items-center justify-between w-full p-4 hover:bg-gray-50"
+            className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Globe size={20} className="text-gray-600" />
-              <span className="font-medium">
+              <Globe size={20} className="text-[#8A8275]" />
+              <span className="font-medium text-[#1B2A4A]">
                 {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
               </span>
             </div>
-            <ChevronRight size={20} className="text-gray-400" />
+            <ChevronRight size={20} className="text-[#8A8275]" />
           </button>
         </div>
 
-        <h3 className="text-lg font-bold mb-3">
+        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
           {language === 'ru' ? 'Настройки' : 'Sozlamalar'}
         </h3>
-        <div className="bg-white rounded-xl overflow-hidden mb-6">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
+          <div className="flex items-center justify-between p-4 border-b border-[#E8E2D5]">
             <div className="flex items-center gap-3">
-              <Globe size={20} className="text-gray-600" />
-              <span className="font-medium">
+              <Globe size={20} className="text-[#8A8275]" />
+              <span className="font-medium text-[#1B2A4A]">
                 {language === 'ru' ? 'Язык' : 'Til'}
               </span>
             </div>
@@ -932,7 +932,7 @@ export default function ProfilePage({
               <button
                 onClick={() => setLanguage('ru')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  language === 'ru' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'
+                  language === 'ru' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
                 }`}
               >
                 RU
@@ -940,7 +940,7 @@ export default function ProfilePage({
               <button
                 onClick={() => setLanguage('uz')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  language === 'uz' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'
+                  language === 'uz' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
                 }`}
               >
                 UZ
@@ -950,8 +950,8 @@ export default function ProfilePage({
 
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <DollarSign size={20} className="text-gray-600" />
-              <span className="font-medium">
+              <DollarSign size={20} className="text-[#8A8275]" />
+              <span className="font-medium text-[#1B2A4A]">
                 {language === 'ru' ? 'Валюта' : 'Valyuta'}
               </span>
             </div>
@@ -959,7 +959,7 @@ export default function ProfilePage({
               <button
                 onClick={() => setCurrency('USD')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  currency === 'USD' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'
+                  currency === 'USD' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
                 }`}
               >
                 USD
@@ -967,7 +967,7 @@ export default function ProfilePage({
               <button
                 onClick={() => setCurrency('UZS')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  currency === 'UZS' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'
+                  currency === 'UZS' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
                 }`}
               >
                 UZS
@@ -976,24 +976,24 @@ export default function ProfilePage({
           </div>
         </div>
 
-        <div className="mt-6 bg-blue-50 rounded-xl p-4">
-          <h4 className="font-bold mb-2 text-blue-900">
+        <div className="mt-6 bg-[#FBF9F4] rounded-xl p-4 border border-[#E8E2D5]">
+          <h4 className="font-bold mb-2 text-[#1B2A4A]">
             {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
           </h4>
-          <p className="text-sm text-blue-800 mb-1">
+          <p className="text-sm text-[#8A8275] mb-1">
             {language === 'ru' 
               ? 'ТЦ Mercato' 
               : 'Mercato savdo markazi'}
           </p>
-          <p className="text-sm text-blue-800 mb-1">
+          <p className="text-sm text-[#8A8275] mb-1">
             {language === 'ru'
               ? '2 этаж, магазин 34'
               : '2-qavat, 34-do\'kon'}
           </p>
-          <p className="text-sm text-blue-800 mb-1">
+          <p className="text-sm text-[#8A8275] mb-1">
             📞 +998 93 378 87 70
           </p>
-          <p className="text-sm text-blue-800">
+          <p className="text-sm text-[#8A8275]">
             🕐 {language === 'ru' 
               ? 'Ежедневно 10:00 - 20:00' 
               : 'Har kuni 10:00 - 20:00'}
@@ -1006,21 +1006,21 @@ export default function ProfilePage({
   if (activeSection === 'orders') {
     return (
       <div className="p-4 pb-20">
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
         </h2>
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-500">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+            <p className="text-[#8A8275]">
               {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
             </p>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-12">
-            <Package size={64} className="text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">
+            <Package size={64} className="text-[#E8E2D5] mx-auto mb-4" />
+            <p className="text-[#8A8275]">
               {language === 'ru' ? 'У вас пока нет заказов' : 'Sizda hali buyurtmalar yo\'q'}
             </p>
           </div>
@@ -1032,14 +1032,14 @@ export default function ProfilePage({
                 <div 
                   key={order.id} 
                   onClick={() => setSelectedOrder(order)}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+                  className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-bold">
+                      <p className="font-bold text-[#1B2A4A]">
                         {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#8A8275]">
                         {formatDateTime(order.created_at)}
                       </p>
                     </div>
@@ -1060,27 +1060,27 @@ export default function ProfilePage({
                         key={idx}
                         src={item.image} 
                         alt={item.name}
-                        className="w-12 h-12 object-cover rounded border border-gray-200"
+                        className="w-12 h-12 object-cover rounded border border-[#E8E2D5]"
                       />
                     ))}
                     {items.length > 2 && (
-                      <div className="relative w-12 h-12 rounded border border-gray-200 overflow-hidden bg-gray-100">
+                      <div className="relative w-12 h-12 rounded border border-[#E8E2D5] overflow-hidden bg-[#F5F1E8]">
                         <img 
                           src={items[2].image} 
                           alt="more"
                           className="w-full h-full object-cover blur-sm opacity-50"
                         />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-gray-700 text-xs font-bold">+{items.length - 2}</span>
+                          <span className="text-[#8A8275] text-xs font-bold">+{items.length - 2}</span>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <p className="text-lg font-bold">
+                  <p className="text-lg font-bold text-[#1B2A4A]">
                     {formatOrderPrice(order)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[#8A8275] mt-1">
                     {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                   </p>
                 </div>
@@ -1111,21 +1111,21 @@ export default function ProfilePage({
   if (activeSection === 'china') {
     return (
       <div className="p-4 pb-20">
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
         </h2>
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-500">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+            <p className="text-[#8A8275]">
               {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
             </p>
           </div>
         ) : chinaRequests.length === 0 ? (
           <div className="text-center py-12">
-            <Globe size={64} className="text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">
+            <Globe size={64} className="text-[#E8E2D5] mx-auto mb-4" />
+            <p className="text-[#8A8275]">
               {language === 'ru' ? 'У вас нет спецзаказов' : 'Sizda maxsus buyurtmalar yo\'q'}
             </p>
           </div>
@@ -1138,14 +1138,14 @@ export default function ProfilePage({
                 <div 
                   key={request.id} 
                   onClick={() => setSelectedChinaRequest(request)}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+                  className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="font-bold">
+                      <p className="font-bold text-[#1B2A4A]">
                         {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#8A8275]">
                         {formatDateTime(request.created_at)}
                       </p>
                     </div>
@@ -1153,13 +1153,13 @@ export default function ProfilePage({
                       {getChinaStatusText(request.status)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 truncate">{request.link}</p>
+                  <p className="text-sm text-[#8A8275] truncate">{request.link}</p>
                   {request.manager_price && (
                     <p className="text-sm text-purple-700 font-medium mt-1">
                       💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[#8A8275] mt-1">
                     {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                   </p>
                 </div>

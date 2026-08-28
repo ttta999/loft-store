@@ -66,15 +66,15 @@ export default function HomePage() {
 
     return (
       <Link to={`/product/${product.id}`}>
-        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-          <div className="aspect-square bg-gray-100 relative">
+        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] hover:shadow-md transition-shadow">
+          <div className="aspect-square bg-[#F5F1E8] relative">
             <img
               src={product.images?.[0] || 'https://via.placeholder.com/500'}
               alt={language === 'ru' ? product.name_ru : product.name_uz}
               className="w-full h-full object-cover"
             />
             {onSale && (
-              <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+              <span className="absolute top-2 left-2 bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full">
                 -{discountPercent}%
               </span>
             )}
@@ -96,20 +96,20 @@ export default function HomePage() {
             >
               <Heart
                 size={20}
-                className={isFavorite(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275]'}
               />
             </button>
           </div>
           <div className="p-3">
-            <p className="text-sm font-medium truncate">
+            <p className="text-sm font-medium truncate text-[#1B2A4A]">
               {language === 'ru' ? product.name_ru : product.name_uz}
             </p>
             {onSale && (
-              <p className="text-gray-400 text-xs line-through mt-1">
+              <p className="text-[#8A8275] text-xs line-through mt-1">
                 {formatPrice(product.price_usd)}
               </p>
             )}
-            <p className={`font-bold mt-1 ${onSale ? 'text-red-500' : 'text-black'}`}>
+            <p className={`font-bold mt-1 ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
               {formatPrice(effectivePrice)}
             </p>
           </div>
@@ -122,8 +122,8 @@ export default function HomePage() {
     return (
       <div className="p-4 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-500">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+          <p className="text-[#8A8275]">
             {language === 'ru' ? 'Загрузка товаров...' : 'Mahsulotlar yuklanmoqda...'}
           </p>
         </div>
@@ -134,11 +134,11 @@ export default function HomePage() {
   return (
     <div className="p-4 pb-24">
       {/* Приветственный баннер */}
-      <div className="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-6 mb-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">
+      <div className="bg-gradient-to-r from-[#1B2A4A] to-[#142038] rounded-2xl p-6 mb-6 text-white shadow-md">
+        <h2 className="text-2xl font-bold mb-2 tracking-wide">
           {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
         </h2>
-        <p className="text-gray-300 text-sm">
+        <p className="text-[#C9A961] text-sm">
           {language === 'ru'
             ? 'Стильная одежда и обувь в Ташкенте'
             : 'Toshkentdagi zamonaviy kiyim va poyabzal'}
@@ -146,7 +146,7 @@ export default function HomePage() {
       </div>
 
       {/* Категории */}
-      <h3 className="text-lg font-bold mb-3">
+      <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
       </h3>
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -154,20 +154,20 @@ export default function HomePage() {
           <div
             key={cat.id}
             onClick={() => handleCategoryClick(cat.id)}
-            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
+            className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
           >
             <span className="text-3xl">{cat.icon}</span>
-            <span className="font-medium text-sm">
+            <span className="font-medium text-sm text-[#1B2A4A]">
               {language === 'ru' ? cat.name_ru : cat.name_uz}
             </span>
           </div>
         ))}
         <div
           onClick={() => navigate('/brands')}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md flex items-center gap-3 cursor-pointer"
+          className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
         >
           <span className="text-3xl">🏷️</span>
-          <span className="font-medium text-sm">
+          <span className="font-medium text-sm text-[#1B2A4A]">
             {language === 'ru' ? 'Бренды' : 'Brendlar'}
           </span>
         </div>
@@ -176,7 +176,7 @@ export default function HomePage() {
       {/* ✅ БОКС СКИДКИ */}
       {getDiscountProducts().length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-bold mb-3 text-red-500">
+          <h3 className="text-lg font-bold mb-3 text-[#9B3B3B]">
             {language === 'ru' ? '💰 Скидки' : '💰 Chefirmalar'}
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -191,12 +191,12 @@ export default function HomePage() {
       {getNewProducts().length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">
+            <h3 className="text-lg font-bold text-[#1B2A4A]">
               {language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'}
             </h3>
             <button
               onClick={() => navigate('/all-products', { state: { sortBy: 'newest' } })}
-              className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+              className="text-sm text-[#8A8275] hover:text-[#1B2A4A] flex items-center gap-1 transition-colors"
             >
               {language === 'ru' ? 'Больше' : 'Ko\'proq'}
               <ArrowRight size={16} />
@@ -214,12 +214,12 @@ export default function HomePage() {
       {getPopularProducts().length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">
+            <h3 className="text-lg font-bold text-[#1B2A4A]">
               {language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'}
             </h3>
             <button
               onClick={() => navigate('/all-products', { state: { sortBy: 'popular' } })}
-              className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+              className="text-sm text-[#8A8275] hover:text-[#1B2A4A] flex items-center gap-1 transition-colors"
             >
               {language === 'ru' ? 'Больше' : 'Ko\'proq'}
               <ArrowRight size={16} />
