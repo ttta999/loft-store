@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
@@ -129,7 +129,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        {/* ✅ КАРТОЧКА 1: номер заказа + статус */}
+        {/* ✅ КАРТОЧКА 1: номер заказа + статус (БЕЗ курса) */}
         <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -146,12 +146,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <span className="inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
               🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
             </span>
-          )}
-          {order.exchange_rate_at_order && (
-            <p className="text-xs text-[#8A8275] mt-2">
-              {language === 'ru' ? 'Курс на момент заказа: ' : 'Buyurtma vaqtidagi kurs: '}
-              1 USD = {Number(order.exchange_rate_at_order).toLocaleString()} сум
-            </p>
           )}
         </div>
 
@@ -278,7 +272,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       onClick={() => setShowScreenshotModal(true)}
                       className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
                     >
-                      👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                      <Eye size={16} />
+                      {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                     </button>
                   </div>
                 )}
@@ -332,26 +327,18 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </label>
                   </div>
                 ) : (
-                  <div className="bg-green-50 border border-green-200 rounded-2xl p-3">
-                    <p className="text-sm text-green-800 font-medium mb-2">
+                  /* ✅ НОВАЯ ПЛАШКА: текст по центру + глаз справа */
+                  <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5">
+                    <p className="text-sm text-green-800 font-medium text-center pr-12">
                       ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
                     </p>
                     <button
                       onClick={() => setShowScreenshotModal(true)}
-                      className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white border border-green-200 flex items-center justify-center text-green-700 hover:bg-green-100 transition-colors"
+                      title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                     >
-                      👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                      <Eye size={18} />
                     </button>
-                    <p className="text-xs text-green-700">
-                      {order.status === 'Ожидает оплаты'
-                        ? (language === 'ru'
-                            ? '⏳ Ожидайте подтверждения от менеджера'
-                            : "⏳ Menejer tasdiqlashini kuting")
-                        : (language === 'ru'
-                            ? '✅ Оплата подтверждена менеджером'
-                            : "✅ To'lov menejer tomonidan tasdiqlandi")
-                      }
-                    </p>
                   </div>
                 )}
 
@@ -445,7 +432,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅‍️',
+      'Отменён клиентом': 'Отменён вами 🙅️',
       'Отклонён': 'Отклонён 🛑',
     }
     return labels[status] || status
