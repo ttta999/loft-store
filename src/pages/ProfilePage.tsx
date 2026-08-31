@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 
@@ -95,6 +95,17 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       'Ожидает оплаты': 'bg-orange-100 text-orange-800',
     }
     return colors[status] || 'bg-green-100 text-green-800'
+  }
+
+  // ✅ Копирование номера карты
+  const handleCopyCard = async () => {
+    try {
+      await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
+      toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
+    } catch (error) {
+      console.error('Ошибка копирования:', error)
+      toast.error(language === 'ru' ? 'Не удалось скопировать' : 'Nusxalab bo\'lmadi')
+    }
   }
 
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -280,16 +291,27 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </div>
             ) : (
               <>
-                <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5]">
-                  <h4 className="font-medium mb-2 text-sm text-[#1B2A4A]">
-                    {language === 'ru' ? '📱 Реквизиты:' : "📱 Rekvizitlar:"}
-                  </h4>
-                  <div className="space-y-1 text-sm text-[#8A8275]">
-                    <p><b className="text-[#1B2A4A]">CLICK:</b> {PAYMENT_DETAILS.click}</p>
-                    <p><b className="text-[#1B2A4A]">Payme:</b> {PAYMENT_DETAILS.payme}</p>
-                    <p><b className="text-[#1B2A4A]">Uzum:</b> {PAYMENT_DETAILS.uzum}</p>
+                {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ (вместо CLICK/Payme/Uzum) */}
+                <div className="rounded-2xl overflow-hidden shadow-md">
+                  <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-4 text-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] text-[#C9A961] font-semibold tracking-widest">LOFT STORE</span>
+                      <CreditCard size={18} className="text-[#C9A961]" />
+                    </div>
+                    <p className="text-base font-bold tracking-widest mb-3">{PAYMENT_DETAILS.cardNumber}</p>
+                    <span className="text-xs text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</span>
                   </div>
-                  <p className="text-lg font-bold mt-3 pt-3 border-t border-[#E8E2D5] text-[#1B2A4A]">
+                  <button
+                    onClick={handleCopyCard}
+                    className="w-full bg-[#FBF9F4] border border-t-0 border-[#E8E2D5] py-2.5 text-xs font-medium text-[#1B2A4A] flex items-center justify-center gap-2 hover:bg-[#F5F1E8] transition-colors"
+                  >
+                    <Copy size={14} />
+                    {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
+                  </button>
+                </div>
+
+                <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5]">
+                  <p className="text-lg font-bold text-[#1B2A4A]">
                     {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                   </p>
                 </div>
@@ -327,7 +349,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </label>
                   </div>
                 ) : (
-                  /* ✅ НОВАЯ ПЛАШКА: текст по центру + глаз справа */
+                  /* ✅ ПЛАШКА: текст по центру + глаз справа */
                   <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5">
                     <p className="text-sm text-green-800 font-medium text-center pr-12">
                       ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}

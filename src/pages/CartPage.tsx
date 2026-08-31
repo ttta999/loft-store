@@ -182,6 +182,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     return null
   }
 
+  // ✅ Копирование номера карты
+  const handleCopyCard = async () => {
+    try {
+      await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
+      toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
+    } catch (error) {
+      console.error('Ошибка копирования:', error)
+      toast.error(language === 'ru' ? 'Не удалось скопировать' : 'Nusxalab bo\'lmadi')
+    }
+  }
+
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     const totalInSums = Math.round(getTotalPrice() * exchangeRate)
@@ -310,25 +321,37 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 : `⏳ ${currentOrderId}-buyurtma to'lovni kutmoqda`}
             </p>
           </div>
-          <div className="bg-[#FBF9F4] p-4 rounded-lg mb-4 border border-[#E8E2D5]">
-            <h3 className="font-bold mb-3 text-[#1B2A4A]">
-              {language === 'ru' ? '📱 Реквизиты для оплаты:' : '📱 To\'lov rekvizitlari:'}
-            </h3>
-            <div className="space-y-2 text-sm text-[#8A8275]">
-              <p><b className="text-[#1B2A4A]">CLICK:</b> {PAYMENT_DETAILS.click}</p>
-              <p><b className="text-[#1B2A4A]">Payme:</b> {PAYMENT_DETAILS.payme}</p>
-              <p><b className="text-[#1B2A4A]">Uzum Bank:</b> {PAYMENT_DETAILS.uzum}</p>
+
+          {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ */}
+          <div className="rounded-2xl overflow-hidden shadow-md mb-4">
+            <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-5 text-white">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-xs text-[#C9A961] font-semibold tracking-widest">LOFT STORE</span>
+                <CreditCard size={20} className="text-[#C9A961]" />
+              </div>
+              <p className="text-lg font-bold tracking-widest mb-4">{PAYMENT_DETAILS.cardNumber}</p>
+              <span className="text-sm text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</span>
             </div>
-            <p className="text-lg font-bold mt-4 pt-4 border-t border-[#E8E2D5] text-[#1B2A4A]">
+            <button
+              onClick={handleCopyCard}
+              className="w-full bg-[#FBF9F4] border border-t-0 border-[#E8E2D5] py-3 text-sm font-medium text-[#1B2A4A] flex items-center justify-center gap-2 hover:bg-[#F5F1E8] transition-colors"
+            >
+              📋 {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
+            </button>
+          </div>
+
+          <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5] mb-4">
+            <p className="text-lg font-bold text-[#1B2A4A]">
               {language === 'ru' ? '💰 Сумма:' : '💰 Summa:'} {formatPrice(getTotalPrice())}
             </p>
           </div>
+
           <div className="mb-4">
             <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : '📸 To\'lov screenshotini yuklang:'}
             </h3>
             {!screenshotUploaded ? (
-              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
                 uploadingScreenshot
                   ? 'border-[#1B2A4A] bg-[#F5F1E8]'
                   : 'border-[#E8E2D5] hover:border-[#1B2A4A]'
@@ -358,7 +381,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 />
               </label>
             ) : (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
                 <div className="text-4xl mb-2">✅</div>
                 <p className="text-green-800 font-bold mb-2">
                   {language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!'}
@@ -371,6 +394,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </div>
             )}
           </div>
+
           <div className="space-y-3">
             <a
               href={MANAGER_TELEGRAM_LINK}
@@ -393,6 +417,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </button>
             )}
           </div>
+
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
             <p className="text-sm text-yellow-800 font-medium text-center leading-relaxed">
               {language === 'ru'

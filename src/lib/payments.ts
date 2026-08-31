@@ -6,11 +6,10 @@ interface PaymentData {
   description: string
 }
 
-// ✅ Реквизиты для оплаты (настрой свои)
+// ✅ РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ — ОДНА КАРТА
 export const PAYMENT_DETAILS = {
-  click: '+998 93 378 87 70',
-  payme: '+998 93 378 87 70',
-  uzum: '+998 93 378 87 70',
+  cardNumber: '5354 6739 3850 3829',
+  cardHolder: 'Abrorbek Xusanov',
 }
 
 // ✅ Ссылка на менеджера в Telegram
@@ -23,11 +22,9 @@ export const showPaymentDetails = (paymentData: PaymentData): string => {
 
 💰 <b>Сумма:</b> ${paymentData.amount.toLocaleString()} сум
 
-📱 <b>Реквизиты для перевода:</b>
-
-• <b>CLICK:</b> ${PAYMENT_DETAILS.click}
-• <b>Payme:</b> ${PAYMENT_DETAILS.payme}
-• <b>Uzum Bank:</b> ${PAYMENT_DETAILS.uzum}
+💳 <b>Карта для перевода:</b>
+${PAYMENT_DETAILS.cardNumber}
+👤 Получатель: ${PAYMENT_DETAILS.cardHolder}
 
 📸 <b>После оплаты:</b>
 1. Сделайте скриншот перевода
@@ -47,7 +44,7 @@ export const uploadPaymentScreenshot = async (
 ): Promise<string> => {
   const fileExt = file.name.split('.').pop()
   const fileName = `${orderId}-${Date.now()}.${fileExt}`
-  
+
   const { error } = await supabase.storage
     .from('payment-screenshots')
     .upload(fileName, file, {
@@ -90,7 +87,7 @@ export const cancelOrder = async (orderId: string) => {
   try {
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'Отменён',
         payment_status: 'cancelled',
         cancelled_at: new Date().toISOString()
@@ -110,7 +107,7 @@ export const confirmPayment = async (orderId: string) => {
   try {
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'Активный',
         payment_status: 'paid',
         paid_at: new Date().toISOString(),
