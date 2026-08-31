@@ -100,13 +100,10 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setUploadingScreenshot(true)
-
     try {
       const screenshotUrl = await uploadPaymentScreenshot(order.id.toString(), file)
       const saved = await savePaymentScreenshot(order.id.toString(), screenshotUrl)
-
       if (saved) {
         toast.success(language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!')
         if (onScreenshotUploaded) onScreenshotUploaded()
@@ -130,18 +127,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           <div className="w-16"></div>
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали заказа' : 'Buyurtma tafsilotlari'}
         </h2>
-
         {order.special_order_id && (
           <div className="mb-4 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
             🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
           </div>
         )}
-
         <div className="space-y-4">
           <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
             <p className="text-sm text-[#8A8275]">
@@ -157,14 +151,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </p>
             )}
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Телефон' : 'Telefon'}
             </h3>
             <p className="text-sm text-[#8A8275]">📞 {order.client_phone}</p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Способ получения' : 'Olish usuli'}
@@ -188,7 +180,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             )}
           </div>
 
-          {/* ✅ КНОПКА "ОТСЛЕДИТЬ КУРЬЕРА" — ссылка не видна, открывается в браузере */}
+          {/* ✅ КНОПКА "ОТСЛЕДИТЬ КУРЬЕРА" — только для доставки и если менеджер добавил ссылку */}
           {order.delivery_method === 'delivery' && order.courier_link && (
             <a
               href={order.courier_link}
@@ -210,7 +202,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 : (language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash')}
             </p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
@@ -237,7 +228,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               ))}
             </div>
           </div>
-
           <div className="border-t border-[#E8E2D5] pt-3">
             <div className="flex justify-between items-center">
               <span className="font-bold text-[#1B2A4A]">
@@ -248,7 +238,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </span>
             </div>
           </div>
-
           <div className="mb-4">
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
@@ -257,13 +246,11 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               {getStatusText(order.status, order.delivery_method)}
             </span>
           </div>
-
           {order.payment_method === 'online_card' && (
             <div className="space-y-3 border-t border-[#E8E2D5] pt-4">
               <h3 className="font-bold text-lg text-[#1B2A4A]">
                 {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
               </h3>
-
               {order.status === 'Отменён' ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm text-red-800 font-medium mb-2">
@@ -274,7 +261,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       ? 'Оплата не требуется. Если были списаны средства, свяжитесь с менеджером для возврата.'
                       : "To'lov talab qilinmaydi. Agar mablag'lar yechib olingan bo'lsa, qaytarish uchun menejer bilan bog'laning."}
                   </p>
-
                   {order.payment_screenshot_url && (
                     <div className="mt-3 pt-3 border-t border-red-200">
                       <p className="text-xs text-red-700 mb-2">
@@ -304,7 +290,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                     </p>
                   </div>
-
                   {!order.payment_screenshot_url ? (
                     <div>
                       <p className="text-sm font-medium mb-2 text-[#1B2A4A]">
@@ -342,14 +327,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       <p className="text-sm text-green-800 font-medium mb-2">
                         ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
                       </p>
-
                       <button
                         onClick={() => setShowScreenshotModal(true)}
                         className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1 mb-2"
                       >
                         👁️ {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                       </button>
-
                       <p className="text-xs text-green-700">
                         {order.status === 'Ожидает оплаты'
                           ? (language === 'ru'
@@ -362,7 +345,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       </p>
                     </div>
                   )}
-
                   {order.status === 'Ожидает оплаты' && (
                     <>
                       <a
@@ -389,7 +371,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           )}
         </div>
       </div>
-
       {showScreenshotModal && order.payment_screenshot_url && (
         <div
           className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
@@ -445,7 +426,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅♂️",
+        'Отменён клиентом': "Siz bekor qildingiz 🙅‍♂️",
         'Отклонён': "Rad etildi 🛑",
       }
       return labels[status] || status
@@ -484,12 +465,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           <div className="w-16"></div>
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
         </h2>
-
         <div className="space-y-4">
           <div className="bg-[#FBF9F4] p-3 rounded-lg border border-[#E8E2D5]">
             <p className="text-sm text-[#8A8275]">
@@ -499,7 +478,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               {formatDateTime(request.created_at)}
             </p>
           </div>
-
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A]">
               {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
@@ -512,7 +490,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.link}</p>
             )}
           </div>
-
           {request.size_color && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -521,7 +498,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.size_color}</p>
             </div>
           )}
-
           {request.comment && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -530,7 +506,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <p className="text-sm text-[#8A8275]">{request.comment}</p>
             </div>
           )}
-
           {request.image_url && (
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
@@ -539,7 +514,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               <img src={request.image_url} alt="Product" className="w-full rounded-lg" />
             </div>
           )}
-
           {request.manager_price && (
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
               <p className="text-lg font-bold text-purple-900 mb-1">
@@ -552,7 +526,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               )}
             </div>
           )}
-
           <div className="mb-8">
             <h3 className="font-bold mb-3 text-[#1B2A4A]">
               {language === 'ru' ? 'Статус' : 'Holat'}
@@ -753,7 +726,6 @@ export default function ProfilePage({
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-
     if (error) {
       console.error('Ошибка при загрузке заказов:', error)
     } else {
@@ -770,7 +742,6 @@ export default function ProfilePage({
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-
     if (error) {
       console.error('Ошибка при загрузке спецзаказов:', error)
     } else {
@@ -941,7 +912,6 @@ export default function ProfilePage({
               </button>
             </div>
           </div>
-
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <DollarSign size={20} className="text-[#8A8275]" />
@@ -1003,7 +973,6 @@ export default function ProfilePage({
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
         </h2>
-
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
@@ -1041,13 +1010,11 @@ export default function ProfilePage({
                       {getOrderStatusText(order.status, order.delivery_method)}
                     </span>
                   </div>
-
                   {order.special_order_id && (
                     <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
                       🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                     </div>
                   )}
-
                   <div className="flex gap-1 mb-3">
                     {items.slice(0, 2).map((item: any, idx: number) => (
                       <img
@@ -1070,7 +1037,6 @@ export default function ProfilePage({
                       </div>
                     )}
                   </div>
-
                   <p className="text-lg font-bold text-[#1B2A4A]">
                     {formatOrderPrice(order)}
                   </p>
@@ -1082,7 +1048,6 @@ export default function ProfilePage({
             })}
           </div>
         )}
-
         {selectedOrder && (
           <OrderDetailModal
             order={selectedOrder}
@@ -1108,7 +1073,6 @@ export default function ProfilePage({
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
         </h2>
-
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
@@ -1160,7 +1124,6 @@ export default function ProfilePage({
             })}
           </div>
         )}
-
         {selectedChinaRequest && (
           <ChinaRequestDetailModal
             request={selectedChinaRequest}
