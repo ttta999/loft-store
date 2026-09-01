@@ -430,9 +430,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-                    {/* ✅ ПРЕДУПРЕЖДЕНИЕ — в едином стиле */}
+                     {/* ✅ ПРИМЕЧАНИЕ */}
           <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-[#C9A961]/15 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
               <span className="text-base">⏳</span>
             </div>
             <p className="text-xs text-[#8A8275] leading-relaxed">
