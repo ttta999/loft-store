@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
@@ -109,7 +109,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
         </div>
         <button
           onClick={() => setShowCheckout(true)}
-          className="w-full bg-[#1B2A4A] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#142038] transition-colors"
+          className="w-full bg-[#1B2A4A] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors shadow-md"
         >
           {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
         </button>
@@ -389,7 +389,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </label>
             </div>
           ) : (
-            /* ✅ НОВАЯ ПЛАШКА: текст по центру + глаз справа (как в деталях заказа) */
+            /* ✅ ПЛАШКА: текст по центру + глаз справа */
             <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5 mb-3 shadow-sm">
               <p className="text-sm text-green-800 font-medium text-center pr-12">
                 ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
@@ -412,7 +412,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               href={MANAGER_TELEGRAM_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-[#1B2A4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] transition-colors"
+              className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] transition-colors shadow-md"
             >
               📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
             </a>
@@ -423,7 +423,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   setOrderSuccess(true)
                   clearCart()
                 }}
-                className="w-full bg-[#1B2A4A] text-white py-3 rounded-xl font-bold hover:bg-[#142038] transition-colors"
+                className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold hover:bg-[#142038] transition-colors shadow-md"
               >
                 {language === 'ru' ? 'Готово' : 'Tayyor'}
               </button>
@@ -504,7 +504,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </p>
           <button
             onClick={onClose}
-            className="w-full bg-[#1B2A4A] text-white py-3 rounded-xl font-bold hover:bg-[#142038] transition-colors"
+            className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold hover:bg-[#142038] transition-colors shadow-md"
           >
             {language === 'ru' ? 'Отлично' : 'Ajoyib'}
           </button>
@@ -697,19 +697,26 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   </span>
                 </label>
               )}
+              {/* ✅ МЯГКАЯ ПОМЕТКА ПРО ПРЕДОПЛАТУ — не красная, с иконкой */}
               {deliveryMethod === 'delivery' && (
-                <p className="text-xs text-[#9B3B3B] mt-2">
-                  {language === 'ru'
-                    ? '* При доставке только предоплата'
-                    : "* Yetkazib berishda faqat oldindan to'lov"}
-                </p>
+                <div className="flex items-start gap-1.5 mt-2 p-2 bg-[#F5F1E8] rounded-lg">
+                  <Info size={14} className="text-[#8A8275] mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-[#8A8275] leading-relaxed">
+                    {language === 'ru'
+                      ? 'Доставка — по предоплате переводом на карту'
+                      : "Yetkazib berish — kartaga oldindan to'lov bilan"}
+                  </p>
+                </div>
               )}
               {isSpecialOrder && (
-                <p className="text-xs text-purple-700 mt-2">
-                  {language === 'ru'
-                    ? '* Спецзаказ — только полная предоплата'
-                    : "* Maxsus buyurtma — faqat to'liq oldindan to'lov"}
-                </p>
+                <div className="flex items-start gap-1.5 mt-2 p-2 bg-purple-50 rounded-lg">
+                  <Info size={14} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-purple-700 leading-relaxed">
+                    {language === 'ru'
+                      ? 'Спецзаказ — только полная предоплата переводом'
+                      : "Maxsus buyurtma — faqat to'liq oldindan to'lov"}
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -732,13 +739,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           )}
         </div>
 
-        {/* ✅ КНОПКА */}
+        {/* ✅ КНОПКА — rounded-2xl + shadow-md как карточки сверху */}
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className={`w-full py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-2xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-md ${
             submitting
-              ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
+              ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed shadow-none'
               : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
           }`}
         >
