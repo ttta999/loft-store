@@ -430,12 +430,15 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-          {/* ✅ ПРЕДУПРЕЖДЕНИЕ */}
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
-            <p className="text-sm text-yellow-800 font-medium text-center leading-relaxed">
+                    {/* ✅ ПРЕДУПРЕЖДЕНИЕ — в едином стиле */}
+          <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
+            <div className="w-9 h-9 rounded-full bg-[#C9A961]/15 flex items-center justify-center flex-shrink-0">
+              <span className="text-base">⏳</span>
+            </div>
+            <p className="text-xs text-[#8A8275] leading-relaxed">
               {language === 'ru'
-                ? '⚠️ Заказ будет обработан только после подтверждения оплаты менеджером'
-                : "⚠️ Buyurtma faqat menejer tomonidan to'lov tasdiqlangandan so'ng ko'rib chiqiladi"}
+                ? 'Заказ будет обработан после подтверждения оплаты менеджером'
+                : 'Buyurtma menejer to\'lovni tasdiqlagandan so\'ng ko\'rib chiqiladi'}
             </p>
           </div>
         </div>
