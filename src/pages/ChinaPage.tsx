@@ -62,7 +62,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
               .from('china-requests')
               .getPublicUrl(fileName)
             imageUrl = urlData.publicUrl
-            console.log('Фото загружено:', imageUrl)
           }
         } catch (err) {
           console.error('Ошибка:', err)
@@ -77,7 +76,6 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         image_url: imageUrl,
         status: 'На рассмотрении',
       }
-      console.log('Отправляем спецзаказ:', requestData)
       const { data, error } = await supabase
         .from('china_requests')
         .insert(requestData)
@@ -91,16 +89,13 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         setSubmitting(false)
         return
       }
-      console.log('Спецзаказ создан:', data)
       if (data && data[0]) {
         await notifyNewChinaRequest(data[0])
       }
       setSubmitted(true)
       toast.success(
         language === 'ru' ? 'Спецзаказ отправлен!' : 'Maxsus buyurtma yuborildi!',
-        {
-          duration: 3000,
-        }
+        { duration: 3000 }
       )
     } catch (error) {
       console.error('Ошибка:', error)
@@ -137,7 +132,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
             ? 'Менеджер рассмотрит ваш спецзаказ'
             : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
         </p>
-        <div className="bg-[#FBF9F4] rounded-xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5]">
+        <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5]">
           <p className="text-[#8A8275] text-sm leading-relaxed">
             {language === 'ru' ? (
               <>
@@ -154,7 +149,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         </div>
         <button
           onClick={handleReset}
-          className="bg-[#1B2A4A] text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-[#142038] transition-colors"
+          className="bg-[#1B2A4A] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors"
         >
           {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
         </button>
@@ -177,7 +172,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
       </div>
 
       <div className="space-y-4">
-        <div>
+        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
           <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
             {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
           </label>
@@ -186,11 +181,11 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
-            className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
+            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
           />
         </div>
 
-        <div>
+        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
           <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
             {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
           </label>
@@ -198,37 +193,29 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
             type="text"
             value={sizeColor}
             onChange={(e) => setSizeColor(e.target.value)}
-            placeholder={
-              language === 'ru'
-                ? '42 размер, белый цвет'
-                : '42 o\'lcham, oq rang'
-            }
-            className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
+            placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
+            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
           />
         </div>
 
-        <div>
+        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
           <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
             {language === 'ru' ? 'Комментарий' : 'Izoh'}
           </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={
-              language === 'ru'
-                ? 'Дополнительная информация...'
-                : 'Qo\'shimcha ma\'lumotlar...'
-            }
+            placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
             rows={4}
-            className="w-full p-3 border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#1B2A4A] bg-[#FBF9F4]"
+            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
           />
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
+          <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
             {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
           </label>
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] rounded-lg cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#FBF9F4]">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] rounded-xl cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#F5F1E8]">
             {imagePreview ? (
               <img
                 src={imagePreview}
@@ -255,7 +242,7 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
+          className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
             submitting
               ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
               : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
@@ -264,17 +251,20 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
           <Send size={20} />
           {submitting
             ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
-            : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')
-          }
+            : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
         </button>
-      </div>
 
-      <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800 text-center leading-relaxed">
-          {language === 'ru'
-            ? '⏱ Среднее время доставки: 14-21 день.'
-            : '⏱ O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
-        </p>
+        {/* ✅ ЕДИНАЯ ПЛАШКА (как в корзине) вместо жёлтой */}
+        <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
+          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
+            <span className="text-base">⏱</span>
+          </div>
+          <p className="text-xs text-[#8A8275] leading-relaxed">
+            {language === 'ru'
+              ? 'Среднее время доставки: 14-21 день.'
+              : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -58,18 +58,15 @@ export default function FavoritesPage() {
           <div className="w-16"></div>
         </div>
       </div>
-
       <div className="p-4 pb-20">
         <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
         </h1>
-
         <div className="grid grid-cols-2 gap-3">
           {favorites.map((item) => {
             const product = products.find(p => p.id === item.productId)
             const onSale = product ? isProductOnSale(product, saleModeEnabled) : false
             const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
-
             return (
               <div key={item.productId} className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
                 <Link to={`/product/${item.productId}`}>
@@ -91,6 +88,7 @@ export default function FavoritesPage() {
                     <div>
                       {onSale && (
                         <p className="text-[#8A8275] text-xs line-through">
+                          {/* ✅ ИСПРАВЛЕНО: было item.price_usd → item.priceUsd */}
                           {formatPrice(item.priceUsd)}
                         </p>
                       )}

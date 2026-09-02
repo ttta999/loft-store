@@ -65,7 +65,7 @@ export default function HomePage() {
 
     return (
       <Link to={`/product/${product.id}`}>
-        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] hover:shadow-md transition-shadow">
+        <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] hover:shadow-md transition-shadow">
           <div className="aspect-square bg-[#F5F1E8] relative">
             <img
               src={product.images?.[0] || 'https://via.placeholder.com/500'}
@@ -132,7 +132,6 @@ export default function HomePage() {
 
   return (
     <div className="p-4 pb-24">
-      {/* Приветственный баннер */}
       <div className="bg-gradient-to-r from-[#1B2A4A] to-[#142038] rounded-2xl p-6 mb-6 text-white shadow-md">
         <h2 className="text-2xl font-bold mb-2 tracking-wide">
           {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
@@ -144,7 +143,6 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Категории */}
       <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
       </h3>
@@ -153,7 +151,7 @@ export default function HomePage() {
           <div
             key={cat.id}
             onClick={() => handleCategoryClick(cat.id)}
-            className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
+            className="bg-[#FBF9F4] rounded-2xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
           >
             <span className="text-3xl">{cat.icon}</span>
             <span className="font-medium text-sm text-[#1B2A4A]">
@@ -163,7 +161,7 @@ export default function HomePage() {
         ))}
         <div
           onClick={() => navigate('/brands')}
-          className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
+          className="bg-[#FBF9F4] rounded-2xl p-4 shadow-sm border border-[#E8E2D5] hover:shadow-md flex items-center gap-3 cursor-pointer transition-all"
         >
           <span className="text-3xl">🏷️</span>
           <span className="font-medium text-sm text-[#1B2A4A]">
@@ -172,7 +170,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ БОКС СКИДКИ */}
       {getDiscountProducts().length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg font-bold mb-3 text-[#9B3B3B]">
@@ -186,7 +183,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Новые товары */}
       {getNewProducts().length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -209,7 +205,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Популярные товары */}
       {getPopularProducts().length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
