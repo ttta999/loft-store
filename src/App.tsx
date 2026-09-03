@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
-import { Search } from 'lucide-react'
+import { Search, ArrowLeft } from 'lucide-react'
 import BottomNavbar from './components/BottomNavbar'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -89,41 +89,39 @@ function AppContent() {
     }
   }
 
+  // ✅ Кнопка «назад» нужна на поиске или во внутренних разделах
+  const needsBack = activeTab === 'search' || (showBackButton && !!onBackClick)
+  const handleBack = () => {
+    if (activeTab === 'search') navigate('/')
+    else if (onBackClick) onBackClick()
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          {/* СЛЕВА: назад (на поиске или когда нужна кнопка назад) */}
-          {activeTab === 'search' ? (
-            <button
-              onClick={() => navigate('/')}
-              className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
-            >
-              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-            </button>
-          ) : showBackButton && onBackClick ? (
-            <button
-              onClick={onBackClick}
-              className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
-            >
-              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-            </button>
-          ) : (
-            <div className="w-10"></div>
-          )}
+      {/* ✅ ВЕРХНИЙ БАР — «ОСТРОВОК» КАК ВНИЗУ */}
+      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+        <div className="flex items-center gap-3">
+          {/* Островок с названием */}
+          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+            {needsBack && (
+              <button
+                onClick={handleBack}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+          </div>
 
-          <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
-
-          {/* ✅ СПРАВА: поиск ТОЛЬКО на главной */}
-          {activeTab === 'home' ? (
+          {/* Отдельная круглая кнопка поиска — только на главной (как профиль внизу) */}
+          {activeTab === 'home' && (
             <button
               onClick={() => navigate('/search')}
-              className="w-10 h-10 rounded-full bg-[#FBF9F4] border border-[#E8E2D5] shadow-sm flex items-center justify-center text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
+              className="w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] border border-[#E8E2D5] shadow-lg flex items-center justify-center text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
             >
-              <Search size={20} />
+              <Search size={22} />
             </button>
-          ) : (
-            <div className="w-10"></div>
           )}
         </div>
       </div>
