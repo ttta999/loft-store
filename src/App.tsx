@@ -33,7 +33,8 @@ function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  const { language } = useStore()
+  
+  // ✅ ИСПРАВЛЕНО: убрали `const { language } = useStore()`, так как иконка ArrowLeft не требует перевода
   const location = useLocation()
 
   useEffect(() => {
