@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { Search } from 'lucide-react'
 import BottomNavbar from './components/BottomNavbar'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -27,6 +28,7 @@ interface TelegramUser {
 }
 
 function AppContent() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('home')
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
@@ -88,10 +90,18 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] pb-24">
       <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
         <div className="flex items-center justify-between">
-          {showBackButton && onBackClick ? (
+          {/* СЛЕВА: назад (на поиске или когда нужна кнопка назад) */}
+          {activeTab === 'search' ? (
+            <button
+              onClick={() => navigate('/')}
+              className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
+            >
+              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
+            </button>
+          ) : showBackButton && onBackClick ? (
             <button
               onClick={onBackClick}
               className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
@@ -99,10 +109,22 @@ function AppContent() {
               ← {language === 'ru' ? 'Назад' : 'Orqaga'}
             </button>
           ) : (
-            <div className="w-16"></div>
+            <div className="w-10"></div>
           )}
+
           <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
+
+          {/* ✅ СПРАВА: поиск ТОЛЬКО на главной */}
+          {activeTab === 'home' ? (
+            <button
+              onClick={() => navigate('/search')}
+              className="w-10 h-10 rounded-full bg-[#FBF9F4] border border-[#E8E2D5] shadow-sm flex items-center justify-center text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
+            >
+              <Search size={20} />
+            </button>
+          ) : (
+            <div className="w-10"></div>
+          )}
         </div>
       </div>
 
