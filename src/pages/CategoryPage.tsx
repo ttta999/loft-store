@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { CATEGORIES } from '../data/categories'
+import { ArrowLeft } from 'lucide-react'
 
 export default function CategoryPage() {
   const navigate = useNavigate()
@@ -31,16 +32,18 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-[#1B2A4A] hover:text-[#C9A961] flex items-center gap-1"
-          >
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
+      {/* ✅ ШАПКА-ОСТРОВОК (как в App.tsx) */}
+      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+          </div>
         </div>
       </div>
 
@@ -54,7 +57,7 @@ export default function CategoryPage() {
             : 'Pastki kategoriyani tanlang'}
         </p>
 
-        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+        <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5]">
           {category.subcategories.map((sub, index) => (
             <button
               key={sub.id}
@@ -74,7 +77,7 @@ export default function CategoryPage() {
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-[#1B2A4A]/5 rounded-xl border border-[#E8E2D5]">
+        <div className="mt-6 p-4 bg-[#1B2A4A]/5 rounded-2xl border border-[#E8E2D5]">
           <p className="text-sm text-[#1B2A4A]">
             {language === 'ru'
               ? '💡 Нажмите "Все товары" чтобы увидеть всю категорию'

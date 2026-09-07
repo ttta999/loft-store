@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart, Filter } from 'lucide-react'
+import { Heart, Filter, ArrowLeft } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
 export default function AllProductsPage() {
@@ -73,7 +73,7 @@ export default function AllProductsPage() {
     return (
       <div
         onClick={() => navigate(`/product/${product.id}`)}
-        className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] cursor-pointer"
+        className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] cursor-pointer"
       >
         <div className="aspect-square bg-[#F5F1E8] relative">
           <img
@@ -140,16 +140,18 @@ export default function AllProductsPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-40 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-[#1B2A4A] hover:text-[#C9A961]"
-          >
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
+      {/* ✅ ОСТРОВОК-ШАПКА */}
+      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+          </div>
         </div>
       </div>
 
@@ -158,7 +160,7 @@ export default function AllProductsPage() {
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="w-full p-3 rounded-xl border border-[#E8E2D5] flex items-center justify-between bg-[#FBF9F4] mb-4"
+          className="w-full p-3 rounded-2xl border border-[#E8E2D5] flex items-center justify-between bg-[#FBF9F4] mb-4"
         >
           <div className="flex items-center gap-2">
             <Filter size={20} className="text-[#1B2A4A]" />
@@ -169,7 +171,7 @@ export default function AllProductsPage() {
         </button>
 
         {showFilters && (
-          <div className="bg-[#FBF9F4] rounded-xl p-4 mb-4 border border-[#E8E2D5] space-y-4">
+          <div className="bg-[#FBF9F4] rounded-2xl p-4 mb-4 border border-[#E8E2D5] space-y-4">
             <div>
               <h3 className="font-bold mb-2 text-[#1B2A4A]">
                 {language === 'ru' ? 'Категория' : 'Kategoriya'}
@@ -180,7 +182,7 @@ export default function AllProductsPage() {
                   setSelectedCategory(e.target.value)
                   setSelectedSubcategory('all')
                 }}
-                className="w-full p-3 border border-[#E8E2D5] rounded-lg bg-white text-[#1B2A4A]"
+                className="w-full p-3 border border-[#E8E2D5] rounded-xl bg-white text-[#1B2A4A]"
               >
                 <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
                 {CATEGORIES.map(cat => (
@@ -199,7 +201,7 @@ export default function AllProductsPage() {
                 <select
                   value={selectedSubcategory}
                   onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full p-3 border border-[#E8E2D5] rounded-lg bg-white text-[#1B2A4A]"
+                  className="w-full p-3 border border-[#E8E2D5] rounded-xl bg-white text-[#1B2A4A]"
                 >
                   <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
                   {CATEGORIES.find(c => c.id === selectedCategory)?.subcategories.map(sub => (

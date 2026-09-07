@@ -3,7 +3,7 @@ import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useSto
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
-import { Filter, ArrowUpDown, Loader2 } from 'lucide-react'
+import { Filter, ArrowUpDown, Loader2, ArrowLeft } from 'lucide-react'
 
 interface Brand {
   id: string
@@ -124,13 +124,18 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button onClick={handleBack} className="text-[#1B2A4A] hover:text-[#C9A961] flex items-center gap-1">
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-center flex-1 text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
+      {/* ✅ ОСТРОВОК-ШАПКА */}
+      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+            <button
+              onClick={handleBack}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+          </div>
         </div>
       </div>
 
@@ -158,13 +163,13 @@ export default function BrandsPage() {
                 {language === 'ru' ? 'Бренды не найдены' : 'Brendlar topilmadi'}
                 <button
                   onClick={loadBrands}
-                  className="mt-4 px-4 py-2 bg-[#1B2A4A] text-white rounded-lg text-sm"
+                  className="mt-4 px-4 py-2 bg-[#1B2A4A] text-white rounded-xl text-sm"
                 >
                   🔄 {language === 'ru' ? 'Повторить' : 'Qayta urinish'}
                 </button>
               </div>
             ) : (
-              <div className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+              <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5]">
                 {brands.map((brand, index) => (
                   <button
                     key={brand.id}
@@ -191,7 +196,7 @@ export default function BrandsPage() {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`w-full p-3 rounded-xl border flex items-center justify-between mb-4 ${
+              className={`w-full p-3 rounded-2xl border flex items-center justify-between mb-4 ${
                 activeFiltersCount > 0 ? 'bg-[#1B2A4A] text-white border-[#1B2A4A]' : 'bg-[#FBF9F4] border-[#E8E2D5]'
               }`}
             >
@@ -220,7 +225,7 @@ export default function BrandsPage() {
             </button>
 
             {showFilters && (
-              <div className="bg-[#FBF9F4] border border-[#E8E2D5] rounded-xl p-4 mb-4">
+              <div className="bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl p-4 mb-4">
                 <div className="mb-4">
                   <h3 className="font-bold mb-2 text-[#1B2A4A]">
                     {language === 'ru' ? 'Категория' : 'Kategoriya'}
@@ -258,14 +263,14 @@ export default function BrandsPage() {
                       value={minPrice === 0 ? '' : minPrice}
                       onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
                       placeholder={language === 'ru' ? 'От' : 'Dan'}
-                      className="w-full p-2 border border-[#E8E2D5] rounded-lg bg-white"
+                      className="w-full p-2 border border-[#E8E2D5] rounded-xl bg-white"
                     />
                     <input
                       type="number"
                       value={maxPrice === 100000000 ? '' : maxPrice}
                       onChange={(e) => setMaxPrice(Number(e.target.value) || 100000000)}
                       placeholder={language === 'ru' ? 'До' : 'Gacha'}
-                      className="w-full p-2 border border-[#E8E2D5] rounded-lg bg-white"
+                      className="w-full p-2 border border-[#E8E2D5] rounded-xl bg-white"
                     />
                   </div>
                   <p className="text-xs text-[#8A8275] mt-1">
@@ -333,7 +338,7 @@ export default function BrandsPage() {
                     <div
                       key={product.id}
                       onClick={() => navigate(`/product/${product.id}`)}
-                      className="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden cursor-pointer border border-[#E8E2D5]"
+                      className="bg-[#FBF9F4] rounded-2xl shadow-sm overflow-hidden cursor-pointer border border-[#E8E2D5]"
                     >
                       {product.images?.[0] && (
                         <div className="relative">

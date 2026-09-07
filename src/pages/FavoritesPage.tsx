@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart, Trash2 } from 'lucide-react'
+import { Heart, Trash2, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function FavoritesPage() {
@@ -20,15 +20,21 @@ export default function FavoritesPage() {
   if (favorites.length === 0) {
     return (
       <div className="min-h-screen bg-[#F5F1E8]">
-        <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="text-[#1B2A4A] hover:text-[#C9A961]">
-              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-            </Link>
-            <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-            <div className="w-16"></div>
+        {/* ✅ ОСТРОВОК-ШАПКА */}
+        <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+              <Link
+                to="/"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </Link>
+              <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+            </div>
           </div>
         </div>
+
         <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
           <Heart size={64} className="text-[#E8E2D5] mb-4" />
           <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
@@ -49,15 +55,21 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8]">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-[#1B2A4A] hover:text-[#C9A961]">
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </Link>
-          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
+      {/* ✅ ОСТРОВОК-ШАПКА */}
+      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+            <Link
+              to="/"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+          </div>
         </div>
       </div>
+
       <div className="p-4 pb-20">
         <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
