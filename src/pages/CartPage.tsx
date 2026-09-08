@@ -5,7 +5,7 @@ import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
-import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт
+import IslandHeader from '../components/IslandHeader' // Оставляем импорт, нужен для модалок CheckoutModal
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const navigate = useNavigate()
@@ -17,11 +17,10 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Добавили IslandHeader в состояние пустой корзины для единообразия
+  // ✅ Убрали IslandHeader — теперь тут только глобальная шапка из App.tsx
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
-        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <ShoppingBag size={64} className="text-[#E8E2D5] mb-4" />
           <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
@@ -41,8 +40,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     <div className="min-h-screen bg-[#F5F1E8] pb-32">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ Добавили IslandHeader в основную корзину */}
-      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
+      {/* ✅ Убрали IslandHeader — используем только глобальную шапку из App.tsx */}
 
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
@@ -138,6 +136,7 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   )
 }
 
+// CheckoutModal оставляем БЕЗ ИЗМЕНЕНИЙ (IslandHeader там НУЖЕН, т.к. модалки fullscreen и перекрывают глобальную шапку App.tsx)
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
   const { cart, clearCart, language, currency, exchangeRate } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
@@ -302,7 +301,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-        {/* ✅ Заменили хардкод на IslandHeader */}
+        {/* ✅ IslandHeader ОСТАВЛЕН — модалка fullscreen, глобальная шапка App.tsx перекрыта */}
         <IslandHeader
           needsBack={true}
           onBack={() => {
@@ -317,7 +316,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
         />
         
         <div className="flex-1 overflow-y-auto p-4 pb-40">
-          {/* ✅ КАРТОЧКА: номер заказа */}
+          {/* Остальной код без изменений */}
           <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -330,7 +329,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
           </div>
 
-          {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ */}
           <div className="rounded-2xl overflow-hidden shadow-md mb-3">
             <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-5 text-white">
               <div className="flex items-center justify-between mb-6">
@@ -348,7 +346,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </button>
           </div>
 
-          {/* ✅ КАРТОЧКА: сумма */}
           <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5] mb-3 shadow-sm">
             <div className="flex justify-between items-center">
               <span className="font-medium text-[#1B2A4A]">
@@ -360,7 +357,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
           </div>
 
-          {/* ✅ ЗАГРУЗКА СКРИНШОТА */}
           {!screenshotUploaded ? (
             <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3 shadow-sm">
               <p className="text-sm font-medium mb-2 text-[#1B2A4A]">
@@ -394,7 +390,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </label>
             </div>
           ) : (
-            /* ✅ ПЛАШКА: текст по центру + глаз справа */
             <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5 mb-3 shadow-sm">
               <p className="text-sm text-green-800 font-medium text-center pr-12">
                 ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
@@ -411,7 +406,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
           )}
 
-          {/* ✅ КНОПКИ */}
           <div className="space-y-3">
             <a
               href={MANAGER_TELEGRAM_LINK}
@@ -435,7 +429,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-          {/* ✅ ПРИМЕЧАНИЕ */}
           <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
               <span className="text-base">⏳</span>
@@ -448,7 +441,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
 
-        {/* ✅ МОДАЛКА ПРОСМОТРА СКРИНШОТА */}
         {showScreenshotModal && screenshotUrl && (
           <div
             className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
@@ -523,7 +515,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ Заменили хардкод на IslandHeader */}
+      {/* ✅ IslandHeader ОСТАВЛЕН — модалка fullscreen, глобальная шапка App.tsx перекрыта */}
       <IslandHeader
         needsBack={true}
         onBack={onClose}
@@ -547,7 +539,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         )}
 
-        {/* ✅ КАРТОЧКА 1: Контактные данные */}
+        {/* Остальные карточки без изменений */}
         <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
@@ -586,7 +578,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
 
-        {/* ✅ КАРТОЧКА 2: Способ получения */}
         <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
@@ -666,7 +657,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           )}
         </div>
 
-        {/* ✅ КАРТОЧКА 3: Способ оплаты */}
         <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
@@ -702,7 +692,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   </span>
                 </label>
               )}
-              {/* ✅ МЯГКАЯ ПОМЕТКА ПРО ПРЕДОПЛАТУ — не красная, с иконкой */}
               {deliveryMethod === 'delivery' && (
                 <div className="flex items-start gap-1.5 mt-2 p-2 bg-[#F5F1E8] rounded-lg">
                   <Info size={14} className="text-[#8A8275] mt-0.5 flex-shrink-0" />
@@ -727,7 +716,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
 
-        {/* ✅ КАРТОЧКА 4: Итого */}
         <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5] mb-3 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="font-bold text-[#1B2A4A]">
@@ -744,7 +732,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           )}
         </div>
 
-        {/* ✅ КНОПКА — rounded-2xl + shadow-md как карточки сверху */}
         <button
           onClick={handleSubmit}
           disabled={submitting}
