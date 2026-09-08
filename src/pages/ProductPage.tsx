@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
+import { ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
+import IslandHeader from '../components/IslandHeader'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
 
@@ -53,8 +54,9 @@ export default function ProductPage() {
     setSizes(sizeValues)
   }
 
+  // ✅ Кнопка назад теперь возвращает на предыдущую страницу
   const handleBack = () => {
-    navigate('/')
+    navigate(-1)
   }
 
   const onSale = isProductOnSale(product, saleModeEnabled)
@@ -215,20 +217,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
-        {/* ✅ ОСТРОВОК-ШАПКА */}
-        <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
-              <button
-                onClick={handleBack}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-            </div>
-          </div>
-        </div>
+        <IslandHeader needsBack onBack={handleBack} />
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
@@ -244,20 +233,7 @@ export default function ProductPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
-        {/* ✅ ОСТРОВОК-ШАПКА */}
-        <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
-              <button
-                onClick={handleBack}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-            </div>
-          </div>
-        </div>
+        <IslandHeader needsBack onBack={handleBack} />
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <p className="text-[#8A8275]">
             {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
@@ -271,20 +247,7 @@ export default function ProductPage() {
     <div className="min-h-screen bg-[#F5F1E8] pb-20">
       <Toaster position="top-center" richColors />
       
-      {/* ✅ ОСТРОВОК-ШАПКА */}
-      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
-            <button
-              onClick={handleBack}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          </div>
-        </div>
-      </div>
+      <IslandHeader needsBack onBack={handleBack} />
 
       <div className="p-4">
         <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5]">

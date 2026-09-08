@@ -3,7 +3,8 @@ import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useSto
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
-import { Filter, ArrowUpDown, ArrowLeft } from 'lucide-react'
+import { Filter, ArrowUpDown } from 'lucide-react' // ❌ Убрали ArrowLeft, он теперь внутри IslandHeader
+import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт (проверьте путь, если компонент лежит в другой папке)
 
 export default function CatalogPage() {
   const navigate = useNavigate()
@@ -141,20 +142,12 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      {/* ✅ ОСТРОВОК-ШАПКА */}
-      <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
-            <button
-              onClick={() => navigate(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          </div>
-        </div>
-      </div>
+      
+      {/* ✅ ПОДКЛЮЧАЕМ ГОТОВЫЙ КОМПОНЕНТ ВМЕСТО ХАРДКОДА */}
+      <IslandHeader 
+        needsBack={true} 
+        onBack={() => navigate(-1)} 
+      />
 
       <div className="p-4">
         <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">

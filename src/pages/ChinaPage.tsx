@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom' // ✅ Добавили для кнопки "Назад"
 import { useStore } from '../store/useStore'
 import { Upload, Send, CheckCircle } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
+import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт компонента
 
 export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
+  const navigate = useNavigate() // ✅ Инициализировали навигацию
   const { language } = useStore()
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
@@ -117,153 +120,164 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     setSubmitted(false)
   }
 
+  // ✅ Экран успешной отправки
   if (submitted) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-[80vh] text-center">
+      <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
         <Toaster position="top-center" richColors />
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle size={56} className="text-green-500" />
-        </div>
-        <h2 className="text-3xl font-bold mb-4 text-[#1B2A4A]">
-          {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
-        </h2>
-        <p className="text-[#8A8275] text-lg mb-8 max-w-md">
-          {language === 'ru'
-            ? 'Менеджер рассмотрит ваш спецзаказ'
-            : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
-        </p>
-        <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5]">
-          <p className="text-[#8A8275] text-sm leading-relaxed">
-            {language === 'ru' ? (
-              <>
-                Статус заявки можно посмотреть в разделе<br />
-                <span className="font-semibold text-[#1B2A4A]">"Профиль"</span> → <span className="font-semibold text-[#1B2A4A]">"Мои спецзаказы"</span>
-              </>
-            ) : (
-              <>
-                Ariza holatini bo'limdan ko'rishingiz mumkin<br />
-                <span className="font-semibold text-[#1B2A4A]">"Profil"</span> → <span className="font-semibold text-[#1B2A4A]">"Maxsus buyurtmalarim"</span>
-              </>
-            )}
+        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle size={56} className="text-green-500" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 text-[#1B2A4A]">
+            {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
+          </h2>
+          <p className="text-[#8A8275] text-lg mb-8 max-w-md">
+            {language === 'ru'
+              ? 'Менеджер рассмотрит ваш спецзаказ'
+              : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
           </p>
+          <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5]">
+            <p className="text-[#8A8275] text-sm leading-relaxed">
+              {language === 'ru' ? (
+                <>
+                  Статус заявки можно посмотреть в разделе<br />
+                  <span className="font-semibold text-[#1B2A4A]">"Профиль"</span> → <span className="font-semibold text-[#1B2A4A]">"Мои спецзаказы"</span>
+                </>
+              ) : (
+                <>
+                  Ariza holatini bo'limdan ko'rishingiz mumkin<br />
+                  <span className="font-semibold text-[#1B2A4A]">"Profil"</span> → <span className="font-semibold text-[#1B2A4A]">"Maxsus buyurtmalarim"</span>
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={handleReset}
+            className="bg-[#1B2A4A] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors"
+          >
+            {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
+          </button>
         </div>
-        <button
-          onClick={handleReset}
-          className="bg-[#1B2A4A] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors"
-        >
-          {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
-        </button>
       </div>
     )
   }
 
+  // ✅ Основной экран формы
   return (
-    <div className="p-4 pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] pb-20">
       <Toaster position="top-center" richColors />
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2 text-[#1B2A4A]">
-          {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
-        </h1>
-        <p className="text-[#8A8275] text-sm">
-          {language === 'ru'
-            ? 'Загрузите ссылку на товар — мы привезем его для вас'
-            : 'Mahsulot havolasini yuklang — biz siz uchun uni olib kelamiz'}
-        </p>
-      </div>
+      
+      {/* ✅ Подключаем IslandHeader */}
+      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
-      <div className="space-y-4">
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-          <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
-            {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
-          </label>
-          <input
-            type="text"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
-            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
-          />
-        </div>
-
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-          <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
-            {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
-          </label>
-          <input
-            type="text"
-            value={sizeColor}
-            onChange={(e) => setSizeColor(e.target.value)}
-            placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
-            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
-          />
-        </div>
-
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-          <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
-            {language === 'ru' ? 'Комментарий' : 'Izoh'}
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
-            rows={4}
-            className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
-          />
-        </div>
-
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-          <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
-            {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
-          </label>
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] rounded-xl cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#F5F1E8]">
-            {imagePreview ? (
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="h-full object-contain rounded-lg"
-              />
-            ) : (
-              <>
-                <Upload size={32} className="text-[#8A8275] mb-2" />
-                <span className="text-sm text-[#8A8275]">
-                  {language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing'}
-                </span>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </label>
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
-            submitting
-              ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
-              : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
-          }`}
-        >
-          <Send size={20} />
-          {submitting
-            ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
-            : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
-        </button>
-
-        {/* ✅ ЕДИНАЯ ПЛАШКА (как в корзине) вместо жёлтой */}
-        <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
-          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-            <span className="text-base">⏱</span>
-          </div>
-          <p className="text-xs text-[#8A8275] leading-relaxed">
+      <div className="p-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2 text-[#1B2A4A]">
+            {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
+          </h1>
+          <p className="text-[#8A8275] text-sm">
             {language === 'ru'
-              ? 'Среднее время доставки: 14-21 день.'
-              : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
+              ? 'Загрузите ссылку на товар — мы привезем его для вас'
+              : 'Mahsulot havolasini yuklang — biz siz uchun uni olib kelamiz'}
           </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+              {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
+            </label>
+            <input
+              type="text"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
+              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+            />
+          </div>
+
+          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+              {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
+            </label>
+            <input
+              type="text"
+              value={sizeColor}
+              onChange={(e) => setSizeColor(e.target.value)}
+              placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
+              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+            />
+          </div>
+
+          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+              {language === 'ru' ? 'Комментарий' : 'Izoh'}
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
+              rows={4}
+              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+            />
+          </div>
+
+          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
+              {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
+            </label>
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] rounded-xl cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#F5F1E8]">
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="h-full object-contain rounded-lg"
+                />
+              ) : (
+                <>
+                  <Upload size={32} className="text-[#8A8275] mb-2" />
+                  <span className="text-sm text-[#8A8275]">
+                    {language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing'}
+                  </span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
+              submitting
+                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
+                : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
+            }`}
+          >
+            <Send size={20} />
+            {submitting
+              ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
+              : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
+          </button>
+
+          <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
+              <span className="text-base">⏱</span>
+            </div>
+            <p className="text-xs text-[#8A8275] leading-relaxed">
+              {language === 'ru'
+                ? 'Среднее время доставки: 14-21 день.'
+                : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
+            </p>
+          </div>
         </div>
       </div>
     </div>

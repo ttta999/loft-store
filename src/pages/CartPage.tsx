@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const navigate = useNavigate()
@@ -16,113 +17,123 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  // ✅ Добавили IslandHeader в состояние пустой корзины для единообразия
   if (cart.length === 0) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
-        <ShoppingBag size={64} className="text-[#E8E2D5] mb-4" />
-        <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
-          {language === 'ru' ? 'Корзина пуста' : 'Savat bo\'sh'}
-        </h2>
-        <p className="text-[#8A8275] text-center px-4">
-          {language === 'ru'
-            ? 'Добавьте товары из каталога, чтобы оформить заказ'
-            : 'Buyurtma rasmiylashtirish uchun kataloqdan mahsulotlar qo\'shing'}
-        </p>
+      <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
+        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <ShoppingBag size={64} className="text-[#E8E2D5] mb-4" />
+          <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
+            {language === 'ru' ? 'Корзина пуста' : 'Savat bo\'sh'}
+          </h2>
+          <p className="text-[#8A8275] text-center px-4">
+            {language === 'ru'
+              ? 'Добавьте товары из каталога, чтобы оформить заказ'
+              : 'Buyurtma rasmiylashtirish uchun kataloqdan mahsulotlar qo\'shing'}
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 pb-32">
+    <div className="min-h-screen bg-[#F5F1E8] pb-32">
       <Toaster position="top-center" richColors />
-      <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
-        {language === 'ru' ? 'Корзина' : 'Savat'}
-      </h1>
+      
+      {/* ✅ Добавили IslandHeader в основную корзину */}
+      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
-      <div className="space-y-3 mb-32">
-        {cart.map((item) => (
-          <div key={`${item.productId}-${item.size}`} className="bg-[#FBF9F4] rounded-2xl p-3 shadow-sm border border-[#E8E2D5] flex gap-3">
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate(`/product/${item.productId}`, {
-                state: { fromCart: true }
-              })}
-            />
-            <div
-              className="flex-1 cursor-pointer"
-              onClick={() => navigate(`/product/${item.productId}`, {
-                state: { fromCart: true }
-              })}
-            >
-              <h3 className="font-medium text-sm mb-1 text-[#1B2A4A]">{item.name}</h3>
-              <p className="text-xs text-[#8A8275] mb-2">
-                {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
-              </p>
-              <p className="font-bold text-[#1B2A4A]">
-                {formatPrice(item.priceUsd)}
-              </p>
-              {item.isSpecialOrder && (
-                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
-                  🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
-                </span>
-              )}
-            </div>
-            <div className="flex flex-col items-end justify-between">
-              <button
-                onClick={() => removeFromCart(item.productId, item.size)}
-                className="text-[#9B3B3B] hover:text-red-700"
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+          {language === 'ru' ? 'Корзина' : 'Savat'}
+        </h1>
+
+        <div className="space-y-3 mb-32">
+          {cart.map((item) => (
+            <div key={`${item.productId}-${item.size}`} className="bg-[#FBF9F4] rounded-2xl p-3 shadow-sm border border-[#E8E2D5] flex gap-3">
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate(`/product/${item.productId}`, {
+                  state: { fromCart: true }
+                })}
+              />
+              <div
+                className="flex-1 cursor-pointer"
+                onClick={() => navigate(`/product/${item.productId}`, {
+                  state: { fromCart: true }
+                })}
               >
-                <Trash2 size={18} />
-              </button>
-              {!item.isSpecialOrder && (
-                <div className="flex items-center gap-2 bg-[#F5F1E8] rounded-lg px-2 py-1">
-                  <button
-                    onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })}
-                    className="text-[#8A8275]"
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span className="font-medium text-sm text-[#1B2A4A]">{item.quantity}</span>
-                  <button
-                    onClick={() => addToCart({ ...item, quantity: 1 })}
-                    className="text-[#8A8275]"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              )}
+                <h3 className="font-medium text-sm mb-1 text-[#1B2A4A]">{item.name}</h3>
+                <p className="text-xs text-[#8A8275] mb-2">
+                  {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
+                </p>
+                <p className="font-bold text-[#1B2A4A]">
+                  {formatPrice(item.priceUsd)}
+                </p>
+                {item.isSpecialOrder && (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                    🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col items-end justify-between">
+                <button
+                  onClick={() => removeFromCart(item.productId, item.size)}
+                  className="text-[#9B3B3B] hover:text-red-700"
+                >
+                  <Trash2 size={18} />
+                </button>
+                {!item.isSpecialOrder && (
+                  <div className="flex items-center gap-2 bg-[#F5F1E8] rounded-lg px-2 py-1">
+                    <button
+                      onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })}
+                      className="text-[#8A8275]"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="font-medium text-sm text-[#1B2A4A]">{item.quantity}</span>
+                    <button
+                      onClick={() => addToCart({ ...item, quantity: 1 })}
+                      className="text-[#8A8275]"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-[#FBF9F4] border-t border-[#E8E2D5] p-4 shadow-lg pb-24">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-[#8A8275]">
-            {language === 'ru' ? 'Итого:' : 'Jami:'}
-          </span>
-          <span className="text-xl font-bold text-[#1B2A4A]">
-            {formatPrice(getTotalPrice())}
-          </span>
+          ))}
         </div>
-        <button
-          onClick={() => setShowCheckout(true)}
-          className="w-full bg-[#1B2A4A] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors shadow-md"
-        >
-          {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
-        </button>
-      </div>
 
-      {showCheckout && (
-        <CheckoutModal
-          onClose={() => setShowCheckout(false)}
-          formatPrice={formatPrice}
-          getTotalPrice={getTotalPrice}
-          telegramUser={telegramUser}
-        />
-      )}
+        <div className="fixed bottom-0 left-0 right-0 bg-[#FBF9F4] border-t border-[#E8E2D5] p-4 shadow-lg pb-24">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[#8A8275]">
+              {language === 'ru' ? 'Итого:' : 'Jami:'}
+            </span>
+            <span className="text-xl font-bold text-[#1B2A4A]">
+              {formatPrice(getTotalPrice())}
+            </span>
+          </div>
+          <button
+            onClick={() => setShowCheckout(true)}
+            className="w-full bg-[#1B2A4A] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors shadow-md"
+          >
+            {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
+          </button>
+        </div>
+
+        {showCheckout && (
+          <CheckoutModal
+            onClose={() => setShowCheckout(false)}
+            formatPrice={formatPrice}
+            getTotalPrice={getTotalPrice}
+            telegramUser={telegramUser}
+          />
+        )}
+      </div>
     </div>
   )
 }
@@ -291,26 +302,20 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-        <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => {
-                if (screenshotUploaded) {
-                  setShowPaymentInfo(false)
-                  setOrderSuccess(true)
-                  clearCart()
-                } else {
-                  setShowPaymentInfo(false)
-                }
-              }}
-              className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
-            >
-              ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-            </button>
-            <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-            <div className="w-16"></div>
-          </div>
-        </div>
+        {/* ✅ Заменили хардкод на IslandHeader */}
+        <IslandHeader
+          needsBack={true}
+          onBack={() => {
+            if (screenshotUploaded) {
+              setShowPaymentInfo(false)
+              setOrderSuccess(true)
+              clearCart()
+            } else {
+              setShowPaymentInfo(false)
+            }
+          }}
+        />
+        
         <div className="flex-1 overflow-y-auto p-4 pb-40">
           {/* ✅ КАРТОЧКА: номер заказа */}
           <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3 shadow-sm">
@@ -430,7 +435,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             )}
           </div>
 
-                     {/* ✅ ПРИМЕЧАНИЕ */}
+          {/* ✅ ПРИМЕЧАНИЕ */}
           <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
               <span className="text-base">⏳</span>
@@ -518,15 +523,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors">
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
-        </div>
-      </div>
+      {/* ✅ Заменили хардкод на IslandHeader */}
+      <IslandHeader
+        needsBack={true}
+        onBack={onClose}
+      />
+      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}

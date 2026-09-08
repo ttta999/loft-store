@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -97,7 +98,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
     return colors[status] || 'bg-green-100 text-green-800'
   }
 
-  // ✅ Копирование номера карты
   const handleCopyCard = async () => {
     try {
       await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
@@ -129,15 +129,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors">
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
-        </div>
-      </div>
+      {/* ✅ Заменили хардкод на IslandHeader */}
+      <IslandHeader needsBack={true} onBack={onClose} />
 
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         {/* ✅ КАРТОЧКА 1: номер заказа + статус (БЕЗ курса) */}
@@ -291,7 +284,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </div>
             ) : (
               <>
-                {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ (вместо CLICK/Payme/Uzum) */}
+                {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ */}
                 <div className="rounded-2xl overflow-hidden shadow-md">
                   <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-4 text-white">
                     <div className="flex items-center justify-between mb-4">
@@ -475,15 +468,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      <div className="bg-[#FBF9F4] p-4 shadow-sm sticky top-0 z-10 border-b border-[#E8E2D5]">
-        <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-[#1B2A4A] hover:text-[#C9A961] transition-colors">
-            ← {language === 'ru' ? 'Назад' : 'Orqaga'}
-          </button>
-          <h1 className="text-xl font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
-          <div className="w-16"></div>
-        </div>
-      </div>
+      {/* ✅ Заменили хардкод на IslandHeader */}
+      <IslandHeader needsBack={true} onBack={onClose} />
+      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -607,6 +594,7 @@ export default function ProfilePage({
     return 'товаров'
   }
 
+  // Оставляем этот useEffect для обратной совместимости с родительским компонентом
   useEffect(() => {
     if (activeSection === 'main') {
       setShowBackButton(false)
@@ -813,166 +801,171 @@ export default function ProfilePage({
 
   if (activeSection === 'main') {
     return (
-      <div className="p-4 pb-20">
-        <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5]">
-          {telegramUser?.photoUrl ? (
-            <img
-              src={telegramUser.photoUrl}
-              alt="Avatar"
-              className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
-            />
-          ) : (
-            <div className="w-20 h-20 bg-[#E8E2D5] rounded-full mx-auto mb-3 flex items-center justify-center">
-              <User size={40} className="text-[#8A8275]" />
-            </div>
-          )}
-          <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
-            {telegramUser
-              ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
-              : (language === 'ru' ? 'Гость' : 'Mehmon')}
-          </h2>
-          {telegramUser?.username ? (
-            <p className="text-sm text-[#8A8275]">@{telegramUser.username}</p>
-          ) : (
-            <p className="text-sm text-[#8A8275]">
-              {language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring'}
-            </p>
-          )}
-        </div>
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        {/* ✅ Добавили IslandHeader */}
+        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
+        
+        <div className="p-4">
+          <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5]">
+            {telegramUser?.photoUrl ? (
+              <img
+                src={telegramUser.photoUrl}
+                alt="Avatar"
+                className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-[#E8E2D5] rounded-full mx-auto mb-3 flex items-center justify-center">
+                <User size={40} className="text-[#8A8275]" />
+              </div>
+            )}
+            <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
+              {telegramUser
+                ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
+                : (language === 'ru' ? 'Гость' : 'Mehmon')}
+            </h2>
+            {telegramUser?.username ? (
+              <p className="text-sm text-[#8A8275]">@{telegramUser.username}</p>
+            ) : (
+              <p className="text-sm text-[#8A8275]">
+                {language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring'}
+              </p>
+            )}
+          </div>
 
-        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
-          {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
-        </h3>
-        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
-          <button
-            onClick={() => navigate('/favorites')}
-            className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Heart size={20} className="text-[#8A8275]" />
-              <span className="font-medium text-[#1B2A4A]">
-                {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {favorites.length > 0 && (
-                <span className="text-sm text-[#8A8275]">
-                  {favorites.length} {getItemsLabel(favorites.length, language)}
+          <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
+            {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+          </h3>
+          <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
+            <button
+              onClick={() => navigate('/favorites')}
+              className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Heart size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
                 </span>
-              )}
+              </div>
+              <div className="flex items-center gap-2">
+                {favorites.length > 0 && (
+                  <span className="text-sm text-[#8A8275]">
+                    {favorites.length} {getItemsLabel(favorites.length, language)}
+                  </span>
+                )}
+                <ChevronRight size={20} className="text-[#8A8275]" />
+              </div>
+            </button>
+          </div>
+
+          <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
+            {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
+          </h3>
+          <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
+            <button
+              onClick={() => {
+                setActiveSection('orders')
+                loadOrders()
+              }}
+              className="flex items-center justify-between w-full p-4 border-b border-[#E8E2D5] hover:bg-[#F5F1E8] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Package size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
+                </span>
+              </div>
               <ChevronRight size={20} className="text-[#8A8275]" />
-            </div>
-          </button>
-        </div>
+            </button>
+            <button
+              onClick={() => {
+                setActiveSection('china')
+                loadChinaRequests()
+              }}
+              className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Globe size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
+                </span>
+              </div>
+              <ChevronRight size={20} className="text-[#8A8275]" />
+            </button>
+          </div>
 
-        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
-          {language === 'ru' ? 'Мои заказы' : 'Mening buyurtmalarim'}
-        </h3>
-        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
-          <button
-            onClick={() => {
-              setActiveSection('orders')
-              loadOrders()
-            }}
-            className="flex items-center justify-between w-full p-4 border-b border-[#E8E2D5] hover:bg-[#F5F1E8] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Package size={20} className="text-[#8A8275]" />
-              <span className="font-medium text-[#1B2A4A]">
-                {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-              </span>
+          <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
+            {language === 'ru' ? 'Настройки' : 'Sozlamalar'}
+          </h3>
+          <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
+            <div className="flex items-center justify-between p-4 border-b border-[#E8E2D5]">
+              <div className="flex items-center gap-3">
+                <Globe size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'Язык' : 'Til'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLanguage('ru')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    language === 'ru' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                  }`}
+                >
+                  RU
+                </button>
+                <button
+                  onClick={() => setLanguage('uz')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    language === 'uz' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                  }`}
+                >
+                  UZ
+                </button>
+              </div>
             </div>
-            <ChevronRight size={20} className="text-[#8A8275]" />
-          </button>
-          <button
-            onClick={() => {
-              setActiveSection('china')
-              loadChinaRequests()
-            }}
-            className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Globe size={20} className="text-[#8A8275]" />
-              <span className="font-medium text-[#1B2A4A]">
-                {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-              </span>
-            </div>
-            <ChevronRight size={20} className="text-[#8A8275]" />
-          </button>
-        </div>
-
-        <h3 className="text-lg font-bold mb-3 text-[#1B2A4A]">
-          {language === 'ru' ? 'Настройки' : 'Sozlamalar'}
-        </h3>
-        <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
-          <div className="flex items-center justify-between p-4 border-b border-[#E8E2D5]">
-            <div className="flex items-center gap-3">
-              <Globe size={20} className="text-[#8A8275]" />
-              <span className="font-medium text-[#1B2A4A]">
-                {language === 'ru' ? 'Язык' : 'Til'}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setLanguage('ru')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  language === 'ru' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
-                }`}
-              >
-                RU
-              </button>
-              <button
-                onClick={() => setLanguage('uz')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  language === 'uz' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
-                }`}
-              >
-                UZ
-              </button>
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <DollarSign size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'Валюта' : 'Valyuta'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrency('USD')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    currency === 'USD' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                  }`}
+                >
+                  USD
+                </button>
+                <button
+                  onClick={() => setCurrency('UZS')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    currency === 'UZS' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                  }`}
+                >
+                  UZS
+                </button>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <DollarSign size={20} className="text-[#8A8275]" />
-              <span className="font-medium text-[#1B2A4A]">
-                {language === 'ru' ? 'Валюта' : 'Valyuta'}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrency('USD')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  currency === 'USD' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
-                }`}
-              >
-                USD
-              </button>
-              <button
-                onClick={() => setCurrency('UZS')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  currency === 'UZS' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
-                }`}
-              >
-                UZS
-              </button>
-            </div>
-          </div>
-        </div>
 
-        <div className="mt-6 bg-[#FBF9F4] rounded-xl p-4 border border-[#E8E2D5]">
-          <h4 className="font-bold mb-2 text-[#1B2A4A]">
-            {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
-          </h4>
-          <p className="text-sm text-[#8A8275] mb-1">
-            {language === 'ru' ? 'ТЦ Mercato' : 'Mercato savdo markazi'}
-          </p>
-          <p className="text-sm text-[#8A8275] mb-1">
-            {language === 'ru' ? '2 этаж, магазин 34' : '2-qavat, 34-do\'kon'}
-          </p>
-          <p className="text-sm text-[#8A8275] mb-1">📞 +998 93 378 87 70</p>
-          <p className="text-sm text-[#8A8275]">
-            🕐 {language === 'ru' ? 'Ежедневно 10:00 - 20:00' : 'Har kuni 10:00 - 20:00'}
-          </p>
+          <div className="mt-6 bg-[#FBF9F4] rounded-xl p-4 border border-[#E8E2D5]">
+            <h4 className="font-bold mb-2 text-[#1B2A4A]">
+              {language === 'ru' ? '📍 Наш магазин' : '📍 Bizning do\'kon'}
+            </h4>
+            <p className="text-sm text-[#8A8275] mb-1">
+              {language === 'ru' ? 'ТЦ Mercato' : 'Mercato savdo markazi'}
+            </p>
+            <p className="text-sm text-[#8A8275] mb-1">
+              {language === 'ru' ? '2 этаж, магазин 34' : '2-qavat, 34-do\'kon'}
+            </p>
+            <p className="text-sm text-[#8A8275] mb-1">📞 +998 93 378 87 70</p>
+            <p className="text-sm text-[#8A8275]">
+              🕐 {language === 'ru' ? 'Ежедневно 10:00 - 20:00' : 'Har kuni 10:00 - 20:00'}
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -980,170 +973,180 @@ export default function ProfilePage({
 
   if (activeSection === 'orders') {
     return (
-      <div className="p-4 pb-20">
-        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
-          {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-        </h2>
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
-            <p className="text-[#8A8275]">
-              {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-12">
-            <Package size={64} className="text-[#E8E2D5] mx-auto mb-4" />
-            <p className="text-[#8A8275]">
-              {language === 'ru' ? 'У вас пока нет заказов' : 'Sizda hali buyurtmalar yo\'q'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {orders.map((order) => {
-              const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
-              return (
-                <div
-                  key={order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-bold text-[#1B2A4A]">
-                        {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
-                      </p>
-                      <p className="text-sm text-[#8A8275]">
-                        {formatDateTime(order.created_at)}
-                      </p>
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        {/* ✅ Добавили IslandHeader с возвратом в main */}
+        <IslandHeader needsBack={true} onBack={() => setActiveSection('main')} />
+        
+        <div className="p-4">
+          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+            {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
+          </h2>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+              <p className="text-[#8A8275]">
+                {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+              </p>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-12">
+              <Package size={64} className="text-[#E8E2D5] mx-auto mb-4" />
+              <p className="text-[#8A8275]">
+                {language === 'ru' ? 'У вас пока нет заказов' : 'Sizda hali buyurtmalar yo\'q'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((order) => {
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-bold text-[#1B2A4A]">
+                          {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
+                        </p>
+                        <p className="text-sm text-[#8A8275]">
+                          {formatDateTime(order.created_at)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
+                        {getOrderStatusText(order.status, order.delivery_method)}
+                      </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
-                      {getOrderStatusText(order.status, order.delivery_method)}
-                    </span>
-                  </div>
-                  {order.special_order_id && (
-                    <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
-                      🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
-                    </div>
-                  )}
-                  <div className="flex gap-1 mb-3">
-                    {items.slice(0, 2).map((item: any, idx: number) => (
-                      <img
-                        key={idx}
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded border border-[#E8E2D5]"
-                      />
-                    ))}
-                    {items.length > 2 && (
-                      <div className="relative w-12 h-12 rounded border border-[#E8E2D5] overflow-hidden bg-[#F5F1E8]">
-                        <img
-                          src={items[2].image}
-                          alt="more"
-                          className="w-full h-full object-cover blur-sm opacity-50"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-[#8A8275] text-xs font-bold">+{items.length - 2}</span>
-                        </div>
+                    {order.special_order_id && (
+                      <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full inline-block">
+                        🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                       </div>
                     )}
+                    <div className="flex gap-1 mb-3">
+                      {items.slice(0, 2).map((item: any, idx: number) => (
+                        <img
+                          key={idx}
+                          src={item.image}
+                          alt={item.name}
+                          className="w-12 h-12 object-cover rounded border border-[#E8E2D5]"
+                        />
+                      ))}
+                      {items.length > 2 && (
+                        <div className="relative w-12 h-12 rounded border border-[#E8E2D5] overflow-hidden bg-[#F5F1E8]">
+                          <img
+                            src={items[2].image}
+                            alt="more"
+                            className="w-full h-full object-cover blur-sm opacity-50"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[#8A8275] text-xs font-bold">+{items.length - 2}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold text-[#1B2A4A]">
+                      {formatOrderPrice(order)}
+                    </p>
+                    <p className="text-xs text-[#8A8275] mt-1">
+                      {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
+                    </p>
                   </div>
-                  <p className="text-lg font-bold text-[#1B2A4A]">
-                    {formatOrderPrice(order)}
-                  </p>
-                  <p className="text-xs text-[#8A8275] mt-1">
-                    {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {selectedOrder && (
-          <OrderDetailModal
-            order={selectedOrder}
-            onClose={() => setSelectedOrder(null)}
-            language={language}
-            currency={currency}
-            exchangeRate={exchangeRate}
-            onCancelOrder={handleCancelOrder}
-            onScreenshotUploaded={() => {
-              const updatedOrder = { ...selectedOrder, payment_screenshot_url: 'uploaded' }
-              setSelectedOrder(updatedOrder)
-              loadOrders()
-            }}
-          />
-        )}
+                )
+              })}
+            </div>
+          )}
+          {selectedOrder && (
+            <OrderDetailModal
+              order={selectedOrder}
+              onClose={() => setSelectedOrder(null)}
+              language={language}
+              currency={currency}
+              exchangeRate={exchangeRate}
+              onCancelOrder={handleCancelOrder}
+              onScreenshotUploaded={() => {
+                const updatedOrder = { ...selectedOrder, payment_screenshot_url: 'uploaded' }
+                setSelectedOrder(updatedOrder)
+                loadOrders()
+              }}
+            />
+          )}
+        </div>
       </div>
     )
   }
 
   if (activeSection === 'china') {
     return (
-      <div className="p-4 pb-20">
-        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
-          {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-        </h2>
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
-            <p className="text-[#8A8275]">
-              {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        ) : chinaRequests.length === 0 ? (
-          <div className="text-center py-12">
-            <Globe size={64} className="text-[#E8E2D5] mx-auto mb-4" />
-            <p className="text-[#8A8275]">
-              {language === 'ru' ? 'У вас нет спецзаказов' : 'Sizda maxsus buyurtmalar yo\'q'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {chinaRequests.map((request) => {
-              const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
-              return (
-                <div
-                  key={request.id}
-                  onClick={() => setSelectedChinaRequest(request)}
-                  className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-bold text-[#1B2A4A]">
-                        {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
-                      </p>
-                      <p className="text-sm text-[#8A8275]">
-                        {formatDateTime(request.created_at)}
-                      </p>
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        {/* ✅ Добавили IslandHeader с возвратом в main */}
+        <IslandHeader needsBack={true} onBack={() => setActiveSection('main')} />
+        
+        <div className="p-4">
+          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+            {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
+          </h2>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
+              <p className="text-[#8A8275]">
+                {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+              </p>
+            </div>
+          ) : chinaRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <Globe size={64} className="text-[#E8E2D5] mx-auto mb-4" />
+              <p className="text-[#8A8275]">
+                {language === 'ru' ? 'У вас нет спецзаказов' : 'Sizda maxsus buyurtmalar yo\'q'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {chinaRequests.map((request) => {
+                const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
+                return (
+                  <div
+                    key={request.id}
+                    onClick={() => setSelectedChinaRequest(request)}
+                    className="bg-[#FBF9F4] rounded-xl p-4 shadow-sm border border-[#E8E2D5] cursor-pointer hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-[#1B2A4A]">
+                          {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
+                        </p>
+                        <p className="text-sm text-[#8A8275]">
+                          {formatDateTime(request.created_at)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
+                        {getChinaStatusText(request.status)}
+                      </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
-                      {getChinaStatusText(request.status)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#8A8275] truncate">{request.link}</p>
-                  {request.manager_price && (
-                    <p className="text-sm text-purple-700 font-medium mt-1">
-                      💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум
+                    <p className="text-sm text-[#8A8275] truncate">{request.link}</p>
+                    {request.manager_price && (
+                      <p className="text-sm text-purple-700 font-medium mt-1">
+                        💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум
+                      </p>
+                    )}
+                    <p className="text-xs text-[#8A8275] mt-1">
+                      {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                     </p>
-                  )}
-                  <p className="text-xs text-[#8A8275] mt-1">
-                    {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {selectedChinaRequest && (
-          <ChinaRequestDetailModal
-            request={selectedChinaRequest}
-            onClose={() => setSelectedChinaRequest(null)}
-            language={language}
-            exchangeRate={exchangeRate}
-            onAccept={handleAcceptSpecialOrder}
-          />
-        )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {selectedChinaRequest && (
+            <ChinaRequestDetailModal
+              request={selectedChinaRequest}
+              onClose={() => setSelectedChinaRequest(null)}
+              language={language}
+              exchangeRate={exchangeRate}
+              onAccept={handleAcceptSpecialOrder}
+            />
+          )}
+        </div>
       </div>
     )
   }
