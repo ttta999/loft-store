@@ -36,6 +36,7 @@ function AppContent() {
 
   const location = useLocation()
 
+  // ✅ При смене URL автоматически переключаем активную вкладку
   useEffect(() => {
     const path = location.pathname
     if (path === '/' || path === '/home') {
@@ -122,7 +123,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ✅ ГЛАВНЫЕ ВКЛАДКИ — все рендерят AppContent */}
         <Route path="/" element={<AppContent />} />
+        <Route path="/home" element={<AppContent />} />
+        <Route path="/search" element={<AppContent />} />
+        <Route path="/cart" element={<AppContent />} />
+        <Route path="/china" element={<AppContent />} />
+        <Route path="/profile" element={<AppContent />} />
+
+        {/* ✅ ВНУТРЕННИЕ СТРАНИЦЫ (без нижней навигации и островка) */}
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
