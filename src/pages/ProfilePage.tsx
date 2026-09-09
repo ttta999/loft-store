@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useStore } from '../store/useStore'
-import { supabase } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
+import { Link } from 'react-router-dom' // ✅ Link для карточек товаров
+import { useStore, isProductOnSale } from '../store/useStore' // ✅ Добавили isProductOnSale
+import { supabase, getProducts } from '../lib/supabase' // ✅ Добавили getProducts
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2 } from 'lucide-react' // ✅ Добавили Trash2
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
@@ -564,15 +564,20 @@ export default function ProfilePage({
   onBackClick: _onBackClick,
   setOnBackClick
 }: ProfilePageProps) {
-  const navigate = useNavigate()
-  const location = useLocation() // ✅ Добавили
-  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites } = useStore()
-  const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
+  // ❌ Убрали useNavigate и useLocation — они больше не нужны
+  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled } = useStore() // ✅ Добавили removeFromFavorites, saleModeEnabled
+  const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china' | 'favorites'>('main') // ✅ Добавили 'favorites'
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [allProducts, setAllProducts] = useState<any[]>([]) // ✅ Для актуальных цен в избранном
+
+  // ✅ Загружаем товары для отображения актуальных цен
+  useEffect(() => {
+    getProducts().then(setAllProducts)
+  }, [])
 
   const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
     if (lang === 'uz') {
@@ -586,6 +591,12 @@ export default function ProfilePage({
     return 'товаров'
   }
 
+  // ✅ Форматирование цены для избранного
+  const formatPrice = (usd: number) => {
+    if (currency === 'USD') return `$${usd}`
+    return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
+
   useEffect(() => {
     if (activeSection === 'main') {
       setShowBackButton(false)
@@ -594,6 +605,10 @@ export default function ProfilePage({
       setShowBackButton(true)
       setOnBackClick(() => () => setActiveSection('main'))
     } else if (activeSection === 'china') {
+      setShowBackButton(true)
+      setOnBackClick(() => () => setActiveSection('main'))
+    } else if (activeSection === 'favorites') {
+      // ✅ Для избранного — возврат в main
       setShowBackButton(true)
       setOnBackClick(() => () => setActiveSection('main'))
     }
@@ -790,12 +805,7 @@ export default function ProfilePage({
     )
   }
 
-  // ✅ Функция перехода в избранное с сохранением пути в sessionStorage
-  const handleGoToFavorites = () => {
-    sessionStorage.setItem('favorites_from', location.pathname) // ✅ Сохраняем текущий путь
-    navigate('/favorites')
-  }
-
+  // ✅ РАЗДЕЛ MAIN
   if (activeSection === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
@@ -831,7 +841,7 @@ export default function ProfilePage({
           </h3>
           <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
             <button
-              onClick={handleGoToFavorites} // ✅ Используем новую функцию
+              onClick={() => setActiveSection('favorites')} // ✅ Просто переключаем секцию
               className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -965,6 +975,77 @@ export default function ProfilePage({
     )
   }
 
+  // ✅ РАЗДЕЛ FAVORITES — встроенный прямо в профиль
+  if (activeSection === 'favorites') {
+    return (
+      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+        <div className="p-4 pb-20">
+          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+            {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+          </h2>
+
+          {favorites.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+              <Heart size={64} className="text-[#E8E2D5] mb-4" />
+              <p className="text-[#8A8275] px-4">
+                {language === 'ru'
+                  ? 'Добавляйте товары в избранное, чтобы не потерять их'
+                  : 'Mahsulotlarni yo\'qotib qo\'ymaslik uchun sevimlilarga qo\'shing'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {favorites.map((item) => {
+                const product = allProducts.find(p => p.id === item.productId)
+                const onSale = product ? isProductOnSale(product, saleModeEnabled) : false
+                const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
+                return (
+                  <div key={item.productId} className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+                    <Link to={`/product/${item.productId}`}>
+                      <div className="aspect-square bg-[#F5F1E8]">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </Link>
+                    <div className="p-3">
+                      <Link to={`/product/${item.productId}`}>
+                        <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A]">
+                          {item.name}
+                        </p>
+                      </Link>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {onSale && (
+                            <p className="text-[#8A8275] text-xs line-through">
+                              {formatPrice(item.priceUsd)}
+                            </p>
+                          )}
+                          <p className={`font-bold ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
+                            {formatPrice(displayPrice)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeFromFavorites(item.productId)}
+                          className="text-[#9B3B3B] hover:text-red-700 p-1"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ РАЗДЕЛ ORDERS
   if (activeSection === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
@@ -1067,6 +1148,7 @@ export default function ProfilePage({
     )
   }
 
+  // ✅ РАЗДЕЛ CHINA
   if (activeSection === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">

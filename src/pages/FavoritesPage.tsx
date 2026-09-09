@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, Trash2 } from 'lucide-react'
@@ -6,12 +6,8 @@ import { useEffect, useState } from 'react'
 import IslandHeader from '../components/IslandHeader'
 
 export default function FavoritesPage() {
-  const navigate = useNavigate()
   const { favorites, removeFromFavorites, currency, exchangeRate, language, saleModeEnabled } = useStore()
   const [products, setProducts] = useState<any[]>([])
-
-  // ✅ Читаем путь из sessionStorage
-  const from = sessionStorage.getItem('favorites_from') || '/'
 
   useEffect(() => {
     getProducts().then(setProducts)
@@ -22,9 +18,9 @@ export default function FavoritesPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Функция возврата
+  // ✅ Используем нативный window.history.back()
   const handleBack = () => {
-    navigate(from)
+    window.history.back()
   }
 
   if (favorites.length === 0) {
