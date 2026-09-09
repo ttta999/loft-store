@@ -13,7 +13,7 @@ export const PAYMENT_DETAILS = {
 }
 
 // ✅ Ссылка на менеджера в Telegram
-export const MANAGER_TELEGRAM_LINK = 'https://t.me/loft_corneli' // Замени на свой username
+export const MANAGER_TELEGRAM_LINK = 'https://t.me/loft_corneli'
 
 // ✅ Показать реквизиты оплаты
 export const showPaymentDetails = (paymentData: PaymentData): string => {
@@ -82,19 +82,38 @@ export const savePaymentScreenshot = async (
   }
 }
 
-// ✅ Отмена заказа
+// ✅ Отмена заказа — ИСПРАВЛЕНО
 export const cancelOrder = async (orderId: string) => {
   try {
-    const { error } = await supabase
+    // ✅ Преобразуем orderId в число (Supabase id обычно integer/bigint)
+    const numericId = Number(orderId)
+    
+    if (isNaN(numericId)) {
+      console.error('Неверный формат ID заказа:', orderId)
+      return false
+    }
+
+    const { data, error } = await supabase
       .from('orders')
       .update({
         status: 'Отменён',
         payment_status: 'cancelled',
-        cancelled_at: new Date().toISOString()
       })
-      .eq('id', orderId)
+      .eq('id', numericId)
+      .select()
 
-    if (error) throw error
+    if (error) {
+      console.error('Ошибка Supabase при отмене:', error)
+      throw error
+    }
+
+    // Проверяем, что реально обновили запись
+    if (!data || data.length === 0) {
+      console.error('Заказ не найден или не обновлён')
+      return false
+    }
+
+    console.log('✅ Заказ успешно отменён:', data[0])
     return true
   } catch (error) {
     console.error('Ошибка отмены заказа:', error)
@@ -105,6 +124,13 @@ export const cancelOrder = async (orderId: string) => {
 // ✅ Подтверждение оплаты (для менеджера)
 export const confirmPayment = async (orderId: string) => {
   try {
+    const numericId = Number(orderId)
+    
+    if (isNaN(numericId)) {
+      console.error('Неверный формат ID заказа:', orderId)
+      return false
+    }
+
     const { error } = await supabase
       .from('orders')
       .update({
@@ -113,7 +139,7 @@ export const confirmPayment = async (orderId: string) => {
         paid_at: new Date().toISOString(),
         payment_provider: 'manual'
       })
-      .eq('id', orderId)
+      .eq('id', numericId)
 
     if (error) throw error
     return true
