@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts, supabase } from '../lib/supabase'
@@ -48,10 +48,6 @@ export default function SearchPage() {
     }
   }
 
-  useEffect(() => {
-    applyFiltersAndSort()
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands])
-
   const loadProducts = async () => {
     setLoading(true)
     const data = await getProducts()
@@ -60,29 +56,37 @@ export default function SearchPage() {
     setLoading(false)
   }
 
-  const applyFiltersAndSort = () => {
+  // ✅ Обернули в useCallback и добавили все зависимости
+  const applyFiltersAndSort = useCallback(() => {
     let filtered = [...products]
+    
+    // ✅ Поиск по ОБОИМ языкам (и русскому, и узбекскому)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter((p: any) =>
-        (language === 'ru' ? p.name_ru : p.name_uz).toLowerCase().includes(query)
-      )
+      filtered = filtered.filter((p: any) => {
+        const nameRu = (p.name_ru || '').toLowerCase()
+        const nameUz = (p.name_uz || '').toLowerCase()
+        return nameRu.includes(query) || nameUz.includes(query)
+      })
     }
+    
     if (selectedCategory) {
       filtered = filtered.filter((p: any) => p.category === selectedCategory)
     }
+    
+    // ✅ Исправлено: проверяем поле brand товара, а не name_ru
     if (selectedBrand) {
       const brand = brands.find((b: Brand) => b.id === selectedBrand)
       if (brand) {
-        filtered = filtered.filter((p: any) =>
-          p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
-        )
+        filtered = filtered.filter((p: any) => p.brand === brand.name)
       }
     }
+    
     filtered = filtered.filter((p: any) => {
       const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= priceRange[0] && priceInSums <= priceRange[1]
     })
+    
     switch (sortBy) {
       case 'price_asc':
         filtered.sort((a: any, b: any) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
@@ -98,7 +102,11 @@ export default function SearchPage() {
         break
     }
     setFilteredProducts(filtered)
-  }
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands, saleModeEnabled, exchangeRate])
+
+  useEffect(() => {
+    applyFiltersAndSort()
+  }, [applyFiltersAndSort])
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
