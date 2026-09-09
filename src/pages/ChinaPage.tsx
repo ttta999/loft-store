@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom' // ✅ Добавили для кнопки "Назад"
 import { useStore } from '../store/useStore'
 import { Upload, Send, CheckCircle } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
-import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт компонента
+// ❌ Убрали импорт IslandHeader и useNavigate — они больше не нужны
 
 export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
-  const navigate = useNavigate() // ✅ Инициализировали навигацию
   const { language } = useStore()
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
@@ -120,12 +118,11 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     setSubmitted(false)
   }
 
-  // ✅ Экран успешной отправки
+  // ✅ Экран успешной отправки — Убрали IslandHeader, осталась только глобальная шапка из App.tsx
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
         <Toaster position="top-center" richColors />
-        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
         
         <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
@@ -165,13 +162,10 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     )
   }
 
-  // ✅ Основной экран формы
+  // ✅ Основной экран формы — Убрали IslandHeader, осталась только глобальная шапка из App.tsx
   return (
     <div className="min-h-screen bg-[#F5F1E8] pb-20">
       <Toaster position="top-center" richColors />
-      
-      {/* ✅ Подключаем IslandHeader */}
-      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
       <div className="p-4">
         <div className="mb-6">

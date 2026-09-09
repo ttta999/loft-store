@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom' // Оставляем, нужен для navigate('/favorites')
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
-import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт
+import IslandHeader from '../components/IslandHeader' // Оставляем, нужен для fullscreen модалок
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -129,11 +129,11 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ Заменили хардкод на IslandHeader */}
+      {/* ✅ IslandHeader ОСТАВЛЕН — fullscreen модалка, перекрывает глобальную шапку App.tsx */}
       <IslandHeader needsBack={true} onBack={onClose} />
 
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        {/* ✅ КАРТОЧКА 1: номер заказа + статус (БЕЗ курса) */}
+        {/* ✅ КАРТОЧКА 1: номер заказа + статус */}
         <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -342,7 +342,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </label>
                   </div>
                 ) : (
-                  /* ✅ ПЛАШКА: текст по центру + глаз справа */
                   <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5">
                     <p className="text-sm text-green-800 font-medium text-center pr-12">
                       ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
@@ -468,7 +467,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ Заменили хардкод на IslandHeader */}
+      {/* ✅ IslandHeader ОСТАВЛЕН — fullscreen модалка, перекрывает глобальную шапку App.tsx */}
       <IslandHeader needsBack={true} onBack={onClose} />
       
       <div className="flex-1 overflow-y-auto p-4 pb-32">
@@ -594,7 +593,7 @@ export default function ProfilePage({
     return 'товаров'
   }
 
-  // Оставляем этот useEffect для обратной совместимости с родительским компонентом
+  // useEffect для управления глобальной шапкой из App.tsx — оставляем без изменений
   useEffect(() => {
     if (activeSection === 'main') {
       setShowBackButton(false)
@@ -799,12 +798,10 @@ export default function ProfilePage({
     )
   }
 
+  // ✅ РАЗДЕЛ MAIN — УБРАЛИ IslandHeader, работает глобальная шапка App.tsx (без кнопки "Назад")
   if (activeSection === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
-        {/* ✅ Добавили IslandHeader */}
-        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
-        
         <div className="p-4">
           <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5]">
             {telegramUser?.photoUrl ? (
@@ -971,12 +968,10 @@ export default function ProfilePage({
     )
   }
 
+  // ✅ РАЗДЕЛ ORDERS — УБРАЛИ IslandHeader, глобальная шапка App.tsx покажет "Назад" через setOnBackClick
   if (activeSection === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
-        {/* ✅ Добавили IslandHeader с возвратом в main */}
-        <IslandHeader needsBack={true} onBack={() => setActiveSection('main')} />
-        
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
             {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
@@ -1076,12 +1071,10 @@ export default function ProfilePage({
     )
   }
 
+  // ✅ РАЗДЕЛ CHINA — УБРАЛИ IslandHeader, глобальная шапка App.tsx покажет "Назад" через setOnBackClick
   if (activeSection === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
-        {/* ✅ Добавили IslandHeader с возвратом в main */}
-        <IslandHeader needsBack={true} onBack={() => setActiveSection('main')} />
-        
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
             {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
