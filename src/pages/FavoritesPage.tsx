@@ -22,7 +22,7 @@ export default function FavoritesPage() {
   if (favorites.length === 0) {
     return (
       <div className="min-h-screen bg-[#F5F1E8]">
-        <IslandHeader needsBack onBack={() => navigate('/')} />
+        <IslandHeader needsBack onBack={() => navigate(-1)} /> {/* ✅ Изменено */}
 
         <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
           <Heart size={64} className="text-[#E8E2D5] mb-4" />
@@ -44,7 +44,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8]">
-      <IslandHeader needsBack onBack={() => navigate('/')} />
+      <IslandHeader needsBack onBack={() => navigate(-1)} /> {/* ✅ Изменено */}
 
       <div className="p-4 pb-20">
         <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
