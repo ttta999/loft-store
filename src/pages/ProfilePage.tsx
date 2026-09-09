@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom' // ✅ Добавили useLocation
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
-import IslandHeader from '../components/IslandHeader' // Оставляем, нужен для fullscreen модалок
+import IslandHeader from '../components/IslandHeader'
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -129,11 +129,9 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ IslandHeader ОСТАВЛЕН — fullscreen модалка, перекрывает глобальную шапку App.tsx */}
       <IslandHeader needsBack={true} onBack={onClose} />
 
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        {/* ✅ КАРТОЧКА 1: номер заказа + статус */}
         <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -153,7 +151,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           )}
         </div>
 
-        {/* ✅ КАРТОЧКА 2: компактные данные с иконками */}
         <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5]">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
@@ -205,7 +202,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
         </div>
 
-        {/* ✅ КНОПКА ОТСЛЕДИТЬ КУРЬЕРА */}
         {order.delivery_method === 'delivery' && order.courier_link && (
           <a
             href={order.courier_link}
@@ -217,7 +213,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </a>
         )}
 
-        {/* ✅ КАРТОЧКА 3: товары + итог */}
         <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-3 mb-3">
           <h3 className="font-bold text-[#1B2A4A] mb-2 px-1">
             {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
@@ -250,7 +245,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
         </div>
 
-        {/* ✅ ОПЛАТА ЗАКАЗА */}
         {order.payment_method === 'online_card' && (
           <div className="space-y-3">
             <h3 className="font-bold text-lg text-[#1B2A4A]">
@@ -284,7 +278,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               </div>
             ) : (
               <>
-                {/* ✅ КАРТА — ОДИН НОМЕР КАРТЫ + ИМЯ */}
                 <div className="rounded-2xl overflow-hidden shadow-md">
                   <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-4 text-white">
                     <div className="flex items-center justify-between mb-4">
@@ -467,7 +460,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ IslandHeader ОСТАВЛЕН — fullscreen модалка, перекрывает глобальную шапку App.tsx */}
       <IslandHeader needsBack={true} onBack={onClose} />
       
       <div className="flex-1 overflow-y-auto p-4 pb-32">
@@ -573,7 +565,7 @@ export default function ProfilePage({
   setOnBackClick
 }: ProfilePageProps) {
   const navigate = useNavigate()
-  const location = useLocation() // ✅ Добавили для получения текущего пути
+  const location = useLocation() // ✅ Добавили
   const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
@@ -594,7 +586,6 @@ export default function ProfilePage({
     return 'товаров'
   }
 
-  // useEffect для управления глобальной шапкой из App.tsx — оставляем без изменений
   useEffect(() => {
     if (activeSection === 'main') {
       setShowBackButton(false)
@@ -799,7 +790,12 @@ export default function ProfilePage({
     )
   }
 
-  // ✅ РАЗДЕЛ MAIN — УБРАЛИ IslandHeader, работает глобальная шапка App.tsx (без кнопки "Назад")
+  // ✅ Функция перехода в избранное с сохранением пути в sessionStorage
+  const handleGoToFavorites = () => {
+    sessionStorage.setItem('favorites_from', location.pathname) // ✅ Сохраняем текущий путь
+    navigate('/favorites')
+  }
+
   if (activeSection === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
@@ -835,7 +831,7 @@ export default function ProfilePage({
           </h3>
           <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
             <button
-              onClick={() => navigate('/favorites', { state: { from: location.pathname } })} // ✅ Передаём текущий путь
+              onClick={handleGoToFavorites} // ✅ Используем новую функцию
               className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -969,7 +965,6 @@ export default function ProfilePage({
     )
   }
 
-  // ✅ РАЗДЕЛ ORDERS — УБРАЛИ IslandHeader, глобальная шапка App.tsx покажет "Назад" через setOnBackClick
   if (activeSection === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">
@@ -1072,7 +1067,6 @@ export default function ProfilePage({
     )
   }
 
-  // ✅ РАЗДЕЛ CHINA — УБРАЛИ IslandHeader, глобальная шапка App.tsx покажет "Назад" через setOnBackClick
   if (activeSection === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] pb-20">

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom' // ✅ Добавили useLocation
+import { Link, useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, Trash2 } from 'lucide-react'
@@ -7,12 +7,11 @@ import IslandHeader from '../components/IslandHeader'
 
 export default function FavoritesPage() {
   const navigate = useNavigate()
-  const location = useLocation() // ✅ Получаем location для чтения state
   const { favorites, removeFromFavorites, currency, exchangeRate, language, saleModeEnabled } = useStore()
   const [products, setProducts] = useState<any[]>([])
 
-  // ✅ Путь, откуда пришли (фолбэк на главную, если state пустой)
-  const from = location.state?.from || '/'
+  // ✅ Читаем путь из sessionStorage
+  const from = sessionStorage.getItem('favorites_from') || '/'
 
   useEffect(() => {
     getProducts().then(setProducts)
@@ -23,7 +22,7 @@ export default function FavoritesPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Функция возврата — переходим на страницу, откуда пришли
+  // ✅ Функция возврата
   const handleBack = () => {
     navigate(from)
   }
