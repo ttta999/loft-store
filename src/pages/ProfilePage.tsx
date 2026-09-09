@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom' // Оставляем, нужен для navigate('/favorites')
+import { useNavigate, useLocation } from 'react-router-dom' // ✅ Добавили useLocation
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy } from 'lucide-react'
@@ -573,6 +573,7 @@ export default function ProfilePage({
   setOnBackClick
 }: ProfilePageProps) {
   const navigate = useNavigate()
+  const location = useLocation() // ✅ Добавили для получения текущего пути
   const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china'>('main')
   const [orders, setOrders] = useState<any[]>([])
@@ -834,7 +835,7 @@ export default function ProfilePage({
           </h3>
           <div className="bg-[#FBF9F4] rounded-xl overflow-hidden mb-6 border border-[#E8E2D5]">
             <button
-              onClick={() => navigate('/favorites')}
+              onClick={() => navigate('/favorites', { state: { from: location.pathname } })} // ✅ Передаём текущий путь
               className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] transition-colors"
             >
               <div className="flex items-center gap-3">

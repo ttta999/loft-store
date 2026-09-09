@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom' // ✅ Добавили useLocation
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, Trash2 } from 'lucide-react'
@@ -7,8 +7,12 @@ import IslandHeader from '../components/IslandHeader'
 
 export default function FavoritesPage() {
   const navigate = useNavigate()
+  const location = useLocation() // ✅ Получаем location для чтения state
   const { favorites, removeFromFavorites, currency, exchangeRate, language, saleModeEnabled } = useStore()
   const [products, setProducts] = useState<any[]>([])
+
+  // ✅ Путь, откуда пришли (фолбэк на главную, если state пустой)
+  const from = location.state?.from || '/'
 
   useEffect(() => {
     getProducts().then(setProducts)
@@ -19,10 +23,15 @@ export default function FavoritesPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  // ✅ Функция возврата — переходим на страницу, откуда пришли
+  const handleBack = () => {
+    navigate(from)
+  }
+
   if (favorites.length === 0) {
     return (
       <div className="min-h-screen bg-[#F5F1E8]">
-        <IslandHeader needsBack onBack={() => navigate(-1)} /> {/* ✅ Изменено */}
+        <IslandHeader needsBack onBack={handleBack} />
 
         <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
           <Heart size={64} className="text-[#E8E2D5] mb-4" />
@@ -44,7 +53,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8]">
-      <IslandHeader needsBack onBack={() => navigate(-1)} /> {/* ✅ Изменено */}
+      <IslandHeader needsBack onBack={handleBack} />
 
       <div className="p-4 pb-20">
         <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
