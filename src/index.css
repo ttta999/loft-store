@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
-/* ✅ Tailwind v4: включаем тёмную тему через класс .dark на <html> */
+/* ✅ Tailwind v4: тёмная тема через класс .dark на <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ✅ Тёмно-синяя палитра (Вариант А) — заменяет tailwind.config.js */
+/* ✅ СЛОИСТАЯ тёмно-синяя палитра: 4 уровня глубины + золото */
 @theme {
-  --color-dark-bg: #1a1a2e;
-  --color-dark-card: #16213e;
-  --color-dark-accent: #0f3460;
-  --color-dark-border: #2d3561;
+  --color-dark-bg: #0b111e;      /* Уровень 0: фон страницы */
+  --color-dark-card: #151f33;    /* Уровень 1: карточки */
+  --color-dark-accent: #22304a;  /* Уровень 2: активные элементы, hover */
+  --color-dark-border: #31415f;  /* Уровень 3: видимые границы */
+  --color-gold: #c9a961;         /* Золотой акцент бренда */
 }
 
-/* ✅ Плавное переключение между темами */
+/* ✅ Плавное переключение тем */
 *,
 *::before,
 *::after {
@@ -20,7 +21,6 @@
   transition-timing-function: ease;
 }
 
-/* ✅ Базовые стили body — обычный CSS, без @apply (ошибок не будет) */
 body {
   margin: 0;
   padding: 0;
@@ -33,25 +33,25 @@ body {
 }
 
 .dark body {
-  background-color: #1a1a2e;
+  background-color: #0b111e;
   color: #ffffff;
 }
 
-/* ✅ Scrollbar в тёмной теме */
+/* ✅ Scrollbar в тёмной теме (под новую палитру) */
 .dark ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #16213e;
+  background: #151f33;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #2d3561;
+  background: #31415f;
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #3d4571;
+  background: #3d5075;
 }
