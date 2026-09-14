@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { CATEGORIES } from '../data/categories'
-import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт (проверьте путь, если нужно)
+import IslandHeader from '../components/IslandHeader'
 
 export default function CategoryPage() {
   const navigate = useNavigate()
@@ -22,8 +22,8 @@ export default function CategoryPage() {
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] flex items-center justify-center">
-        <p className="text-[#8A8275]">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex items-center justify-center">
+        <p className="text-[#8A8275] dark:text-gray-300">
           {language === 'ru' ? 'Категория не найдена' : 'Kategoriya topilmadi'}
         </p>
       </div>
@@ -31,46 +31,44 @@ export default function CategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      
-      {/* ✅ ПОДКЛЮЧАЕМ ГОТОВЫЙ КОМПОНЕНТ ВМЕСТО ХАРДКОДА */}
-      <IslandHeader 
-        needsBack={true} 
-        onBack={() => navigate(-1)} 
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+      <IslandHeader
+        needsBack={true}
+        onBack={() => navigate(-1)}
       />
 
       <div className="p-4">
-        <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
+        <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? category.name_ru : category.name_uz}
         </h2>
-        <p className="text-sm text-[#8A8275] mb-4">
+        <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">
           {language === 'ru'
             ? 'Выберите подкатегорию'
             : 'Pastki kategoriyani tanlang'}
         </p>
 
-        <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           {category.subcategories.map((sub, index) => (
             <button
               key={sub.id}
               onClick={() => handleSubcategoryClick(sub.id)}
-              className={`w-full flex items-center justify-between p-4 hover:bg-[#F5F1E8] transition-colors ${
-                index !== category.subcategories.length - 1 ? 'border-b border-[#E8E2D5]' : ''
-              } ${sub.id === 'all' ? 'bg-[#1B2A4A]/5 hover:bg-[#1B2A4A]/10' : ''}`}
+              className={`w-full flex items-center justify-between p-4 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors ${
+                index !== category.subcategories.length - 1 ? 'border-b border-[#E8E2D5] dark:border-dark-border' : ''
+              } ${sub.id === 'all' ? 'bg-[#1B2A4A]/5 dark:bg-gold/10 hover:bg-[#1B2A4A]/10 dark:hover:bg-gold/20' : ''}`}
             >
               <div className="flex items-center gap-3">
                 {sub.id === 'all' && <span className="text-2xl">📦</span>}
-                <span className="font-medium text-base text-[#1B2A4A]">
+                <span className="font-medium text-base text-[#1B2A4A] dark:text-white">
                   {language === 'ru' ? sub.name_ru : sub.name_uz}
                 </span>
               </div>
-              <span className="text-[#8A8275] text-xl">›</span>
+              <span className="text-[#8A8275] dark:text-gray-300 text-xl">›</span>
             </button>
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-[#1B2A4A]/5 rounded-2xl border border-[#E8E2D5]">
-          <p className="text-sm text-[#1B2A4A]">
+        <div className="mt-6 p-4 bg-[#1B2A4A]/5 dark:bg-gold/10 rounded-2xl border border-[#E8E2D5] dark:border-dark-border">
+          <p className="text-sm text-[#1B2A4A] dark:text-white">
             {language === 'ru'
               ? '💡 Нажмите "Все товары" чтобы увидеть всю категорию'
               : '💡 "Barcha mahsulotlar" tugmasini bosing butun kategoriyani ko\'rish uchun'}

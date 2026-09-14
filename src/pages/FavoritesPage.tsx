@@ -18,27 +18,29 @@ export default function FavoritesPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Используем нативный window.history.back()
   const handleBack = () => {
     window.history.back()
   }
 
   if (favorites.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8]">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg">
         <IslandHeader needsBack onBack={handleBack} />
 
         <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
-          <Heart size={64} className="text-[#E8E2D5] mb-4" />
-          <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
+          <Heart size={64} className="text-[#E8E2D5] dark:text-dark-border mb-4" />
+          <h2 className="text-xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Избранное пусто' : 'Sevimlilar bo\'sh'}
           </h2>
-          <p className="text-[#8A8275] text-center px-4 mb-6">
+          <p className="text-[#8A8275] dark:text-gray-300 text-center px-4 mb-6">
             {language === 'ru'
               ? 'Добавляйте товары в избранное, чтобы не потерять их'
               : 'Mahsulotlarni yo\'qotib qo\'ymaslik uchun sevimlilarga qo\'shing'}
           </p>
-          <Link to="/" className="bg-[#1B2A4A] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#142038]">
+          <Link
+            to="/"
+            className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-6 py-3 rounded-xl font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+          >
             {language === 'ru' ? 'Перейти в каталог' : 'Kataloqqa o\'tish'}
           </Link>
         </div>
@@ -47,11 +49,11 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg">
       <IslandHeader needsBack onBack={handleBack} />
 
       <div className="p-4 pb-20">
-        <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+        <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
         </h1>
         <div className="grid grid-cols-2 gap-3">
@@ -60,9 +62,9 @@ export default function FavoritesPage() {
             const onSale = product ? isProductOnSale(product, saleModeEnabled) : false
             const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
             return (
-              <div key={item.productId} className="bg-[#FBF9F4] rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+              <div key={item.productId} className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border">
                 <Link to={`/product/${item.productId}`}>
-                  <div className="aspect-square bg-[#F5F1E8]">
+                  <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent">
                     <img
                       src={item.image}
                       alt={item.name}
@@ -72,24 +74,24 @@ export default function FavoritesPage() {
                 </Link>
                 <div className="p-3">
                   <Link to={`/product/${item.productId}`}>
-                    <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A]">
+                    <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A] dark:text-white">
                       {item.name}
                     </p>
                   </Link>
                   <div className="flex items-center justify-between">
                     <div>
                       {onSale && (
-                        <p className="text-[#8A8275] text-xs line-through">
+                        <p className="text-[#8A8275] dark:text-gray-500 text-xs line-through">
                           {formatPrice(item.priceUsd)}
                         </p>
                       )}
-                      <p className={`font-bold ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
+                      <p className={`font-bold ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
                         {formatPrice(displayPrice)}
                       </p>
                     </div>
                     <button
                       onClick={() => removeFromFavorites(item.productId)}
-                      className="text-[#9B3B3B] hover:text-red-700 p-1"
+                      className="text-[#9B3B3B] dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1"
                     >
                       <Trash2 size={18} />
                     </button>

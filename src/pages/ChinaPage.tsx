@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore'
 import { Upload, Send, CheckCircle } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
-// ❌ Убрали импорт IslandHeader и useNavigate — они больше не нужны
 
 export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
   const { language } = useStore()
@@ -118,42 +117,41 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     setSubmitted(false)
   }
 
-  // ✅ Экран успешной отправки — Убрали IslandHeader, осталась только глобальная шапка из App.tsx
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
         <Toaster position="top-center" richColors />
-        
+
         <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle size={56} className="text-green-500" />
+          <div className="w-24 h-24 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle size={56} className="text-green-500 dark:text-green-300" />
           </div>
-          <h2 className="text-3xl font-bold mb-4 text-[#1B2A4A]">
+          <h2 className="text-3xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
           </h2>
-          <p className="text-[#8A8275] text-lg mb-8 max-w-md">
+          <p className="text-[#8A8275] dark:text-gray-300 text-lg mb-8 max-w-md">
             {language === 'ru'
               ? 'Менеджер рассмотрит ваш спецзаказ'
               : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
           </p>
-          <div className="bg-[#FBF9F4] rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5]">
-            <p className="text-[#8A8275] text-sm leading-relaxed">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5] dark:border-dark-border">
+            <p className="text-[#8A8275] dark:text-gray-300 text-sm leading-relaxed">
               {language === 'ru' ? (
                 <>
                   Статус заявки можно посмотреть в разделе<br />
-                  <span className="font-semibold text-[#1B2A4A]">"Профиль"</span> → <span className="font-semibold text-[#1B2A4A]">"Мои спецзаказы"</span>
+                  <span className="font-semibold text-[#1B2A4A] dark:text-white">"Профиль"</span> → <span className="font-semibold text-[#1B2A4A] dark:text-white">"Мои спецзаказы"</span>
                 </>
               ) : (
                 <>
                   Ariza holatini bo'limdan ko'rishingiz mumkin<br />
-                  <span className="font-semibold text-[#1B2A4A]">"Profil"</span> → <span className="font-semibold text-[#1B2A4A]">"Maxsus buyurtmalarim"</span>
+                  <span className="font-semibold text-[#1B2A4A] dark:text-white">"Profil"</span> → <span className="font-semibold text-[#1B2A4A] dark:text-white">"Maxsus buyurtmalarim"</span>
                 </>
               )}
             </p>
           </div>
           <button
             onClick={handleReset}
-            className="bg-[#1B2A4A] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors"
+            className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
           >
             {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
           </button>
@@ -162,17 +160,16 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
     )
   }
 
-  // ✅ Основной экран формы — Убрали IslandHeader, осталась только глобальная шапка из App.tsx
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
       <Toaster position="top-center" richColors />
 
       <div className="p-4">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2 text-[#1B2A4A]">
+          <h1 className="text-2xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
           </h1>
-          <p className="text-[#8A8275] text-sm">
+          <p className="text-[#8A8275] dark:text-gray-300 text-sm">
             {language === 'ru'
               ? 'Загрузите ссылку на товар — мы привезем его для вас'
               : 'Mahsulot havolasini yuklang — biz siz uchun uni olib kelamiz'}
@@ -180,8 +177,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
               {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
             </label>
             <input
@@ -189,12 +186,12 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
-              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
             />
           </div>
 
-          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
               {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
             </label>
             <input
@@ -202,12 +199,12 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
               value={sizeColor}
               onChange={(e) => setSizeColor(e.target.value)}
               placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
-              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
             />
           </div>
 
-          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] mb-1 block">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
               {language === 'ru' ? 'Комментарий' : 'Izoh'}
             </label>
             <textarea
@@ -215,15 +212,15 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
               onChange={(e) => setComment(e.target.value)}
               placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
               rows={4}
-              className="w-full p-3 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-transparent"
+              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500 resize-none"
             />
           </div>
 
-          <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] mb-2 block">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
+            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-2 block">
               {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
             </label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] rounded-xl cursor-pointer hover:border-[#1B2A4A] transition-colors bg-[#F5F1E8]">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] dark:border-dark-border rounded-xl cursor-pointer hover:border-[#1B2A4A] dark:hover:border-gold transition-colors bg-[#F5F1E8] dark:bg-dark-accent">
               {imagePreview ? (
                 <img
                   src={imagePreview}
@@ -232,8 +229,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
                 />
               ) : (
                 <>
-                  <Upload size={32} className="text-[#8A8275] mb-2" />
-                  <span className="text-sm text-[#8A8275]">
+                  <Upload size={32} className="text-[#8A8275] dark:text-gray-300 mb-2" />
+                  <span className="text-sm text-[#8A8275] dark:text-gray-300">
                     {language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing'}
                   </span>
                 </>
@@ -252,8 +249,8 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
             disabled={submitting}
             className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
               submitting
-                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
-                : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
+                ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
+                : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
             }`}
           >
             <Send size={20} />
@@ -262,11 +259,11 @@ export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
               : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
           </button>
 
-          <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
+          <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <span className="text-base">⏱</span>
             </div>
-            <p className="text-xs text-[#8A8275] leading-relaxed">
+            <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
               {language === 'ru'
                 ? 'Среднее время доставки: 14-21 день.'
                 : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}

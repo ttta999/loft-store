@@ -3,8 +3,8 @@ import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useSto
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
-import { Filter, ArrowUpDown, Loader2 } from 'lucide-react' // ❌ Убрали ArrowLeft
-import IslandHeader from '../components/IslandHeader' // ✅ Добавили импорт
+import { Filter, ArrowUpDown, Loader2 } from 'lucide-react'
+import IslandHeader from '../components/IslandHeader'
 
 interface Brand {
   id: string
@@ -124,21 +124,19 @@ export default function BrandsPage() {
     (sortBy !== 'newest' ? 1 : 0)
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-24">
-      
-      {/* ✅ ПОДКЛЮЧАЕМ ГОТОВЫЙ КОМПОНЕНТ, передаем нашу логику handleBack */}
-      <IslandHeader 
-        needsBack={true} 
-        onBack={handleBack} 
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+      <IslandHeader
+        needsBack={true}
+        onBack={handleBack}
       />
 
       <div className="p-4">
         {!selectedBrand ? (
           <>
-            <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
+            <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? 'Бренды' : 'Brendlar'}
             </h2>
-            <p className="text-sm text-[#8A8275] mb-4">
+            <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">
               {language === 'ru'
                 ? 'Выберите бренд чтобы увидеть товары'
                 : 'Mahsulotlarni ko\'rish uchun brendni tanlang'}
@@ -146,33 +144,33 @@ export default function BrandsPage() {
 
             {loadingBrands ? (
               <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#8A8275]" />
-                <p className="text-[#8A8275]">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#8A8275] dark:text-gold" />
+                <p className="text-[#8A8275] dark:text-gray-300">
                   {language === 'ru' ? 'Загрузка брендов...' : 'Brendlar yuklanmoqda...'}
                 </p>
               </div>
             ) : brands.length === 0 ? (
-              <div className="text-center py-12 text-[#8A8275]">
+              <div className="text-center py-12 text-[#8A8275] dark:text-gray-300">
                 {language === 'ru' ? 'Бренды не найдены' : 'Brendlar topilmadi'}
                 <button
                   onClick={loadBrands}
-                  className="mt-4 px-4 py-2 bg-[#1B2A4A] text-white rounded-xl text-sm"
+                  className="mt-4 px-4 py-2 bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] rounded-xl text-sm"
                 >
                   🔄 {language === 'ru' ? 'Повторить' : 'Qayta urinish'}
                 </button>
               </div>
             ) : (
-              <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5]">
+              <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border">
                 {brands.map((brand, index) => (
                   <button
                     key={brand.id}
                     onClick={() => handleBrandClick(brand)}
-                    className={`w-full flex items-center justify-between p-4 hover:bg-[#F5F1E8] transition-colors ${
-                      index !== brands.length - 1 ? 'border-b border-[#E8E2D5]' : ''
+                    className={`w-full flex items-center justify-between p-4 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors ${
+                      index !== brands.length - 1 ? 'border-b border-[#E8E2D5] dark:border-dark-border' : ''
                     }`}
                   >
-                    <span className="font-medium text-base text-[#1B2A4A]">{brand.name}</span>
-                    <span className="text-[#8A8275] text-xl">›</span>
+                    <span className="font-medium text-base text-[#1B2A4A] dark:text-white">{brand.name}</span>
+                    <span className="text-[#8A8275] dark:text-gray-300 text-xl">›</span>
                   </button>
                 ))}
               </div>
@@ -180,26 +178,28 @@ export default function BrandsPage() {
           </>
         ) : (
           <>
-            <h2 className="text-xl font-bold mb-1 text-[#1B2A4A]">
+            <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
               {selectedBrand.name}
             </h2>
-            <p className="text-sm text-[#8A8275] mb-4">
+            <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">
               {filteredProducts.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
             </p>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`w-full p-3 rounded-2xl border flex items-center justify-between mb-4 ${
-                activeFiltersCount > 0 ? 'bg-[#1B2A4A] text-white border-[#1B2A4A]' : 'bg-[#FBF9F4] border-[#E8E2D5]'
+                activeFiltersCount > 0
+                  ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] border-[#1B2A4A] dark:border-gold'
+                  : 'bg-[#FBF9F4] dark:bg-dark-card border-[#E8E2D5] dark:border-dark-border'
               }`}
             >
               <div className="flex items-center gap-2">
                 <Filter size={20} />
-                <span className="font-medium text-[#1B2A4A]">
+                <span className="font-medium text-[#1B2A4A] dark:text-white">
                   {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
                 </span>
                 {activeFiltersCount > 0 && (
-                  <span className="bg-white text-[#1B2A4A] text-xs px-2 py-1 rounded-full">
+                  <span className="bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white text-xs px-2 py-1 rounded-full">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -210,7 +210,7 @@ export default function BrandsPage() {
                     e.stopPropagation()
                     clearFilters()
                   }}
-                  className="text-sm underline text-[#1B2A4A]"
+                  className="text-sm underline text-[#1B2A4A] dark:text-[#1B2A4A]"
                 >
                   {language === 'ru' ? 'Сбросить' : 'Tozalash'}
                 </button>
@@ -218,16 +218,18 @@ export default function BrandsPage() {
             </button>
 
             {showFilters && (
-              <div className="bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl p-4 mb-4">
+              <div className="bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl p-4 mb-4">
                 <div className="mb-4">
-                  <h3 className="font-bold mb-2 text-[#1B2A4A]">
+                  <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
                     {language === 'ru' ? 'Категория' : 'Kategoriya'}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setSelectedCategory('')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        selectedCategory === '' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                        selectedCategory === ''
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                       }`}
                     >
                       {language === 'ru' ? 'Все' : 'Barchasi'}
@@ -237,7 +239,9 @@ export default function BrandsPage() {
                         key={cat.id}
                         onClick={() => setSelectedCategory(cat.id)}
                         className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                          selectedCategory === cat.id ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                          selectedCategory === cat.id
+                            ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                            : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                         }`}
                       >
                         {language === 'ru' ? cat.name_ru : cat.name_uz}
@@ -247,7 +251,7 @@ export default function BrandsPage() {
                 </div>
 
                 <div className="mb-4">
-                  <h3 className="font-bold mb-2 text-[#1B2A4A]">
+                  <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
                     {language === 'ru' ? 'Цена (сум)' : 'Narx (so\'m)'}
                   </h3>
                   <div className="flex gap-2">
@@ -256,23 +260,23 @@ export default function BrandsPage() {
                       value={minPrice === 0 ? '' : minPrice}
                       onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
                       placeholder={language === 'ru' ? 'От' : 'Dan'}
-                      className="w-full p-2 border border-[#E8E2D5] rounded-xl bg-white"
+                      className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500 focus:outline-none focus:border-gold"
                     />
                     <input
                       type="number"
                       value={maxPrice === 100000000 ? '' : maxPrice}
                       onChange={(e) => setMaxPrice(Number(e.target.value) || 100000000)}
                       placeholder={language === 'ru' ? 'До' : 'Gacha'}
-                      className="w-full p-2 border border-[#E8E2D5] rounded-xl bg-white"
+                      className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500 focus:outline-none focus:border-gold"
                     />
                   </div>
-                  <p className="text-xs text-[#8A8275] mt-1">
+                  <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1">
                     {language === 'ru' ? 'Введите цену в сумах' : 'Narxni so\'mda kiriting'}
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold mb-2 flex items-center gap-2 text-[#1B2A4A]">
+                  <h3 className="font-bold mb-2 flex items-center gap-2 text-[#1B2A4A] dark:text-white">
                     <ArrowUpDown size={16} />
                     {language === 'ru' ? 'Сортировка' : 'Saralash'}
                   </h3>
@@ -280,7 +284,9 @@ export default function BrandsPage() {
                     <button
                       onClick={() => setSortBy('newest')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        sortBy === 'newest' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                        sortBy === 'newest'
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                       }`}
                     >
                       {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
@@ -288,7 +294,9 @@ export default function BrandsPage() {
                     <button
                       onClick={() => setSortBy('oldest')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        sortBy === 'oldest' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                        sortBy === 'oldest'
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                       }`}
                     >
                       {language === 'ru' ? 'Сначала старые' : 'Avval eskilar'}
@@ -296,7 +304,9 @@ export default function BrandsPage() {
                     <button
                       onClick={() => setSortBy('price_asc')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        sortBy === 'price_asc' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                        sortBy === 'price_asc'
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                       }`}
                     >
                       {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
@@ -304,7 +314,9 @@ export default function BrandsPage() {
                     <button
                       onClick={() => setSortBy('price_desc')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        sortBy === 'price_desc' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#1B2A4A]'
+                        sortBy === 'price_desc'
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
                       }`}
                     >
                       {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
@@ -316,10 +328,10 @@ export default function BrandsPage() {
 
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B2A4A] mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto"></div>
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-12 text-[#8A8275]">
+              <div className="text-center py-12 text-[#8A8275] dark:text-gray-300">
                 {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
               </div>
             ) : (
@@ -331,7 +343,7 @@ export default function BrandsPage() {
                     <div
                       key={product.id}
                       onClick={() => navigate(`/product/${product.id}`)}
-                      className="bg-[#FBF9F4] rounded-2xl shadow-sm overflow-hidden cursor-pointer border border-[#E8E2D5]"
+                      className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl shadow-sm overflow-hidden cursor-pointer border border-[#E8E2D5] dark:border-dark-border"
                     >
                       {product.images?.[0] && (
                         <div className="relative">
@@ -348,15 +360,15 @@ export default function BrandsPage() {
                         </div>
                       )}
                       <div className="p-3">
-                        <p className="font-medium text-sm truncate text-[#1B2A4A]">
+                        <p className="font-medium text-sm truncate text-[#1B2A4A] dark:text-white">
                           {language === 'ru' ? product.name_ru : product.name_uz}
                         </p>
                         {onSale && (
-                          <p className="text-[#8A8275] text-xs line-through mt-1">
+                          <p className="text-[#8A8275] dark:text-gray-500 text-xs line-through mt-1">
                             {formatPrice(product.price_usd)}
                           </p>
                         )}
-                        <p className={`text-lg font-bold mt-1 ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
+                        <p className={`text-lg font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
                           {formatPrice(effectivePrice)}
                         </p>
                       </div>

@@ -54,7 +54,6 @@ export default function ProductPage() {
     setSizes(sizeValues)
   }
 
-  // ✅ Кнопка назад теперь возвращает на предыдущую страницу
   const handleBack = () => {
     navigate(-1)
   }
@@ -216,12 +215,12 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <IslandHeader needsBack onBack={handleBack} />
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] mx-auto mb-4"></div>
-            <p className="text-[#8A8275]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
+            <p className="text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
             </p>
           </div>
@@ -232,10 +231,10 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] pb-20">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <IslandHeader needsBack onBack={handleBack} />
         <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <p className="text-[#8A8275]">
+          <p className="text-[#8A8275] dark:text-gray-300">
             {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
           </p>
         </div>
@@ -244,13 +243,13 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
       <Toaster position="top-center" richColors />
-      
+
       <IslandHeader needsBack onBack={handleBack} />
 
       <div className="p-4">
-        <div className="bg-[#FBF9F4] rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5]">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           <div className="relative">
             <img
               src={images[currentImageIndex]}
@@ -267,33 +266,33 @@ export default function ProductPage() {
               <>
                 <button
                   onClick={goToPreviousImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white dark:hover:bg-dark-border transition-colors border border-transparent dark:border-dark-border"
                 >
-                  <ChevronLeft size={24} className="text-[#1B2A4A]" />
+                  <ChevronLeft size={24} className="text-[#1B2A4A] dark:text-white" />
                 </button>
                 <button
                   onClick={goToNextImage}
-                  className="absolute right-14 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                  className="absolute right-14 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white dark:hover:bg-dark-border transition-colors border border-transparent dark:border-dark-border"
                 >
-                  <ChevronRight size={24} className="text-[#1B2A4A]" />
+                  <ChevronRight size={24} className="text-[#1B2A4A] dark:text-white" />
                 </button>
               </>
             )}
             <div className="absolute top-4 right-4 flex gap-2">
               <button
                 onClick={handleToggleFavorite}
-                className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
               >
                 <Heart
                   size={24}
-                  className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275]'}
+                  className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
                 />
               </button>
               <button
                 onClick={handleShare}
-                className="bg-white rounded-full p-3 shadow-lg hover:scale-110 transition-transform"
+                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
               >
-                <Share2 size={24} className="text-[#8A8275]" />
+                <Share2 size={24} className="text-[#8A8275] dark:text-gray-300" />
               </button>
             </div>
             {images.length > 1 && (
@@ -318,7 +317,9 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === currentImageIndex ? 'border-[#1B2A4A]' : 'border-[#E8E2D5]'
+                    index === currentImageIndex
+                      ? 'border-[#1B2A4A] dark:border-gold'
+                      : 'border-[#E8E2D5] dark:border-dark-border'
                   }`}
                 >
                   <img
@@ -332,17 +333,17 @@ export default function ProductPage() {
           )}
         </div>
 
-        <div className="bg-[#FBF9F4] rounded-2xl p-4 mb-4 shadow-sm border border-[#E8E2D5]">
-          <h1 className="text-xl font-bold mb-2 text-[#1B2A4A]">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
+          <h1 className="text-xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
           </h1>
 
           {onSale && (
-            <p className="text-lg text-[#8A8275] line-through">
+            <p className="text-lg text-[#8A8275] dark:text-gray-400 line-through">
               {formatPrice(product.price_usd || 0)}
             </p>
           )}
-          <p className={`text-2xl font-bold mb-2 ${onSale ? 'text-[#9B3B3B]' : 'text-[#1B2A4A]'}`}>
+          <p className={`text-2xl font-bold mb-2 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
             {formatPrice(effectivePrice)}
           </p>
           {onSale && (
@@ -352,11 +353,11 @@ export default function ProductPage() {
           )}
 
           {description && description.trim() !== '' && (
-            <div className="mb-4 pb-4 border-b border-[#E8E2D5]">
-              <h3 className="font-bold mb-2 text-[#1B2A4A]">
+            <div className="mb-4 pb-4 border-b border-[#E8E2D5] dark:border-dark-border">
+              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
                 {language === 'ru' ? 'Описание' : 'Tavsif'}
               </h3>
-              <p className="text-[#8A8275] whitespace-pre-line text-sm leading-relaxed">
+              <p className="text-[#8A8275] dark:text-gray-300 whitespace-pre-line text-sm leading-relaxed">
                 {description}
               </p>
             </div>
@@ -374,8 +375,8 @@ export default function ProductPage() {
             disabled={sizes.length === 0}
             className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
               sizes.length === 0
-                ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed'
-                : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
+                ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
+                : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
             }`}
           >
             <ShoppingCart size={20} />
@@ -385,7 +386,7 @@ export default function ProductPage() {
             }
           </button>
           {sizes.length === 0 && (
-            <p className="text-center text-sm text-[#8A8275] mt-2">
+            <p className="text-center text-sm text-[#8A8275] dark:text-gray-400 mt-2">
               {language === 'ru'
                 ? 'Этот товар временно отсутствует'
                 : 'Bu mahsulot vaqtincha mavjud emas'}

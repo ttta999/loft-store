@@ -5,7 +5,7 @@ import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
-import IslandHeader from '../components/IslandHeader' // Оставляем импорт, нужен для модалок CheckoutModal
+import IslandHeader from '../components/IslandHeader'
 
 export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   const navigate = useNavigate()
@@ -17,16 +17,15 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Убрали IslandHeader — теперь тут только глобальная шапка из App.tsx
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <ShoppingBag size={64} className="text-[#E8E2D5] mb-4" />
-          <h2 className="text-xl font-bold mb-2 text-[#1B2A4A]">
+          <ShoppingBag size={64} className="text-[#E8E2D5] dark:text-dark-border mb-4" />
+          <h2 className="text-xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Корзина пуста' : 'Savat bo\'sh'}
           </h2>
-          <p className="text-[#8A8275] text-center px-4">
+          <p className="text-[#8A8275] dark:text-gray-300 text-center px-4">
             {language === 'ru'
               ? 'Добавьте товары из каталога, чтобы оформить заказ'
               : 'Buyurtma rasmiylashtirish uchun kataloqdan mahsulotlar qo\'shing'}
@@ -37,19 +36,20 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-32">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-32">
       <Toaster position="top-center" richColors />
-      
-      {/* ✅ Убрали IslandHeader — используем только глобальную шапку из App.tsx */}
 
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+        <h1 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? 'Корзина' : 'Savat'}
         </h1>
 
         <div className="space-y-3 mb-32">
           {cart.map((item) => (
-            <div key={`${item.productId}-${item.size}`} className="bg-[#FBF9F4] rounded-2xl p-3 shadow-sm border border-[#E8E2D5] flex gap-3">
+            <div
+              key={`${item.productId}-${item.size}`}
+              className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-3 shadow-sm border border-[#E8E2D5] dark:border-dark-border flex gap-3"
+            >
               <img
                 src={item.image}
                 alt={item.name}
@@ -64,15 +64,15 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
                   state: { fromCart: true }
                 })}
               >
-                <h3 className="font-medium text-sm mb-1 text-[#1B2A4A]">{item.name}</h3>
-                <p className="text-xs text-[#8A8275] mb-2">
+                <h3 className="font-medium text-sm mb-1 text-[#1B2A4A] dark:text-white">{item.name}</h3>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-2">
                   {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
                 </p>
-                <p className="font-bold text-[#1B2A4A]">
+                <p className="font-bold text-[#1B2A4A] dark:text-white">
                   {formatPrice(item.priceUsd)}
                 </p>
                 {item.isSpecialOrder && (
-                  <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
                     🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                   </span>
                 )}
@@ -80,22 +80,22 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
               <div className="flex flex-col items-end justify-between">
                 <button
                   onClick={() => removeFromCart(item.productId, item.size)}
-                  className="text-[#9B3B3B] hover:text-red-700"
+                  className="text-[#9B3B3B] dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                 >
                   <Trash2 size={18} />
                 </button>
                 {!item.isSpecialOrder && (
-                  <div className="flex items-center gap-2 bg-[#F5F1E8] rounded-lg px-2 py-1">
+                  <div className="flex items-center gap-2 bg-[#F5F1E8] dark:bg-dark-accent rounded-lg px-2 py-1">
                     <button
                       onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })}
-                      className="text-[#8A8275]"
+                      className="text-[#8A8275] dark:text-gray-300"
                     >
                       <Minus size={16} />
                     </button>
-                    <span className="font-medium text-sm text-[#1B2A4A]">{item.quantity}</span>
+                    <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">{item.quantity}</span>
                     <button
                       onClick={() => addToCart({ ...item, quantity: 1 })}
-                      className="text-[#8A8275]"
+                      className="text-[#8A8275] dark:text-gray-300"
                     >
                       <Plus size={16} />
                     </button>
@@ -106,18 +106,18 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
           ))}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 bg-[#FBF9F4] border-t border-[#E8E2D5] p-4 shadow-lg pb-24">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#FBF9F4] dark:bg-dark-card border-t border-[#E8E2D5] dark:border-dark-border p-4 shadow-lg pb-24">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-[#8A8275]">
+            <span className="text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Итого:' : 'Jami:'}
             </span>
-            <span className="text-xl font-bold text-[#1B2A4A]">
+            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
               {formatPrice(getTotalPrice())}
             </span>
           </div>
           <button
             onClick={() => setShowCheckout(true)}
-            className="w-full bg-[#1B2A4A] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] transition-colors shadow-md"
+            className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-md"
           >
             {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
           </button>
@@ -136,7 +136,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   )
 }
 
-// CheckoutModal оставляем БЕЗ ИЗМЕНЕНИЙ (IslandHeader там НУЖЕН, т.к. модалки fullscreen и перекрывают глобальную шапку App.tsx)
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
   const { cart, clearCart, language, currency, exchangeRate } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
@@ -300,8 +299,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   if (showPaymentInfo) {
     return (
-      <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-        {/* ✅ IslandHeader ОСТАВЛЕН — модалка fullscreen, глобальная шапка App.tsx перекрыта */}
+      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader
           needsBack={true}
           onBack={() => {
@@ -314,23 +312,22 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             }
           }}
         />
-        
+
         <div className="flex-1 overflow-y-auto p-4 pb-40">
-          {/* Остальной код без изменений */}
-          <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3 shadow-sm">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#8A8275]">{language === 'ru' ? 'Заказ' : 'Buyurtma'}</p>
-                <p className="font-bold text-[#1B2A4A]">№{currentOrderId}</p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Заказ' : 'Buyurtma'}</p>
+                <p className="font-bold text-[#1B2A4A] dark:text-white">№{currentOrderId}</p>
               </div>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300">
                 ⏳ {language === 'ru' ? 'Ожидает оплаты' : "To'lovni kutmoqda"}
               </span>
             </div>
           </div>
 
           <div className="rounded-2xl overflow-hidden shadow-md mb-3">
-            <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] p-5 text-white">
+            <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] dark:from-dark-accent dark:to-dark-card p-5 text-white border border-transparent dark:border-dark-border">
               <div className="flex items-center justify-between mb-6">
                 <span className="text-xs text-[#C9A961] font-semibold tracking-widest">LOFT STORE</span>
                 <CreditCard size={20} className="text-[#C9A961]" />
@@ -340,40 +337,40 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
             </div>
             <button
               onClick={handleCopyCard}
-              className="w-full bg-[#FBF9F4] border border-t-0 border-[#E8E2D5] py-3 text-sm font-medium text-[#1B2A4A] flex items-center justify-center gap-2 hover:bg-[#F5F1E8] transition-colors"
+              className="w-full bg-[#FBF9F4] dark:bg-dark-card border border-t-0 border-[#E8E2D5] dark:border-dark-border py-3 text-sm font-medium text-[#1B2A4A] dark:text-white flex items-center justify-center gap-2 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               📋 {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
             </button>
           </div>
 
-          <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5] mb-3 shadow-sm">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm">
             <div className="flex justify-between items-center">
-              <span className="font-medium text-[#1B2A4A]">
+              <span className="font-medium text-[#1B2A4A] dark:text-white">
                 {language === 'ru' ? '💰 Сумма к оплате:' : "💰 To'lov summasi:"}
               </span>
-              <span className="text-xl font-bold text-[#1B2A4A]">
+              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
                 {formatPrice(getTotalPrice())}
               </span>
             </div>
           </div>
 
           {!screenshotUploaded ? (
-            <div className="bg-[#FBF9F4] rounded-2xl p-4 border border-[#E8E2D5] mb-3 shadow-sm">
-              <p className="text-sm font-medium mb-2 text-[#1B2A4A]">
+            <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm">
+              <p className="text-sm font-medium mb-2 text-[#1B2A4A] dark:text-white">
                 {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : "📸 To'lov screenshotini yuklang:"}
               </p>
               <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
                 uploadingScreenshot
-                  ? 'border-[#1B2A4A] bg-[#F5F1E8]'
-                  : 'border-[#E8E2D5] hover:border-[#1B2A4A]'
+                  ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
+                  : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
               }`}>
                 <div className="flex flex-col items-center justify-center">
                   {uploadingScreenshot ? (
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B2A4A] mb-2"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B2A4A] dark:border-gold mb-2"></div>
                   ) : (
-                    <Upload className="w-6 h-6 mb-2 text-[#8A8275]" />
+                    <Upload className="w-6 h-6 mb-2 text-[#8A8275] dark:text-gray-300" />
                   )}
-                  <p className="text-xs text-[#8A8275]">
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300">
                     {uploadingScreenshot
                       ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
                       : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
@@ -390,14 +387,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               </label>
             </div>
           ) : (
-            <div className="relative bg-green-50 border border-green-200 rounded-2xl p-3.5 mb-3 shadow-sm">
-              <p className="text-sm text-green-800 font-medium text-center pr-12">
+            <div className="relative bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-2xl p-3.5 mb-3 shadow-sm">
+              <p className="text-sm text-green-800 dark:text-green-300 font-medium text-center pr-12">
                 ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
               </p>
               {screenshotUrl && (
                 <button
                   onClick={() => setShowScreenshotModal(true)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white border border-green-200 flex items-center justify-center text-green-700 hover:bg-green-100 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors"
                   title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                 >
                   <Eye size={18} />
@@ -411,7 +408,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               href={MANAGER_TELEGRAM_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] transition-colors shadow-md"
+              className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-md"
             >
               📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
             </a>
@@ -422,18 +419,18 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   setOrderSuccess(true)
                   clearCart()
                 }}
-                className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold hover:bg-[#142038] transition-colors shadow-md"
+                className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-2xl font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-md"
               >
                 {language === 'ru' ? 'Готово' : 'Tayyor'}
               </button>
             )}
           </div>
 
-          <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] border border-[#E8E2D5] rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
+          <div className="mt-4 flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <span className="text-base">⏳</span>
             </div>
-            <p className="text-xs text-[#8A8275] leading-relaxed">
+            <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
               {language === 'ru'
                 ? 'Заказ будет обработан после подтверждения оплаты менеджером'
                 : 'Buyurtma menejer to\'lovni tasdiqlagandan so\'ng ko\'rib chiqiladi'}
@@ -465,7 +462,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   href={screenshotUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 bg-white text-[#1B2A4A] rounded-lg font-bold hover:bg-gray-100 transition-colors"
+                  className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
@@ -480,31 +477,31 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
   if (orderSuccess) {
     return (
-      <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col items-center justify-center p-6">
-        <div className="bg-[#FBF9F4] rounded-2xl p-8 border border-[#E8E2D5] shadow-sm max-w-sm w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col items-center justify-center p-6">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-8 border border-[#E8E2D5] dark:border-dark-border shadow-sm max-w-sm w-full text-center">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-5xl">✅</span>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-[#1B2A4A]">
+          <h2 className="text-2xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}
           </h2>
-          <p className="text-[#8A8275] mb-4">
+          <p className="text-[#8A8275] dark:text-gray-300 mb-4">
             {language === 'ru' ? `Номер вашего заказа: ` : `Sizning buyurtma raqamingiz: `}
-            <span className="font-bold text-[#1B2A4A]">№{orderId}</span>
+            <span className="font-bold text-[#1B2A4A] dark:text-white">№{orderId}</span>
           </p>
           {isSpecialOrder && (
-            <span className="inline-block mb-2 px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+            <span className="inline-block mb-2 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-sm rounded-full">
               🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
             </span>
           )}
-          <p className="text-sm text-[#8A8275] mb-6">
+          <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-6">
             {language === 'ru'
               ? 'Спасибо за ваш заказ!'
               : 'Buyurtmangiz uchun rahmat!'}
           </p>
           <button
             onClick={onClose}
-            className="w-full bg-[#1B2A4A] text-white py-3 rounded-2xl font-bold hover:bg-[#142038] transition-colors shadow-md"
+            className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-2xl font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-md"
           >
             {language === 'ru' ? 'Отлично' : 'Ajoyib'}
           </button>
@@ -514,24 +511,23 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F5F1E8] z-50 flex flex-col">
-      {/* ✅ IslandHeader ОСТАВЛЕН — модалка fullscreen, глобальная шапка App.tsx перекрыта */}
+    <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader
         needsBack={true}
         onBack={onClose}
       />
-      
+
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A]">
+        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
         </h2>
 
         {isSpecialOrder && (
-          <div className="mb-3 p-4 bg-purple-50 border border-purple-200 rounded-2xl">
-            <p className="text-sm text-purple-800 font-medium">
+          <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl">
+            <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">
               🌍 {language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}
             </p>
-            <p className="text-xs text-purple-600 mt-1">
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
               {language === 'ru'
                 ? 'После оплаты менеджер приступит к заказу товара'
                 : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}
@@ -539,14 +535,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         )}
 
-        {/* Остальные карточки без изменений */}
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-              <UserIcon size={16} className="text-[#1B2A4A]" />
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <UserIcon size={16} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-[#8A8275] block mb-0.5">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
                 {language === 'ru' ? 'Имя' : 'Ism'}
               </label>
               <input
@@ -554,17 +549,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={language === 'ru' ? 'Ваше имя' : 'Sizning ismingiz'}
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] focus:outline-none placeholder:text-[#8A8275]"
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-              <Phone size={16} className="text-[#1B2A4A]" />
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Phone size={16} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-[#8A8275] block mb-0.5">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
                 {language === 'ru' ? 'Телефон' : 'Telefon'}
               </label>
               <input
@@ -572,24 +567,24 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 value={phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
                 placeholder="+998 XX XXX XX XX"
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] focus:outline-none placeholder:text-[#8A8275]"
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               {deliveryMethod === 'pickup'
-                ? <Store size={16} className="text-[#1B2A4A]" />
-                : <Truck size={16} className="text-[#1B2A4A]" />}
+                ? <Store size={16} className="text-[#1B2A4A] dark:text-white" />
+                : <Truck size={16} className="text-[#1B2A4A] dark:text-white" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275]">
+              <p className="text-xs text-[#8A8275] dark:text-gray-300">
                 {language === 'ru' ? 'Получение' : 'Olish'}
               </p>
-              <p className="text-sm font-medium text-[#1B2A4A]">
+              <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                 {deliveryMethod === 'pickup'
                   ? (language === 'ru' ? 'Самовывоз' : "O'z-o'zini olish")
                   : (language === 'ru' ? 'Доставка' : 'Yetkazib berish')}
@@ -597,7 +592,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
               <div className="flex gap-2 mt-2">
                 <button
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    deliveryMethod === 'pickup' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                    deliveryMethod === 'pickup'
+                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300'
                   }`}
                   onClick={() => handleDeliveryChange('pickup')}
                 >
@@ -605,7 +602,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 </button>
                 <button
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    deliveryMethod === 'delivery' ? 'bg-[#1B2A4A] text-white' : 'bg-[#E8E2D5] text-[#8A8275]'
+                    deliveryMethod === 'delivery'
+                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300'
                   }`}
                   onClick={() => handleDeliveryChange('delivery')}
                 >
@@ -617,12 +616,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
           {deliveryMethod === 'pickup' && (
             <div className="flex items-center gap-3 p-3.5">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-                <MapPin size={16} className="text-[#1B2A4A]" />
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <MapPin size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275]">{language === 'ru' ? 'Адрес магазина' : "Do'kon manzili"}</p>
-                <p className="text-sm font-medium text-[#1B2A4A]">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Адрес магазина' : "Do'kon manzili"}</p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                   {language === 'ru'
                     ? 'ТЦ Mercato, 2 этаж, магазин 34'
                     : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
@@ -633,11 +632,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
 
           {deliveryMethod === 'delivery' && (
             <div className="flex items-center gap-3 p-3.5">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-                <MapPin size={16} className="text-[#1B2A4A]" />
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <MapPin size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <label className="text-xs text-[#8A8275] block mb-1">
+                <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-1">
                   {language === 'ru' ? 'Адрес доставки' : 'Yetkazib berish manzili'}
                 </label>
                 <textarea
@@ -645,9 +644,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder={language === 'ru' ? 'Улица, дом, квартира' : 'Ko\'cha, uy, kvartira'}
                   rows={2}
-                  className="w-full p-2 border border-[#E8E2D5] rounded-xl focus:outline-none focus:border-[#1B2A4A] bg-[#F5F1E8] text-sm text-[#1B2A4A] placeholder:text-[#8A8275]"
+                  className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-[#F5F1E8] dark:bg-dark-accent text-sm text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
                 />
-                <p className="text-xs text-[#8A8275] mt-1">
+                <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1">
                   {language === 'ru'
                     ? 'Пример: ул. Навои, дом 15, квартира 23'
                     : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}
@@ -657,13 +656,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           )}
         </div>
 
-        <div className="bg-[#FBF9F4] rounded-2xl border border-[#E8E2D5] mb-3 divide-y divide-[#E8E2D5] shadow-sm">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border shadow-sm">
           <div className="flex items-center gap-3 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] border border-[#E8E2D5] flex items-center justify-center flex-shrink-0">
-              <CreditCard size={16} className="text-[#1B2A4A]" />
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <CreditCard size={16} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275] mb-2">
+              <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-2">
                 {language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}
               </p>
               <label className="flex items-center gap-2 cursor-pointer mb-2">
@@ -672,9 +671,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                   name="payment"
                   checked={paymentMethod === 'online_card'}
                   onChange={() => setPaymentMethod('online_card')}
-                  className="w-4 h-4 accent-[#1B2A4A]"
+                  className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]"
                 />
-                <span className="text-sm font-medium text-[#1B2A4A]">
+                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                   {language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}
                 </span>
               </label>
@@ -685,17 +684,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                     name="payment"
                     checked={paymentMethod === 'upon_receipt'}
                     onChange={() => setPaymentMethod('upon_receipt')}
-                    className="w-4 h-4 accent-[#1B2A4A]"
+                    className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]"
                   />
-                  <span className="text-sm font-medium text-[#1B2A4A]">
+                  <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                     {language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash'}
                   </span>
                 </label>
               )}
               {deliveryMethod === 'delivery' && (
-                <div className="flex items-start gap-1.5 mt-2 p-2 bg-[#F5F1E8] rounded-lg">
-                  <Info size={14} className="text-[#8A8275] mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-[#8A8275] leading-relaxed">
+                <div className="flex items-start gap-1.5 mt-2 p-2 bg-[#F5F1E8] dark:bg-dark-accent rounded-lg">
+                  <Info size={14} className="text-[#8A8275] dark:text-gray-300 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
                     {language === 'ru'
                       ? 'Доставка — по предоплате переводом на карту'
                       : "Yetkazib berish — kartaga oldindan to'lov bilan"}
@@ -703,9 +702,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
                 </div>
               )}
               {isSpecialOrder && (
-                <div className="flex items-start gap-1.5 mt-2 p-2 bg-purple-50 rounded-lg">
-                  <Info size={14} className="text-purple-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-purple-700 leading-relaxed">
+                <div className="flex items-start gap-1.5 mt-2 p-2 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
+                  <Info size={14} className="text-purple-600 dark:text-purple-300 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">
                     {language === 'ru'
                       ? 'Спецзаказ — только полная предоплата переводом'
                       : "Maxsus buyurtma — faqat to'liq oldindan to'lov"}
@@ -716,17 +715,17 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           </div>
         </div>
 
-        <div className="bg-[#FBF9F4] p-4 rounded-2xl border border-[#E8E2D5] mb-3 shadow-sm">
+        <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm">
           <div className="flex justify-between items-center">
-            <span className="font-bold text-[#1B2A4A]">
+            <span className="font-bold text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? 'Итого:' : 'Jami:'}
             </span>
-            <span className="text-xl font-bold text-[#1B2A4A]">
+            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
               {formatPrice(getTotalPrice())}
             </span>
           </div>
           {currency === 'USD' && (
-            <p className="text-xs text-[#8A8275] mt-1 text-right">
+            <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1 text-right">
               ≈ {Math.round(getTotalPrice() * exchangeRate).toLocaleString()} сум
             </p>
           )}
@@ -737,8 +736,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
           disabled={submitting}
           className={`w-full py-4 rounded-2xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-md ${
             submitting
-              ? 'bg-[#E8E2D5] text-[#8A8275] cursor-not-allowed shadow-none'
-              : 'bg-[#1B2A4A] text-white hover:bg-[#142038]'
+              ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed shadow-none'
+              : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
           }`}
         >
           {submitting
