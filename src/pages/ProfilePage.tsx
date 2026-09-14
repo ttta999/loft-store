@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { supabase, getProducts } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2 } from 'lucide-react'
+import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2, Sun, Moon, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
 import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
@@ -570,7 +570,8 @@ export default function ProfilePage({
   onBackClick: _onBackClick,
   setOnBackClick
 }: ProfilePageProps) {
-  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled } = useStore()
+  // ✅ Добавили theme и setTheme
+  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled, theme, setTheme } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china' | 'favorites'>('main')
   const [orders, setOrders] = useState<any[]>([])
   const [chinaRequests, setChinaRequests] = useState<any[]>([])
@@ -929,7 +930,7 @@ export default function ProfilePage({
                 </button>
               </div>
             </div>
-            <div className="flex items-center justify-between p-4">
+            <div className="flex items-center justify-between p-4 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-3">
                 <DollarSign size={20} className="text-[#8A8275]" />
                 <span className="font-medium text-[#1B2A4A]">
@@ -952,6 +953,50 @@ export default function ProfilePage({
                   }`}
                 >
                   UZS
+                </button>
+              </div>
+            </div>
+            {/* ✅ ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ */}
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <Monitor size={20} className="text-[#8A8275]" />
+                <span className="font-medium text-[#1B2A4A]">
+                  {language === 'ru' ? 'Тема' : 'Mavzu'}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setTheme('light')}
+                  title={language === 'ru' ? 'Светлая' : 'Yorug\''}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'light'
+                      ? 'bg-[#1B2A4A] text-white'
+                      : 'bg-[#E8E2D5] text-[#8A8275] hover:text-[#1B2A4A]'
+                  }`}
+                >
+                  <Sun size={18} />
+                </button>
+                <button
+                  onClick={() => setTheme('dark')}
+                  title={language === 'ru' ? 'Тёмная' : 'Qorong\'u'}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#1B2A4A] text-white'
+                      : 'bg-[#E8E2D5] text-[#8A8275] hover:text-[#1B2A4A]'
+                  }`}
+                >
+                  <Moon size={18} />
+                </button>
+                <button
+                  onClick={() => setTheme('system')}
+                  title={language === 'ru' ? 'Системная' : 'Tizim'}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'system'
+                      ? 'bg-[#1B2A4A] text-white'
+                      : 'bg-[#E8E2D5] text-[#8A8275] hover:text-[#1B2A4A]'
+                  }`}
+                >
+                  <Monitor size={18} />
                 </button>
               </div>
             </div>
