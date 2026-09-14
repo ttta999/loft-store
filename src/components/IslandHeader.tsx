@@ -14,26 +14,29 @@ export default function IslandHeader({
   onSearchClick,
 }: IslandHeaderProps) {
   return (
-    <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8]">
+    <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8] dark:bg-dark-bg">
       <div className="flex items-center gap-3">
         {/* Островок с названием */}
-        <div className="flex-1 h-14 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg relative flex items-center justify-center">
+        <div className="flex-1 h-14 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg relative flex items-center justify-center">
           {needsBack && (
             <button
               onClick={onBack}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] hover:bg-[#F5F1E8] transition-colors"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#1B2A4A] dark:text-white hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               <ArrowLeft size={20} />
             </button>
           )}
-          <h1 className="text-lg font-bold text-[#1B2A4A] tracking-wide">LOFT</h1>
+
+          <h1 className="text-lg font-bold text-[#1B2A4A] dark:text-white tracking-wide">
+            LOFT
+          </h1>
         </div>
 
         {/* Отдельная круглая кнопка поиска — только на главной */}
         {showSearch && (
           <button
             onClick={onSearchClick}
-            className="w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] border border-[#E8E2D5] shadow-lg flex items-center justify-center text-[#1B2A4A] hover:text-[#C9A961] transition-colors"
+            className="w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border shadow-lg flex items-center justify-center text-[#1B2A4A] dark:text-white hover:text-[#C9A961] transition-colors"
           >
             <Search size={22} />
           </button>

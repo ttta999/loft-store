@@ -36,7 +36,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
-        <div className="flex-1 bg-[#FBF9F4] border border-[#E8E2D5] rounded-full shadow-lg flex items-center justify-around py-2 px-2">
+        <div className="flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -45,13 +45,13 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all ${
-                  isActive ? 'bg-[#E8E2D5]' : ''
+                  isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
                 }`}
               >
                 <div className="relative">
                   <Icon
                     size={22}
-                    className={isActive ? 'text-[#1B2A4A]' : 'text-[#8A8275]'}
+                    className={isActive ? 'text-[#1B2A4A] dark:text-white' : 'text-[#8A8275] dark:text-gray-300'}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
                   {tab.id === 'cart' && cartItemsCount > 0 && (
@@ -62,7 +62,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
                 </div>
                 <span
                   className={`text-[10px] ${
-                    isActive ? 'text-[#1B2A4A] font-semibold' : 'text-[#8A8275]'
+                    isActive ? 'text-[#1B2A4A] dark:text-white font-semibold' : 'text-[#8A8275] dark:text-gray-300'
                   }`}
                 >
                   {tab.label}
@@ -77,8 +77,8 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
           onClick={() => setActiveTab('profile')}
           className={`w-14 h-14 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
             activeTab === 'profile'
-              ? 'bg-[#E8E2D5] border-[#E8E2D5] text-[#1B2A4A]'
-              : 'bg-[#FBF9F4] border-[#E8E2D5] text-[#8A8275]'
+              ? 'bg-[#E8E2D5] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-accent text-[#1B2A4A] dark:text-white'
+              : 'bg-[#FBF9F4] dark:bg-dark-card border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300'
           }`}
         >
           <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
