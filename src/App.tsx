@@ -33,8 +33,48 @@ function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
+  
+  // ✅ Получаем тему из стора
+  const theme = useStore((state) => state.theme)
 
   const location = useLocation()
+
+  // ✅ Применение тёмной темы к <html>
+  useEffect(() => {
+    const root = document.documentElement
+    
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    } else if (theme === 'light') {
+      root.classList.remove('dark')
+    } else {
+      // theme === 'system'
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      if (isDark) {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
+    }
+  }, [theme])
+
+  // ✅ Следим за изменением системной темы
+  useEffect(() => {
+    if (theme !== 'system') return
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      const root = document.documentElement
+      if (e.matches) {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
+    }
+    
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme])
 
   // ✅ При смене URL автоматически переключаем активную вкладку
   useEffect(() => {
@@ -103,7 +143,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] pb-24">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
       {/* ✅ ОСТРОВОК-ШАПКА */}
       <IslandHeader
         needsBack={needsBack}

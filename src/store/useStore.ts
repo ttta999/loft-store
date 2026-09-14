@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
+type Theme = 'light' | 'dark' | 'system' // ✅ Добавили тип темы
 
 interface CartItem {
   productId: string
@@ -28,6 +29,7 @@ interface AppState {
   currency: Currency
   exchangeRate: number
   saleModeEnabled: boolean
+  theme: Theme // ✅ Добавили поле темы
   cart: CartItem[]
   favorites: FavoriteItem[]
   chatId: string | null
@@ -35,6 +37,7 @@ interface AppState {
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
   setSaleModeEnabled: (enabled: boolean) => void
+  setTheme: (theme: Theme) => void // ✅ Добавили функцию установки темы
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
   addToCart: (item: CartItem) => void
@@ -111,6 +114,7 @@ export const useStore = create<AppState>()(
       currency: 'UZS',
       exchangeRate: 12100,
       saleModeEnabled: false,
+      theme: 'system', // ✅ Значение по умолчанию — системная тема
       cart: [],
       favorites: [],
       chatId: null,
@@ -119,6 +123,7 @@ export const useStore = create<AppState>()(
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
+      setTheme: (theme) => set({ theme }), // ✅ Установка темы
 
       updateExchangeRate: async () => {
         const dbData = await fetchExchangeRateFromDB()
