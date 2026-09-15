@@ -4,7 +4,16 @@ import { supabase } from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
-type Theme = 'light' | 'dark' | 'system' // ✅ Добавили тип темы
+type Theme = 'light' | 'dark' | 'system'
+
+interface TelegramUser {
+  id: string
+  firstName: string
+  lastName: string
+  username: string
+  photoUrl: string
+  languageCode: string
+}
 
 interface CartItem {
   productId: string
@@ -29,15 +38,17 @@ interface AppState {
   currency: Currency
   exchangeRate: number
   saleModeEnabled: boolean
-  theme: Theme // ✅ Добавили поле темы
+  theme: Theme
   cart: CartItem[]
   favorites: FavoriteItem[]
   chatId: string | null
+  telegramUser: TelegramUser | null  // ✅ ДОБАВЛЕНО
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
   setSaleModeEnabled: (enabled: boolean) => void
-  setTheme: (theme: Theme) => void // ✅ Добавили функцию установки темы
+  setTheme: (theme: Theme) => void
+  setTelegramUser: (user: TelegramUser | null) => void  // ✅ ДОБАВЛЕНО
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
   addToCart: (item: CartItem) => void
@@ -50,7 +61,6 @@ interface AppState {
   setChatId: (id: string | null) => void
 }
 
-// ✅ Получение курса из Supabase settings
 const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: number } | null> => {
   try {
     const { data, error } = await supabase
@@ -69,7 +79,6 @@ const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: numbe
   }
 }
 
-// ✅ Получение РЕЖИМА СКИДОК из Supabase settings
 const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
   try {
     const { data, error } = await supabase
@@ -85,7 +94,6 @@ const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
   }
 }
 
-// ✅ Fallback: получение курса через API
 const fetchExchangeRateFromAPI = async (): Promise<number> => {
   try {
     const response = await fetch('/api/getExchangeRate')
@@ -100,7 +108,6 @@ const fetchExchangeRateFromAPI = async (): Promise<number> => {
   }
 }
 
-// ✅ ХЕЛПЕРЫ СКИДОК (используются на всех страницах)
 export const isProductOnSale = (product: any, saleModeEnabled: boolean): boolean =>
   Boolean(saleModeEnabled && product && product.sale_price != null && Number(product.sale_price) > 0)
 
@@ -114,16 +121,18 @@ export const useStore = create<AppState>()(
       currency: 'UZS',
       exchangeRate: 12100,
       saleModeEnabled: false,
-      theme: 'system', // ✅ Значение по умолчанию — системная тема
+      theme: 'system',
       cart: [],
       favorites: [],
       chatId: null,
+      telegramUser: null,  // ✅ ДОБАВЛЕНО
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
-      setTheme: (theme) => set({ theme }), // ✅ Установка темы
+      setTheme: (theme) => set({ theme }),
+      setTelegramUser: (user) => set({ telegramUser: user }),  // ✅ ДОБАВЛЕНО
 
       updateExchangeRate: async () => {
         const dbData = await fetchExchangeRateFromDB()
@@ -142,7 +151,6 @@ export const useStore = create<AppState>()(
         localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
       },
 
-      // ✅ Обновление режима скидок из админки
       updateSaleMode: async () => {
         const enabled = await fetchSaleModeFromDB()
         if (enabled !== null && enabled !== get().saleModeEnabled) {
@@ -207,11 +215,20 @@ export const useStore = create<AppState>()(
 
       setChatId: (id) => set({ chatId: id }),
     }),
-    { name: 'loft-store' }
+    {
+      name: 'loft-store',
+      // ✅ НЕ сохраняем telegramUser в localStorage - он всегда свежий
+      partialize: (state) => ({
+        language: state.language,
+        currency: state.currency,
+        theme: state.theme,
+        cart: state.cart,
+        favorites: state.favorites,
+      }),
+    }
   )
 )
 
-// ✅ Автообновление курса и режима скидок
 if (typeof window !== 'undefined') {
   useStore.getState().updateExchangeRate()
   useStore.getState().updateSaleMode()

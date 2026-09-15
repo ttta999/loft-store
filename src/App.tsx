@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
+import ScrollRestoration from './components/ScrollRestoration'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
 import CartPage from './pages/CartPage'
@@ -18,37 +19,25 @@ import { useStore } from './store/useStore'
 
 type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
 
-interface TelegramUser {
-  id: string
-  firstName: string
-  lastName: string
-  username: string
-  photoUrl: string
-  languageCode: string
-}
-
-function AppContent() {
+// ✅ LAYOUT — персистентный, не размонтируется между вкладками
+function AppLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState<TabType>('home')
-  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  
-  // ✅ Получаем тему из стора
-  const theme = useStore((state) => state.theme)
 
-  const location = useLocation()
+  const theme = useStore((state) => state.theme)
+  const setTelegramUser = useStore((state) => state.setTelegramUser)
 
   // ✅ Применение тёмной темы к <html>
   useEffect(() => {
     const root = document.documentElement
-    
     if (theme === 'dark') {
       root.classList.add('dark')
     } else if (theme === 'light') {
       root.classList.remove('dark')
     } else {
-      // theme === 'system'
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       if (isDark) {
         root.classList.add('dark')
@@ -61,7 +50,6 @@ function AppContent() {
   // ✅ Следим за изменением системной темы
   useEffect(() => {
     if (theme !== 'system') return
-    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = (e: MediaQueryListEvent) => {
       const root = document.documentElement
@@ -71,27 +59,26 @@ function AppContent() {
         root.classList.remove('dark')
       }
     }
-    
     mediaQuery.addEventListener('change', handleChange)
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
-  // ✅ При смене URL автоматически переключаем активную вкладку
+  // ✅ Синхронизируем activeTab с URL
   useEffect(() => {
     const path = location.pathname
-    if (path === '/' || path === '/home') {
-      setActiveTab('home')
-    } else if (path === '/search') {
-      setActiveTab('search')
-    } else if (path === '/cart') {
-      setActiveTab('cart')
-    } else if (path === '/china') {
-      setActiveTab('china')
-    } else if (path === '/profile') {
-      setActiveTab('profile')
-    }
-  }, [location.pathname])
+    let newTab: TabType | null = null
+    if (path === '/' || path === '/home') newTab = 'home'
+    else if (path === '/search') newTab = 'search'
+    else if (path === '/cart') newTab = 'cart'
+    else if (path === '/china') newTab = 'china'
+    else if (path === '/profile') newTab = 'profile'
 
+    if (newTab && newTab !== activeTab) {
+      setActiveTab(newTab)
+    }
+  }, [location.pathname, activeTab])
+
+  // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
     const tg = initTelegram()
     if (tg) {
@@ -109,28 +96,9 @@ function AppContent() {
     } else {
       console.log('Приложение открыто в браузере (не в Telegram)')
     }
-  }, [])
+  }, [setTelegramUser])
 
-  const renderPage = () => {
-    switch (activeTab) {
-      case 'home': return <HomePage />
-      case 'search': return <SearchPage />
-      case 'cart': return <CartPage telegramUser={telegramUser} />
-      case 'china': return <ChinaPage telegramUser={telegramUser} />
-      case 'profile': return (
-        <ProfilePage
-          telegramUser={telegramUser}
-          showBackButton={showBackButton}
-          setShowBackButton={setShowBackButton}
-          onBackClick={onBackClick}
-          setOnBackClick={setOnBackClick}
-        />
-      )
-      default: return <HomePage />
-    }
-  }
-
-  // ✅ Кнопка «назад» нужна на поиске или во внутренних разделах
+  // ✅ Кнопка «назад»
   const needsBack = activeTab === 'search' || (showBackButton && !!onBackClick)
 
   const handleBack = () => {
@@ -144,7 +112,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
-      {/* ✅ ОСТРОВОК-ШАПКА */}
+      <ScrollRestoration />
+
       <IslandHeader
         needsBack={needsBack}
         onBack={handleBack}
@@ -152,7 +121,8 @@ function AppContent() {
         onSearchClick={handleSearchClick}
       />
 
-      {renderPage()}
+      {/* ✅ Outlet рендерит страницу БЕЗ размонтирования layout */}
+      <Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} />
 
       <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
@@ -163,15 +133,17 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ✅ ГЛАВНЫЕ ВКЛАДКИ — все рендерят AppContent */}
-        <Route path="/" element={<AppContent />} />
-        <Route path="/home" element={<AppContent />} />
-        <Route path="/search" element={<AppContent />} />
-        <Route path="/cart" element={<AppContent />} />
-        <Route path="/china" element={<AppContent />} />
-        <Route path="/profile" element={<AppContent />} />
+        {/* ✅ LAYOUT ROUTE — основные вкладки */}
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/china" element={<ChinaPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
 
-        {/* ✅ ВНУТРЕННИЕ СТРАНИЦЫ (без нижней навигации и островка) */}
+        {/* ✅ ВНУТРЕННИЕ СТРАНИЦЫ (со своим IslandHeader) */}
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/catalog" element={<CatalogPage />} />

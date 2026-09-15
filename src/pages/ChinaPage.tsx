@@ -4,8 +4,9 @@ import { Upload, Send, CheckCircle } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
 
-export default function ChinaPage({ telegramUser }: { telegramUser?: any }) {
-  const { language } = useStore()
+// ✅ БЕЗ пропсов — telegramUser берём из store
+export default function ChinaPage() {
+  const { language, telegramUser } = useStore()
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
   const [comment, setComment] = useState('')

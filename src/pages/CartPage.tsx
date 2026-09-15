@@ -7,7 +7,8 @@ import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supa
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
-export default function CartPage({ telegramUser }: { telegramUser?: any }) {
+// ✅ БЕЗ пропсов — telegramUser берём из store
+export default function CartPage() {
   const navigate = useNavigate()
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
@@ -128,7 +129,6 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
             onClose={() => setShowCheckout(false)}
             formatPrice={formatPrice}
             getTotalPrice={getTotalPrice}
-            telegramUser={telegramUser}
           />
         )}
       </div>
@@ -136,8 +136,9 @@ export default function CartPage({ telegramUser }: { telegramUser?: any }) {
   )
 }
 
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: any) {
-  const { cart, clearCart, language, currency, exchangeRate } = useStore()
+// ✅ telegramUser берём из store внутри модалки
+function CheckoutModal({ onClose, formatPrice, getTotalPrice }: any) {
+  const { cart, clearCart, language, currency, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -297,6 +298,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     }
   }
 
+  // ✅ ЭКРАН ОПЛАТЫ — исправлены закрывающие теги
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -475,6 +477,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     )
   }
 
+  // ✅ ЭКРАН УСПЕХА
   if (orderSuccess) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col items-center justify-center p-6">
@@ -510,6 +513,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, telegramUser }: an
     )
   }
 
+  // ✅ ФОРМА ОФОРМЛЕНИЯ
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader

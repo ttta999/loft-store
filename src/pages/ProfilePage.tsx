@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { supabase, getProducts } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2, Sun, Moon, Monitor } from 'lucide-react'
@@ -555,21 +555,19 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   )
 }
 
-interface ProfilePageProps {
-  telegramUser?: any
+// ✅ Тип контекста из AppLayout
+interface OutletContextType {
   showBackButton: boolean
   setShowBackButton: (show: boolean) => void
   onBackClick: (() => void) | null
   setOnBackClick: (fn: (() => void) | null) => void
 }
 
-export default function ProfilePage({
-  telegramUser,
-  showBackButton: _showBackButton,
-  setShowBackButton,
-  onBackClick: _onBackClick,
-  setOnBackClick
-}: ProfilePageProps) {
+// ✅ БЕЗ пропсов — всё берём из store и outlet context
+export default function ProfilePage() {
+  const telegramUser = useStore((state) => state.telegramUser)
+  const { setShowBackButton, setOnBackClick } = useOutletContext<OutletContextType>()
+  
   const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled, theme, setTheme } = useStore()
   const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china' | 'favorites'>('main')
   const [orders, setOrders] = useState<any[]>([])
