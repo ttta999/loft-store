@@ -1,8 +1,26 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
 
-// ✅ sessionStorage для переживания reload страницы (F5)
+// ✅ sessionStorage переживает reload (F5)
 const STORAGE_KEY = 'loft-scroll-positions'
+
+/**
+ * Ключ кеша = pathname + state.
+ * Это позволяет различать:
+ *  - /category с { categoryId: 'shoes' }
+ *  - /category с { categoryId: 'jackets' }
+ *  - /all-products с { sortBy: 'popular' }
+ */
+const getCacheKey = (pathname: string, state: any): string => {
+  if (state && typeof state === 'object' && Object.keys(state).length > 0) {
+    try {
+      return `${pathname}?s=${JSON.stringify(state)}`
+    } catch {
+      return pathname
+    }
+  }
+  return pathname
+}
 
 const getSavedPositions = (): Record<string, number> => {
   try {
@@ -17,7 +35,6 @@ const savePosition = (key: string, position: number) => {
   try {
     const positions = getSavedPositions()
     positions[key] = position
-    // ✅ Храним только последние 50 позиций, чтобы не раздувать storage
     const keys = Object.keys(positions)
     if (keys.length > 50) {
       delete positions[keys[0]]
@@ -33,44 +50,41 @@ export default function ScrollRestoration() {
   const navigationType = useNavigationType()
   const isFirstRender = useRef(true)
 
-  // ✅ Сохраняем скролл при прокрутке (с дебаунсом 100мс)
+  // ✅ Сохраняем позицию ПЕРЕД переходом (через cleanup).
+  // Cleanup вызывается когда location меняется = "перед unmount старой страницы".
   useEffect(() => {
-    let timeoutId: number
+    const currentKey = getCacheKey(location.pathname, location.state)
 
-    const handleScroll = () => {
-      clearTimeout(timeoutId)
-      timeoutId = window.setTimeout(() => {
-        savePosition(location.pathname, window.scrollY)
-      }, 100)
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
-      window.removeEventListener('scroll', handleScroll)
-      clearTimeout(timeoutId)
+      // ❗ Не сохраняем позицию, если открыта модалка — body сейчас не виден
+      if (document.body.style.overflow === 'hidden') return
+      savePosition(currentKey, window.scrollY)
     }
-  }, [location.pathname])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.key])
 
   // ✅ Восстанавливаем скролл при навигации
   useEffect(() => {
-    // ✅ Первый рендер приложения — всегда наверх
+    // Первый рендер приложения — всегда наверх
     if (isFirstRender.current) {
       isFirstRender.current = false
       window.scrollTo(0, 0)
       return
     }
 
-    // ✅ При обычном переходе вперёд (PUSH) — скроллим наверх
+    const currentKey = getCacheKey(location.pathname, location.state)
+
+    // ✅ PUSH / REPLACE — всегда в начало (новая страница)
     if (navigationType !== 'POP') {
       window.scrollTo(0, 0)
       return
     }
 
-    // ✅ При возврате назад (POP) — восстанавливаем сохранённую позицию
-    const savedPosition = getSavedPositions()[location.pathname]
+    // ✅ POP (кнопка "назад") — восстанавливаем сохранённую позицию
+    const savedPosition = getSavedPositions()[currentKey]
 
     if (savedPosition !== undefined && savedPosition > 0) {
-      // ✅ Два requestAnimationFrame — ждём пока React отрендерит DOM с данными из кеша
+      // Двойной RAF — ждём пока React отрендерит DOM с данными из кеша
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           window.scrollTo({ top: savedPosition, behavior: 'instant' as ScrollBehavior })
@@ -79,7 +93,7 @@ export default function ScrollRestoration() {
     } else {
       window.scrollTo(0, 0)
     }
-  }, [location.pathname, location.key, navigationType])
+  }, [location.pathname, location.key, navigationType, location.state])
 
   return null
 }

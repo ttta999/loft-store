@@ -1,11 +1,62 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
+
+// ✅ Универсальный хук блокировки скролла body
+const useBodyScrollLock = (active: boolean) => {
+  useEffect(() => {
+    if (!active) return
+    const original = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [active])
+}
+
+// ✅ Компонент просмотра скриншота с блокировкой скролла
+function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
+  useBodyScrollLock(true)
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+        >
+          <X size={24} />
+          {language === 'ru' ? 'Закрыть' : 'Yopish'}
+        </button>
+        <img
+          src={url}
+          alt="Screenshot"
+          className="w-full h-auto rounded-lg object-contain"
+          style={{ maxHeight: '80vh' }}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <div className="mt-4 flex justify-center">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ✅ БЕЗ пропсов — telegramUser берём из store
 export default function CartPage() {
@@ -129,6 +180,7 @@ export default function CartPage() {
             onClose={() => setShowCheckout(false)}
             formatPrice={formatPrice}
             getTotalPrice={getTotalPrice}
+            language={language}
           />
         )}
       </div>
@@ -137,8 +189,11 @@ export default function CartPage() {
 }
 
 // ✅ telegramUser берём из store внутри модалки
-function CheckoutModal({ onClose, formatPrice, getTotalPrice }: any) {
-  const { cart, clearCart, language, currency, exchangeRate, telegramUser } = useStore()
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
+  // ✅ Блокируем скролл body пока модалка открыта
+  useBodyScrollLock(true)
+
+  const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -298,7 +353,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice }: any) {
     }
   }
 
-  // ✅ ЭКРАН ОПЛАТЫ — исправлены закрывающие теги
+  // ✅ ЭКРАН ОПЛАТЫ
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -441,37 +496,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice }: any) {
         </div>
 
         {showScreenshotModal && screenshotUrl && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
-            onClick={() => setShowScreenshotModal(false)}
-          >
-            <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
-              <button
-                onClick={() => setShowScreenshotModal(false)}
-                className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
-              >
-                ✕ {language === 'ru' ? 'Закрыть' : 'Yopish'}
-              </button>
-              <img
-                src={screenshotUrl}
-                alt="Screenshot"
-                className="w-full h-auto rounded-lg object-contain"
-                style={{ maxHeight: '80vh' }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="mt-4 flex justify-center">
-                <a
-                  href={screenshotUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
-                </a>
-              </div>
-            </div>
-          </div>
+          <ScreenshotViewer
+            url={screenshotUrl}
+            language={language}
+            onClose={() => setShowScreenshotModal(false)}
+          />
         )}
       </div>
     )

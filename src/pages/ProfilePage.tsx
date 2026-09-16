@@ -13,7 +13,23 @@ const SOCIAL_LINKS = {
   instagram: 'https://www.instagram.com/loft_mens_shop',
 }
 
+// ✅ Универсальный хук блокировки скролла body
+// Используем inline в каждой модалке чтобы не плодить файлы
+const useBodyScrollLock = (active: boolean) => {
+  useEffect(() => {
+    if (!active) return
+    const original = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [active])
+}
+
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
+  // ✅ Блокируем скролл body пока модалка открыта
+  useBodyScrollLock(true)
+
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
@@ -382,44 +398,59 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       </div>
 
       {showScreenshotModal && order.payment_screenshot_url && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
-          onClick={() => setShowScreenshotModal(false)}
-        >
-          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <button
-              onClick={() => setShowScreenshotModal(false)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
-            >
-              <X size={24} />
-              {language === 'ru' ? 'Закрыть' : 'Yopish'}
-            </button>
-            <img
-              src={order.payment_screenshot_url}
-              alt="Screenshot"
-              className="w-full h-auto rounded-lg object-contain"
-              style={{ maxHeight: '80vh' }}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="mt-4 flex justify-center">
-              <a
-                href={order.payment_screenshot_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
-              </a>
-            </div>
-          </div>
-        </div>
+        <ScreenshotViewer
+          url={order.payment_screenshot_url}
+          language={language}
+          onClose={() => setShowScreenshotModal(false)}
+        />
       )}
     </div>
   )
 }
 
+// ✅ Отдельный компонент для просмотра скриншота с блокировкой скролла
+function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
+  useBodyScrollLock(true)
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+        >
+          <X size={24} />
+          {language === 'ru' ? 'Закрыть' : 'Yopish'}
+        </button>
+        <img
+          src={url}
+          alt="Screenshot"
+          className="w-full h-auto rounded-lg object-contain"
+          style={{ maxHeight: '80vh' }}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <div className="mt-4 flex justify-center">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
+  // ✅ Блокируем скролл body пока модалка открыта
+  useBodyScrollLock(true)
+
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -646,7 +677,7 @@ export default function ProfilePage() {
           'Активный': "Qabul qilindi 📄",
           'В обработке': "Yig'ilmoqda 📦",
           'Готов': "Berishga tayyor 🎉",
-          'Выдан': "Olib bo'lindi 🤝",
+          'Выдан': "Olab bo'lindi 🤝",
           'Отменён': "Bekor qilindi 🚫",
           'Ожидает оплаты': "To'lovni kutmoqda ⏳",
         }
@@ -961,7 +992,6 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-            {/* ✅ ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <Monitor size={20} className="text-[#8A8275] dark:text-gray-300" />
@@ -1023,13 +1053,11 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* ✅ СЕКЦИЯ "МЫ В СОЦСЕТЯХ" */}
           <div className="mt-6">
             <h3 className="text-lg font-bold mb-3 text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? 'Мы в соцсетях' : 'Biz ijtimoiy tarmoqlarda'}
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              {/* Telegram */}
               <a
                 href={SOCIAL_LINKS.telegram}
                 target="_blank"
@@ -1045,7 +1073,6 @@ export default function ProfilePage() {
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
               </a>
 
-              {/* Instagram */}
               <a
                 href={SOCIAL_LINKS.instagram}
                 target="_blank"
