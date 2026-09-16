@@ -33,6 +33,12 @@ interface FavoriteItem {
   image: string
 }
 
+// ✅ Глобальный кеш товаров
+interface CachedProducts {
+  items: any[]
+  updatedAt: number
+}
+
 interface AppState {
   language: Language
   currency: Currency
@@ -42,13 +48,16 @@ interface AppState {
   cart: CartItem[]
   favorites: FavoriteItem[]
   chatId: string | null
-  telegramUser: TelegramUser | null  // ✅ ДОБАВЛЕНО
+  telegramUser: TelegramUser | null
+  productsCache: CachedProducts | null  // ✅ НОВОЕ: кеш товаров
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
   setSaleModeEnabled: (enabled: boolean) => void
   setTheme: (theme: Theme) => void
-  setTelegramUser: (user: TelegramUser | null) => void  // ✅ ДОБАВЛЕНО
+  setTelegramUser: (user: TelegramUser | null) => void
+  setProductsCache: (items: any[]) => void  // ✅ НОВОЕ
+  getProductsCacheAge: () => number  // ✅ НОВОЕ
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
   addToCart: (item: CartItem) => void
@@ -125,14 +134,27 @@ export const useStore = create<AppState>()(
       cart: [],
       favorites: [],
       chatId: null,
-      telegramUser: null,  // ✅ ДОБАВЛЕНО
+      telegramUser: null,
+      productsCache: null,  // ✅ НОВОЕ: кеш пустой по умолчанию
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
-      setTelegramUser: (user) => set({ telegramUser: user }),  // ✅ ДОБАВЛЕНО
+      setTelegramUser: (user) => set({ telegramUser: user }),
+      
+      // ✅ НОВОЕ: сохраняем кеш с таймстампом
+      setProductsCache: (items) => set({
+        productsCache: { items, updatedAt: Date.now() }
+      }),
+      
+      // ✅ НОВОЕ: возраст кеша в мс
+      getProductsCacheAge: () => {
+        const cache = get().productsCache
+        if (!cache) return Infinity
+        return Date.now() - cache.updatedAt
+      },
 
       updateExchangeRate: async () => {
         const dbData = await fetchExchangeRateFromDB()
@@ -217,13 +239,13 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'loft-store',
-      // ✅ НЕ сохраняем telegramUser в localStorage - он всегда свежий
       partialize: (state) => ({
         language: state.language,
         currency: state.currency,
         theme: state.theme,
         cart: state.cart,
         favorites: state.favorites,
+        productsCache: state.productsCache,  // ✅ Кешируем товары в localStorage
       }),
     }
   )

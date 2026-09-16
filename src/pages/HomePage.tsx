@@ -1,9 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, ArrowRight } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
+
+// ✅ Кеш считается свежим 5 минут
+const CACHE_FRESH_MS = 5 * 60 * 1000
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -14,21 +17,38 @@ export default function HomePage() {
     saleModeEnabled,
     addToFavorites,
     removeFromFavorites,
-    isFavorite
+    isFavorite,
+    productsCache,
+    setProductsCache,
+    getProductsCacheAge
   } = useStore()
 
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  // ✅ Защита от повторной загрузки при строгом режиме React
+  const hasLoadedRef = useRef(false)
 
+  // ✅ Умная загрузка: только если нет свежего кеша
   useEffect(() => {
+    if (hasLoadedRef.current) return
+    hasLoadedRef.current = true
     loadProducts()
   }, [])
 
-  const loadProducts = async () => {
-    setLoading(true)
-    const data = await getProducts()
-    setProducts(data)
-    setLoading(false)
+  const loadProducts = async (force = false) => {
+    const cacheAge = getProductsCacheAge()
+    const hasFreshCache = productsCache && cacheAge < CACHE_FRESH_MS
+
+    // ✅ Есть свежий кеш и не принудительно — пропускаем
+    if (hasFreshCache && !force) {
+      return
+    }
+
+    // ✅ Загружаем в фоне (лоадер показывается через !productsCache ниже)
+    try {
+      const data = await getProducts()
+      setProductsCache(data)
+    } catch (error) {
+      console.error('Ошибка загрузки товаров:', error)
+    }
   }
 
   const handleCategoryClick = (categoryId: string) => {
@@ -36,7 +56,6 @@ export default function HomePage() {
       navigate('/brands')
       return
     }
-
     navigate('/category', { state: { categoryId } })
   }
 
@@ -46,13 +65,15 @@ export default function HomePage() {
   }
 
   const getNewProducts = (limit: number = 6) => {
-    return [...products]
+    const items = productsCache?.items || []
+    return [...items]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, limit)
   }
 
   const getPopularProducts = (limit: number = 6) => {
-    const productsWithOrders = products.map(product => ({
+    const items = productsCache?.items || []
+    const productsWithOrders = items.map(product => ({
       ...product,
       orderCount: Math.floor(Math.random() * 100)
     }))
@@ -64,7 +85,8 @@ export default function HomePage() {
 
   const getDiscountProducts = (limit: number = 6) => {
     if (!saleModeEnabled) return []
-    return products
+    const items = productsCache?.items || []
+    return items
       .filter(p => p.sale_price != null && Number(p.sale_price) > 0)
       .slice(0, limit)
   }
@@ -146,7 +168,8 @@ export default function HomePage() {
     )
   }
 
-  if (loading) {
+  // ✅ Лоадер ТОЛЬКО при первом визите (когда кеша нет вообще)
+  if (!productsCache) {
     return (
       <div className="p-4 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
