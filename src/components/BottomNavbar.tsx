@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { Home, ShoppingCart, Globe, User } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
@@ -8,8 +9,27 @@ interface BottomNavbarProps {
   setActiveTab: (tab: TabType) => void
 }
 
+// ✅ Соответствие вкладка → URL (используется для навигации)
+const TAB_PATHS: Record<TabType, string> = {
+  home: '/',
+  search: '/search',
+  cart: '/cart',
+  china: '/china',
+  profile: '/profile',
+}
+
 export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarProps) {
+  const navigate = useNavigate()
   const { language, cart } = useStore()
+
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  // ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ: меняем и state, и URL
+  const handleTabClick = (tab: TabType) => {
+    if (tab === activeTab) return // не делаем лишних переходов
+    setActiveTab(tab)
+    navigate(TAB_PATHS[tab])
+  }
 
   // ✅ СЛЕВА ТОЛЬКО 3 КНОПКИ (поиск ушёл наверх)
   const tabs = [
@@ -30,8 +50,6 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
     },
   ]
 
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
       <div className="flex items-center gap-3 pointer-events-auto">
@@ -43,7 +61,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all ${
                   isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
                 }`}
@@ -74,7 +92,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
 
         {/* ✅ СПРАВА — отдельная круглая кнопка Профиль */}
         <button
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleTabClick('profile')}
           className={`w-14 h-14 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
             activeTab === 'profile'
               ? 'bg-[#E8E2D5] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-accent text-[#1B2A4A] dark:text-white'
