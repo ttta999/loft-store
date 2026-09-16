@@ -11,6 +11,7 @@ const POPULARITY_FRESH_MS = 10 * 60 * 1000
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
+
   const {
     language,
     currency,
@@ -21,17 +22,7 @@ export default function AllProductsPage() {
     isFavorite,
     popularityMap,
     getPopularityAge,
-  } = useStore((state) => ({
-    language: state.language,
-    currency: state.currency,
-    exchangeRate: state.exchangeRate,
-    saleModeEnabled: state.saleModeEnabled,
-    addToFavorites: state.addToFavorites,
-    removeFromFavorites: state.removeFromFavorites,
-    isFavorite: state.isFavorite,
-    popularityMap: state.popularityMap,
-    getPopularityAge: state.getPopularityAge,
-  }))
+  } = useStore()
 
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
@@ -50,7 +41,7 @@ export default function AllProductsPage() {
     loadProducts()
   }, [])
 
-  // ✅ Подгружаем популярность если нужно (для сортировки «popular»)
+  // ✅ Подгружаем популярность для сортировки «popular»
   useEffect(() => {
     if (hasLoadedPopularityRef.current) return
     hasLoadedPopularityRef.current = true
@@ -62,6 +53,7 @@ export default function AllProductsPage() {
 
   useEffect(() => {
     applyFiltersAndSort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, selectedSubcategory, sortBy, products, popularityMap])
 
   const loadProducts = async () => {
@@ -88,8 +80,7 @@ export default function AllProductsPage() {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
     } else if (sortBy === 'popular') {
-      // ✅ РЕАЛЬНАЯ СОРТИРОВКА по статистике продаж
-      // Товары с продажами — сверху, без продаж — снизу
+      // ✅ РЕАЛЬНАЯ сортировка по статистике продаж
       filtered.sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0))
     } else if (sortBy === 'price_asc') {
       filtered.sort(

@@ -10,6 +10,7 @@ const POPULARITY_FRESH_MS = 10 * 60 * 1000
 
 export default function HomePage() {
   const navigate = useNavigate()
+
   const {
     language,
     currency,
@@ -23,20 +24,7 @@ export default function HomePage() {
     getProductsCacheAge,
     popularityMap,
     getPopularityAge,
-  } = useStore((state) => ({
-    language: state.language,
-    currency: state.currency,
-    exchangeRate: state.exchangeRate,
-    saleModeEnabled: state.saleModeEnabled,
-    addToFavorites: state.addToFavorites,
-    removeFromFavorites: state.removeFromFavorites,
-    isFavorite: state.isFavorite,
-    productsCache: state.productsCache,
-    setProductsCache: state.setProductsCache,
-    getProductsCacheAge: state.getProductsCacheAge,
-    popularityMap: state.popularityMap,
-    getPopularityAge: state.getPopularityAge,
-  }))
+  } = useStore()
 
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
@@ -48,7 +36,7 @@ export default function HomePage() {
     loadProducts()
   }, [])
 
-  // ✅ Загружаем популярность (один раз, потом из кеша)
+  // ✅ Загружаем популярность (один раз, дальше из кеша)
   useEffect(() => {
     if (hasLoadedPopularityRef.current) return
     hasLoadedPopularityRef.current = true
@@ -97,8 +85,8 @@ export default function HomePage() {
     const pop = popularityMap || {}
 
     return [...items]
-      .filter((p) => (pop[p.id] || 0) > 0)              // Только проданные
-      .sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0)) // По убыванию продаж
+      .filter((p) => (pop[p.id] || 0) > 0)
+      .sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0))
       .slice(0, limit)
   }
 
@@ -282,7 +270,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ✅ Блок «🔥 Популярные» — показывается ТОЛЬКО если есть проданные товары */}
+      {/* ✅ Блок «🔥 Популярные» — только если есть проданные товары */}
       {popularProducts.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
