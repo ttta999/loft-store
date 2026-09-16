@@ -5,8 +5,8 @@ import { getProducts } from '../lib/supabase'
 import { Heart, ArrowRight } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
-// ✅ Кеш считается свежим 5 минут
 const CACHE_FRESH_MS = 5 * 60 * 1000
+const POPULARITY_FRESH_MS = 10 * 60 * 1000
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -20,29 +20,49 @@ export default function HomePage() {
     isFavorite,
     productsCache,
     setProductsCache,
-    getProductsCacheAge
-  } = useStore()
+    getProductsCacheAge,
+    popularityMap,
+    getPopularityAge,
+  } = useStore((state) => ({
+    language: state.language,
+    currency: state.currency,
+    exchangeRate: state.exchangeRate,
+    saleModeEnabled: state.saleModeEnabled,
+    addToFavorites: state.addToFavorites,
+    removeFromFavorites: state.removeFromFavorites,
+    isFavorite: state.isFavorite,
+    productsCache: state.productsCache,
+    setProductsCache: state.setProductsCache,
+    getProductsCacheAge: state.getProductsCacheAge,
+    popularityMap: state.popularityMap,
+    getPopularityAge: state.getPopularityAge,
+  }))
 
-  // ✅ Защита от повторной загрузки при строгом режиме React
   const hasLoadedRef = useRef(false)
+  const hasLoadedPopularityRef = useRef(false)
 
-  // ✅ Умная загрузка: только если нет свежего кеша
+  // ✅ Загружаем товары
   useEffect(() => {
     if (hasLoadedRef.current) return
     hasLoadedRef.current = true
     loadProducts()
   }, [])
 
+  // ✅ Загружаем популярность (один раз, потом из кеша)
+  useEffect(() => {
+    if (hasLoadedPopularityRef.current) return
+    hasLoadedPopularityRef.current = true
+
+    if (getPopularityAge() > POPULARITY_FRESH_MS) {
+      useStore.getState().updatePopularity()
+    }
+  }, [])
+
   const loadProducts = async (force = false) => {
     const cacheAge = getProductsCacheAge()
     const hasFreshCache = productsCache && cacheAge < CACHE_FRESH_MS
+    if (hasFreshCache && !force) return
 
-    // ✅ Есть свежий кеш и не принудительно — пропускаем
-    if (hasFreshCache && !force) {
-      return
-    }
-
-    // ✅ Загружаем в фоне (лоадер показывается через !productsCache ниже)
     try {
       const data = await getProducts()
       setProductsCache(data)
@@ -71,15 +91,14 @@ export default function HomePage() {
       .slice(0, limit)
   }
 
+  // ✅ РЕАЛЬНАЯ ПОПУЛЯРНОСТЬ из статистики заказов
   const getPopularProducts = (limit: number = 6) => {
     const items = productsCache?.items || []
-    const productsWithOrders = items.map(product => ({
-      ...product,
-      orderCount: Math.floor(Math.random() * 100)
-    }))
+    const pop = popularityMap || {}
 
-    return productsWithOrders
-      .sort((a, b) => b.orderCount - a.orderCount)
+    return [...items]
+      .filter((p) => (pop[p.id] || 0) > 0)              // Только проданные
+      .sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0)) // По убыванию продаж
       .slice(0, limit)
   }
 
@@ -87,7 +106,7 @@ export default function HomePage() {
     if (!saleModeEnabled) return []
     const items = productsCache?.items || []
     return items
-      .filter(p => p.sale_price != null && Number(p.sale_price) > 0)
+      .filter((p) => p.sale_price != null && Number(p.sale_price) > 0)
       .slice(0, limit)
   }
 
@@ -119,7 +138,6 @@ export default function HomePage() {
             <button
               onClick={(e) => {
                 e.preventDefault()
-
                 if (favorite) {
                   removeFromFavorites(product.id)
                 } else {
@@ -127,7 +145,7 @@ export default function HomePage() {
                     productId: product.id,
                     name: language === 'ru' ? product.name_ru : product.name_uz,
                     priceUsd: effectivePrice,
-                    image: product.images?.[0] || ''
+                    image: product.images?.[0] || '',
                   })
                 }
               }}
@@ -155,11 +173,11 @@ export default function HomePage() {
               </p>
             )}
 
-            <p className={`font-bold mt-1 ${
-              onSale
-                ? 'text-[#9B3B3B] dark:text-red-400'
-                : 'text-[#1B2A4A] dark:text-white'
-            }`}>
+            <p
+              className={`font-bold mt-1 ${
+                onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'
+              }`}
+            >
               {formatPrice(effectivePrice)}
             </p>
           </div>
@@ -168,7 +186,6 @@ export default function HomePage() {
     )
   }
 
-  // ✅ Лоадер ТОЛЬКО при первом визите (когда кеша нет вообще)
   if (!productsCache) {
     return (
       <div className="p-4 flex items-center justify-center min-h-[60vh]">
@@ -181,6 +198,8 @@ export default function HomePage() {
       </div>
     )
   }
+
+  const popularProducts = getPopularProducts(6)
 
   return (
     <div className="p-4 pb-24">
@@ -263,7 +282,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {getPopularProducts().length > 0 && (
+      {/* ✅ Блок «🔥 Популярные» — показывается ТОЛЬКО если есть проданные товары */}
+      {popularProducts.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold text-[#1B2A4A] dark:text-white">
@@ -280,7 +300,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {getPopularProducts(6).map((product) => (
+            {popularProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

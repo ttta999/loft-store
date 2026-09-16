@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase } from '../lib/supabase'
+import { supabase, fetchProductPopularity } from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
@@ -33,7 +33,6 @@ interface FavoriteItem {
   image: string
 }
 
-// ✅ Глобальный кеш товаров
 interface CachedProducts {
   items: any[]
   updatedAt: number
@@ -49,17 +48,23 @@ interface AppState {
   favorites: FavoriteItem[]
   chatId: string | null
   telegramUser: TelegramUser | null
-  productsCache: CachedProducts | null  // ✅ НОВОЕ: кеш товаров
+  productsCache: CachedProducts | null
+  popularityMap: Record<string, number> | null  // ✅ productId → продано штук
+  popularityUpdatedAt: number                    // ✅ timestamp последнего обновления
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
   setSaleModeEnabled: (enabled: boolean) => void
   setTheme: (theme: Theme) => void
   setTelegramUser: (user: TelegramUser | null) => void
-  setProductsCache: (items: any[]) => void  // ✅ НОВОЕ
-  getProductsCacheAge: () => number  // ✅ НОВОЕ
+  setProductsCache: (items: any[]) => void
+  setPopularityMap: (map: Record<string, number>) => void  // ✅
+  getProductsCacheAge: () => number
+  getPopularityAge: () => number                            // ✅
+  getProductSoldCount: (productId: string) => number        // ✅
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
+  updatePopularity: (force?: boolean) => Promise<void>      // ✅
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
@@ -135,7 +140,9 @@ export const useStore = create<AppState>()(
       favorites: [],
       chatId: null,
       telegramUser: null,
-      productsCache: null,  // ✅ НОВОЕ: кеш пустой по умолчанию
+      productsCache: null,
+      popularityMap: null,       // ✅
+      popularityUpdatedAt: 0,    // ✅
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
@@ -143,17 +150,25 @@ export const useStore = create<AppState>()(
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
       setTelegramUser: (user) => set({ telegramUser: user }),
-      
-      // ✅ НОВОЕ: сохраняем кеш с таймстампом
-      setProductsCache: (items) => set({
-        productsCache: { items, updatedAt: Date.now() }
-      }),
-      
-      // ✅ НОВОЕ: возраст кеша в мс
+
+      setProductsCache: (items) =>
+        set({ productsCache: { items, updatedAt: Date.now() } }),
+
+      setPopularityMap: (map) =>                              // ✅
+        set({ popularityMap: map, popularityUpdatedAt: Date.now() }),
+
       getProductsCacheAge: () => {
         const cache = get().productsCache
         if (!cache) return Infinity
         return Date.now() - cache.updatedAt
+      },
+
+      getPopularityAge: () => {                               // ✅
+        return Date.now() - (get().popularityUpdatedAt || 0)
+      },
+
+      getProductSoldCount: (productId) => {                   // ✅
+        return get().popularityMap?.[productId] || 0
       },
 
       updateExchangeRate: async () => {
@@ -181,58 +196,74 @@ export const useStore = create<AppState>()(
         }
       },
 
-      addToCart: (item) => set((state) => {
-        if (item.isSpecialOrder) {
-          return { cart: [...state.cart, item] }
+      // ✅ Обновление популярности (использует кеш в supabase.ts)
+      updatePopularity: async (force = false) => {
+        try {
+          const map = await fetchProductPopularity(force)
+          set({ popularityMap: map, popularityUpdatedAt: Date.now() })
+        } catch (error) {
+          console.error('❌ Ошибка updatePopularity:', error)
         }
-        if (item.quantity < 0) {
-          return {
-            cart: state.cart.map(i =>
-              (i.productId === item.productId && i.size === item.size)
-                ? { ...i, quantity: Math.max(1, i.quantity - 1) }
-                : i
-            )
-          }
-        }
-        const existing = state.cart.find(i => i.productId === item.productId && i.size === item.size)
-        if (existing) {
-          return {
-            cart: state.cart.map(i =>
-              (i.productId === item.productId && i.size === item.size)
-                ? { ...i, quantity: i.quantity + item.quantity }
-                : i
-            )
-          }
-        }
-        return { cart: [...state.cart, item] }
-      }),
+      },
 
-      removeFromCart: (productId, size) => set((state) => ({
-        cart: state.cart.filter(i => !(i.productId === productId && i.size === size))
-      })),
+      addToCart: (item) =>
+        set((state) => {
+          if (item.isSpecialOrder) {
+            return { cart: [...state.cart, item] }
+          }
+          if (item.quantity < 0) {
+            return {
+              cart: state.cart.map((i) =>
+                i.productId === item.productId && i.size === item.size
+                  ? { ...i, quantity: Math.max(1, i.quantity - 1) }
+                  : i
+              ),
+            }
+          }
+          const existing = state.cart.find(
+            (i) => i.productId === item.productId && i.size === item.size
+          )
+          if (existing) {
+            return {
+              cart: state.cart.map((i) =>
+                i.productId === item.productId && i.size === item.size
+                  ? { ...i, quantity: i.quantity + item.quantity }
+                  : i
+              ),
+            }
+          }
+          return { cart: [...state.cart, item] }
+        }),
+
+      removeFromCart: (productId, size) =>
+        set((state) => ({
+          cart: state.cart.filter(
+            (i) => !(i.productId === productId && i.size === size)
+          ),
+        })),
 
       clearCart: () => set({ cart: [] }),
 
       getTotalPrice: () => {
         const state = get()
-        return state.cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0)
+        return state.cart.reduce((sum, item) => sum + item.priceUsd * item.quantity, 0)
       },
 
-      addToFavorites: (item) => set((state) => {
-        const exists = state.favorites.find(i => i.productId === item.productId)
-        if (exists) {
-          return state
-        }
-        return { favorites: [...state.favorites, item] }
-      }),
+      addToFavorites: (item) =>
+        set((state) => {
+          const exists = state.favorites.find((i) => i.productId === item.productId)
+          if (exists) return state
+          return { favorites: [...state.favorites, item] }
+        }),
 
-      removeFromFavorites: (productId) => set((state) => ({
-        favorites: state.favorites.filter(i => i.productId !== productId)
-      })),
+      removeFromFavorites: (productId) =>
+        set((state) => ({
+          favorites: state.favorites.filter((i) => i.productId !== productId),
+        })),
 
       isFavorite: (productId) => {
         const state = get()
-        return state.favorites.some(i => i.productId === productId)
+        return state.favorites.some((i) => i.productId === productId)
       },
 
       setChatId: (id) => set({ chatId: id }),
@@ -245,7 +276,10 @@ export const useStore = create<AppState>()(
         theme: state.theme,
         cart: state.cart,
         favorites: state.favorites,
-        productsCache: state.productsCache,  // ✅ Кешируем товары в localStorage
+        productsCache: state.productsCache,
+        // ✅ Популярность тоже кешируем, чтобы не тянуть RPC при каждой загрузке
+        popularityMap: state.popularityMap,
+        popularityUpdatedAt: state.popularityUpdatedAt,
       }),
     }
   )
@@ -254,16 +288,19 @@ export const useStore = create<AppState>()(
 if (typeof window !== 'undefined') {
   useStore.getState().updateExchangeRate()
   useStore.getState().updateSaleMode()
+  useStore.getState().updatePopularity() // ✅ Первый запуск
 
   setInterval(() => {
     useStore.getState().updateExchangeRate()
     useStore.getState().updateSaleMode()
+    useStore.getState().updatePopularity() // ✅ Каждые 5 минут
   }, 5 * 60 * 1000)
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       useStore.getState().updateExchangeRate()
       useStore.getState().updateSaleMode()
+      useStore.getState().updatePopularity()
     }
   })
 }

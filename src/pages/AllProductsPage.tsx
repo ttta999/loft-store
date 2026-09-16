@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
@@ -6,10 +6,33 @@ import { Heart, Filter } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 import IslandHeader from '../components/IslandHeader'
 
+const POPULARITY_FRESH_MS = 10 * 60 * 1000
+
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const {
+    language,
+    currency,
+    exchangeRate,
+    saleModeEnabled,
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite,
+    popularityMap,
+    getPopularityAge,
+  } = useStore((state) => ({
+    language: state.language,
+    currency: state.currency,
+    exchangeRate: state.exchangeRate,
+    saleModeEnabled: state.saleModeEnabled,
+    addToFavorites: state.addToFavorites,
+    removeFromFavorites: state.removeFromFavorites,
+    isFavorite: state.isFavorite,
+    popularityMap: state.popularityMap,
+    getPopularityAge: state.getPopularityAge,
+  }))
+
   const [products, setProducts] = useState<any[]>([])
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,13 +41,28 @@ export default function AllProductsPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>(location.state?.sortBy || 'newest')
 
+  const hasLoadedRef = useRef(false)
+  const hasLoadedPopularityRef = useRef(false)
+
   useEffect(() => {
+    if (hasLoadedRef.current) return
+    hasLoadedRef.current = true
     loadProducts()
+  }, [])
+
+  // ✅ Подгружаем популярность если нужно (для сортировки «popular»)
+  useEffect(() => {
+    if (hasLoadedPopularityRef.current) return
+    hasLoadedPopularityRef.current = true
+
+    if (getPopularityAge() > POPULARITY_FRESH_MS) {
+      useStore.getState().updatePopularity()
+    }
   }, [])
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [selectedCategory, selectedSubcategory, sortBy, products])
+  }, [selectedCategory, selectedSubcategory, sortBy, products, popularityMap])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -37,20 +75,34 @@ export default function AllProductsPage() {
   const applyFiltersAndSort = () => {
     let filtered = [...products]
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === selectedCategory)
+      filtered = filtered.filter((p) => p.category === selectedCategory)
     }
     if (selectedSubcategory !== 'all') {
-      filtered = filtered.filter(p => p.subcategory === selectedSubcategory)
+      filtered = filtered.filter((p) => p.subcategory === selectedSubcategory)
     }
+
+    const pop = popularityMap || {}
+
     if (sortBy === 'newest') {
-      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      filtered.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
     } else if (sortBy === 'popular') {
-      filtered.sort(() => Math.random() - 0.5)
+      // ✅ РЕАЛЬНАЯ СОРТИРОВКА по статистике продаж
+      // Товары с продажами — сверху, без продаж — снизу
+      filtered.sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0))
     } else if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
+      filtered.sort(
+        (a, b) =>
+          getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled)
+      )
     } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
+      filtered.sort(
+        (a, b) =>
+          getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
+      )
     }
+
     setFilteredProducts(filtered)
   }
 
@@ -97,7 +149,7 @@ export default function AllProductsPage() {
                   productId: product.id,
                   name: language === 'ru' ? product.name_ru : product.name_uz,
                   priceUsd: effectivePrice,
-                  image: product.images?.[0] || ''
+                  image: product.images?.[0] || '',
                 })
               }
             }}
@@ -105,7 +157,9 @@ export default function AllProductsPage() {
           >
             <Heart
               size={20}
-              className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
+              className={
+                isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'
+              }
             />
           </button>
         </div>
@@ -118,7 +172,11 @@ export default function AllProductsPage() {
               {formatPrice(product.price_usd)}
             </p>
           )}
-          <p className={`font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
+          <p
+            className={`font-bold mt-1 ${
+              onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'
+            }`}
+          >
             {formatPrice(effectivePrice)}
           </p>
         </div>
@@ -141,10 +199,7 @@ export default function AllProductsPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-      <IslandHeader
-        needsBack={true}
-        onBack={() => navigate(-1)}
-      />
+      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">{getTitle()}</h2>
@@ -176,7 +231,7 @@ export default function AllProductsPage() {
                 className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white focus:outline-none focus:border-gold"
               >
                 <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-                {CATEGORIES.map(cat => (
+                {CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {language === 'ru' ? cat.name_ru : cat.name_uz}
                   </option>
@@ -195,7 +250,7 @@ export default function AllProductsPage() {
                   className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white focus:outline-none focus:border-gold"
                 >
                   <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-                  {CATEGORIES.find(c => c.id === selectedCategory)?.subcategories.map(sub => (
+                  {CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories.map((sub) => (
                     <option key={sub.id} value={sub.id}>
                       {language === 'ru' ? sub.name_ru : sub.name_uz}
                     </option>
