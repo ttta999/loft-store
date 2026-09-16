@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Filter, ArrowUpDown } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 
@@ -25,7 +25,14 @@ export default function CatalogPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
+  // ✅ Защита от повторной загрузки брендов
+  const brandsLoadedRef = useRef(false)
+  // ✅ Сохраняем products для избежания лишних re-fetch
+  const productsCacheRef = useRef<Record<string, any[]>>({})
+
   useEffect(() => {
+    if (brandsLoadedRef.current) return
+    brandsLoadedRef.current = true
     loadBrands()
   }, [])
 
@@ -54,6 +61,15 @@ export default function CatalogPage() {
   }
 
   const loadProducts = async () => {
+    // ✅ Проверяем кеш для этой категории/подкатегории
+    const cacheKey = `${categoryId}_${subcategoryId || 'all'}`
+    if (productsCacheRef.current[cacheKey]) {
+      setProducts(productsCacheRef.current[cacheKey])
+      setFilteredProducts(productsCacheRef.current[cacheKey])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     try {
       let query = supabase
@@ -66,8 +82,12 @@ export default function CatalogPage() {
       }
       const { data, error } = await query
       if (error) throw error
-      setProducts(data || [])
-      setFilteredProducts(data || [])
+      const items = data || []
+      
+      // ✅ Сохраняем в кеш
+      productsCacheRef.current[cacheKey] = items
+      setProducts(items)
+      setFilteredProducts(items)
     } catch (error) {
       console.error('Ошибка загрузки товаров:', error)
       setProducts([])

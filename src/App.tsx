@@ -14,10 +14,52 @@ import CatalogPage from './pages/CatalogPage'
 import BrandsPage from './pages/BrandsPage'
 import CategoryPage from './pages/CategoryPage'
 import AllProductsPage from './pages/AllProductsPage'
-import { initTelegram, getUserData, getChatId, subscribeUser } from './lib/telegram'
+import {
+  initTelegram,
+  getUserData,
+  getChatId,
+  subscribeUser,
+  setupTelegramBackButton,
+  hideTelegramBackButton,
+} from './lib/telegram'
 import { useStore } from './store/useStore'
 
 type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
+
+// ✅ Пути основных вкладок — на них системной кнопкой управляет AppLayout
+const MAIN_TAB_PATHS = new Set(['/', '/home', '/search', '/cart', '/china', '/profile'])
+
+// ✅ МЕНЕДЖЕР системной кнопки «назад» Telegram (работает поверх всех роутов)
+function TelegramBackButtonManager() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const path = location.pathname
+
+    // ✅ На основных вкладках кнопкой управляет AppLayout — гасим остаточное состояние
+    if (MAIN_TAB_PATHS.has(path)) {
+      hideTelegramBackButton()
+      return
+    }
+
+    // ✅ На внутренних страницах показываем системную кнопку и вешаем history.pop()
+    const handleBack = () => {
+      const idx = (window.history.state as any)?.idx
+      if (typeof idx === 'number' && idx === 0) {
+        // ✅ Если в стеке больше нет страниц — возвращаемся на главную
+        navigate('/')
+      } else {
+        navigate(-1)
+      }
+    }
+
+    const cleanup = setupTelegramBackButton(true, handleBack)
+    return cleanup
+  }, [location.pathname, navigate])
+
+  return null
+}
 
 // ✅ LAYOUT — персистентный, не размонтируется между вкладками
 function AppLayout() {
@@ -98,7 +140,26 @@ function AppLayout() {
     }
   }, [setTelegramUser])
 
-  // ✅ Кнопка «назад»
+  // ✅ Системная кнопка «назад» Telegram на вкладках
+  // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное)
+  useEffect(() => {
+    const needsBackNow = activeTab === 'search' || (showBackButton && !!onBackClick)
+
+    if (!needsBackNow) {
+      hideTelegramBackButton()
+      return
+    }
+
+    const handler = () => {
+      if (activeTab === 'search') navigate('/')
+      else if (onBackClick) onBackClick()
+    }
+
+    const cleanup = setupTelegramBackButton(true, handler)
+    return cleanup
+  }, [activeTab, showBackButton, onBackClick, navigate])
+
+  // ✅ Кнопка «назад» для островка-шапки
   const needsBack = activeTab === 'search' || (showBackButton && !!onBackClick)
 
   const handleBack = () => {
@@ -132,6 +193,9 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
+      {/* ✅ Менеджер системной кнопки Telegram — поверх всех роутов */}
+      <TelegramBackButtonManager />
+
       <Routes>
         {/* ✅ LAYOUT ROUTE — основные вкладки */}
         <Route element={<AppLayout />}>

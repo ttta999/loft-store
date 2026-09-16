@@ -1,5 +1,32 @@
 import { supabase } from './supabase'
 
+// ✅ Расширенные типы Telegram WebApp.
+// В проектном .d.ts может не быть BackButton/HapticFeedback —
+// описываем их сами и обращаемся через безопасный каст.
+interface TelegramBackButton {
+  isVisible: boolean
+  show: () => void
+  hide: () => void
+  onClick: (callback: () => void) => void
+  offClick: (callback: () => void) => void
+}
+
+interface TelegramHapticFeedback {
+  impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
+  notificationOccurred: (type: 'error' | 'success' | 'warning') => void
+  selectionChanged: () => void
+}
+
+interface TelegramWebAppExtended {
+  BackButton?: TelegramBackButton
+  HapticFeedback?: TelegramHapticFeedback
+}
+
+// ✅ Безопасное получение расширенного WebApp (без TS-ошибок)
+const getWebApp = (): TelegramWebAppExtended | null => {
+  return (window as any).Telegram?.WebApp ?? null
+}
+
 export const initTelegram = () => {
   if (window.Telegram?.WebApp) {
     window.Telegram.WebApp.ready()
@@ -12,7 +39,7 @@ export const initTelegram = () => {
 export const getUserData = () => {
   const tg = initTelegram()
   if (!tg?.initDataUnsafe?.user) return null
-  
+
   const user = tg.initDataUnsafe.user
   return {
     id: user.id.toString(),
@@ -86,9 +113,58 @@ export const subscribeUser = async () => {
   }
 }
 
+// ✅ ПОКАЗАТЬ/СКРЫТЬ системную кнопку «назад» Telegram + повесить обработчик
+export const setupTelegramBackButton = (
+  shouldShow: boolean,
+  onBack: () => void
+): (() => void) => {
+  const back = getWebApp()?.BackButton
+  if (!back) return () => {}
+
+  if (shouldShow) {
+    back.show()
+    back.onClick(onBack)
+  } else {
+    back.hide()
+    back.offClick(onBack)
+  }
+
+  // cleanup
+  return () => {
+    back.offClick(onBack)
+    back.hide()
+  }
+}
+
+// ✅ Просто скрыть системную кнопку «назад» (используется в App.tsx)
+export const hideTelegramBackButton = () => {
+  getWebApp()?.BackButton?.hide()
+}
+
+// ✅ Тактильная обратная связь (вибрация)
+export const hapticFeedback = (
+  type: 'impact' | 'notification' | 'selection' = 'impact',
+  style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light'
+) => {
+  const haptic = getWebApp()?.HapticFeedback
+  if (!haptic) return
+
+  try {
+    if (type === 'impact') {
+      haptic.impactOccurred(style as 'light' | 'medium' | 'heavy')
+    } else if (type === 'notification') {
+      haptic.notificationOccurred(style as 'success' | 'warning' | 'error')
+    } else if (type === 'selection') {
+      haptic.selectionChanged()
+    }
+  } catch (error) {
+    // Игнорируем ошибки вибрации
+  }
+}
+
 export const sendNotificationToManager = async (message: string): Promise<boolean> => {
   const MANAGER_CHAT_ID = '6150570809' // Замени на свой chat ID
-  
+
   try {
     const response = await fetch('/api/sendNotification', {
       method: 'POST',
@@ -99,7 +175,7 @@ export const sendNotificationToManager = async (message: string): Promise<boolea
         botType: 'manager' // Использует TELEGRAM_MANAGER_BOT_TOKEN (@loftadminbot)
       }),
     })
-    
+
     const data = await response.json()
     return data.success
   } catch (error) {
@@ -110,7 +186,7 @@ export const sendNotificationToManager = async (message: string): Promise<boolea
 
 export const sendNotificationToClient = async (message: string, clientChatId: string): Promise<boolean> => {
   if (!clientChatId) return false
-  
+
   try {
     const response = await fetch('/api/sendNotification', {
       method: 'POST',
@@ -121,7 +197,7 @@ export const sendNotificationToClient = async (message: string, clientChatId: st
         botType: 'client' // Использует TELEGRAM_CLIENT_BOT_TOKEN (@loftnotify_bot)
       }),
     })
-    
+
     const data = await response.json()
     return data.success
   } catch (error) {
