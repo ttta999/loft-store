@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { supabase, getProducts } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2, Sun, Moon, Monitor } from 'lucide-react'
@@ -13,8 +13,12 @@ const SOCIAL_LINKS = {
   instagram: 'https://www.instagram.com/loft_mens_shop',
 }
 
+// ✅ Module-level кеш: переживает размонтирование ProfilePage.
+// При возврате «назад» списки заказов/спецзаказов появляются мгновенно.
+let profileOrdersCache: any[] | null = null
+let profileChinaRequestsCache: any[] | null = null
+
 // ✅ Универсальный хук блокировки скролла body
-// Используем inline в каждой модалке чтобы не плодить файлы
 const useBodyScrollLock = (active: boolean) => {
   useEffect(() => {
     if (!active) return
@@ -27,7 +31,6 @@ const useBodyScrollLock = (active: boolean) => {
 }
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
-  // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -408,7 +411,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   )
 }
 
-// ✅ Отдельный компонент для просмотра скриншота с блокировкой скролла
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
   return (
@@ -448,7 +450,6 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 }
 
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
-  // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
   const formatDateTime = (dateStr: string) => {
@@ -586,31 +587,44 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   )
 }
 
-// ✅ Тип контекста из AppLayout
-interface OutletContextType {
-  showBackButton: boolean
-  setShowBackButton: (show: boolean) => void
-  onBackClick: (() => void) | null
-  setOnBackClick: (fn: (() => void) | null) => void
-}
-
-// ✅ БЕЗ пропсов — всё берём из store и outlet context
 export default function ProfilePage() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const telegramUser = useStore((state) => state.telegramUser)
-  const { setShowBackButton, setOnBackClick } = useOutletContext<OutletContextType>()
-  
+
   const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled, theme, setTheme } = useStore()
-  const [activeSection, setActiveSection] = useState<'main' | 'orders' | 'china' | 'favorites'>('main')
-  const [orders, setOrders] = useState<any[]>([])
-  const [chinaRequests, setChinaRequests] = useState<any[]>([])
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
-  const [selectedChinaRequest, setSelectedChinaRequest] = useState<any>(null)
+
+  // ✅ СОСТОЯНИЕ ТЕПЕРЬ В URL:
+  //   /profile                              → главное меню
+  //   /profile?section=favorites            → избранное
+  //   /profile?section=orders               → список заказов
+  //   /profile?section=orders&order=<id>    → модалка заказа
+  //   /profile?section=china                → список спецзаказов
+  //   /profile?section=china&request=<id>   → модалка спецзаказа
+  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | null
+  const orderIdParam = searchParams.get('order')
+  const requestIdParam = searchParams.get('request')
+
+  // ✅ Кеш списков — мгновенный рендер при возврате
+  const [orders, setOrders] = useState<any[]>(() => profileOrdersCache || [])
+  const [chinaRequests, setChinaRequests] = useState<any[]>(() => profileChinaRequestsCache || [])
   const [loading, setLoading] = useState(false)
   const [allProducts, setAllProducts] = useState<any[]>([])
 
+  // ✅ Загружаем список товаров для отображения избранного
   useEffect(() => {
     getProducts().then(setAllProducts)
   }, [])
+
+  // ✅ Автозагрузка заказов при открытии section=orders
+  useEffect(() => {
+    if (section === 'orders') {
+      loadOrders()
+    } else if (section === 'china') {
+      loadChinaRequests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section])
 
   const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
     if (lang === 'uz') {
@@ -629,28 +643,28 @@ export default function ProfilePage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  useEffect(() => {
-    if (activeSection === 'main') {
-      setShowBackButton(false)
-      setOnBackClick(null)
-    } else if (activeSection === 'orders') {
-      setShowBackButton(true)
-      setOnBackClick(() => () => setActiveSection('main'))
-    } else if (activeSection === 'china') {
-      setShowBackButton(true)
-      setOnBackClick(() => () => setActiveSection('main'))
-    } else if (activeSection === 'favorites') {
-      setShowBackButton(true)
-      setOnBackClick(() => () => setActiveSection('main'))
+  // ✅ handleBack — всегда navigate(-1), история уже корректная благодаря URL
+  const handleBack = () => {
+    const idx = (window.history.state as any)?.idx
+    const canPop = typeof idx === 'number' && idx > 0
+    if (canPop) {
+      navigate(-1)
+    } else {
+      navigate('/')
     }
-    if (selectedOrder || selectedChinaRequest) {
-      setShowBackButton(true)
-      setOnBackClick(() => () => {
-        setSelectedOrder(null)
-        setSelectedChinaRequest(null)
-      })
-    }
-  }, [activeSection, selectedOrder, selectedChinaRequest, setShowBackButton, setOnBackClick])
+  }
+
+  const openSection = (name: 'favorites' | 'orders' | 'china') => {
+    navigate(`/profile?section=${name}`)
+  }
+
+  const openOrder = (orderId: string | number) => {
+    navigate(`/profile?section=orders&order=${orderId}`)
+  }
+
+  const openChinaRequest = (requestId: string | number) => {
+    navigate(`/profile?section=china&request=${requestId}`)
+  }
 
   const formatOrderPrice = (order: any) => {
     if (order.total_price_uzs) {
@@ -763,6 +777,10 @@ export default function ProfilePage() {
   }
 
   const loadOrders = async () => {
+    if (profileOrdersCache) {
+      setOrders(profileOrdersCache)
+      return
+    }
     setLoading(true)
     const userId = telegramUser?.id || 'guest-user'
     const { data, error } = await supabase
@@ -773,12 +791,18 @@ export default function ProfilePage() {
     if (error) {
       console.error('Ошибка при загрузке заказов:', error)
     } else {
-      setOrders(data || [])
+      const items = data || []
+      profileOrdersCache = items
+      setOrders(items)
     }
     setLoading(false)
   }
 
   const loadChinaRequests = async () => {
+    if (profileChinaRequestsCache) {
+      setChinaRequests(profileChinaRequestsCache)
+      return
+    }
     setLoading(true)
     const userId = telegramUser?.id || 'guest-user'
     const { data, error } = await supabase
@@ -789,7 +813,9 @@ export default function ProfilePage() {
     if (error) {
       console.error('Ошибка при загрузке спецзаказов:', error)
     } else {
-      setChinaRequests(data || [])
+      const items = data || []
+      profileChinaRequestsCache = items
+      setChinaRequests(items)
     }
     setLoading(false)
   }
@@ -805,8 +831,11 @@ export default function ProfilePage() {
       const success = await cancelOrder(order.id.toString())
       if (success) {
         toast.success(language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi')
-        setSelectedOrder(null)
+        // ✅ Инвалидируем кеш и перезагружаем
+        profileOrdersCache = null
         await loadOrders()
+        // ✅ Закрываем модалку — navigate(-1) вернёт к /profile?section=orders
+        navigate(-1)
       } else {
         toast.error(language === 'ru' ? 'Ошибка при отмене заказа' : 'Buyurtmani bekor qilishda xatolik')
       }
@@ -828,16 +857,33 @@ export default function ProfilePage() {
       specialRequestId: request.id,
     }
     addToCart(specialItem)
-    setSelectedChinaRequest(null)
     toast.success(
       language === 'ru'
         ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.'
         : 'Maxsus buyurtma savatga qo\'shildi! Savatga o\'ting.'
     )
+    // ✅ Закрываем модалку — navigate(-1) вернёт к /profile?section=china
+    navigate(-1)
   }
 
-  // ✅ РАЗДЕЛ MAIN
-  if (activeSection === 'main') {
+  const handleScreenshotUploaded = (order: any) => {
+    // ✅ Обновляем заказ в кеше и в стейте
+    const updated = { ...order, payment_screenshot_url: 'uploaded' }
+    const newOrders = orders.map(o => o.id === order.id ? updated : o)
+    profileOrdersCache = newOrders
+    setOrders(newOrders)
+  }
+
+  // ✅ Находим конкретный заказ/спецзаказ по id из URL
+  const selectedOrder = orderIdParam
+    ? orders.find(o => String(o.id) === String(orderIdParam))
+    : null
+  const selectedChinaRequest = requestIdParam
+    ? chinaRequests.find(r => String(r.id) === String(requestIdParam))
+    : null
+
+  // ✅ РАЗДЕЛ MAIN (главное меню профиля)
+  if (!section || section === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
@@ -872,7 +918,7 @@ export default function ProfilePage() {
           </h3>
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden mb-6 border border-[#E8E2D5] dark:border-dark-border">
             <button
-              onClick={() => setActiveSection('favorites')}
+              onClick={() => openSection('favorites')}
               className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -897,10 +943,7 @@ export default function ProfilePage() {
           </h3>
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden mb-6 border border-[#E8E2D5] dark:border-dark-border">
             <button
-              onClick={() => {
-                setActiveSection('orders')
-                loadOrders()
-              }}
+              onClick={() => openSection('orders')}
               className="flex items-center justify-between w-full p-4 border-b border-[#E8E2D5] dark:border-dark-border hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -912,10 +955,7 @@ export default function ProfilePage() {
               <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300" />
             </button>
             <button
-              onClick={() => {
-                setActiveSection('china')
-                loadChinaRequests()
-              }}
+              onClick={() => openSection('china')}
               className="flex items-center justify-between w-full p-4 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -1095,9 +1135,10 @@ export default function ProfilePage() {
   }
 
   // ✅ РАЗДЕЛ FAVORITES
-  if (activeSection === 'favorites') {
+  if (section === 'favorites') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4 pb-20">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
@@ -1164,10 +1205,11 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ ORDERS
-  if (activeSection === 'orders') {
+  // ✅ РАЗДЕЛ ORDERS (+ модалка заказа, если есть order=<id>)
+  if (section === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
@@ -1193,7 +1235,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={order.id}
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={() => openOrder(order.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -1247,19 +1289,16 @@ export default function ProfilePage() {
               })}
             </div>
           )}
+          {/* ✅ Модалка заказа — появляется если есть ?order=<id> в URL */}
           {selectedOrder && (
             <OrderDetailModal
               order={selectedOrder}
-              onClose={() => setSelectedOrder(null)}
+              onClose={() => navigate(-1)}
               language={language}
               currency={currency}
               exchangeRate={exchangeRate}
               onCancelOrder={handleCancelOrder}
-              onScreenshotUploaded={() => {
-                const updatedOrder = { ...selectedOrder, payment_screenshot_url: 'uploaded' }
-                setSelectedOrder(updatedOrder)
-                loadOrders()
-              }}
+              onScreenshotUploaded={() => handleScreenshotUploaded(selectedOrder)}
             />
           )}
         </div>
@@ -1267,10 +1306,11 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ CHINA
-  if (activeSection === 'china') {
+  // ✅ РАЗДЕЛ CHINA (+ модалка спецзаказа, если есть request=<id>)
+  if (section === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
@@ -1296,7 +1336,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={request.id}
-                    onClick={() => setSelectedChinaRequest(request)}
+                    onClick={() => openChinaRequest(request.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -1326,10 +1366,11 @@ export default function ProfilePage() {
               })}
             </div>
           )}
+          {/* ✅ Модалка спецзаказа — появляется если есть ?request=<id> в URL */}
           {selectedChinaRequest && (
             <ChinaRequestDetailModal
               request={selectedChinaRequest}
-              onClose={() => setSelectedChinaRequest(null)}
+              onClose={() => navigate(-1)}
               language={language}
               exchangeRate={exchangeRate}
               onAccept={handleAcceptSpecialOrder}
