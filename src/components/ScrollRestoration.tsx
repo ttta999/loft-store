@@ -7,15 +7,23 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 
 const STORAGE_KEY = 'loft-scroll-positions'
 
-const getCacheKey = (pathname: string, state: any): string => {
+/**
+ * ✅ Ключ кеша = pathname + search + state.
+ * Различает:
+ *  - /brands и /brands?brand=hermes
+ *  - /category с разными categoryId в state
+ *  - /all-products с sortBy в state
+ */
+const getCacheKey = (pathname: string, search: string, state: any): string => {
+  let key = pathname + (search || '')
   if (state && typeof state === 'object' && Object.keys(state).length > 0) {
     try {
-      return `${pathname}?s=${JSON.stringify(state)}`
+      key += `&s=${JSON.stringify(state)}`
     } catch {
-      return pathname
+      // игнорируем
     }
   }
-  return pathname
+  return key
 }
 
 const getSavedPositions = (): Record<string, number> => {
@@ -43,11 +51,8 @@ const savePosition = (key: string, position: number) => {
 
 /**
  * ✅ БЕЗОПАСНОЕ восстановление скролла.
- *
  * Ждём (retry через rAF), пока document дорастёт до нужной высоты,
  * затем скроллим с clamp в допустимый диапазон [0, maxScroll].
- * Это исключает overscroll / «белую область сверху» на iOS WebView,
- * а также случаи когда контент ещё не отрендерился в момент scrollTo.
  */
 const restoreScroll = (target: number, attemptsLeft = 15) => {
   const scrollHeight = document.documentElement.scrollHeight
@@ -60,7 +65,6 @@ const restoreScroll = (target: number, attemptsLeft = 15) => {
     return
   }
 
-  // Контент ещё не дорендерился — пробуем в следующем кадре
   requestAnimationFrame(() => restoreScroll(target, attemptsLeft - 1))
 }
 
@@ -69,37 +73,35 @@ export default function ScrollRestoration() {
   const navigationType = useNavigationType()
   const isFirstRender = useRef(true)
 
-  // ✅ Сохраняем позицию ПЕРЕД переходом (через cleanup).
-  // Cleanup вызывается когда location меняется = "перед unmount старой страницы".
+  // ✅ Сохраняем позицию ПЕРЕД переходом (через cleanup)
   useEffect(() => {
-    const currentKey = getCacheKey(location.pathname, location.state)
+    const currentKey = getCacheKey(location.pathname, location.search, location.state)
 
     return () => {
-      // ❗ Не сохраняем позицию, если открыта модалка — body сейчас не виден
+      // ❗ Не сохраняем, если открыта фуллскрин-модалка (body заблокирован)
       if (document.body.style.overflow === 'hidden') return
       savePosition(currentKey, window.scrollY)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, location.key])
+  }, [location.pathname, location.search, location.key])
 
-  // ✅ Восстанавливаем скролл при навигации
+  // ✅ Восстанавливаем / сбрасываем скролл при навигации
   useEffect(() => {
-    // Первый рендер приложения — всегда наверх
     if (isFirstRender.current) {
       isFirstRender.current = false
       window.scrollTo(0, 0)
       return
     }
 
-    const currentKey = getCacheKey(location.pathname, location.state)
+    const currentKey = getCacheKey(location.pathname, location.search, location.state)
 
-    // ✅ PUSH / REPLACE — всегда в начало (новая страница)
+    // PUSH / REPLACE — новая страница, всегда наверх
     if (navigationType !== 'POP') {
       window.scrollTo(0, 0)
       return
     }
 
-    // ✅ POP (кнопка "назад") — восстанавливаем сохранённую позицию БЕЗОПАСНО
+    // POP («назад») — восстанавливаем сохранённую позицию БЕЗОПАСНО
     const savedPosition = getSavedPositions()[currentKey]
 
     if (savedPosition !== undefined && savedPosition > 0) {
@@ -107,7 +109,7 @@ export default function ScrollRestoration() {
     } else {
       window.scrollTo(0, 0)
     }
-  }, [location.pathname, location.key, navigationType, location.state])
+  }, [location.pathname, location.search, location.key, navigationType, location.state])
 
   return null
 }

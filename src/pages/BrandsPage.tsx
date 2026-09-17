@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
+import { cacheProducts } from '../lib/productCache'
 import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 import { Filter, ArrowUpDown, Loader2 } from 'lucide-react'
@@ -12,14 +13,28 @@ interface Brand {
   is_active: boolean
 }
 
+// ✅ Module-level кеш: список брендов и товары бренда переживают размонтирование
+const brandProductsCache: Record<string, any[]> = {}
+let brandsListCache: Brand[] | null = null
+
 export default function BrandsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // ✅ ВЫБРАННЫЙ БРЕНД ТЕПЕРЬ В URL: /brands?brand=<id>
+  const brandParam = searchParams.get('brand')
+
   const { language, currency, exchangeRate, saleModeEnabled } = useStore()
-  const [products, setProducts] = useState<any[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [loadingBrands, setLoadingBrands] = useState(true)
+
+  // ✅ Мгновенная инициализация из кеша
+  const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
+  const [loadingBrands, setLoadingBrands] = useState(() => !brandsListCache)
+  const [products, setProducts] = useState<any[]>(() =>
+    brandParam ? brandProductsCache[brandParam] || [] : []
+  )
+  const [loading, setLoading] = useState(() =>
+    brandParam ? !brandProductsCache[brandParam] : false
+  )
   const [showFilters, setShowFilters] = useState(false)
 
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -27,9 +42,45 @@ export default function BrandsPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
+  // ✅ Бренд выводится из URL — история и «назад» работают корректно
+  const selectedBrand =
+    brands.find(b => b.id === brandParam || b.name === brandParam) || null
+
   useEffect(() => {
+    if (brandsListCache) {
+      setBrands(brandsListCache)
+      setLoadingBrands(false)
+      return
+    }
     loadBrands()
   }, [])
+
+  // ✅ Сброс фильтров при смене бренда
+  useEffect(() => {
+    setSelectedCategory('')
+    setMinPrice(0)
+    setMaxPrice(100000000)
+    setSortBy('newest')
+    setShowFilters(false)
+  }, [brandParam])
+
+  // ✅ Загрузка товаров бренда (мгновенно из кеша, если есть)
+  useEffect(() => {
+    if (!brandParam) {
+      setProducts([])
+      setLoading(false)
+      return
+    }
+    const cached = brandProductsCache[brandParam]
+    if (cached) {
+      setProducts(cached)
+      setLoading(false)
+      return
+    }
+    const brand = brands.find(b => b.id === brandParam || b.name === brandParam)
+    if (brand) loadBrandProducts(brand)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandParam, brands])
 
   const loadBrands = async () => {
     setLoadingBrands(true)
@@ -40,20 +91,22 @@ export default function BrandsPage() {
         .eq('is_active', true)
         .order('name')
       if (error) throw error
-      setBrands(data || [])
+      brandsListCache = data || []
+      setBrands(brandsListCache)
     } catch (error) {
       console.error('❌ Ошибка загрузки брендов:', error)
     }
     setLoadingBrands(false)
   }
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const loadBrandProducts = async (brand: Brand) => {
+    const cached = brandProductsCache[brand.id]
+    if (cached) {
+      setProducts(cached)
+      setLoading(false)
+      return
+    }
 
-  const handleBrandClick = async (brand: Brand) => {
-    setSelectedBrand(brand)
     setLoading(true)
     const { data, error } = await supabase
       .from('products')
@@ -65,21 +118,28 @@ export default function BrandsPage() {
       console.error('❌ Ошибка поиска товаров:', error)
       setProducts([])
     } else {
-      setProducts(data || [])
+      const items = data || []
+      brandProductsCache[brand.id] = items
+      // ✅ Наполняем общий кеш — карточки товаров открываются мгновенно
+      cacheProducts(items)
+      setProducts(items)
     }
     setLoading(false)
   }
 
+  const handleBrandClick = (brand: Brand) => {
+    // ✅ PUSH новой записи истории с брендом в URL
+    navigate(`/brands?brand=${encodeURIComponent(brand.id)}`)
+  }
+
   const handleBack = () => {
-    if (selectedBrand) {
-      setSelectedBrand(null)
-      setProducts([])
-      setSelectedCategory('')
-      setMinPrice(0)
-      setMaxPrice(100000000)
-      setSortBy('newest')
-    } else {
+    const idx = (window.history.state as any)?.idx
+    const canPop = typeof idx === 'number' && idx > 0
+    if (canPop) {
       navigate(-1)
+    } else {
+      // ✅ Фолбэк для прямого входа по ссылке
+      navigate(brandParam ? '/brands' : '/')
     }
   }
 
@@ -123,6 +183,11 @@ export default function BrandsPage() {
     (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
+  const formatPrice = (usd: number) => {
+    if (currency === 'USD') return `$${usd}`
+    return `${(usd * exchangeRate).toLocaleString()} сум`
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader
@@ -131,7 +196,7 @@ export default function BrandsPage() {
       />
 
       <div className="p-4">
-        {!selectedBrand ? (
+        {!brandParam ? (
           <>
             <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? 'Бренды' : 'Brendlar'}
@@ -179,7 +244,7 @@ export default function BrandsPage() {
         ) : (
           <>
             <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
-              {selectedBrand.name}
+              {selectedBrand?.name || (language === 'ru' ? 'Бренды' : 'Brendlar')}
             </h2>
             <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">
               {filteredProducts.length} {language === 'ru' ? 'товаров' : 'mahsulotlar'}
