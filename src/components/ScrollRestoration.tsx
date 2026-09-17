@@ -1,16 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
 
-// ✅ sessionStorage переживает reload (F5)
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual'
+}
+
 const STORAGE_KEY = 'loft-scroll-positions'
 
-/**
- * Ключ кеша = pathname + state.
- * Это позволяет различать:
- *  - /category с { categoryId: 'shoes' }
- *  - /category с { categoryId: 'jackets' }
- *  - /all-products с { sortBy: 'popular' }
- */
 const getCacheKey = (pathname: string, state: any): string => {
   if (state && typeof state === 'object' && Object.keys(state).length > 0) {
     try {
@@ -43,6 +39,29 @@ const savePosition = (key: string, position: number) => {
   } catch {
     // Игнорируем ошибки sessionStorage
   }
+}
+
+/**
+ * ✅ БЕЗОПАСНОЕ восстановление скролла.
+ *
+ * Ждём (retry через rAF), пока document дорастёт до нужной высоты,
+ * затем скроллим с clamp в допустимый диапазон [0, maxScroll].
+ * Это исключает overscroll / «белую область сверху» на iOS WebView,
+ * а также случаи когда контент ещё не отрендерился в момент scrollTo.
+ */
+const restoreScroll = (target: number, attemptsLeft = 15) => {
+  const scrollHeight = document.documentElement.scrollHeight
+  const maxScroll = Math.max(0, scrollHeight - window.innerHeight)
+  const enoughHeight = maxScroll >= target - 4
+
+  if (enoughHeight || attemptsLeft <= 0) {
+    const clamped = Math.max(0, Math.min(target, maxScroll))
+    window.scrollTo({ top: clamped, behavior: 'instant' as ScrollBehavior })
+    return
+  }
+
+  // Контент ещё не дорендерился — пробуем в следующем кадре
+  requestAnimationFrame(() => restoreScroll(target, attemptsLeft - 1))
 }
 
 export default function ScrollRestoration() {
@@ -80,16 +99,11 @@ export default function ScrollRestoration() {
       return
     }
 
-    // ✅ POP (кнопка "назад") — восстанавливаем сохранённую позицию
+    // ✅ POP (кнопка "назад") — восстанавливаем сохранённую позицию БЕЗОПАСНО
     const savedPosition = getSavedPositions()[currentKey]
 
     if (savedPosition !== undefined && savedPosition > 0) {
-      // Двойной RAF — ждём пока React отрендерит DOM с данными из кеша
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: savedPosition, behavior: 'instant' as ScrollBehavior })
-        })
-      })
+      restoreScroll(savedPosition)
     } else {
       window.scrollTo(0, 0)
     }

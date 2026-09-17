@@ -2,9 +2,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES } from '../data/categories'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Filter, ArrowUpDown } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
+
+const catalogProductsCache: Record<string, any[]> = {}
+let catalogBrandsCache: any[] | null = null
 
 export default function CatalogPage() {
   const navigate = useNavigate()
@@ -19,20 +22,14 @@ export default function CatalogPage() {
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
   const category = CATEGORIES.find(c => c.id === categoryId)
+  const cacheKey = `${categoryId || 'all'}_${subcategoryId || 'all'}`
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Защита от повторной загрузки брендов
-  const brandsLoadedRef = useRef(false)
-  // ✅ Сохраняем products для избежания лишних re-fetch
-  const productsCacheRef = useRef<Record<string, any[]>>({})
-
   useEffect(() => {
-    if (brandsLoadedRef.current) return
-    brandsLoadedRef.current = true
     loadBrands()
   }, [])
 
@@ -44,9 +41,15 @@ export default function CatalogPage() {
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [selectedBrands, minPrice, maxPrice, sortBy, products])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBrands, minPrice, maxPrice, sortBy, products, brands])
 
   const loadBrands = async () => {
+    // ✅ Бренды тоже из module-level кеша
+    if (catalogBrandsCache) {
+      setBrands(catalogBrandsCache)
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('brands')
@@ -54,18 +57,20 @@ export default function CatalogPage() {
         .eq('is_active', true)
         .order('name')
       if (error) throw error
-      setBrands(data || [])
+      catalogBrandsCache = data || []
+      setBrands(catalogBrandsCache)
     } catch (error) {
       console.error('Ошибка загрузки брендов:', error)
     }
   }
 
   const loadProducts = async () => {
-    // ✅ Проверяем кеш для этой категории/подкатегории
-    const cacheKey = `${categoryId}_${subcategoryId || 'all'}`
-    if (productsCacheRef.current[cacheKey]) {
-      setProducts(productsCacheRef.current[cacheKey])
-      setFilteredProducts(productsCacheRef.current[cacheKey])
+    // ✅ Мгновенный рендер из кеша (без лоадера) — ключ к точному скроллу.
+    // При возврате "назад" document сразу имеет полную высоту.
+    const cached = catalogProductsCache[cacheKey]
+    if (cached) {
+      setProducts(cached)
+      setFilteredProducts(cached)
       setLoading(false)
       return
     }
@@ -83,9 +88,9 @@ export default function CatalogPage() {
       const { data, error } = await query
       if (error) throw error
       const items = data || []
-      
-      // ✅ Сохраняем в кеш
-      productsCacheRef.current[cacheKey] = items
+
+      // ✅ Сохраняем в module-level кеш
+      catalogProductsCache[cacheKey] = items
       setProducts(items)
       setFilteredProducts(items)
     } catch (error) {
