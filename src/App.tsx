@@ -173,7 +173,8 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
-      <ScrollRestoration />
+      {/* ❌ ScrollRestoration убран отсюда — теперь живёт в App(), над Routes,
+          чтобы работать на ВСЕХ страницах, включая /product/:id (вне layout) */}
 
       <IslandHeader
         needsBack={needsBack}
@@ -193,7 +194,13 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
-      {/* ✅ Менеджер системной кнопки Telegram — поверх всех роутов */}
+      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах,
+          включая внутренние (/product/:id, /catalog, /brands, ...).
+          Это критично: раньше при возврате с карточки товара он монтировался
+          заново с isFirstRender=true и восстановление позиции ломалось. */}
+      <ScrollRestoration />
+
+      {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
       <TelegramBackButtonManager />
 
       <Routes>
