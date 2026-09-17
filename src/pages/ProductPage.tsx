@@ -6,27 +6,67 @@ import SizeSelector from '../components/SizeSelector'
 import IslandHeader from '../components/IslandHeader'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
+import { getCachedProduct, getCachedSizes, cacheProduct, cacheSizes } from '../lib/productCache'
 
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { language, currency, exchangeRate, saleModeEnabled, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
-  const [product, setProduct] = useState<any>(null)
-  const [sizes, setSizes] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
+
+  // ✅ МГНОВЕННАЯ инициализация из кеша — без спиннера, если товар уже в памяти
+  const [product, setProduct] = useState<any>(() => getCachedProduct(id))
+  const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id) || [])
+  const [loading, setLoading] = useState(() => !getCachedProduct(id))
+  const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id))
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showFullScreen, setShowFullScreen] = useState(false)
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(0)
 
   useEffect(() => {
-    if (id) {
-      loadProduct()
-      loadSizes()
-    }
+    if (!id) return
+
+    // ✅ Сброс состояния под новый id (мгновенно из кеша, если есть)
+    const cachedProduct = getCachedProduct(id)
+    const cachedSizes = getCachedSizes(id)
+    setProduct(cachedProduct)
+    setLoading(!cachedProduct)
+    setSizes(cachedSizes || [])
+    setSizesLoading(!cachedSizes)
+    setSelectedSize(null)
+    setCurrentImageIndex(0)
+    setShowFullScreen(false)
+
+    loadProduct()
+    loadSizes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const loadProduct = async () => {
+    const cached = getCachedProduct(id)
+
+    // ✅ Товар из кеша: рендерим сразу, тихо обновляем в фоне (без спиннера)
+    if (cached) {
+      setProduct(cached)
+      setLoading(false)
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (!error && data) {
+          cacheProduct(data)
+          setProduct(data)
+        }
+      } catch (err) {
+        // Игнорируем: уже показываем данные из кеша
+      }
+      return
+    }
+
+    // ✅ Товара в кеше нет (прямой вход по ссылке) — обычный запрос со спиннером
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -38,6 +78,7 @@ export default function ProductPage() {
         console.error('Ошибка при загрузке товара:', error)
         setProduct(null)
       } else {
+        cacheProduct(data)
         setProduct(data || null)
       }
     } catch (err) {
@@ -49,9 +90,21 @@ export default function ProductPage() {
 
   const loadSizes = async () => {
     if (!id) return
+
+    // ✅ Размеры из кеша — мгновенно
+    const cachedSizes = getCachedSizes(id)
+    if (cachedSizes) {
+      setSizes(cachedSizes)
+      setSizesLoading(false)
+      return
+    }
+
+    setSizesLoading(true)
     const variants = await getProductSizes(id)
     const sizeValues = variants.map((v: any) => v.size_value)
+    cacheSizes(id, sizeValues)
     setSizes(sizeValues)
+    setSizesLoading(false)
   }
 
   const handleBack = () => {
@@ -372,20 +425,21 @@ export default function ProductPage() {
 
           <button
             onClick={handleAddToCart}
-            disabled={sizes.length === 0}
+            disabled={sizesLoading || sizes.length === 0}
             className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
-              sizes.length === 0
+              sizesLoading || sizes.length === 0
                 ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
                 : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
             }`}
           >
             <ShoppingCart size={20} />
-            {sizes.length === 0
-              ? (language === 'ru' ? 'Нет в наличии' : 'Mavjud emas')
-              : (language === 'ru' ? 'В корзину' : 'Savatga')
-            }
+            {sizesLoading
+              ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+              : sizes.length === 0
+                ? (language === 'ru' ? 'Нет в наличии' : 'Mavjud emas')
+                : (language === 'ru' ? 'В корзину' : 'Savatga')}
           </button>
-          {sizes.length === 0 && (
+          {!sizesLoading && sizes.length === 0 && (
             <p className="text-center text-sm text-[#8A8275] dark:text-gray-400 mt-2">
               {language === 'ru'
                 ? 'Этот товар временно отсутствует'

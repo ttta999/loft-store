@@ -5,6 +5,7 @@ import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 import { Filter, ArrowUpDown } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
+import { cacheProducts } from '../lib/productCache'
 
 const catalogProductsCache: Record<string, any[]> = {}
 let catalogBrandsCache: any[] | null = null
@@ -65,8 +66,7 @@ export default function CatalogPage() {
   }
 
   const loadProducts = async () => {
-    // ✅ Мгновенный рендер из кеша (без лоадера) — ключ к точному скроллу.
-    // При возврате "назад" document сразу имеет полную высоту.
+    // ✅ Мгновенный рендер из кеша (без лоадера) — ключ к точному скроллу
     const cached = catalogProductsCache[cacheKey]
     if (cached) {
       setProducts(cached)
@@ -89,8 +89,11 @@ export default function CatalogPage() {
       if (error) throw error
       const items = data || []
 
-      // ✅ Сохраняем в module-level кеш
+      // ✅ Сохраняем в module-level кеш каталога
       catalogProductsCache[cacheKey] = items
+      // ✅ Наполняем ОБЩИЙ кеш — карточки товаров откроются мгновенно
+      cacheProducts(items)
+
       setProducts(items)
       setFilteredProducts(items)
     } catch (error) {

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendNotificationToManager, sendNotificationToClient } from './telegram'
+import { cacheProducts, cacheSizes } from './productCache'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -65,6 +66,9 @@ export const getProducts = async () => {
     return []
   }
 
+  // ✅ Наполняем общий кеш — карточки товаров открываются мгновенно
+  cacheProducts(data)
+
   return data || []
 }
 
@@ -80,7 +84,12 @@ export const getProductSizes = async (productId: string) => {
     return []
   }
 
-  return data || []
+  const rows = data || []
+
+  // ✅ Кешируем размеры — повторное открытие карточки мгновенное
+  cacheSizes(productId, rows.map((v: any) => v.size_value))
+
+  return rows
 }
 
 export const checkProductStock = async (
