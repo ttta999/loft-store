@@ -15,80 +15,69 @@ const getSavedPositions = (): Record<string, number> => {
   }
 }
 
-const savePosition = (key: string, position: number) => {
-  try {
-    const positions = getSavedPositions()
-    positions[key] = position
-    
-    // Очистка старых записей, чтобы не раздувать память
-    const keys = Object.keys(positions)
-    if (keys.length > 50) {
-      delete positions[keys[0]]
-    }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(positions))
-  } catch {
-    // игнорируем
-  }
-}
-
 export default function ScrollRestoration() {
   const location = useLocation()
   const navigationType = useNavigationType()
   
-  // Храним актуальный скролл независимо от рендера
-  const currentScrollY = useRef(0)
+  // Храним актуальный скролл вне зависимости от циклов рендера
+  const scrollPosRef = useRef(0)
+  const prevLocRef = useRef(location)
 
-  // 1. Трекаем текущий скролл
+  // 1. Непрерывно трекаем скролл (самое точное значение)
   useEffect(() => {
     const handleScroll = () => {
-      currentScrollY.current = window.scrollY
+      scrollPosRef.current = window.scrollY
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // 2. Сохраняем позицию СТРОГО перед размонтированием текущего маршрута
-  useEffect(() => {
-    const key = location.key
-    return () => {
-      // Функция cleanup срабатывает прямо перед сменой страницы
-      savePosition(key, currentScrollY.current)
-    }
-  }, [location.key])
-
-  // 3. Восстанавливаем скролл (useLayoutEffect работает синхронно перед Paint)
+  // 2. СИНХРОННО обрабатываем смену URL до отрисовки интерфейса (до Paint)
   useLayoutEffect(() => {
-    if (navigationType !== 'POP') {
-      // Переход вперед (PUSH / REPLACE) — всегда наверх
-      window.scrollTo(0, 0)
-      return
-    }
+    const prev = prevLocRef.current
+    
+    // Если URL изменился
+    if (prev.key !== location.key) {
+      // СОХРАНЯЕМ позицию старой страницы до того, как сбросим её
+      const positions = getSavedPositions()
+      positions[prev.key] = scrollPosRef.current
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(positions))
 
-    const savedPosition = getSavedPositions()[location.key]
+      // ВОССТАНАВЛИВАЕМ или СБРАСЫВАЕМ для новой страницы
+      if (navigationType === 'POP') {
+        const saved = positions[location.key]
+        
+        if (saved !== undefined && saved > 0) {
+          // Применяем скролл
+          window.scrollTo(0, saved)
 
-    if (savedPosition !== undefined && savedPosition > 0) {
-      // Пытаемся восстановить сразу (для статических страниц)
-      window.scrollTo(0, savedPosition)
-
-      // Если данные асинхронные, ждем, пока высота DOM не увеличится до нужного значения
-      const observer = new ResizeObserver(() => {
-        if (document.documentElement.scrollHeight >= savedPosition) {
-          window.scrollTo(0, savedPosition)
+          // Страховка для списков, которые рендерятся асинхронно
+          const observer = new ResizeObserver(() => {
+            if (document.documentElement.scrollHeight >= saved) {
+              window.scrollTo(0, saved)
+            }
+          })
+          observer.observe(document.documentElement)
+          
+          // Отключаем обсервер через 400мс
+          const timer = setTimeout(() => observer.disconnect(), 400)
+          
+          prevLocRef.current = location
+          return () => {
+            observer.disconnect()
+            clearTimeout(timer)
+          }
+        } else {
+          window.scrollTo(0, 0)
         }
-      })
-      observer.observe(document.documentElement)
-
-      // Выключаем observer через 500мс, чтобы не висел в памяти, если страница короткая
-      const timer = setTimeout(() => observer.disconnect(), 500)
-
-      return () => {
-        observer.disconnect()
-        clearTimeout(timer)
+      } else {
+        // Если это PUSH (переход вперед) - всегда наверх
+        window.scrollTo(0, 0)
       }
-    } else {
-      window.scrollTo(0, 0)
     }
-  }, [location.key, navigationType])
+    
+    prevLocRef.current = location
+  }, [location, navigationType])
 
   return null
 }
