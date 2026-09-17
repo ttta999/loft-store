@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { supabase, getProducts } from '../lib/supabase'
 import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2, Sun, Moon, Monitor } from 'lucide-react'
@@ -587,10 +587,19 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   )
 }
 
+// ✅ Тип контекста из AppLayout
+interface OutletContextType {
+  showBackButton: boolean
+  setShowBackButton: (show: boolean) => void
+  onBackClick: (() => void) | null
+  setOnBackClick: (fn: (() => void) | null) => void
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const telegramUser = useStore((state) => state.telegramUser)
+  const { setShowBackButton, setOnBackClick } = useOutletContext<OutletContextType>()
 
   const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled, theme, setTheme } = useStore()
 
@@ -626,6 +635,28 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section])
 
+  // ✅ Показываем стрелку в ЕДИНСТВЕННОМ острове AppLayout, когда открыт подраздел
+  useEffect(() => {
+    const hasSubView = !!section && section !== 'main'
+
+    if (hasSubView) {
+      setShowBackButton(true)
+      setOnBackClick(() => () => {
+        const idx = (window.history.state as any)?.idx
+        if (typeof idx === 'number' && idx > 0) navigate(-1)
+        else navigate('/profile')
+      })
+    } else {
+      setShowBackButton(false)
+      setOnBackClick(null)
+    }
+
+    return () => {
+      setShowBackButton(false)
+      setOnBackClick(null)
+    }
+  }, [section, navigate, setShowBackButton, setOnBackClick])
+
   const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
     if (lang === 'uz') {
       return 'ta mahsulot'
@@ -641,17 +672,6 @@ export default function ProfilePage() {
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
     return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
-
-  // ✅ handleBack — всегда navigate(-1), история уже корректная благодаря URL
-  const handleBack = () => {
-    const idx = (window.history.state as any)?.idx
-    const canPop = typeof idx === 'number' && idx > 0
-    if (canPop) {
-      navigate(-1)
-    } else {
-      navigate('/')
-    }
   }
 
   const openSection = (name: 'favorites' | 'orders' | 'china') => {
@@ -831,10 +851,8 @@ export default function ProfilePage() {
       const success = await cancelOrder(order.id.toString())
       if (success) {
         toast.success(language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi')
-        // ✅ Инвалидируем кеш и перезагружаем
         profileOrdersCache = null
         await loadOrders()
-        // ✅ Закрываем модалку — navigate(-1) вернёт к /profile?section=orders
         navigate(-1)
       } else {
         toast.error(language === 'ru' ? 'Ошибка при отмене заказа' : 'Buyurtmani bekor qilishda xatolik')
@@ -862,12 +880,10 @@ export default function ProfilePage() {
         ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.'
         : 'Maxsus buyurtma savatga qo\'shildi! Savatga o\'ting.'
     )
-    // ✅ Закрываем модалку — navigate(-1) вернёт к /profile?section=china
     navigate(-1)
   }
 
   const handleScreenshotUploaded = (order: any) => {
-    // ✅ Обновляем заказ в кеше и в стейте
     const updated = { ...order, payment_screenshot_url: 'uploaded' }
     const newOrders = orders.map(o => o.id === order.id ? updated : o)
     profileOrdersCache = newOrders
@@ -1134,11 +1150,10 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ FAVORITES
+  // ✅ РАЗДЕЛ FAVORITES (остров AppLayout со стрелкой, свой остров НЕ рисуем)
   if (section === 'favorites') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4 pb-20">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
@@ -1209,7 +1224,6 @@ export default function ProfilePage() {
   if (section === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
@@ -1289,7 +1303,6 @@ export default function ProfilePage() {
               })}
             </div>
           )}
-          {/* ✅ Модалка заказа — появляется если есть ?order=<id> в URL */}
           {selectedOrder && (
             <OrderDetailModal
               order={selectedOrder}
@@ -1310,7 +1323,6 @@ export default function ProfilePage() {
   if (section === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <IslandHeader needsBack={true} onBack={handleBack} />
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
@@ -1366,7 +1378,6 @@ export default function ProfilePage() {
               })}
             </div>
           )}
-          {/* ✅ Модалка спецзаказа — появляется если есть ?request=<id> в URL */}
           {selectedChinaRequest && (
             <ChinaRequestDetailModal
               request={selectedChinaRequest}
