@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase, fetchProductPopularity } from '../lib/supabase'
+import { supabase, fetchProductPopularity, getProducts } from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
@@ -49,8 +49,8 @@ interface AppState {
   chatId: string | null
   telegramUser: TelegramUser | null
   productsCache: CachedProducts | null
-  popularityMap: Record<string, number> | null  // ✅ productId → продано штук
-  popularityUpdatedAt: number                    // ✅ timestamp последнего обновления
+  popularityMap: Record<string, number> | null
+  popularityUpdatedAt: number
   setLanguage: (lang: Language) => void
   setCurrency: (curr: Currency) => void
   setExchangeRate: (rate: number) => void
@@ -58,13 +58,15 @@ interface AppState {
   setTheme: (theme: Theme) => void
   setTelegramUser: (user: TelegramUser | null) => void
   setProductsCache: (items: any[]) => void
-  setPopularityMap: (map: Record<string, number>) => void  // ✅
+  setPopularityMap: (map: Record<string, number>) => void
   getProductsCacheAge: () => number
-  getPopularityAge: () => number                            // ✅
-  getProductSoldCount: (productId: string) => number        // ✅
+  getPopularityAge: () => number
+  getProductSoldCount: (productId: string) => number
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
-  updatePopularity: (force?: boolean) => Promise<void>      // ✅
+  updatePopularity: (force?: boolean) => Promise<void>
+  // ✅ НОВОЕ: вернуть кеш если свежий, иначе тихо обновить в фоне
+  ensureProducts: (maxAgeMs?: number) => any[] | null
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
@@ -111,9 +113,7 @@ const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
 const fetchExchangeRateFromAPI = async (): Promise<number> => {
   try {
     const response = await fetch('/api/getExchangeRate')
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`API returned ${response.status}`)
     const data = await response.json()
     return data.rate
   } catch (error) {
@@ -141,8 +141,8 @@ export const useStore = create<AppState>()(
       chatId: null,
       telegramUser: null,
       productsCache: null,
-      popularityMap: null,       // ✅
-      popularityUpdatedAt: 0,    // ✅
+      popularityMap: null,
+      popularityUpdatedAt: 0,
 
       setLanguage: (lang) => set({ language: lang }),
       setCurrency: (curr) => set({ currency: curr }),
@@ -150,11 +150,9 @@ export const useStore = create<AppState>()(
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
       setTelegramUser: (user) => set({ telegramUser: user }),
-
       setProductsCache: (items) =>
         set({ productsCache: { items, updatedAt: Date.now() } }),
-
-      setPopularityMap: (map) =>                              // ✅
+      setPopularityMap: (map) =>
         set({ popularityMap: map, popularityUpdatedAt: Date.now() }),
 
       getProductsCacheAge: () => {
@@ -162,14 +160,8 @@ export const useStore = create<AppState>()(
         if (!cache) return Infinity
         return Date.now() - cache.updatedAt
       },
-
-      getPopularityAge: () => {                               // ✅
-        return Date.now() - (get().popularityUpdatedAt || 0)
-      },
-
-      getProductSoldCount: (productId) => {                   // ✅
-        return get().popularityMap?.[productId] || 0
-      },
+      getPopularityAge: () => Date.now() - (get().popularityUpdatedAt || 0),
+      getProductSoldCount: (productId) => get().popularityMap?.[productId] || 0,
 
       updateExchangeRate: async () => {
         const dbData = await fetchExchangeRateFromDB()
@@ -196,7 +188,6 @@ export const useStore = create<AppState>()(
         }
       },
 
-      // ✅ Обновление популярности (использует кеш в supabase.ts)
       updatePopularity: async (force = false) => {
         try {
           const map = await fetchProductPopularity(force)
@@ -204,6 +195,32 @@ export const useStore = create<AppState>()(
         } catch (error) {
           console.error('❌ Ошибка updatePopularity:', error)
         }
+      },
+
+      // ✅ НОВОЕ: обеспечивает данные без блокировки UI
+      // Возвращает кеш синхронно (или null если его нет).
+      // Если кеш устарел — запускает фоновое обновление (без setState loading=true).
+      ensureProducts: (maxAgeMs = 5 * 60 * 1000) => {
+        const state = get()
+        const age = state.getProductsCacheAge()
+
+        if (state.productsCache && age < maxAgeMs) {
+          return state.productsCache.items
+        }
+
+        // Фоновое обновление — не блокирует UI
+        getProducts()
+          .then((data) => {
+            if (data && data.length > 0) {
+              get().setProductsCache(data)
+            }
+          })
+          .catch((err) => {
+            console.error('❌ ensureProducts background fetch failed:', err)
+          })
+
+        // Возвращаем текущий (пусть устаревший) кеш, если есть
+        return state.productsCache?.items || null
       },
 
       addToCart: (item) =>
@@ -241,9 +258,7 @@ export const useStore = create<AppState>()(
             (i) => !(i.productId === productId && i.size === size)
           ),
         })),
-
       clearCart: () => set({ cart: [] }),
-
       getTotalPrice: () => {
         const state = get()
         return state.cart.reduce((sum, item) => sum + item.priceUsd * item.quantity, 0)
@@ -255,17 +270,14 @@ export const useStore = create<AppState>()(
           if (exists) return state
           return { favorites: [...state.favorites, item] }
         }),
-
       removeFromFavorites: (productId) =>
         set((state) => ({
           favorites: state.favorites.filter((i) => i.productId !== productId),
         })),
-
       isFavorite: (productId) => {
         const state = get()
         return state.favorites.some((i) => i.productId === productId)
       },
-
       setChatId: (id) => set({ chatId: id }),
     }),
     {
@@ -277,7 +289,6 @@ export const useStore = create<AppState>()(
         cart: state.cart,
         favorites: state.favorites,
         productsCache: state.productsCache,
-        // ✅ Популярность тоже кешируем, чтобы не тянуть RPC при каждой загрузке
         popularityMap: state.popularityMap,
         popularityUpdatedAt: state.popularityUpdatedAt,
       }),
@@ -288,12 +299,15 @@ export const useStore = create<AppState>()(
 if (typeof window !== 'undefined') {
   useStore.getState().updateExchangeRate()
   useStore.getState().updateSaleMode()
-  useStore.getState().updatePopularity() // ✅ Первый запуск
+  useStore.getState().updatePopularity()
+  // ✅ Pre-warm productsCache при старте приложения
+  useStore.getState().ensureProducts()
 
   setInterval(() => {
     useStore.getState().updateExchangeRate()
     useStore.getState().updateSaleMode()
-    useStore.getState().updatePopularity() // ✅ Каждые 5 минут
+    useStore.getState().updatePopularity()
+    useStore.getState().ensureProducts()
   }, 5 * 60 * 1000)
 
   document.addEventListener('visibilitychange', () => {
@@ -301,6 +315,7 @@ if (typeof window !== 'undefined') {
       useStore.getState().updateExchangeRate()
       useStore.getState().updateSaleMode()
       useStore.getState().updatePopularity()
+      useStore.getState().ensureProducts()
     }
   })
 }

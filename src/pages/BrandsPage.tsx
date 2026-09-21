@@ -13,30 +13,27 @@ interface Brand {
   is_active: boolean
 }
 
-// ✅ Module-level кеш: список брендов и товары бренда переживают размонтирование
-const brandProductsCache: Record<string, any[]> = {}
+// ✅ Module-level кеш: список брендов переживает размонтирование
 let brandsListCache: Brand[] | null = null
 
 export default function BrandsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-
   // ✅ ВЫБРАННЫЙ БРЕНД ТЕПЕРЬ В URL: /brands?brand=<id>
   const brandParam = searchParams.get('brand')
 
-  const { language, currency, exchangeRate, saleModeEnabled } = useStore()
+  const {
+    language,
+    currency,
+    exchangeRate,
+    saleModeEnabled,
+    ensureProducts,
+  } = useStore()
 
   // ✅ Мгновенная инициализация из кеша
   const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
   const [loadingBrands, setLoadingBrands] = useState(() => !brandsListCache)
-  const [products, setProducts] = useState<any[]>(() =>
-    brandParam ? brandProductsCache[brandParam] || [] : []
-  )
-  const [loading, setLoading] = useState(() =>
-    brandParam ? !brandProductsCache[brandParam] : false
-  )
   const [showFilters, setShowFilters] = useState(false)
-
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [minPrice, setMinPrice] = useState<number>(0)
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
@@ -44,15 +41,20 @@ export default function BrandsPage() {
 
   // ✅ Бренд выводится из URL — история и «назад» работают корректно
   const selectedBrand =
-    brands.find(b => b.id === brandParam || b.name === brandParam) || null
+    brands.find((b) => b.id === brandParam || b.name === brandParam) || null
 
+  // ✅ Данные из общего кеша + клиентская фильтрация по brand
+  const cachedItems = ensureProducts()
+  const products = (cachedItems || []).filter((p: any) => {
+    if (!brandParam || !selectedBrand) return false
+    return p.brand === selectedBrand.name
+  })
+  const loading = !cachedItems && !!brandParam
+
+  // ✅ Загрузка брендов: async/await (без .catch на PromiseLike)
   useEffect(() => {
-    if (brandsListCache) {
-      setBrands(brandsListCache)
-      setLoadingBrands(false)
-      return
-    }
     loadBrands()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ✅ Сброс фильтров при смене бренда
@@ -64,25 +66,19 @@ export default function BrandsPage() {
     setShowFilters(false)
   }, [brandParam])
 
-  // ✅ Загрузка товаров бренда (мгновенно из кеша, если есть)
+  // ✅ Наполняем productCache (для мгновенного открытия карточек)
   useEffect(() => {
-    if (!brandParam) {
-      setProducts([])
-      setLoading(false)
-      return
+    if (products.length > 0) {
+      cacheProducts(products)
     }
-    const cached = brandProductsCache[brandParam]
-    if (cached) {
-      setProducts(cached)
-      setLoading(false)
-      return
-    }
-    const brand = brands.find(b => b.id === brandParam || b.name === brandParam)
-    if (brand) loadBrandProducts(brand)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandParam, brands])
+  }, [products])
 
   const loadBrands = async () => {
+    if (brandsListCache) {
+      setBrands(brandsListCache)
+      setLoadingBrands(false)
+      return
+    }
     setLoadingBrands(true)
     try {
       const { data, error } = await supabase
@@ -91,40 +87,19 @@ export default function BrandsPage() {
         .eq('is_active', true)
         .order('name')
       if (error) throw error
-      brandsListCache = data || []
+      brandsListCache = (data || []) as Brand[]
       setBrands(brandsListCache)
     } catch (error) {
       console.error('❌ Ошибка загрузки брендов:', error)
+    } finally {
+      setLoadingBrands(false)
     }
-    setLoadingBrands(false)
   }
 
-  const loadBrandProducts = async (brand: Brand) => {
-    const cached = brandProductsCache[brand.id]
-    if (cached) {
-      setProducts(cached)
-      setLoading(false)
-      return
-    }
-
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('brand', brand.name)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-    if (error) {
-      console.error('❌ Ошибка поиска товаров:', error)
-      setProducts([])
-    } else {
-      const items = data || []
-      brandProductsCache[brand.id] = items
-      // ✅ Наполняем общий кеш — карточки товаров открываются мгновенно
-      cacheProducts(items)
-      setProducts(items)
-    }
-    setLoading(false)
+  // ✅ ОБРАБОТЧИК ПОВТОРА — вынесен из JSX (исправляет синтаксическую ошибку)
+  const retryLoadBrands = async () => {
+    brandsListCache = null
+    await loadBrands()
   }
 
   const handleBrandClick = (brand: Brand) => {
@@ -153,18 +128,22 @@ export default function BrandsPage() {
   const getFilteredAndSortedProducts = () => {
     let filtered = [...products]
     if (selectedCategory) {
-      filtered = filtered.filter(p => p.category === selectedCategory)
+      filtered = filtered.filter((p) => p.category === selectedCategory)
     }
-    filtered = filtered.filter(p => {
+    filtered = filtered.filter((p) => {
       const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= minPrice && priceInSums <= maxPrice
     })
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
+        filtered.sort(
+          (a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled)
+        )
         break
       case 'price_desc':
-        filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
+        filtered.sort(
+          (a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
+        )
         break
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -190,10 +169,7 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-      <IslandHeader
-        needsBack={true}
-        onBack={handleBack}
-      />
+      <IslandHeader needsBack={true} onBack={handleBack} />
 
       <div className="p-4">
         {!brandParam ? (
@@ -218,7 +194,7 @@ export default function BrandsPage() {
               <div className="text-center py-12 text-[#8A8275] dark:text-gray-300">
                 {language === 'ru' ? 'Бренды не найдены' : 'Brendlar topilmadi'}
                 <button
-                  onClick={loadBrands}
+                  onClick={retryLoadBrands}
                   className="mt-4 px-4 py-2 bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] rounded-xl text-sm"
                 >
                   🔄 {language === 'ru' ? 'Повторить' : 'Qayta urinish'}
@@ -299,7 +275,7 @@ export default function BrandsPage() {
                     >
                       {language === 'ru' ? 'Все' : 'Barchasi'}
                     </button>
-                    {CATEGORIES.map(cat => (
+                    {CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => setSelectedCategory(cat.id)}
@@ -401,7 +377,7 @@ export default function BrandsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {filteredProducts.map(product => {
+                {filteredProducts.map((product) => {
                   const onSale = isProductOnSale(product, saleModeEnabled)
                   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
                   return (
@@ -433,7 +409,11 @@ export default function BrandsPage() {
                             {formatPrice(product.price_usd)}
                           </p>
                         )}
-                        <p className={`text-lg font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
+                        <p
+                          className={`text-lg font-bold mt-1 ${
+                            onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'
+                          }`}
+                        >
                           {formatPrice(effectivePrice)}
                         </p>
                       </div>

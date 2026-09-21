@@ -2,23 +2,46 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { supabase, getProducts } from '../lib/supabase'
-import { User, Package, Globe, DollarSign, ChevronRight, X, Upload, MessageCircle, Heart, Phone, Store, Truck, CreditCard, Eye, Copy, Trash2, Sun, Moon, Monitor } from 'lucide-react'
+import {
+  User,
+  Package,
+  Globe,
+  DollarSign,
+  ChevronRight,
+  X,
+  Upload,
+  MessageCircle,
+  Heart,
+  Phone,
+  Store,
+  Truck,
+  CreditCard,
+  Eye,
+  Copy,
+  Trash2,
+  Sun,
+  Moon,
+  Monitor,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { cancelOrder, MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import {
+  cancelOrder,
+  MANAGER_TELEGRAM_LINK,
+  PAYMENT_DETAILS,
+  uploadPaymentScreenshot,
+  savePaymentScreenshot,
+} from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
-// ✅ Ссылки на соцсети
 const SOCIAL_LINKS = {
   telegram: 'https://t.me/Loft_mens_shop',
   instagram: 'https://www.instagram.com/loft_mens_shop',
 }
 
 // ✅ Module-level кеш: переживает размонтирование ProfilePage.
-// При возврате «назад» списки заказов/спецзаказов появляются мгновенно.
 let profileOrdersCache: any[] | null = null
 let profileChinaRequestsCache: any[] | null = null
 
-// ✅ Универсальный хук блокировки скролла body
 const useBodyScrollLock = (active: boolean) => {
   useEffect(() => {
     if (!active) return
@@ -32,51 +55,41 @@ const useBodyScrollLock = (active: boolean) => {
 
 function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   useBodyScrollLock(true)
-
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
 
   const formatOrderPrice = (order: any) => {
-    if (order.total_price_uzs) {
-      return `${Number(order.total_price_uzs).toLocaleString()} сум`
-    }
+    if (order.total_price_uzs) return `${Number(order.total_price_uzs).toLocaleString()} сум`
     if (currency === 'USD') return `$${order.total_price_usd}`
     return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
   }
-
   const formatItemPrice = (item: any) => {
-    if (item.priceUzs) {
-      return `${Number(item.priceUzs).toLocaleString()} сум`
-    }
+    if (item.priceUzs) return `${Number(item.priceUzs).toLocaleString()} сум`
     if (currency === 'USD') return `$${item.priceUsd}`
     return `${(item.priceUsd * exchangeRate).toLocaleString()} сум`
   }
-
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('ru-RU', {
+  const formatDateTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
-  }
-
   const getStatusText = (status: string, deliveryMethod: string) => {
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
-        const labels: Record<string, string> = {
+        return {
           'Активный': "Qabul qilindi 📄",
           'В обработке': "Yig'ilmoqda 📦",
           'Готов': "Berishga tayyor 🎉",
-          'Выдан': "Olib bo'lindi 🤝",
+          'Выдан': "Olab bo'lindi 🤝",
           'Отменён': "Bekor qilindi 🚫",
           'Ожидает оплаты': "To'lovni kutmoqda ⏳",
-        }
-        return labels[status] || status
+        }[status] || status
       }
-      const labels: Record<string, string> = {
+      return {
         'Активный': "Qabul qilindi 📄",
         'В обработке': "Yig'ilmoqda 📦",
         'Готов': "Qadoqlandi 🛍️",
@@ -84,21 +97,19 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
         'Доставлен': "Yetkazib berildi ✅",
         'Отменён': "Bekor qilindi 🚫",
         'Ожидает оплаты': "To'lovni kutmoqda ⏳",
-      }
-      return labels[status] || status
+      }[status] || status
     }
     if (deliveryMethod === 'pickup') {
-      const labels: Record<string, string> = {
+      return {
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
         'Выдан': 'Получен 🤝',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
-      }
-      return labels[status] || status
+      }[status] || status
     }
-    const labels: Record<string, string> = {
+    return {
       'Активный': 'Принят 📄',
       'В обработке': 'Собирается 📦',
       'Готов': 'Упакован 🛍️',
@@ -106,12 +117,10 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
       'Ожидает оплаты': 'Ожидает оплаты ⏳',
-    }
-    return labels[status] || status
+    }[status] || status
   }
-
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+    return {
       'Активный': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'В обработке': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
       'Готов': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
@@ -119,8 +128,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
       'Доставлен': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300',
       'Отменён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
       'Ожидает оплаты': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
-    }
-    return colors[status] || 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'
+    }[status] || 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'
   }
 
   const handleCopyCard = async () => {
@@ -155,7 +163,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
@@ -186,17 +193,12 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">{order.client_phone}</p>
             </div>
           </div>
-
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              {order.delivery_method === 'pickup'
-                ? <Store size={16} className="text-[#1B2A4A] dark:text-white" />
-                : <Truck size={16} className="text-[#1B2A4A] dark:text-white" />}
+              {order.delivery_method === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'Получение' : 'Olish'}
-              </p>
+              <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Получение' : 'Olish'}</p>
               <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                 {order.delivery_method === 'pickup'
                   ? (language === 'ru' ? 'Самовывоз' : "O'z-o'zini olish")
@@ -211,7 +213,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
               ) : null}
             </div>
           </div>
-
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <CreditCard size={16} className="text-[#1B2A4A] dark:text-white" />
@@ -245,17 +246,13 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           <div className="space-y-2">
             {items.map((item: any, index: number) => (
               <div key={index} className="bg-[#F5F1E8] dark:bg-dark-accent p-3 rounded-xl flex gap-3 border border-[#E8E2D5] dark:border-dark-border">
-                {item.image && (
-                  <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
-                )}
+                {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
                     {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size} · {language === 'ru' ? 'Кол-во:' : 'Miqdor:'} {item.quantity}
                   </p>
-                  <p className="font-bold text-sm text-[#1B2A4A] dark:text-white mt-1">
-                    {formatItemPrice(item)}
-                  </p>
+                  <p className="font-bold text-sm text-[#1B2A4A] dark:text-white mt-1">{formatItemPrice(item)}</p>
                 </div>
               </div>
             ))}
@@ -264,9 +261,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <span className="font-bold text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? 'Итого:' : 'Jami:'}
             </span>
-            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-              {formatOrderPrice(order)}
-            </span>
+            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formatOrderPrice(order)}</span>
           </div>
         </div>
 
@@ -275,7 +270,6 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
             <h3 className="font-bold text-lg text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
             </h3>
-
             {order.status === 'Отменён' ? (
               <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-4">
                 <p className="text-sm text-red-800 dark:text-red-300 font-medium mb-2">
@@ -320,23 +314,23 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
                   </button>
                 </div>
-
                 <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border">
                   <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">
                     {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                   </p>
                 </div>
-
                 {!order.payment_screenshot_url ? (
                   <div>
                     <p className="text-sm font-medium mb-2 text-[#1B2A4A] dark:text-white">
                       {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : "📸 To'lov screenshotini yuklang:"}
                     </p>
-                    <label className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
-                      uploadingScreenshot
-                        ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
-                        : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
-                    }`}>
+                    <label
+                      className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+                        uploadingScreenshot
+                          ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
+                          : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
+                      }`}
+                    >
                       <div className="flex flex-col items-center justify-center">
                         {uploadingScreenshot ? (
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B2A4A] dark:border-gold mb-2"></div>
@@ -346,8 +340,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                         <p className="text-xs text-[#8A8275] dark:text-gray-300">
                           {uploadingScreenshot
                             ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
-                            : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')
-                          }
+                            : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}
                         </p>
                       </div>
                       <input
@@ -367,13 +360,11 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     <button
                       onClick={() => setShowScreenshotModal(true)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors"
-                      title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                     >
                       <Eye size={18} />
                     </button>
                   </div>
                 )}
-
                 {order.status === 'Ожидает оплаты' && (
                   <>
                     <a
@@ -451,55 +442,46 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
   useBodyScrollLock(true)
-
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('ru-RU', {
+  const formatDateTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
-  }
-
   const getStatusText = (status: string) => {
     if (language === 'uz') {
-      const labels: Record<string, string> = {
+      return {
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
         'Отменён клиентом': "Siz bekor qildingiz 🙅‍♂️",
         'Отклонён': "Rad etildi 🛑",
-      }
-      return labels[status] || status
+      }[status] || status
     }
-    const labels: Record<string, string> = {
+    return {
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
       'Отменён клиентом': 'Отменён вами 🙅️',
       'Отклонён': 'Отклонён 🛑',
-    }
-    return labels[status] || status
+    }[status] || status
   }
-
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+    return {
       'На рассмотрении': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
       'Оценён': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300',
       'Оплачен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
       'Отменён клиентом': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
       'Отклонён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
+    }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
-
   const priceInSums = request.manager_price ? Math.round(request.manager_price * (exchangeRate || 12100)) : 0
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
@@ -509,9 +491,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
             <p className="text-sm text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Спецзаказ №' : 'Maxsus buyurtma №'}{request.id}
             </p>
-            <p className="text-sm text-[#8A8275] dark:text-gray-300">
-              {formatDateTime(request.created_at)}
-            </p>
+            <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(request.created_at)}</p>
           </div>
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
@@ -555,9 +535,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                 💰 {language === 'ru' ? 'Итого:' : 'Jami:'} {priceInSums.toLocaleString()} сум
               </p>
               {request.manager_comment && (
-                <p className="text-sm text-purple-700 dark:text-purple-300">
-                  {request.manager_comment}
-                </p>
+                <p className="text-sm text-purple-700 dark:text-purple-300">{request.manager_comment}</p>
               )}
             </div>
           )}
@@ -574,9 +552,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                   onClick={() => onAccept(request)}
                   className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-6 py-2.5 rounded-lg font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
-                  💳 {language === 'ru'
-                    ? `Оплатить ${priceInSums.toLocaleString()} сум`
-                    : `To'lash ${priceInSums.toLocaleString()} so'm`}
+                  💳 {language === 'ru' ? `Оплатить ${priceInSums.toLocaleString()} сум` : `To'lash ${priceInSums.toLocaleString()} so'm`}
                 </button>
               )}
             </div>
@@ -587,7 +563,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   )
 }
 
-// ✅ Тип контекста из AppLayout
 interface OutletContextType {
   showBackButton: boolean
   setShowBackButton: (show: boolean) => void
@@ -600,45 +575,52 @@ export default function ProfilePage() {
   const [searchParams] = useSearchParams()
   const telegramUser = useStore((state) => state.telegramUser)
   const { setShowBackButton, setOnBackClick } = useOutletContext<OutletContextType>()
+  const {
+    language,
+    currency,
+    exchangeRate,
+    setLanguage,
+    setCurrency,
+    addToCart,
+    favorites,
+    removeFromFavorites,
+    saleModeEnabled,
+    theme,
+    setTheme,
+  } = useStore()
 
-  const { language, currency, exchangeRate, setLanguage, setCurrency, addToCart, favorites, removeFromFavorites, saleModeEnabled, theme, setTheme } = useStore()
-
-  // ✅ СОСТОЯНИЕ ТЕПЕРЬ В URL:
-  //   /profile                              → главное меню
-  //   /profile?section=favorites            → избранное
-  //   /profile?section=orders               → список заказов
-  //   /profile?section=orders&order=<id>    → модалка заказа
-  //   /profile?section=china                → список спецзаказов
-  //   /profile?section=china&request=<id>   → модалка спецзаказа
   const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | null
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
-  // ✅ Кеш списков — мгновенный рендер при возврате
+  // ✅ ЛЕНИВЫЙ loading: false если кеш уже есть → нет вспышки спиннера
   const [orders, setOrders] = useState<any[]>(() => profileOrdersCache || [])
   const [chinaRequests, setChinaRequests] = useState<any[]>(() => profileChinaRequestsCache || [])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => {
+    // Спиннер только если соответствующего кеша нет
+    if (section === 'orders') return !profileOrdersCache
+    if (section === 'china') return !profileChinaRequestsCache
+    return false
+  })
   const [allProducts, setAllProducts] = useState<any[]>([])
 
-  // ✅ Загружаем список товаров для отображения избранного
   useEffect(() => {
     getProducts().then(setAllProducts)
   }, [])
 
-  // ✅ Автозагрузка заказов при открытии section=orders
+  // ✅ Автозагрузка заказов/спецзаказов (тихое обновление, если кеш уже есть)
   useEffect(() => {
-    if (section === 'orders') {
+    const sectionNow = searchParams.get('section')
+    if (sectionNow === 'orders') {
       loadOrders()
-    } else if (section === 'china') {
+    } else if (sectionNow === 'china') {
       loadChinaRequests()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section])
 
-  // ✅ Показываем стрелку в ЕДИНСТВЕННОМ острове AppLayout, когда открыт подраздел
   useEffect(() => {
     const hasSubView = !!section && section !== 'main'
-
     if (hasSubView) {
       setShowBackButton(true)
       setOnBackClick(() => () => {
@@ -650,7 +632,6 @@ export default function ProfilePage() {
       setShowBackButton(false)
       setOnBackClick(null)
     }
-
     return () => {
       setShowBackButton(false)
       setOnBackClick(null)
@@ -658,9 +639,7 @@ export default function ProfilePage() {
   }, [section, navigate, setShowBackButton, setOnBackClick])
 
   const getItemsLabel = (count: number, lang: 'ru' | 'uz'): string => {
-    if (lang === 'uz') {
-      return 'ta mahsulot'
-    }
+    if (lang === 'uz') return 'ta mahsulot'
     const lastTwo = count % 100
     const lastOne = count % 10
     if (lastTwo >= 11 && lastTwo <= 19) return 'товаров'
@@ -674,50 +653,38 @@ export default function ProfilePage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const openSection = (name: 'favorites' | 'orders' | 'china') => {
-    navigate(`/profile?section=${name}`)
-  }
-
-  const openOrder = (orderId: string | number) => {
-    navigate(`/profile?section=orders&order=${orderId}`)
-  }
-
-  const openChinaRequest = (requestId: string | number) => {
-    navigate(`/profile?section=china&request=${requestId}`)
-  }
+  const openSection = (name: 'favorites' | 'orders' | 'china') => navigate(`/profile?section=${name}`)
+  const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
+  const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
   const formatOrderPrice = (order: any) => {
-    if (order.total_price_uzs) {
-      return `${Number(order.total_price_uzs).toLocaleString()} сум`
-    }
+    if (order.total_price_uzs) return `${Number(order.total_price_uzs).toLocaleString()} сум`
     if (currency === 'USD') return `$${order.total_price_usd}`
     return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('ru-RU', {
+  const formatDateTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
-  }
 
   const getOrderStatusText = (status: string, deliveryMethod: string) => {
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
-        const labels: Record<string, string> = {
+        return {
           'Активный': "Qabul qilindi 📄",
           'В обработке': "Yig'ilmoqda 📦",
           'Готов': "Berishga tayyor 🎉",
           'Выдан': "Olab bo'lindi 🤝",
           'Отменён': "Bekor qilindi 🚫",
           'Ожидает оплаты': "To'lovni kutmoqda ⏳",
-        }
-        return labels[status] || status
+        }[status] || status
       }
-      const labels: Record<string, string> = {
+      return {
         'Активный': "Qabul qilindi 📄",
         'В обработке': "Yig'ilmoqda 📦",
         'Готов': "Qadoqlandi 🛍️",
@@ -725,21 +692,19 @@ export default function ProfilePage() {
         'Доставлен': "Yetkazib berildi ✅",
         'Отменён': "Bekor qilindi 🚫",
         'Ожидает оплаты': "To'lovni kutmoqda ⏳",
-      }
-      return labels[status] || status
+      }[status] || status
     }
     if (deliveryMethod === 'pickup') {
-      const labels: Record<string, string> = {
+      return {
         'Активный': 'Принят 📄',
         'В обработке': 'Собирается 📦',
         'Готов': 'Готов к выдаче 🎉',
         'Выдан': 'Получен 🤝',
         'Отменён': 'Отменен 🚫',
         'Ожидает оплаты': 'Ожидает оплаты ⏳',
-      }
-      return labels[status] || status
+      }[status] || status
     }
-    const labels: Record<string, string> = {
+    return {
       'Активный': 'Принят 📄',
       'В обработке': 'Собирается 📦',
       'Готов': 'Упакован 🛍️',
@@ -747,12 +712,11 @@ export default function ProfilePage() {
       'Доставлен': 'Доставлен ✅',
       'Отменён': 'Отменен 🚫',
       'Ожидает оплаты': 'Ожидает оплаты ⏳',
-    }
-    return labels[status] || status
+    }[status] || status
   }
 
   const getOrderStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+    return {
       'Активный': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'В обработке': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
       'Готов': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
@@ -760,84 +724,79 @@ export default function ProfilePage() {
       'Доставлен': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300',
       'Отменён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
       'Ожидает оплаты': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
-    }
-    return colors[status] || 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'
+    }[status] || 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'
   }
 
   const getChinaStatusText = (status: string) => {
     if (language === 'uz') {
-      const labels: Record<string, string> = {
+      return {
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
         'Отменён клиентом': "Siz bekor qildingiz 🙅️",
         'Отклонён': "Rad etildi 🛑",
-      }
-      return labels[status] || status
+      }[status] || status
     }
-    const labels: Record<string, string> = {
+    return {
       'На рассмотрении': 'Принят 📄',
       'Оценён': 'Оценён 💎',
       'Оплачен': 'Оплачен ✅',
       'Отменён клиентом': 'Отменён вами 🙅️',
       'Отклонён': 'Отклонён 🛑',
-    }
-    return labels[status] || status
+    }[status] || status
   }
 
   const getChinaStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+    return {
       'На рассмотрении': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
       'Оценён': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300',
       'Оплачен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
       'Отменён клиентом': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
       'Отклонён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
+    }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
 
+  // ✅ ФОНОВОЕ обновление: не блокирует UI, если кеш уже есть
   const loadOrders = async () => {
-    if (profileOrdersCache) {
-      setOrders(profileOrdersCache)
-      return
-    }
-    setLoading(true)
+    const hadCache = !!profileOrdersCache
+    if (!hadCache) setLoading(true)
     const userId = telegramUser?.id || 'guest-user'
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    if (error) {
-      console.error('Ошибка при загрузке заказов:', error)
-    } else {
-      const items = data || []
-      profileOrdersCache = items
-      setOrders(items)
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      if (!error && data) {
+        profileOrdersCache = data
+        setOrders(data)
+      }
+    } catch (err) {
+      console.error('Ошибка при загрузке заказов:', err)
+    } finally {
+      if (!hadCache) setLoading(false)
     }
-    setLoading(false)
   }
 
   const loadChinaRequests = async () => {
-    if (profileChinaRequestsCache) {
-      setChinaRequests(profileChinaRequestsCache)
-      return
-    }
-    setLoading(true)
+    const hadCache = !!profileChinaRequestsCache
+    if (!hadCache) setLoading(true)
     const userId = telegramUser?.id || 'guest-user'
-    const { data, error } = await supabase
-      .from('china_requests')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    if (error) {
-      console.error('Ошибка при загрузке спецзаказов:', error)
-    } else {
-      const items = data || []
-      profileChinaRequestsCache = items
-      setChinaRequests(items)
+    try {
+      const { data, error } = await supabase
+        .from('china_requests')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      if (!error && data) {
+        profileChinaRequestsCache = data
+        setChinaRequests(data)
+      }
+    } catch (err) {
+      console.error('Ошибка при загрузке спецзаказов:', err)
+    } finally {
+      if (!hadCache) setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleCancelOrder = async (order: any) => {
@@ -885,31 +844,23 @@ export default function ProfilePage() {
 
   const handleScreenshotUploaded = (order: any) => {
     const updated = { ...order, payment_screenshot_url: 'uploaded' }
-    const newOrders = orders.map(o => o.id === order.id ? updated : o)
+    const newOrders = orders.map((o) => (o.id === order.id ? updated : o))
     profileOrdersCache = newOrders
     setOrders(newOrders)
   }
 
-  // ✅ Находим конкретный заказ/спецзаказ по id из URL
-  const selectedOrder = orderIdParam
-    ? orders.find(o => String(o.id) === String(orderIdParam))
-    : null
+  const selectedOrder = orderIdParam ? orders.find((o) => String(o.id) === String(orderIdParam)) : null
   const selectedChinaRequest = requestIdParam
-    ? chinaRequests.find(r => String(r.id) === String(requestIdParam))
+    ? chinaRequests.find((r) => String(r.id) === String(requestIdParam))
     : null
 
-  // ✅ РАЗДЕЛ MAIN (главное меню профиля)
   if (!section || section === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 mb-6 text-center border border-[#E8E2D5] dark:border-dark-border">
             {telegramUser?.photoUrl ? (
-              <img
-                src={telegramUser.photoUrl}
-                alt="Avatar"
-                className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
-              />
+              <img src={telegramUser.photoUrl} alt="Avatar" className="w-20 h-20 rounded-full mx-auto mb-3 object-cover" />
             ) : (
               <div className="w-20 h-20 bg-[#E8E2D5] dark:bg-dark-accent rounded-full mx-auto mb-3 flex items-center justify-center">
                 <User size={40} className="text-[#8A8275] dark:text-gray-300" />
@@ -1122,13 +1073,12 @@ export default function ProfilePage() {
               >
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#229ED9] to-[#1B7FB8] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
                   </svg>
                 </div>
                 <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Telegram</span>
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
               </a>
-
               <a
                 href={SOCIAL_LINKS.instagram}
                 target="_blank"
@@ -1137,7 +1087,7 @@ export default function ProfilePage() {
               >
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#833AB4] via-[#E1306C] to-[#F77737] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                   </svg>
                 </div>
                 <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Instagram</span>
@@ -1150,7 +1100,6 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ FAVORITES (остров AppLayout со стрелкой, свой остров НЕ рисуем)
   if (section === 'favorites') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
@@ -1158,7 +1107,6 @@ export default function ProfilePage() {
           <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
           </h2>
-
           {favorites.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
               <Heart size={64} className="text-[#E8E2D5] dark:text-dark-border mb-4" />
@@ -1171,25 +1119,22 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {favorites.map((item) => {
-                const product = allProducts.find(p => p.id === item.productId)
+                const product = allProducts.find((p) => p.id === item.productId)
                 const onSale = product ? isProductOnSale(product, saleModeEnabled) : false
                 const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
                 return (
-                  <div key={item.productId} className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border">
+                  <div
+                    key={item.productId}
+                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border"
+                  >
                     <Link to={`/product/${item.productId}`}>
                       <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                     </Link>
                     <div className="p-3">
                       <Link to={`/product/${item.productId}`}>
-                        <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A] dark:text-white">
-                          {item.name}
-                        </p>
+                        <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A] dark:text-white">{item.name}</p>
                       </Link>
                       <div className="flex items-center justify-between">
                         <div>
@@ -1220,7 +1165,6 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ ORDERS (+ модалка заказа, если есть order=<id>)
   if (section === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
@@ -1257,9 +1201,7 @@ export default function ProfilePage() {
                         <p className="font-bold text-[#1B2A4A] dark:text-white">
                           {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
                         </p>
-                        <p className="text-sm text-[#8A8275] dark:text-gray-300">
-                          {formatDateTime(order.created_at)}
-                        </p>
+                        <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(order.created_at)}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
                         {getOrderStatusText(order.status, order.delivery_method)}
@@ -1281,20 +1223,14 @@ export default function ProfilePage() {
                       ))}
                       {items.length > 2 && (
                         <div className="relative w-12 h-12 rounded border border-[#E8E2D5] dark:border-dark-border overflow-hidden bg-[#F5F1E8] dark:bg-dark-accent">
-                          <img
-                            src={items[2].image}
-                            alt="more"
-                            className="w-full h-full object-cover blur-sm opacity-50"
-                          />
+                          <img src={items[2].image} alt="more" className="w-full h-full object-cover blur-sm opacity-50" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-[#8A8275] dark:text-gray-300 text-xs font-bold">+{items.length - 2}</span>
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">
-                      {formatOrderPrice(order)}
-                    </p>
+                    <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">{formatOrderPrice(order)}</p>
                     <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
                       {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
                     </p>
@@ -1319,7 +1255,6 @@ export default function ProfilePage() {
     )
   }
 
-  // ✅ РАЗДЕЛ CHINA (+ модалка спецзаказа, если есть request=<id>)
   if (section === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
@@ -1356,9 +1291,7 @@ export default function ProfilePage() {
                         <p className="font-bold text-[#1B2A4A] dark:text-white">
                           {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
                         </p>
-                        <p className="text-sm text-[#8A8275] dark:text-gray-300">
-                          {formatDateTime(request.created_at)}
-                        </p>
+                        <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(request.created_at)}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
                         {getChinaStatusText(request.status)}

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
-import { getProducts } from '../lib/supabase'
 import { Heart, Filter } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 import IslandHeader from '../components/IslandHeader'
@@ -11,7 +10,6 @@ const POPULARITY_FRESH_MS = 10 * 60 * 1000
 export default function AllProductsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-
   const {
     language,
     currency,
@@ -22,47 +20,30 @@ export default function AllProductsPage() {
     isFavorite,
     popularityMap,
     getPopularityAge,
+    ensureProducts,
   } = useStore()
 
-  const [products, setProducts] = useState<any[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>(location.state?.sortBy || 'newest')
 
-  const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
 
-  useEffect(() => {
-    if (hasLoadedRef.current) return
-    hasLoadedRef.current = true
-    loadProducts()
-  }, [])
+  // ✅ Данные из общего кеша + клиентская фильтрация
+  const cachedItems = ensureProducts()
+  const loading = !cachedItems
+  const products = cachedItems || []
 
   // ✅ Подгружаем популярность для сортировки «popular»
   useEffect(() => {
     if (hasLoadedPopularityRef.current) return
     hasLoadedPopularityRef.current = true
-
     if (getPopularityAge() > POPULARITY_FRESH_MS) {
       useStore.getState().updatePopularity()
     }
-  }, [])
-
-  useEffect(() => {
-    applyFiltersAndSort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedSubcategory, sortBy, products, popularityMap])
-
-  const loadProducts = async () => {
-    setLoading(true)
-    const data = await getProducts()
-    setProducts(data)
-    setFilteredProducts(data)
-    setLoading(false)
-  }
+  }, [])
 
   const applyFiltersAndSort = () => {
     let filtered = [...products]
@@ -72,30 +53,24 @@ export default function AllProductsPage() {
     if (selectedSubcategory !== 'all') {
       filtered = filtered.filter((p) => p.subcategory === selectedSubcategory)
     }
-
     const pop = popularityMap || {}
-
     if (sortBy === 'newest') {
-      filtered.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     } else if (sortBy === 'popular') {
-      // ✅ РЕАЛЬНАЯ сортировка по статистике продаж
       filtered.sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0))
     } else if (sortBy === 'price_asc') {
       filtered.sort(
-        (a, b) =>
-          getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled)
+        (a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled)
       )
     } else if (sortBy === 'price_desc') {
       filtered.sort(
-        (a, b) =>
-          getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
+        (a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
       )
     }
-
-    setFilteredProducts(filtered)
+    return filtered
   }
+
+  const filteredProducts = applyFiltersAndSort()
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -103,11 +78,8 @@ export default function AllProductsPage() {
   }
 
   const getTitle = () => {
-    if (sortBy === 'newest') {
-      return language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'
-    } else if (sortBy === 'popular') {
-      return language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'
-    }
+    if (sortBy === 'newest') return language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'
+    if (sortBy === 'popular') return language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'
     return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
   }
 
@@ -148,9 +120,7 @@ export default function AllProductsPage() {
           >
             <Heart
               size={20}
-              className={
-                isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'
-              }
+              className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
             />
           </button>
         </div>
@@ -163,11 +133,7 @@ export default function AllProductsPage() {
               {formatPrice(product.price_usd)}
             </p>
           )}
-          <p
-            className={`font-bold mt-1 ${
-              onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'
-            }`}
-          >
+          <p className={`font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
             {formatPrice(effectivePrice)}
           </p>
         </div>
@@ -191,7 +157,6 @@ export default function AllProductsPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
-
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">{getTitle()}</h2>
 
@@ -255,46 +220,24 @@ export default function AllProductsPage() {
                 {language === 'ru' ? 'Сортировка' : 'Saralash'}
               </h3>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSortBy('newest')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    sortBy === 'newest'
-                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
-                  }`}
-                >
-                  {language === 'ru' ? 'Сначала новые' : 'Avval yangilar'}
-                </button>
-                <button
-                  onClick={() => setSortBy('popular')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    sortBy === 'popular'
-                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
-                  }`}
-                >
-                  {language === 'ru' ? 'Популярные' : 'Mashhur'}
-                </button>
-                <button
-                  onClick={() => setSortBy('price_asc')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    sortBy === 'price_asc'
-                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
-                  }`}
-                >
-                  {language === 'ru' ? 'Цена ↑' : 'Narx ↑'}
-                </button>
-                <button
-                  onClick={() => setSortBy('price_desc')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    sortBy === 'price_desc'
-                      ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                      : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
-                  }`}
-                >
-                  {language === 'ru' ? 'Цена ↓' : 'Narx ↓'}
-                </button>
+                {[
+                  { key: 'newest', ru: 'Сначала новые', uz: 'Avval yangilar' },
+                  { key: 'popular', ru: 'Популярные', uz: 'Mashhur' },
+                  { key: 'price_asc', ru: 'Цена ↑', uz: 'Narx ↑' },
+                  { key: 'price_desc', ru: 'Цена ↓', uz: 'Narx ↓' },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() => setSortBy(s.key)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                      sortBy === s.key
+                        ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                        : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
+                    }`}
+                  >
+                    {language === 'ru' ? s.ru : s.uz}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

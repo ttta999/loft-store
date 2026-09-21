@@ -7,50 +7,59 @@ import { Filter, ArrowUpDown } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import { cacheProducts } from '../lib/productCache'
 
-const catalogProductsCache: Record<string, any[]> = {}
 let catalogBrandsCache: any[] | null = null
 
 export default function CatalogPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language, currency, exchangeRate, saleModeEnabled } = useStore()
-  const [products, setProducts] = useState<any[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showFilters, setShowFilters] = useState(false)
-  const [brands, setBrands] = useState<any[]>([])
+  const {
+    language,
+    currency,
+    exchangeRate,
+    saleModeEnabled,
+    ensureProducts,
+  } = useStore()
 
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
-  const category = CATEGORIES.find(c => c.id === categoryId)
-  const cacheKey = `${categoryId || 'all'}_${subcategoryId || 'all'}`
+  const category = CATEGORIES.find((c) => c.id === categoryId)
 
+  const [brands, setBrands] = useState<any[]>(() => catalogBrandsCache || [])
+  const [loadingBrands, setLoadingBrands] = useState(() => !catalogBrandsCache)
+  const [showFilters, setShowFilters] = useState(false)
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
+  // ✅ Данные из общего кеша + клиентская фильтрация по категории/подкатегории
+  const cachedItems = ensureProducts()
+  const loading = !cachedItems
+  const products = (cachedItems || []).filter((p: any) => {
+    if (!categoryId || p.category !== categoryId) return false
+    if (subcategoryId && p.subcategory !== subcategoryId) return false
+    return true
+  })
+
   useEffect(() => {
     loadBrands()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ✅ Наполняем productCache (для мгновенного открытия карточек)
   useEffect(() => {
-    if (categoryId) {
-      loadProducts()
+    if (products.length > 0) {
+      cacheProducts(products)
     }
-  }, [categoryId, subcategoryId])
-
-  useEffect(() => {
-    applyFiltersAndSort()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBrands, minPrice, maxPrice, sortBy, products, brands])
+  }, [products])
 
   const loadBrands = async () => {
-    // ✅ Бренды тоже из module-level кеша
     if (catalogBrandsCache) {
       setBrands(catalogBrandsCache)
+      setLoadingBrands(false)
       return
     }
+    setLoadingBrands(true)
     try {
       const { data, error } = await supabase
         .from('brands')
@@ -62,68 +71,35 @@ export default function CatalogPage() {
       setBrands(catalogBrandsCache)
     } catch (error) {
       console.error('Ошибка загрузки брендов:', error)
+    } finally {
+      setLoadingBrands(false)
     }
-  }
-
-  const loadProducts = async () => {
-    // ✅ Мгновенный рендер из кеша (без лоадера) — ключ к точному скроллу
-    const cached = catalogProductsCache[cacheKey]
-    if (cached) {
-      setProducts(cached)
-      setFilteredProducts(cached)
-      setLoading(false)
-      return
-    }
-
-    setLoading(true)
-    try {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('category', categoryId)
-        .eq('is_active', true)
-      if (subcategoryId) {
-        query = query.eq('subcategory', subcategoryId)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      const items = data || []
-
-      // ✅ Сохраняем в module-level кеш каталога
-      catalogProductsCache[cacheKey] = items
-      // ✅ Наполняем ОБЩИЙ кеш — карточки товаров откроются мгновенно
-      cacheProducts(items)
-
-      setProducts(items)
-      setFilteredProducts(items)
-    } catch (error) {
-      console.error('Ошибка загрузки товаров:', error)
-      setProducts([])
-      setFilteredProducts([])
-    }
-    setLoading(false)
   }
 
   const applyFiltersAndSort = () => {
     let filtered = [...products]
     if (selectedBrands.length > 0) {
-      filtered = filtered.filter(p =>
-        selectedBrands.some(brandId => {
-          const brand = brands.find(b => b.id === brandId)
-          return brand && p.name_ru.toLowerCase().includes(brand.name.toLowerCase())
+      filtered = filtered.filter((p) =>
+        selectedBrands.some((brandId) => {
+          const brand = brands.find((b) => b.id === brandId)
+          return brand && p.name_ru?.toLowerCase().includes(brand.name.toLowerCase())
         })
       )
     }
-    filtered = filtered.filter(p => {
+    filtered = filtered.filter((p) => {
       const priceInSums = getEffectivePriceUsd(p, saleModeEnabled) * exchangeRate
       return priceInSums >= minPrice && priceInSums <= maxPrice
     })
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled))
+        filtered.sort(
+          (a, b) => getEffectivePriceUsd(a, saleModeEnabled) - getEffectivePriceUsd(b, saleModeEnabled)
+        )
         break
       case 'price_desc':
-        filtered.sort((a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled))
+        filtered.sort(
+          (a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
+        )
         break
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -132,14 +108,14 @@ export default function CatalogPage() {
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    setFilteredProducts(filtered)
+    return filtered
   }
 
+  const filteredProducts = applyFiltersAndSort()
+
   const toggleBrand = (brandId: string) => {
-    setSelectedBrands(prev =>
-      prev.includes(brandId)
-        ? prev.filter(b => b !== brandId)
-        : [...prev, brandId]
+    setSelectedBrands((prev) =>
+      prev.includes(brandId) ? prev.filter((b) => b !== brandId) : [...prev, brandId]
     )
   }
 
@@ -164,24 +140,19 @@ export default function CatalogPage() {
     if (!subcategoryId) {
       return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
     }
-    const sub = category?.subcategories.find(s => s.id === subcategoryId)
+    const sub = category?.subcategories.find((s) => s.id === subcategoryId)
     return sub ? (language === 'ru' ? sub.name_ru : sub.name_uz) : ''
   }
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-      <IslandHeader
-        needsBack={true}
-        onBack={() => navigate(-1)}
-      />
+      <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
       <div className="p-4">
         <h2 className="text-xl font-bold mb-1 text-[#1B2A4A] dark:text-white">
           {language === 'ru' ? category?.name_ru : category?.name_uz}
         </h2>
-        <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">
-          {getSubcategoryName()}
-        </p>
+        <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-4">{getSubcategoryName()}</p>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -222,19 +193,30 @@ export default function CatalogPage() {
                 {language === 'ru' ? 'Бренд' : 'Brend'}
               </h3>
               <div className="flex flex-wrap gap-2">
-                {brands.map((brand) => (
-                  <button
-                    key={brand.id}
-                    onClick={() => toggleBrand(brand.id)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      selectedBrands.includes(brand.id)
-                        ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                        : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300 hover:bg-[#E8E2D5]/70 dark:hover:bg-dark-border'
-                    }`}
-                  >
-                    {brand.name}
-                  </button>
-                ))}
+                {/* ✅ loadingBrands теперь реально используется — предупреждение TS уходит */}
+                {loadingBrands ? (
+                  <span className="text-sm text-[#8A8275] dark:text-gray-300">
+                    {language === 'ru' ? 'Загрузка брендов...' : 'Brendlar yuklanmoqda...'}
+                  </span>
+                ) : brands.length === 0 ? (
+                  <span className="text-sm text-[#8A8275] dark:text-gray-300">
+                    {language === 'ru' ? 'Бренды не найдены' : 'Brendlar topilmadi'}
+                  </span>
+                ) : (
+                  brands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => toggleBrand(brand.id)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        selectedBrands.includes(brand.id)
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300 hover:bg-[#E8E2D5]/70 dark:hover:bg-dark-border'
+                      }`}
+                    >
+                      {brand.name}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -315,9 +297,7 @@ export default function CatalogPage() {
         )}
 
         <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-3">
-          {language === 'ru'
-            ? `Найдено: ${filteredProducts.length}`
-            : `Topildi: ${filteredProducts.length}`}
+          {language === 'ru' ? `Найдено: ${filteredProducts.length}` : `Topildi: ${filteredProducts.length}`}
         </p>
 
         {loading ? (
@@ -330,7 +310,7 @@ export default function CatalogPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map(product => {
+            {filteredProducts.map((product) => {
               const onSale = isProductOnSale(product, saleModeEnabled)
               const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
               return (
@@ -341,11 +321,7 @@ export default function CatalogPage() {
                 >
                   {product.images?.[0] && (
                     <div className="relative">
-                      <img
-                        src={product.images[0]}
-                        alt={product.name_ru}
-                        className="w-full h-32 object-cover"
-                      />
+                      <img src={product.images[0]} alt={product.name_ru} className="w-full h-32 object-cover" />
                       {onSale && (
                         <span className="absolute top-2 left-2 bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full">
                           -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
@@ -362,7 +338,11 @@ export default function CatalogPage() {
                         {formatPrice(product.price_usd)}
                       </p>
                     )}
-                    <p className={`text-lg font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
+                    <p
+                      className={`text-lg font-bold mt-1 ${
+                        onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'
+                      }`}
+                    >
                       {formatPrice(effectivePrice)}
                     </p>
                   </div>
