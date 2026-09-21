@@ -34,6 +34,7 @@ export default function HomePage() {
     if (hasLoadedRef.current) return
     hasLoadedRef.current = true
     loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ✅ Загружаем популярность (один раз, дальше из кеша)
@@ -44,6 +45,7 @@ export default function HomePage() {
     if (getPopularityAge() > POPULARITY_FRESH_MS) {
       useStore.getState().updatePopularity()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadProducts = async (force = false) => {
@@ -191,17 +193,7 @@ export default function HomePage() {
 
   return (
     <div className="p-4 pb-24">
-      <div className="bg-gradient-to-r from-[#1B2A4A] to-[#142038] dark:from-dark-card dark:to-dark-accent rounded-2xl p-6 mb-6 text-white shadow-md border border-transparent dark:border-dark-border">
-        <h2 className="text-2xl font-bold mb-2 tracking-wide">
-          {language === 'ru' ? 'Добро пожаловать в LOFT' : 'LOFTga xush kelibsiz'}
-        </h2>
-
-        <p className="text-[#C9A961] text-sm">
-          {language === 'ru'
-            ? 'Стильная одежда и обувь в Ташкенте'
-            : 'Toshkentdagi zamonaviy kiyim va poyabzal'}
-        </p>
-      </div>
+      {/* ✅ Плашка "Добро пожаловать" удалена — категории сразу на первом экране */}
 
       <h3 className="text-lg font-bold mb-3 text-[#1B2A4A] dark:text-white">
         {language === 'ru' ? 'Категории' : 'Kategoriyalar'}
