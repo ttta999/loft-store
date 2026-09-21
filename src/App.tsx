@@ -47,6 +47,7 @@ function TelegramBackButtonManager() {
     const handleBack = () => {
       const idx = (window.history.state as any)?.idx
       if (typeof idx === 'number' && idx === 0) {
+        // ✅ Если в стеке больше нет страниц — возвращаемся на главную
         navigate('/')
       } else {
         navigate(-1)
@@ -67,8 +68,6 @@ function AppLayout() {
   const [activeTab, setActiveTab] = useState<TabType>('home')
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
-  // ✅ НОВОЕ: кастомный обработчик клика по лупе (устанавливает HomePage)
-  const [onSearchClick, setOnSearchClick] = useState<(() => void) | null>(null)
 
   const theme = useStore((state) => state.theme)
   const setTelegramUser = useStore((state) => state.setTelegramUser)
@@ -142,6 +141,7 @@ function AppLayout() {
   }, [setTelegramUser])
 
   // ✅ Системная кнопка «назад» Telegram на вкладках
+  // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное)
   useEffect(() => {
     const needsBackNow = activeTab === 'search' || (showBackButton && !!onBackClick)
 
@@ -167,18 +167,15 @@ function AppLayout() {
     else if (onBackClick) onBackClick()
   }
 
-  // ✅ НОВОЕ: клик по лупе — если HomePage зарегистрировал обработчик (overlay),
-  // вызываем его; иначе fallback — переход на страницу поиска
   const handleSearchClick = () => {
-    if (onSearchClick) {
-      onSearchClick()
-    } else {
-      navigate('/search')
-    }
+    navigate('/search')
   }
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
+      {/* ❌ ScrollRestoration убран отсюда — теперь живёт в App(), над Routes,
+          чтобы работать на ВСЕХ страницах, включая /product/:id (вне layout) */}
+
       <IslandHeader
         needsBack={needsBack}
         onBack={handleBack}
@@ -186,17 +183,8 @@ function AppLayout() {
         onSearchClick={handleSearchClick}
       />
 
-      {/* ✅ Outlet передаёт контекст, включая onSearchClick для HomePage */}
-      <Outlet
-        context={{
-          showBackButton,
-          setShowBackButton,
-          onBackClick,
-          setOnBackClick,
-          onSearchClick,
-          setOnSearchClick,
-        }}
-      />
+      {/* ✅ Outlet рендерит страницу БЕЗ размонтирования layout */}
+      <Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} />
 
       <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
@@ -206,7 +194,10 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
-      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах */}
+      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах,
+          включая внутренние (/product/:id, /catalog, /brands, ...).
+          Это критично: раньше при возврате с карточки товара он монтировался
+          заново с isFirstRender=true и восстановление позиции ломалось. */}
       <ScrollRestoration />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
