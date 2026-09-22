@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
-import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot, cancelOrder } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
 // ✅ Универсальный хук блокировки скролла body
@@ -314,6 +314,16 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
     }
   }
 
+  // ✅ Отмена неоплаченного заказа в БД — чтобы не висел «в ожидании оплаты» в истории
+  const cancelUnpaidOrder = async () => {
+    if (!currentOrderId) return
+    try {
+      await cancelOrder(currentOrderId)
+    } catch (err) {
+      console.error('Ошибка отмены неоплаченного заказа:', err)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
@@ -357,15 +367,18 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
-        {/* ✅ Вернули наш остров со стрелкой «назад» */}
+        {/* ✅ Остров со стрелкой «назад» — при выходе БЕЗ скриншота отменяет заказ в БД */}
         <IslandHeader
           needsBack={true}
-          onBack={() => {
+          onBack={async () => {
             if (screenshotUploaded) {
+              // Скриншот загружен → заказ принят
               setShowPaymentInfo(false)
               setOrderSuccess(true)
               clearCart()
             } else {
+              // ❌ Скриншот НЕ загружен → отменяем созданный заказ в БД
+              await cancelUnpaidOrder()
               setShowPaymentInfo(false)
             }
           }}
