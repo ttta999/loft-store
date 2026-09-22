@@ -4,8 +4,23 @@ import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder } from '../lib/supabase'
-import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import { MANAGER_TELEGRAM_LINK, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
+
+// ✅ РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ: две карты — UZS и USD.
+// Замени на реальные номера/имена в одном месте.
+const PAYMENT_CARDS = {
+  uzs: {
+    number: '8600 4517 2290 6633',
+    holder: 'ABRORBEK XUSANOV',
+    badge: 'Uzcard / Humo',
+  },
+  usd: {
+    number: '4145 8820 1177 3390',
+    holder: 'ABRORBEK XUSANOV',
+    badge: 'Visa / MC',
+  },
+}
 
 // ✅ Универсальный хук блокировки скролла body
 const useBodyScrollLock = (active: boolean) => {
@@ -193,7 +208,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
-  const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
+  const { cart, clearCart, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -211,6 +226,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
+
+  // ✅ Суммы в обеих валютах для экрана оплаты
+  const usdTotal = getTotalPrice()
+  const uzsTotal = Math.round(usdTotal * exchangeRate)
+  const usdFormatted = usdTotal.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
 
   useEffect(() => {
     if (isSpecialOrder) {
@@ -249,9 +272,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
     return null
   }
 
-  const handleCopyCard = async () => {
+  // ✅ Универсальное копирование номера карты
+  const handleCopyCard = async (number: string) => {
     try {
-      await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
+      await navigator.clipboard.writeText(number.replace(/\s/g, ''))
       toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
     } catch (error) {
       console.error('Ошибка копирования:', error)
@@ -353,7 +377,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
     }
   }
 
-  // ✅ ЭКРАН ОПЛАТЫ — единая карточка вместо россыпи блоков
+  // ✅ ЭКРАН ОПЛАТЫ — единая карточка + ДВЕ карты (UZS и USD)
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -371,7 +395,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
         />
 
         <div className="flex-1 overflow-y-auto p-4 pb-40">
-          {/* ✅ ЕДИНАЯ КАРТОЧКА ОПЛАТЫ: заказ + карта + сумма + скриншот */}
+          {/* ✅ ЕДИНАЯ КАРТОЧКА ОПЛАТЫ */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden shadow-sm mb-3">
             {/* Шапка: номер заказа + статус */}
             <div className="flex items-center justify-between gap-2 p-4 pb-3">
@@ -386,35 +410,73 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
               </span>
             </div>
 
-            {/* Карта с прикреплённой кнопкой копирования */}
-            <div className="px-4 pb-4">
+            {/* ✅ ДВЕ КАРТЫ: UZS и USD */}
+            <div className="px-4 pb-4 space-y-3">
+              <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                💳 {language === 'ru' ? 'Оплатите на любую карту:' : 'Istalgan kartaga to\'lang:'}
+              </p>
+
+              {/* Карта UZS */}
               <div className="rounded-2xl overflow-hidden shadow-md">
                 <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] dark:from-dark-accent dark:to-dark-card p-4 text-white">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] text-[#C9A961] font-semibold tracking-widest">LOFT STORE</span>
+                    <span className="text-[10px] text-[#C9A961] font-semibold tracking-widest">LOFT STORE · UZS</span>
                     <CreditCard size={18} className="text-[#C9A961]" />
                   </div>
-                  <p className="text-base font-bold tracking-widest mb-2">{PAYMENT_DETAILS.cardNumber}</p>
-                  <span className="text-xs text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</span>
+                  <p className="text-base font-bold tracking-widest mb-2">{PAYMENT_CARDS.uzs.number}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-[#C9A961] font-medium truncate">{PAYMENT_CARDS.uzs.holder}</span>
+                    <span className="text-[10px] font-semibold text-[#1B2A4A] bg-[#C9A961] px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {PAYMENT_CARDS.uzs.badge}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between bg-[#F5F1E8] dark:bg-dark-accent border-t border-[#E8E2D5] dark:border-dark-border px-4 py-2">
+                  <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                    {language === 'ru' ? 'К оплате:' : 'To\'lov:'}
+                  </span>
+                  <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">
+                    {uzsTotal.toLocaleString()} сум
+                  </span>
                 </div>
                 <button
-                  onClick={handleCopyCard}
+                  onClick={() => handleCopyCard(PAYMENT_CARDS.uzs.number)}
                   className="w-full bg-[#F5F1E8] dark:bg-dark-accent border-t border-[#E8E2D5] dark:border-dark-border py-2.5 text-xs font-medium text-[#1B2A4A] dark:text-white flex items-center justify-center gap-2 hover:bg-[#E8E2D5] dark:hover:bg-dark-border transition-colors"
                 >
                   <Copy size={14} />
                   {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
                 </button>
               </div>
-            </div>
 
-            {/* Сумма к оплате */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
-              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                💰 {language === 'ru' ? 'Сумма к оплате:' : "To'lov summasi:"}
-              </span>
-              <span className="text-lg font-bold text-[#1B2A4A] dark:text-white">
-                {formatPrice(getTotalPrice())}
-              </span>
+              {/* Карта USD */}
+              <div className="rounded-2xl overflow-hidden shadow-md">
+                <div className="bg-gradient-to-br from-[#0e3b2e] to-[#07271e] dark:from-dark-accent dark:to-dark-card p-4 text-white">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] text-[#7fd6a4] font-semibold tracking-widest">LOFT STORE · USD</span>
+                    <CreditCard size={18} className="text-[#7fd6a4]" />
+                  </div>
+                  <p className="text-base font-bold tracking-widest mb-2">{PAYMENT_CARDS.usd.number}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-[#7fd6a4] font-medium truncate">{PAYMENT_CARDS.usd.holder}</span>
+                    <span className="text-[10px] font-semibold text-[#07271e] bg-[#7fd6a4] px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {PAYMENT_CARDS.usd.badge}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between bg-[#F5F1E8] dark:bg-dark-accent border-t border-[#E8E2D5] dark:border-dark-border px-4 py-2">
+                  <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                    {language === 'ru' ? 'К оплате:' : 'To\'lov:'}
+                  </span>
+                  <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">${usdFormatted}</span>
+                </div>
+                <button
+                  onClick={() => handleCopyCard(PAYMENT_CARDS.usd.number)}
+                  className="w-full bg-[#F5F1E8] dark:bg-dark-accent border-t border-[#E8E2D5] dark:border-dark-border py-2.5 text-xs font-medium text-[#1B2A4A] dark:text-white flex items-center justify-center gap-2 hover:bg-[#E8E2D5] dark:hover:bg-dark-border transition-colors"
+                >
+                  <Copy size={14} />
+                  {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
+                </button>
+              </div>
             </div>
 
             {/* Скриншот оплаты */}
@@ -769,11 +831,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
               {formatPrice(getTotalPrice())}
             </span>
           </div>
-          {currency === 'USD' && (
-            <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1 text-right">
-              ≈ {Math.round(getTotalPrice() * exchangeRate).toLocaleString()} сум
-            </p>
-          )}
+          {formatPrice(getTotalPrice()) !== `$${usdFormattedEarly(getTotalPrice())}` && null}
+          <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1 text-right">
+            ≈ {Math.round(getTotalPrice() * exchangeRate).toLocaleString()} сум · ${usdFormattedEarly(getTotalPrice())}
+          </p>
         </div>
 
         <button
@@ -795,4 +856,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
       </div>
     </div>
   )
+}
+
+// ✅ Хелпер форматирования USD для формы оформления
+function usdFormattedEarly(usd: number): string {
+  return usd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
