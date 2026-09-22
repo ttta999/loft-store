@@ -309,6 +309,72 @@ export const restoreStockAfterCancel = async (items: any[]) => {
   }
 }
 
+// ✅ ПОЛНОЕ удаление неоплаченного заказа — без следа «Отменён».
+// Сначала пробуем серверную функцию delete_unpaid_order (атомарно, обходит RLS),
+// при её отсутствии — клиентский фолбэк: остатки + откат спецзаказа + DELETE.
+export const deleteUnpaidOrder = async (orderId: string): Promise<boolean> => {
+  // 1) Серверная функция (рекомендуется — выполнить SQL из инструкции)
+  try {
+    const { data, error } = await supabase.rpc('delete_unpaid_order', {
+      p_order_id: Number(orderId),
+    })
+    if (!error) {
+      return Boolean(data)
+    }
+    console.warn('⚠️ RPC delete_unpaid_order недоступна, пробуем клиентское удаление:', error.message)
+  } catch (err) {
+    console.warn('⚠️ Ошибка RPC delete_unpaid_order:', err)
+  }
+
+  // 2) Клиентский фолбэк
+  try {
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
+
+    if (fetchError || !order) {
+      console.error('❌ Заказ не найден для удаления:', fetchError)
+      return false
+    }
+
+    // 🔒 Защита: удаляем ТОЛЬКО неоплаченные заказы
+    if (order.payment_status && order.payment_status !== 'pending') {
+      return false
+    }
+
+    // Возвращаем остатки на склад
+    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+    if (Array.isArray(items)) {
+      await restoreStockAfterCancel(items)
+    }
+
+    // Откатываем спецзаказ в «Оценён»
+    if (order.special_order_id) {
+      await supabase
+        .from('china_requests')
+        .update({ status: 'Оценён', converted_to_order_id: null })
+        .eq('id', order.special_order_id)
+    }
+
+    // Полностью удаляем заказ
+    const { error: deleteError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+
+    if (deleteError) {
+      console.error('❌ Ошибка удаления заказа:', deleteError)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('❌ Ошибка клиентского удаления заказа:', error)
+    return false
+  }
+}
+
 export const updateChinaRequestStatus = async (
   requestId: string,
   status: string,
