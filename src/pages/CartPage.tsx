@@ -193,7 +193,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
-  const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
+  const { cart, clearCart, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -372,7 +372,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
         />
 
         <div className="flex-1 overflow-y-auto px-4 pb-60">
-          {/* ✅ HERO: статус + заказ + сумма (фирменный синий градиент, как на главной) */}
+          {/* ✅ HERO: статус + заказ + сумма (оставлен как есть) */}
           <div className="bg-gradient-to-r from-[#1B2A4A] to-[#142038] dark:from-dark-card dark:to-dark-accent rounded-2xl p-5 mb-4 text-center text-white shadow-md border border-transparent dark:border-dark-border">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-amber-300 text-xs font-semibold">
               ⏳ {language === 'ru' ? 'Ожидает оплаты' : "To'lovni kutmoqda"}
@@ -388,19 +388,23 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
             </p>
           </div>
 
-          {/* ✅ Карточка реквизитов (светлая/тёмная карточка приложения) */}
+          {/* ✅ Карточка реквизитов — СВЕТЛАЯ плашка с номером карты */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-semibold tracking-[0.2em] text-[#C9A961]">LOFT STORE</span>
               <CreditCard size={18} className="text-[#C9A961]" />
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-[#1B2A4A] to-[#142038] dark:from-dark-accent dark:to-dark-card p-4 text-white mb-3">
-              <p className="text-lg font-bold tracking-[0.15em] mb-1 break-all">{PAYMENT_DETAILS.cardNumber}</p>
+            {/* ✅ Плашка с номером карты — светлые цвета (как карточки оформления) */}
+            <div className="rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
+              <p className="text-lg font-bold tracking-[0.15em] mb-1 break-all text-[#1B2A4A] dark:text-white">
+                {PAYMENT_DETAILS.cardNumber}
+              </p>
               <p className="text-xs text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</p>
             </div>
+            {/* ✅ Кнопка копирования — светлая золотая (фирменная) */}
             <button
               onClick={handleCopyCard}
-              className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+              className="w-full py-3 rounded-xl bg-[#C9A961] text-[#1B2A4A] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#d6b57e] transition-colors"
             >
               <Copy size={16} />
               {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
@@ -749,6 +753,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
           </div>
         </div>
 
+        {/* ✅ ИТОГО — только одна цена в выбранной валюте (конвертация убрана) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="font-bold text-[#1B2A4A] dark:text-white">
@@ -758,11 +763,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
               {formatPrice(getTotalPrice())}
             </span>
           </div>
-          {currency === 'USD' && (
-            <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1 text-right">
-              ≈ {Math.round(getTotalPrice() * exchangeRate).toLocaleString()} сум
-            </p>
-          )}
         </div>
 
         <button
