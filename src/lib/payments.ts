@@ -6,16 +6,18 @@ interface PaymentData {
   description: string
 }
 
-// ✅ РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ — ОДНА КАРТА
 export const PAYMENT_DETAILS = {
   cardNumber: '5354 6739 3850 3829',
   cardHolder: 'Abrorbek Xusanov',
 }
 
-// ✅ Ссылка на менеджера в Telegram
+export const PAYMENT_CARDS: Record<'UZS' | 'USD', { number: string; holder: string }> = {
+  UZS: { number: '5614 3829 5950 3289', holder: 'Otabek Khusanov' },
+  USD: { number: '4023 0570 1085 2969', holder: 'Khusan Raximov' },
+}
+
 export const MANAGER_TELEGRAM_LINK = 'https://t.me/loft_corneli'
 
-// ✅ Показать реквизиты оплаты
 export const showPaymentDetails = (paymentData: PaymentData): string => {
   const message = `
 💳 <b>Оплата заказа №${paymentData.orderId}</b>

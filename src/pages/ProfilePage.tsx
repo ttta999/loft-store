@@ -27,7 +27,7 @@ import { toast } from 'sonner'
 import {
   cancelOrder,
   MANAGER_TELEGRAM_LINK,
-  PAYMENT_DETAILS,
+  PAYMENT_CARDS,
   uploadPaymentScreenshot,
   savePaymentScreenshot,
 } from '../lib/payments'
@@ -42,6 +42,14 @@ const SOCIAL_LINKS = {
 let profileOrdersCache: any[] | null = null
 let profileChinaRequestsCache: any[] | null = null
 
+// ✅ Валюта заказа: из поля order_currency, для старых заказов — фолбэк UZS
+const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
+  if (order?.order_currency === 'USD') return 'USD'
+  if (order?.order_currency === 'UZS') return 'UZS'
+  // старые заказы без order_currency показывали сумму в сумах — сохраняем поведение
+  return 'UZS'
+}
+
 const useBodyScrollLock = (active: boolean) => {
   useEffect(() => {
     if (!active) return
@@ -53,21 +61,35 @@ const useBodyScrollLock = (active: boolean) => {
   }, [active])
 }
 
-function OrderDetailModal({ order, onClose, language, currency, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
+function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   useBodyScrollLock(true)
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
 
-  const formatOrderPrice = (order: any) => {
-    if (order.total_price_uzs) return `${Number(order.total_price_uzs).toLocaleString()} сум`
-    if (currency === 'USD') return `$${order.total_price_usd}`
-    return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
+  // ✅ Валюта заказа + карта под неё
+  const orderCurrency = getOrderCurrency(order)
+  const payCard = PAYMENT_CARDS[orderCurrency]
+
+  // ✅ Цена заказа — в ВАЛЮТЕ ЗАКАЗА (USD → $, UZS → сум)
+  const formatOrderPrice = (o: any) => {
+    const cur = getOrderCurrency(o)
+    if (cur === 'USD') {
+      return `$${Number(o.total_price_usd || 0)}`
+    }
+    const uzs = o.total_price_uzs != null
+      ? Number(o.total_price_uzs)
+      : Math.round((o.total_price_usd || 0) * exchangeRate)
+    return `${uzs.toLocaleString()} сум`
   }
   const formatItemPrice = (item: any) => {
-    if (item.priceUzs) return `${Number(item.priceUzs).toLocaleString()} сум`
-    if (currency === 'USD') return `$${item.priceUsd}`
-    return `${(item.priceUsd * exchangeRate).toLocaleString()} сум`
+    if (orderCurrency === 'USD') {
+      return `$${Number(item.priceUsd || 0)}`
+    }
+    const uzs = item.priceUzs != null
+      ? Number(item.priceUzs)
+      : Math.round((item.priceUsd || 0) * exchangeRate)
+    return `${uzs.toLocaleString()} сум`
   }
   const formatDateTime = (dateStr: string) =>
     new Date(dateStr).toLocaleString('ru-RU', {
@@ -133,7 +155,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
 
   const handleCopyCard = async () => {
     try {
-      await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
+      await navigator.clipboard.writeText(payCard.number.replace(/\s/g, ''))
       toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
     } catch (error) {
       console.error('Ошибка копирования:', error)
@@ -265,7 +287,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
         </div>
 
-        {/* ✅ КОМПАКТНЫЙ БЛОК ОПЛАТЫ — карта видна ТОЛЬКО пока заказ не оплачен */}
+        {/* ✅ КОМПАКТНЫЙ БЛОК ОПЛАТЫ — карта ПОД ВАЛЮТУ ЗАКАЗА, видна ТОЛЬКО пока не оплачен */}
         {order.payment_method === 'online_card' && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
             <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
@@ -301,9 +323,9 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                 )}
               </div>
             ) : order.status === 'Ожидает оплаты' ? (
-              /* ⏳ НЕ ОПЛАЧЕН — компактные строки + кнопки в 2 колонки */
+              /* ⏳ НЕ ОПЛАЧЕН — карта под валюту заказа + кнопки в 2 колонки */
               <div className="space-y-2.5">
-                {/* Реквизиты — компактная строка с копированием */}
+                {/* Реквизиты — карта ПОД ВАЛЮТУ ЗАКАЗА */}
                 <div className="bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-xl p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -312,12 +334,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white truncate">
-                          {PAYMENT_DETAILS.cardNumber}
+                          {payCard.number}
                         </p>
                         <p className="text-[11px] text-[#8A8275] dark:text-gray-400 truncate">
-                          {PAYMENT_DETAILS.cardHolder}
+                          {payCard.holder}
                         </p>
                       </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex-shrink-0">
+                        {orderCurrency}
+                      </span>
                     </div>
                     <button
                       onClick={handleCopyCard}
@@ -520,7 +545,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
             <p className="text-sm text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Спецзаказ №' : 'Maxsus buyurtma №'}{request.id}
             </p>
-            <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(request.created_at)}</p>
+            <p className="text-sm text-[#8A8275] dark:text-gray-300">
+              {formatDateTime(request.created_at)}
+            </p>
           </div>
           <div>
             <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
@@ -581,7 +608,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                   onClick={() => onAccept(request)}
                   className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-6 py-2.5 rounded-lg font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors whitespace-nowrap flex-1 sm:flex-none"
                 >
-                  💳 {language === 'ru' ? `Оплатить ${priceInSums.toLocaleString()} сум` : `To'lash ${priceInSums.toLocaleString()} so'm`}
+                  💳 {language === 'ru'
+                    ? `Оплатить ${priceInSums.toLocaleString()} сум`
+                    : `To'lash ${priceInSums.toLocaleString()} so'm`}
                 </button>
               )}
             </div>
@@ -685,10 +714,16 @@ export default function ProfilePage() {
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
+  // ✅ Цена заказа в ИСТОРИИ — в ВАЛЮТЕ ЗАКАЗА (USD → $, UZS → сум)
   const formatOrderPrice = (order: any) => {
-    if (order.total_price_uzs) return `${Number(order.total_price_uzs).toLocaleString()} сум`
-    if (currency === 'USD') return `$${order.total_price_usd}`
-    return `${(order.total_price_usd * exchangeRate).toLocaleString()} сум`
+    const cur = getOrderCurrency(order)
+    if (cur === 'USD') {
+      return `$${Number(order.total_price_usd || 0)}`
+    }
+    const uzs = order.total_price_uzs != null
+      ? Number(order.total_price_uzs)
+      : Math.round((order.total_price_usd || 0) * exchangeRate)
+    return `${uzs.toLocaleString()} сум`
   }
 
   const formatDateTime = (dateStr: string) =>
@@ -1272,7 +1307,6 @@ export default function ProfilePage() {
               order={selectedOrder}
               onClose={() => navigate(-1)}
               language={language}
-              currency={currency}
               exchangeRate={exchangeRate}
               onCancelOrder={handleCancelOrder}
               onScreenshotUploaded={() => handleScreenshotUploaded(selectedOrder)}

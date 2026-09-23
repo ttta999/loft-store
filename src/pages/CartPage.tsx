@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
-import { MANAGER_TELEGRAM_LINK, PAYMENT_DETAILS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
 // ✅ Универсальный хук блокировки скролла body
@@ -183,7 +183,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
-  const { cart, clearCart, exchangeRate, telegramUser } = useStore()
+  // ✅ currency нужна: сохраняем валюту в заказ + выбираем карту оплаты
+  const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -201,6 +202,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
+
+  // ✅ Карта оплаты подстраивается под валюту корзины
+  const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
+  const payCard = PAYMENT_CARDS[orderCurrency]
 
   useEffect(() => {
     if (isSpecialOrder) {
@@ -241,7 +246,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
 
   const handleCopyCard = async () => {
     try {
-      await navigator.clipboard.writeText(PAYMENT_DETAILS.cardNumber.replace(/\s/g, ''))
+      await navigator.clipboard.writeText(payCard.number.replace(/\s/g, ''))
       toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
     } catch (error) {
       console.error('Ошибка копирования:', error)
@@ -267,6 +272,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
       total_price_usd: getTotalPrice(),
       total_price_uzs: totalInSums,
       exchange_rate_at_order: exchangeRate,
+      // ✅ ВАЛЮТА ЗАКАЗА — сохраняем, чтобы в истории показывать в ней же
+      order_currency: orderCurrency,
       items: itemsWithPrices,
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
@@ -305,7 +312,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   }
 
   // ✅ ПОЛНОЕ удаление неоплаченного заказа из БД — без следа «Отменён».
-  // Серверная функция заодно возвращает остатки на склад и откатывает спецзаказ в «Оценён».
   const cancelUnpaidOrder = async () => {
     if (!currentOrderId) return
     try {
@@ -354,7 +360,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
     }
   }
 
-  // ✅ ЭКРАН ОПЛАТЫ — фирменный стиль приложения (светлая + тёмная тема)
+  // ✅ ЭКРАН ОПЛАТЫ — карта под валюту заказа
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -392,17 +398,22 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
             </p>
           </div>
 
-          {/* ✅ Карточка реквизитов — СВЕТЛАЯ плашка с номером карты */}
+          {/* ✅ Карточка реквизитов — карта ПОД ВАЛЮТУ заказа */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-semibold tracking-[0.2em] text-[#C9A961]">LOFT STORE</span>
               <CreditCard size={18} className="text-[#C9A961]" />
             </div>
             <div className="rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
-              <p className="text-lg font-bold tracking-[0.15em] mb-1 break-all text-[#1B2A4A] dark:text-white">
-                {PAYMENT_DETAILS.cardNumber}
-              </p>
-              <p className="text-xs text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</p>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-lg font-bold tracking-[0.15em] break-all text-[#1B2A4A] dark:text-white">
+                  {payCard.number}
+                </p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex-shrink-0">
+                  {orderCurrency}
+                </span>
+              </div>
+              <p className="text-xs text-[#C9A961] font-medium">{payCard.holder}</p>
             </div>
             <button
               onClick={handleCopyCard}
