@@ -20,6 +20,7 @@ const useBodyScrollLock = (active: boolean) => {
 }
 
 // ✅ Компонент просмотра скриншота с блокировкой скролла
+// (без кнопки «Открыть в новой вкладке» — только просмотр и закрытие)
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
   return (
@@ -27,10 +28,10 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
       className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="relative max-w-4xl w-full flex items-center justify-center">
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+          className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
         >
           <X size={24} />
           {language === 'ru' ? 'Закрыть' : 'Yopish'}
@@ -39,20 +40,9 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
           src={url}
           alt="Screenshot"
           className="w-full h-auto rounded-lg object-contain"
-          style={{ maxHeight: '80vh' }}
+          style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         />
-        <div className="mt-4 flex justify-center">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
-          </a>
-        </div>
       </div>
     </div>
   )
