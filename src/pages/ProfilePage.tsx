@@ -265,154 +265,164 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
         </div>
 
-        {/* ✅ БЛОК ОПЛАТЫ — карта видна ТОЛЬКО пока заказ не оплачен */}
+        {/* ✅ КОМПАКТНЫЙ БЛОК ОПЛАТЫ — карта видна ТОЛЬКО пока заказ не оплачен */}
         {order.payment_method === 'online_card' && (
-          <div className="space-y-3">
-            <h3 className="font-bold text-lg text-[#1B2A4A] dark:text-white">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
+            <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
               {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
             </h3>
 
             {order.status === 'Отменён' ? (
-              /* ❌ ОТМЕНЁН — карты НЕТ, только инфо + скриншот если был */
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-4">
-                <p className="text-sm text-red-800 dark:text-red-300 font-medium mb-2">
-                  🚫 {language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi'}
-                </p>
-                <p className="text-xs text-red-700 dark:text-red-400">
-                  {language === 'ru'
-                    ? 'Оплата не требуется. Если были списаны средства, свяжитесь с менеджером для возврата.'
-                    : "To'lov talab qilinmaydi. Agar mablag'lar yechib olingan bo'lsa, qaytarish uchun menejer bilan bog'laning."}
-                </p>
-                {order.payment_screenshot_url && (
-                  <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-500/30">
-                    <p className="text-xs text-red-700 dark:text-red-400 mb-2">
-                      {language === 'ru' ? '📸 Скриншот оплаты:' : "📸 To'lov screenshoti:"}
-                    </p>
-                    <button
-                      onClick={() => setShowScreenshotModal(true)}
-                      className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium flex items-center gap-1"
-                    >
-                      <Eye size={16} />
-                      {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
-                    </button>
+              /* ❌ ОТМЕНЁН — компактная красная строка */
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                    <X size={16} className="text-red-700 dark:text-red-300" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                      {language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi'}
+                    </p>
+                    <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                      {language === 'ru'
+                        ? 'Оплата не требуется. Если средства списаны — свяжитесь с менеджером.'
+                        : "To'lov talab qilinmaydi. Mablag' yechilgan bo'lsa — menejerga yozing."}
+                    </p>
+                  </div>
+                </div>
+                {order.payment_screenshot_url && (
+                  <button
+                    onClick={() => setShowScreenshotModal(true)}
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white dark:bg-dark-accent border border-red-200 dark:border-red-500/30 text-xs font-medium text-red-700 dark:text-red-300"
+                  >
+                    <Eye size={14} />
+                    {language === 'ru' ? 'Посмотреть скриншот оплаты' : "To'lov screenshotini ko'rish"}
+                  </button>
                 )}
               </div>
             ) : order.status === 'Ожидает оплаты' ? (
-              /* ⏳ НЕ ОПЛАЧЕН — показываем карту, сумму, загрузку скриншота и кнопки */
-              <>
-                <div className="rounded-2xl overflow-hidden shadow-md">
-                  <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] dark:from-dark-accent dark:to-dark-card p-4 text-white">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] text-[#C9A961] font-semibold tracking-widest">LOFT STORE</span>
-                      <CreditCard size={18} className="text-[#C9A961]" />
-                    </div>
-                    <p className="text-base font-bold tracking-widest mb-3">{PAYMENT_DETAILS.cardNumber}</p>
-                    <span className="text-xs text-[#C9A961] font-medium">{PAYMENT_DETAILS.cardHolder}</span>
-                  </div>
-                  <button
-                    onClick={handleCopyCard}
-                    className="w-full bg-[#FBF9F4] dark:bg-dark-card border border-t-0 border-[#E8E2D5] dark:border-dark-border py-2.5 text-xs font-medium text-[#1B2A4A] dark:text-white flex items-center justify-center gap-2 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
-                  >
-                    <Copy size={14} />
-                    {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
-                  </button>
-                </div>
-
-                <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border">
-                  <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">
-                    {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
-                  </p>
-                </div>
-
-                {!order.payment_screenshot_url ? (
-                  <div>
-                    <p className="text-sm font-medium mb-2 text-[#1B2A4A] dark:text-white">
-                      {language === 'ru' ? '📸 Загрузите скриншот оплаты:' : "📸 To'lov screenshotini yuklang:"}
-                    </p>
-                    <label
-                      className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
-                        uploadingScreenshot
-                          ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
-                          : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        {uploadingScreenshot ? (
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B2A4A] dark:border-gold mb-2"></div>
-                        ) : (
-                          <Upload className="w-6 h-6 mb-2 text-[#8A8275] dark:text-gray-300" />
-                        )}
-                        <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                          {uploadingScreenshot
-                            ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
-                            : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}
+              /* ⏳ НЕ ОПЛАЧЕН — компактные строки + кнопки в 2 колонки */
+              <div className="space-y-2.5">
+                {/* Реквизиты — компактная строка с копированием */}
+                <div className="bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-xl p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-[#1B2A4A] dark:bg-dark-card flex items-center justify-center flex-shrink-0">
+                        <CreditCard size={16} className="text-[#C9A961]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white truncate">
+                          {PAYMENT_DETAILS.cardNumber}
+                        </p>
+                        <p className="text-[11px] text-[#8A8275] dark:text-gray-400 truncate">
+                          {PAYMENT_DETAILS.cardHolder}
                         </p>
                       </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleUploadScreenshot}
-                        className="hidden"
-                        disabled={uploadingScreenshot}
-                      />
-                    </label>
+                    </div>
+                    <button
+                      onClick={handleCopyCard}
+                      title={language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
+                      className="w-9 h-9 rounded-lg bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex items-center justify-center flex-shrink-0 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+                    >
+                      <Copy size={16} />
+                    </button>
                   </div>
+                </div>
+
+                {/* Скриншот — компактная строка */}
+                {!order.payment_screenshot_url ? (
+                  <label
+                    className={`flex items-center gap-3 w-full p-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                      uploadingScreenshot
+                        ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
+                        : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      {uploadingScreenshot ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1B2A4A] dark:border-gold"></div>
+                      ) : (
+                        <Upload size={16} className="text-[#8A8275] dark:text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                        {language === 'ru' ? 'Скриншот оплаты' : "To'lov screenshoti"}
+                      </p>
+                      <p className="text-xs text-[#8A8275] dark:text-gray-400">
+                        {uploadingScreenshot
+                          ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                          : (language === 'ru' ? 'Нажмите, чтобы загрузить' : 'Yuklash uchun bosing')}
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadScreenshot}
+                      className="hidden"
+                      disabled={uploadingScreenshot}
+                    />
+                  </label>
                 ) : (
-                  <div className="relative bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-2xl p-3.5">
-                    <p className="text-sm text-green-800 dark:text-green-300 font-medium text-center pr-12">
-                      ✅ {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
+                  <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-base">✅</span>
+                    </div>
+                    <p className="flex-1 text-sm font-medium text-green-800 dark:text-green-300">
+                      {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
                     </p>
                     <button
                       onClick={() => setShowScreenshotModal(true)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors"
+                      className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0"
                     >
-                      <Eye size={18} />
+                      <Eye size={16} />
                     </button>
                   </div>
                 )}
 
-                <a
-                  href={MANAGER_TELEGRAM_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
-                >
-                  <MessageCircle size={20} />
-                  {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
-                </a>
-                <button
-                  onClick={() => onCancelOrder(order)}
-                  className="w-full bg-[#9B3B3B] dark:bg-red-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
-                >
-                  <X size={20} />
-                  {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
-                </button>
-              </>
+                {/* Действия — две кнопки в ряд */}
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <a
+                    href={MANAGER_TELEGRAM_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2.5 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+                  >
+                    <MessageCircle size={16} />
+                    {language === 'ru' ? 'Менеджеру' : 'Menejerga'}
+                  </a>
+                  <button
+                    onClick={() => onCancelOrder(order)}
+                    className="py-2.5 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
+                  >
+                    <X size={16} />
+                    {language === 'ru' ? 'Отменить' : 'Bekor qilish'}
+                  </button>
+                </div>
+              </div>
             ) : (
-              /* ✅ ОПЛАЧЕН (менеджер подтвердил) — карты НЕТ, только подтверждение */
-              <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-2xl p-4">
-                <p className="text-sm text-green-800 dark:text-green-300 font-medium mb-1">
-                  ✅ {language === 'ru' ? 'Заказ оплачен' : 'Buyurtma to\'langan'}
-                </p>
-                <p className="text-xs text-green-700 dark:text-green-400">
-                  {language === 'ru'
-                    ? 'Оплата подтверждена менеджером. Спасибо!'
-                    : 'To\'lov menejer tomonidan tasdiqlandi. Rahmat!'}
-                </p>
+              /* ✅ ОПЛАЧЕН — компактная зелёная строка */
+              <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
+                <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base">✅</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                    {language === 'ru' ? 'Заказ оплачен' : 'Buyurtma to\'langan'}
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    {language === 'ru'
+                      ? 'Оплата подтверждена менеджером'
+                      : 'To\'lov menejer tomonidan tasdiqlandi'}
+                  </p>
+                </div>
                 {order.payment_screenshot_url && (
-                  <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-500/30">
-                    <p className="text-xs text-green-700 dark:text-green-400 mb-2">
-                      {language === 'ru' ? '📸 Скриншот оплаты:' : "📸 To'lov screenshoti:"}
-                    </p>
-                    <button
-                      onClick={() => setShowScreenshotModal(true)}
-                      className="text-sm text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-200 font-medium flex items-center gap-1"
-                    >
-                      <Eye size={16} />
-                      {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowScreenshotModal(true)}
+                    className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0"
+                  >
+                    <Eye size={16} />
+                  </button>
                 )}
               </div>
             )}
