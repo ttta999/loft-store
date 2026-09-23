@@ -265,12 +265,15 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
           </div>
         </div>
 
+        {/* ✅ БЛОК ОПЛАТЫ — карта видна ТОЛЬКО пока заказ не оплачен */}
         {order.payment_method === 'online_card' && (
           <div className="space-y-3">
             <h3 className="font-bold text-lg text-[#1B2A4A] dark:text-white">
               {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
             </h3>
+
             {order.status === 'Отменён' ? (
+              /* ❌ ОТМЕНЁН — карты НЕТ, только инфо + скриншот если был */
               <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-4">
                 <p className="text-sm text-red-800 dark:text-red-300 font-medium mb-2">
                   🚫 {language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi'}
@@ -295,7 +298,8 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                   </div>
                 )}
               </div>
-            ) : (
+            ) : order.status === 'Ожидает оплаты' ? (
+              /* ⏳ НЕ ОПЛАЧЕН — показываем карту, сумму, загрузку скриншота и кнопки */
               <>
                 <div className="rounded-2xl overflow-hidden shadow-md">
                   <div className="bg-gradient-to-br from-[#1B2A4A] to-[#142038] dark:from-dark-accent dark:to-dark-card p-4 text-white">
@@ -314,11 +318,13 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     {language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
                   </button>
                 </div>
+
                 <div className="bg-[#FBF9F4] dark:bg-dark-card p-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border">
                   <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">
                     {language === 'ru' ? '💰 Сумма:' : "💰 Summa:"} {formatOrderPrice(order)}
                   </p>
                 </div>
+
                 {!order.payment_screenshot_url ? (
                   <div>
                     <p className="text-sm font-medium mb-2 text-[#1B2A4A] dark:text-white">
@@ -365,27 +371,50 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
                     </button>
                   </div>
                 )}
-                {order.status === 'Ожидает оплаты' && (
-                  <>
-                    <a
-                      href={MANAGER_TELEGRAM_LINK}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
-                    >
-                      <MessageCircle size={20} />
-                      {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
-                    </a>
-                    <button
-                      onClick={() => onCancelOrder(order)}
-                      className="w-full bg-[#9B3B3B] dark:bg-red-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
-                    >
-                      <X size={20} />
-                      {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
-                    </button>
-                  </>
-                )}
+
+                <a
+                  href={MANAGER_TELEGRAM_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+                >
+                  <MessageCircle size={20} />
+                  {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
+                </a>
+                <button
+                  onClick={() => onCancelOrder(order)}
+                  className="w-full bg-[#9B3B3B] dark:bg-red-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
+                >
+                  <X size={20} />
+                  {language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}
+                </button>
               </>
+            ) : (
+              /* ✅ ОПЛАЧЕН (менеджер подтвердил) — карты НЕТ, только подтверждение */
+              <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-2xl p-4">
+                <p className="text-sm text-green-800 dark:text-green-300 font-medium mb-1">
+                  ✅ {language === 'ru' ? 'Заказ оплачен' : 'Buyurtma to\'langan'}
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-400">
+                  {language === 'ru'
+                    ? 'Оплата подтверждена менеджером. Спасибо!'
+                    : 'To\'lov menejer tomonidan tasdiqlandi. Rahmat!'}
+                </p>
+                {order.payment_screenshot_url && (
+                  <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-500/30">
+                    <p className="text-xs text-green-700 dark:text-green-400 mb-2">
+                      {language === 'ru' ? '📸 Скриншот оплаты:' : "📸 To'lov screenshoti:"}
+                    </p>
+                    <button
+                      onClick={() => setShowScreenshotModal(true)}
+                      className="text-sm text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-200 font-medium flex items-center gap-1"
+                    >
+                      <Eye size={16} />
+                      {language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -402,6 +431,7 @@ function OrderDetailModal({ order, onClose, language, currency, exchangeRate, on
   )
 }
 
+// ✅ Просмотр скриншота — БЕЗ кнопки «Открыть в новой вкладке»
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
   return (
@@ -409,10 +439,10 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
       className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="relative max-w-4xl w-full flex items-center justify-center">
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+          className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
         >
           <X size={24} />
           {language === 'ru' ? 'Закрыть' : 'Yopish'}
@@ -421,20 +451,9 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
           src={url}
           alt="Screenshot"
           className="w-full h-auto rounded-lg object-contain"
-          style={{ maxHeight: '80vh' }}
+          style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         />
-        <div className="mt-4 flex justify-center">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 bg-white dark:bg-dark-card text-[#1B2A4A] dark:text-white rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-dark-accent transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            📥 {language === 'ru' ? 'Открыть в новой вкладке' : 'Yangi oynada ochish'}
-          </a>
-        </div>
       </div>
     </div>
   )
@@ -597,7 +616,6 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<any[]>(() => profileOrdersCache || [])
   const [chinaRequests, setChinaRequests] = useState<any[]>(() => profileChinaRequestsCache || [])
   const [loading, setLoading] = useState(() => {
-    // Спиннер только если соответствующего кеша нет
     if (section === 'orders') return !profileOrdersCache
     if (section === 'china') return !profileChinaRequestsCache
     return false
