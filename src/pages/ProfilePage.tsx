@@ -22,6 +22,8 @@ import {
   Sun,
   Moon,
   Monitor,
+  Tag,
+  Ruler,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -494,6 +496,7 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
   )
 }
 
+// ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
   useBodyScrollLock(true)
   const formatDateTime = (dateStr: string) =>
@@ -537,84 +540,202 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
-          {language === 'ru' ? 'Детали спецзаказа' : 'Maxsus buyurtma tafsilotlari'}
-        </h2>
-        <div className="space-y-4">
-          <div className="bg-[#FBF9F4] dark:bg-dark-card p-3 rounded-lg border border-[#E8E2D5] dark:border-dark-border">
-            <p className="text-sm text-[#8A8275] dark:text-gray-300">
-              {language === 'ru' ? 'Спецзаказ №' : 'Maxsus buyurtma №'}{request.id}
-            </p>
-            <p className="text-sm text-[#8A8275] dark:text-gray-300">
-              {formatDateTime(request.created_at)}
-            </p>
+        {/* ✅ Шапка: номер + дата + статус-пилл (как у обычного заказа) */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+                {language === 'ru' ? `Спецзаказ №${request.id}` : `Maxsus buyurtma №${request.id}`}
+              </h2>
+              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">{formatDateTime(request.created_at)}</p>
+            </div>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(request.status)}`}>
+              {getStatusText(request.status)}
+            </span>
           </div>
-          <div>
-            <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-              {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
-            </h3>
-            {request.link?.startsWith('http') ? (
-              <a href={request.link} target="_blank" rel="noopener noreferrer" className="text-sm text-[#1B2A4A] dark:text-white hover:underline break-all">
-                {request.link}
-              </a>
-            ) : (
-              <p className="text-sm text-[#8A8275] dark:text-gray-300">{request.link}</p>
-            )}
+        </div>
+
+        {/* ✅ Строки с иконками (как телефон/доставка/оплата у обычного заказа) */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          <div className="flex items-center gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
+              </p>
+              {request.link?.startsWith('http') ? (
+                <a
+                  href={request.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-[#1B2A4A] dark:text-white hover:underline break-all"
+                >
+                  {request.link}
+                </a>
+              ) : (
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white break-words">{request.link}</p>
+              )}
+            </div>
           </div>
           {request.size_color && (
-            <div>
-              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? 'Размер / Цвет' : "O'lcham / Rang"}
-              </h3>
-              <p className="text-sm text-[#8A8275] dark:text-gray-300">{request.size_color}</p>
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Ruler size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Размер / Цвет' : "O'lcham / Rang"}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">{request.size_color}</p>
+              </div>
             </div>
           )}
           {request.comment && (
-            <div>
-              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? 'Комментарий' : 'Izoh'}
-              </h3>
-              <p className="text-sm text-[#8A8275] dark:text-gray-300">{request.comment}</p>
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <MessageCircle size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Комментарий' : 'Izoh'}</p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white break-words">{request.comment}</p>
+              </div>
             </div>
           )}
-          {request.image_url && (
-            <div>
-              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? 'Фото товара' : 'Mahsulot fotosurati'}
-              </h3>
-              <img src={request.image_url} alt="Product" className="w-full rounded-lg" />
-            </div>
-          )}
-          {request.manager_price && (
-            <div className="bg-purple-50 dark:bg-purple-500/10 p-4 rounded-lg border border-purple-200 dark:border-purple-500/30">
-              <p className="text-lg font-bold text-purple-900 dark:text-purple-200 mb-1">
-                💰 {language === 'ru' ? 'Итого:' : 'Jami:'} {priceInSums.toLocaleString()} сум
-              </p>
-              {request.manager_comment && (
-                <p className="text-sm text-purple-700 dark:text-purple-300">{request.manager_comment}</p>
-              )}
-            </div>
-          )}
-          <div className="mb-8">
-            <h3 className="font-bold mb-3 text-[#1B2A4A] dark:text-white">
-              {language === 'ru' ? 'Статус' : 'Holat'}
+        </div>
+
+        {/* ✅ Фото товара (как блок «Товары» у обычного заказа) */}
+        {request.image_url && (
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-3 mb-3">
+            <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-2 px-1">
+              {language === 'ru' ? 'Фото товара' : 'Mahsulot fotosurati'}
             </h3>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
-                {getStatusText(request.status)}
-              </span>
-              {request.status === 'Оценён' && request.manager_price && (
-                <button
-                  onClick={() => onAccept(request)}
-                  className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-6 py-2.5 rounded-lg font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors whitespace-nowrap flex-1 sm:flex-none"
-                >
-                  💳 {language === 'ru'
-                    ? `Оплатить ${priceInSums.toLocaleString()} сум`
-                    : `To'lash ${priceInSums.toLocaleString()} so'm`}
-                </button>
-              )}
-            </div>
+            <img
+              src={request.image_url}
+              alt="Product"
+              className="w-full rounded-xl border border-[#E8E2D5] dark:border-dark-border"
+            />
           </div>
+        )}
+
+        {/* ✅ Итого + комментарий менеджера (как строка «Итого» у обычного заказа) */}
+        {request.manager_price && (
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-[#1B2A4A] dark:text-white">
+                💰 {language === 'ru' ? 'Итого:' : 'Jami:'}
+              </span>
+              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+                {priceInSums.toLocaleString()} сум
+              </span>
+            </div>
+            {request.manager_comment && (
+              <p className="text-sm text-purple-700 dark:text-purple-300 mt-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3">
+                💬 {request.manager_comment}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ✅ Статус и действие (как блок оплаты у обычного заказа) */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
+          <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
+            {language === 'ru' ? '📦 Статус заявки' : '📦 Ariza holati'}
+          </h3>
+
+          {request.status === 'Оценён' && request.manager_price ? (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3.5">
+                <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base">💎</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
+                    {language === 'ru' ? 'Спецзаказ оценён' : 'Maxsus buyurtma baholandi'}
+                  </p>
+                  <p className="text-xs text-purple-700 dark:text-purple-400">
+                    {language === 'ru'
+                      ? 'Оплатите — и менеджер закажет товар'
+                      : 'To\'lang — menejer mahsulotni buyurtma qiladi'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onAccept(request)}
+                className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+              >
+                <CreditCard size={18} />
+                {language === 'ru'
+                  ? `Оплатить ${priceInSums.toLocaleString()} сум`
+                  : `To'lash ${priceInSums.toLocaleString()} so'm`}
+              </button>
+            </div>
+          ) : request.status === 'На рассмотрении' ? (
+            <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-base">⏳</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                  {language === 'ru' ? 'Заявка на рассмотрении' : 'Ariza ko\'rib chiqilmoqda'}
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  {language === 'ru'
+                    ? 'Менеджер оценит стоимость и свяжется с вами'
+                    : 'Menejer narxni baholaydi va siz bilan bog\'lanadi'}
+                </p>
+              </div>
+            </div>
+          ) : request.status === 'Оплачен' ? (
+            <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-base">✅</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                  {language === 'ru' ? 'Оплачено' : 'To\'langan'}
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-400">
+                  {language === 'ru'
+                    ? 'Менеджер уже заказал товар — следите за статусом'
+                    : 'Menejer mahsulotni buyurtma qildi — holatni kuzating'}
+                </p>
+              </div>
+            </div>
+          ) : request.status === 'Отменён клиентом' ? (
+            <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-base">🙅</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                  {language === 'ru' ? 'Отменён вами' : 'Siz bekor qildingiz'}
+                </p>
+                <p className="text-xs text-orange-700 dark:text-orange-400">
+                  {language === 'ru'
+                    ? 'Заявка отменена, действий не требуется'
+                    : 'Ariza bekor qilindi, harakat talab qilinmaydi'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-base">🛑</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                  {language === 'ru' ? 'Заявка отклонена' : 'Ariza rad etildi'}
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-400">
+                  {language === 'ru'
+                    ? 'Свяжитесь с менеджером, чтобы уточнить причину'
+                    : 'Sababini bilish uchun menejer bilan bog\'laning'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
