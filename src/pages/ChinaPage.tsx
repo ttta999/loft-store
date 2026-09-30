@@ -172,23 +172,16 @@ export default function ChinaPage() {
       <Toaster position="top-center" richColors />
 
       <div className="p-4">
-        {/* ✅ Шапка-карточка в стиле страницы заказа */}
+        {/* ✅ Шапка-карточка в стиле страницы заказа (без бейджа срока доставки) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
-              </h2>
-              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
-                {language === 'ru'
-                  ? 'Привезём товар по вашему описанию или ссылке'
-                  : 'Tavsif yoki havola bo\'yicha mahsulot keltiramiz'}
-              </p>
-            </div>
-            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#C9A961]/15 text-[#C9A961] whitespace-nowrap">
-              ⏱ {language === 'ru' ? '14–21 день' : '14–21 kun'}
-            </span>
-          </div>
+          <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+            {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
+          </h2>
+          <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
+            {language === 'ru'
+              ? 'Привезём товар по вашему описанию или ссылке'
+              : 'Tavsif yoki havola bo\'yicha mahsulot keltiramiz'}
+          </p>
         </div>
 
         {/* ✅ Единая карточка со строками-иконками (как на странице заказа) */}
@@ -326,18 +319,6 @@ export default function ChinaPage() {
             ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
             : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
         </button>
-
-        {/* ✅ Инфо-примечание */}
-        <div className="mt-3 flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
-          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-            <span className="text-base">⏱</span>
-          </div>
-          <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-            {language === 'ru'
-              ? 'Среднее время доставки: 14-21 день.'
-              : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
-          </p>
-        </div>
       </div>
     </div>
   )
