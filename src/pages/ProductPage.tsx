@@ -7,6 +7,7 @@ import IslandHeader from '../components/IslandHeader'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
 import { getCachedProduct, getCachedSizes, cacheProduct, cacheSizes } from '../lib/productCache'
+import { sortSizeStrings } from '../lib/sortSizes'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -14,7 +15,6 @@ export default function ProductPage() {
   const { language, currency, exchangeRate, saleModeEnabled, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
 
-  // ✅ МГНОВЕННАЯ инициализация из кеша — без спиннера, если товар уже в памяти
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
   const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id) || [])
   const [loading, setLoading] = useState(() => !getCachedProduct(id))
@@ -27,7 +27,6 @@ export default function ProductPage() {
   useEffect(() => {
     if (!id) return
 
-    // ✅ Сброс состояния под новый id (мгновенно из кеша, если есть)
     const cachedProduct = getCachedProduct(id)
     const cachedSizes = getCachedSizes(id)
     setProduct(cachedProduct)
@@ -40,13 +39,11 @@ export default function ProductPage() {
 
     loadProduct()
     loadSizes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const loadProduct = async () => {
     const cached = getCachedProduct(id)
 
-    // ✅ Товар из кеша: рендерим сразу, тихо обновляем в фоне (без спиннера)
     if (cached) {
       setProduct(cached)
       setLoading(false)
@@ -61,12 +58,10 @@ export default function ProductPage() {
           setProduct(data)
         }
       } catch (err) {
-        // Игнорируем: уже показываем данные из кеша
       }
       return
     }
 
-    // ✅ Товара в кеше нет (прямой вход по ссылке) — обычный запрос со спиннером
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -91,7 +86,6 @@ export default function ProductPage() {
   const loadSizes = async () => {
     if (!id) return
 
-    // ✅ Размеры из кеша — мгновенно
     const cachedSizes = getCachedSizes(id)
     if (cachedSizes) {
       setSizes(cachedSizes)
@@ -101,9 +95,10 @@ export default function ProductPage() {
 
     setSizesLoading(true)
     const variants = await getProductSizes(id)
-    const sizeValues = variants.map((v: any) => v.size_value)
-    cacheSizes(id, sizeValues)
-    setSizes(sizeValues)
+    const rawValues = variants.map((v: any) => v.size_value)
+    const sortedValues = sortSizeStrings(rawValues)
+    cacheSizes(id, sortedValues)
+    setSizes(sortedValues)
     setSizesLoading(false)
   }
 
