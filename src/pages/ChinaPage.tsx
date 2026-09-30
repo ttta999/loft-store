@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
-import { Upload, Send, CheckCircle } from 'lucide-react'
+import { Upload, Send, CheckCircle, X, Tag, Link2, Ruler, MessageCircle, Image as ImageIcon } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
 
-// ✅ БЕЗ пропсов — telegramUser берём из store
 export default function ChinaPage() {
   const { language, telegramUser } = useStore()
+  const [productName, setProductName] = useState('')
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
   const [comment, setComment] = useState('')
@@ -34,10 +34,15 @@ export default function ChinaPage() {
     }
   }
 
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
   const handleSubmit = async () => {
-    if (!link) {
+    if (!productName.trim()) {
       toast.error(
-        language === 'ru' ? 'Введите название или ссылку на товар' : 'Mahsulot nomi yoki havolasini kiriting',
+        language === 'ru' ? 'Укажите название товара' : 'Mahsulot nomini kiriting',
         { duration: 3000 }
       )
       return
@@ -71,7 +76,8 @@ export default function ChinaPage() {
       const userId = telegramUser?.id?.toString() || 'guest-user'
       const requestData = {
         user_id: userId,
-        link: link,
+        product_name: productName.trim(),
+        link: link.trim() || null,
         size_color: sizeColor || null,
         comment: comment || null,
         image_url: imageUrl,
@@ -110,6 +116,7 @@ export default function ChinaPage() {
   }
 
   const handleReset = () => {
+    setProductName('')
     setLink('')
     setSizeColor('')
     setComment('')
@@ -122,7 +129,6 @@ export default function ChinaPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
         <Toaster position="top-center" richColors />
-
         <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
           <div className="w-24 h-24 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-6">
             <CheckCircle size={56} className="text-green-500 dark:text-green-300" />
@@ -162,114 +168,175 @@ export default function ChinaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <Toaster position="top-center" richColors />
 
       <div className="p-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2 text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
-          </h1>
-          <p className="text-[#8A8275] dark:text-gray-300 text-sm">
-            {language === 'ru'
-              ? 'Загрузите ссылку на товар — мы привезем его для вас'
-              : 'Mahsulot havolasini yuklang — biz siz uchun uni olib kelamiz'}
-          </p>
+        {/* ✅ Шапка-карточка в стиле страницы заказа */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+                {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
+              </h2>
+              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
+                {language === 'ru'
+                  ? 'Привезём товар по вашему описанию или ссылке'
+                  : 'Tavsif yoki havola bo\'yicha mahsulot keltiramiz'}
+              </p>
+            </div>
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#C9A961]/15 text-[#C9A961] whitespace-nowrap">
+              ⏱ {language === 'ru' ? '14–21 день' : '14–21 kun'}
+            </span>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
-              {language === 'ru' ? 'Название или ссылка на товар *' : 'Mahsulot nomi yoki havolasi *'}
-            </label>
-            <input
-              type="text"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder={language === 'ru' ? 'Например: Nike Air Force 1 или https://...' : 'Masalan: Nike Air Force 1 yoki https://...'}
-              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
-            />
+        {/* ✅ Единая карточка со строками-иконками (как на странице заказа) */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          {/* Название товара */}
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
+                {language === 'ru' ? 'Название товара' : 'Mahsulot nomi'} *
+              </label>
+              <input
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder={language === 'ru' ? 'Например: Nike Air Force 1' : 'Masalan: Nike Air Force 1'}
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
+              />
+            </div>
           </div>
 
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
-              {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
-            </label>
-            <input
-              type="text"
-              value={sizeColor}
-              onChange={(e) => setSizeColor(e.target.value)}
-              placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
-              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
-            />
+          {/* Ссылка на товар */}
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Link2 size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
+                {language === 'ru' ? 'Ссылка на товар' : 'Mahsulot havolasi'}
+                <span className="ml-1 text-[10px]">({language === 'ru' ? 'необязательно' : 'ixtiyoriy'})</span>
+              </label>
+              <input
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://..."
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 break-all"
+              />
+            </div>
           </div>
 
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1 block">
-              {language === 'ru' ? 'Комментарий' : 'Izoh'}
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
-              rows={4}
-              className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-transparent text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500 resize-none"
-            />
+          {/* Размер / Цвет */}
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Ruler size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
+                {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
+              </label>
+              <input
+                type="text"
+                value={sizeColor}
+                onChange={(e) => setSizeColor(e.target.value)}
+                placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
+              />
+            </div>
           </div>
 
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
-            <label className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-2 block">
-              {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
-            </label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E2D5] dark:border-dark-border rounded-xl cursor-pointer hover:border-[#1B2A4A] dark:hover:border-gold transition-colors bg-[#F5F1E8] dark:bg-dark-accent">
+          {/* Комментарий */}
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <MessageCircle size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">
+                {language === 'ru' ? 'Комментарий' : 'Izoh'}
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
+                rows={3}
+                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Скриншот товара */}
+          <div className="flex items-start gap-3 p-3.5">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <ImageIcon size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-1.5">
+                {language === 'ru' ? 'Скриншот товара' : 'Mahsulot skrinshoti'}
+              </label>
               {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="h-full object-contain rounded-lg"
-                />
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-24 h-24 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border"
+                  />
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 bg-[#9B3B3B] text-white rounded-full p-1 shadow"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               ) : (
-                <>
-                  <Upload size={32} className="text-[#8A8275] dark:text-gray-300 mb-2" />
-                  <span className="text-sm text-[#8A8275] dark:text-gray-300">
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#E8E2D5] dark:border-dark-border rounded-xl cursor-pointer hover:border-[#1B2A4A] dark:hover:border-gold transition-colors bg-[#F5F1E8] dark:bg-dark-accent">
+                  <Upload size={24} className="text-[#8A8275] dark:text-gray-300 mb-1" />
+                  <span className="text-xs text-[#8A8275] dark:text-gray-300">
                     {language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing'}
                   </span>
-                </>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
               )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
-              submitting
-                ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
-                : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
-            }`}
-          >
-            <Send size={20} />
-            {submitting
-              ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
-              : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
-          </button>
-
-          <div className="mt-6 flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-base">⏱</span>
             </div>
-            <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-              {language === 'ru'
-                ? 'Среднее время доставки: 14-21 день.'
-                : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
-            </p>
           </div>
+        </div>
+
+        {/* ✅ Кнопка отправки */}
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md ${
+            submitting
+              ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed shadow-none'
+              : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
+          }`}
+        >
+          <Send size={20} />
+          {submitting
+            ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
+            : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
+        </button>
+
+        {/* ✅ Инфо-примечание */}
+        <div className="mt-3 flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
+          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+            <span className="text-base">⏱</span>
+          </div>
+          <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
+            {language === 'ru'
+              ? 'Среднее время доставки: 14-21 день.'
+              : 'O\'rtacha yetkazib berish vaqti: 14-21 kun.'}
+          </p>
         </div>
       </div>
     </div>

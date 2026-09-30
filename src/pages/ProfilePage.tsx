@@ -23,6 +23,7 @@ import {
   Moon,
   Monitor,
   Tag,
+  Link2,
   Ruler,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -48,7 +49,6 @@ let profileChinaRequestsCache: any[] | null = null
 const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
   if (order?.order_currency === 'USD') return 'USD'
   if (order?.order_currency === 'UZS') return 'UZS'
-  // старые заказы без order_currency показывали сумму в сумах — сохраняем поведение
   return 'UZS'
 }
 
@@ -69,11 +69,9 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
 
-  // ✅ Валюта заказа + карта под неё
   const orderCurrency = getOrderCurrency(order)
   const payCard = PAYMENT_CARDS[orderCurrency]
 
-  // ✅ Цена заказа — в ВАЛЮТЕ ЗАКАЗА (USD → $, UZS → сум)
   const formatOrderPrice = (o: any) => {
     const cur = getOrderCurrency(o)
     if (cur === 'USD') {
@@ -289,7 +287,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
           </div>
         </div>
 
-        {/* ✅ КОМПАКТНЫЙ БЛОК ОПЛАТЫ — карта ПОД ВАЛЮТУ ЗАКАЗА, видна ТОЛЬКО пока не оплачен */}
         {order.payment_method === 'online_card' && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
             <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
@@ -297,7 +294,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
             </h3>
 
             {order.status === 'Отменён' ? (
-              /* ❌ ОТМЕНЁН — компактная красная строка */
               <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
@@ -325,9 +321,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                 )}
               </div>
             ) : order.status === 'Ожидает оплаты' ? (
-              /* ⏳ НЕ ОПЛАЧЕН — карта под валюту заказа + кнопки в 2 колонки */
               <div className="space-y-2.5">
-                {/* Реквизиты — карта ПОД ВАЛЮТУ ЗАКАЗА */}
                 <div className="bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-xl p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -356,7 +350,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                   </div>
                 </div>
 
-                {/* Скриншот — компактная строка */}
                 {!order.payment_screenshot_url ? (
                   <label
                     className={`flex items-center gap-3 w-full p-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
@@ -407,7 +400,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                   </div>
                 )}
 
-                {/* Действия — две кнопки в ряд */}
                 <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <a
                     href={MANAGER_TELEGRAM_LINK}
@@ -428,7 +420,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                 </div>
               </div>
             ) : (
-              /* ✅ ОПЛАЧЕН — компактная зелёная строка */
               <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
                 <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-base">✅</span>
@@ -468,7 +459,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   )
 }
 
-// ✅ Просмотр скриншота — БЕЗ кнопки «Открыть в новой вкладке»
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
   return (
@@ -496,7 +486,7 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
   )
 }
 
-// ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа
+// ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа, название и ссылка раздельно
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
   useBodyScrollLock(true)
   const formatDateTime = (dateStr: string) =>
@@ -536,11 +526,17 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
   }
   const priceInSums = request.manager_price ? Math.round(request.manager_price * (exchangeRate || 12100)) : 0
 
+  // ✅ Название и ссылка раздельно + фолбэк для старых заявок
+  const requestLink =
+    typeof request.link === 'string' && request.link.startsWith('http') ? request.link : null
+  const requestName =
+    request.product_name || (request.link && !requestLink ? request.link : null)
+
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        {/* ✅ Шапка: номер + дата + статус-пилл (как у обычного заказа) */}
+        {/* ✅ Шапка: номер + дата + статус-пилл */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -555,30 +551,41 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           </div>
         </div>
 
-        {/* ✅ Строки с иконками (как телефон/доставка/оплата у обычного заказа) */}
+        {/* ✅ Строки с иконками: название и ссылка — ОТДЕЛЬНЫЕ строки */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
-          <div className="flex items-center gap-3 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+          {requestName && (
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Название товара' : 'Mahsulot nomi'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white break-words">{requestName}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'Название или ссылка на товар' : 'Mahsulot nomi yoki havolasi'}
-              </p>
-              {request.link?.startsWith('http') ? (
+          )}
+          {requestLink && (
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Link2 size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Ссылка на товар' : 'Mahsulot havolasi'}
+                </p>
                 <a
-                  href={request.link}
+                  href={requestLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm font-medium text-[#1B2A4A] dark:text-white hover:underline break-all"
                 >
-                  {request.link}
+                  {requestLink}
                 </a>
-              ) : (
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white break-words">{request.link}</p>
-              )}
+              </div>
             </div>
-          </div>
+          )}
           {request.size_color && (
             <div className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -586,7 +593,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Размер / Цвет' : "O'lcham / Rang"}
+                  {language === 'ru' ? 'Размер / Цвет' : 'O\'lcham / Rang'}
                 </p>
                 <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">{request.size_color}</p>
               </div>
@@ -598,14 +605,15 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                 <MessageCircle size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Комментарий' : 'Izoh'}</p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Комментарий' : 'Izoh'}
+                </p>
                 <p className="text-sm font-medium text-[#1B2A4A] dark:text-white break-words">{request.comment}</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* ✅ Фото товара (как блок «Товары» у обычного заказа) */}
         {request.image_url && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-3 mb-3">
             <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-2 px-1">
@@ -619,7 +627,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           </div>
         )}
 
-        {/* ✅ Итого + комментарий менеджера (как строка «Итого» у обычного заказа) */}
         {request.manager_price && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
             <div className="flex justify-between items-center">
@@ -638,7 +645,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           </div>
         )}
 
-        {/* ✅ Статус и действие (как блок оплаты у обычного заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
           <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
             {language === 'ru' ? '📦 Статус заявки' : '📦 Ariza holati'}
@@ -772,7 +778,6 @@ export default function ProfilePage() {
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
-  // ✅ ЛЕНИВЫЙ loading: false если кеш уже есть → нет вспышки спиннера
   const [orders, setOrders] = useState<any[]>(() => profileOrdersCache || [])
   const [chinaRequests, setChinaRequests] = useState<any[]>(() => profileChinaRequestsCache || [])
   const [loading, setLoading] = useState(() => {
@@ -786,7 +791,6 @@ export default function ProfilePage() {
     getProducts().then(setAllProducts)
   }, [])
 
-  // ✅ Автозагрузка заказов/спецзаказов (тихое обновление, если кеш уже есть)
   useEffect(() => {
     const sectionNow = searchParams.get('section')
     if (sectionNow === 'orders') {
@@ -835,7 +839,6 @@ export default function ProfilePage() {
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
-  // ✅ Цена заказа в ИСТОРИИ — в ВАЛЮТЕ ЗАКАЗА (USD → $, UZS → сум)
   const formatOrderPrice = (order: any) => {
     const cur = getOrderCurrency(order)
     if (cur === 'USD') {
@@ -940,7 +943,6 @@ export default function ProfilePage() {
     }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
 
-  // ✅ ФОНОВОЕ обновление: не блокирует UI, если кеш уже есть
   const loadOrders = async () => {
     const hadCache = !!profileOrdersCache
     if (!hadCache) setLoading(true)
@@ -1480,7 +1482,9 @@ export default function ProfilePage() {
                         {getChinaStatusText(request.status)}
                       </span>
                     </div>
-                    <p className="text-sm text-[#8A8275] dark:text-gray-300 truncate">{request.link}</p>
+                    <p className="text-sm text-[#8A8275] dark:text-gray-300 truncate">
+                      {request.product_name || request.link}
+                    </p>
                     {request.manager_price && (
                       <p className="text-sm text-purple-700 dark:text-purple-300 font-medium mt-1">
                         💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум

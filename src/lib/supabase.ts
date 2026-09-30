@@ -466,10 +466,15 @@ ${itemsList}
 }
 
 export const notifyNewChinaRequest = async (request: any) => {
+  const nameLine = request.product_name
+    ? `\n📦 Название: ${request.product_name}`
+    : ''
+  const linkLine = request.link
+    ? `\n🔗 Ссылка: ${request.link}`
+    : ''
   const message = `
-🌍 <b>Новый спецзаказ №${request.id}</b>
+🌍 <b>Новый спецзаказ №${request.id}</b>${nameLine}${linkLine}
 
-📎 Ссылка: ${request.link}
 📏 Размер/Цвет: ${request.size_color || 'Не указан'}
 💬 Комментарий: ${request.comment || 'Нет'}
   `.trim()
