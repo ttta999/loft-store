@@ -66,6 +66,33 @@ const useBodyScrollLock = (active: boolean) => {
   }, [active])
 }
 
+// ✅ Шапка-карточка списка: заголовок + подпись + иконка справа (как шапка заказа)
+function ListHeaderCard({ title, subtitle, icon }: { title: string; subtitle: string; icon: React.ReactNode }) {
+  return (
+    <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+      <div className="min-w-0">
+        <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{title}</h2>
+        <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{subtitle}</p>
+      </div>
+      <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+    </div>
+  )
+}
+
+// ✅ Пустое состояние в стиле карточки
+function EmptyStateCard({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
+      <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">
+        {icon}
+      </div>
+      <p className="text-sm text-[#8A8275] dark:text-gray-300">{text}</p>
+    </div>
+  )
+}
+
 function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   useBodyScrollLock(true)
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -506,7 +533,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅‍♂️",
+        'Отменён клиентом': "Siz bekor qildingiz 🙅♂️",
         'Отклонён': "Rad etildi 🛑",
       }[status] || status
     }
@@ -1043,12 +1070,12 @@ export default function ProfilePage() {
     ? chinaRequests.find((r) => String(r.id) === String(requestIdParam))
     : null
 
-  // ✅ ГЛАВНАЯ ПРОФИЛЯ — редизайн в стиле страницы заказа
+  // ✅ ГЛАВНАЯ ПРОФИЛЯ — единый стиль (без пилюли Telegram)
   if (!section || section === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
-          {/* ✅ Шапка: аватар + имя + статус-пилл (как шапка заказа) */}
+          {/* ✅ Шапка: аватар + имя (как шапка заказа, без статус-пиллы) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-center gap-3">
               {telegramUser?.photoUrl ? (
@@ -1074,9 +1101,6 @@ export default function ProfilePage() {
                     : (language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring')}
                 </p>
               </div>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#C9A961]/15 text-[#C9A961] whitespace-nowrap">
-                {telegramUser ? '✅ Telegram' : '👤 Guest'}
-              </span>
             </div>
           </div>
 
@@ -1352,61 +1376,64 @@ export default function ProfilePage() {
     )
   }
 
+  // ✅ ИЗБРАННОЕ — список строк с миниатюрами в едином стиле
   if (section === 'favorites') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <div className="p-4 pb-20">
-          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
-          </h2>
+        <div className="p-4">
+          <ListHeaderCard
+            title={language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+            subtitle={
+              favorites.length > 0
+                ? `${favorites.length} ${getItemsLabel(favorites.length, language)}`
+                : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
+            }
+            icon={<Heart size={18} className="text-[#1B2A4A] dark:text-white" />}
+          />
+
           {favorites.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-              <Heart size={64} className="text-[#E8E2D5] dark:text-dark-border mb-4" />
-              <p className="text-[#8A8275] dark:text-gray-300 px-4">
-                {language === 'ru'
+            <EmptyStateCard
+              icon={<Heart size={24} className="text-[#8A8275] dark:text-gray-300" />}
+              text={
+                language === 'ru'
                   ? 'Добавляйте товары в избранное, чтобы не потерять их'
-                  : 'Mahsulotlarni yo\'qotib qo\'ymaslik uchun sevimlilarga qo\'shing'}
-              </p>
-            </div>
+                  : 'Mahsulotlarni yo\'qotib qo\'ymaslik uchun sevimlilarga qo\'shing'
+              }
+            />
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
               {favorites.map((item) => {
                 const product = allProducts.find((p) => p.id === item.productId)
                 const onSale = product ? isProductOnSale(product, saleModeEnabled) : false
                 const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
                 return (
-                  <div
-                    key={item.productId}
-                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border"
-                  >
-                    <Link to={`/product/${item.productId}`}>
-                      <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                    </Link>
-                    <div className="p-3">
-                      <Link to={`/product/${item.productId}`}>
-                        <p className="text-sm font-medium truncate mb-2 text-[#1B2A4A] dark:text-white">{item.name}</p>
-                      </Link>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          {onSale && (
-                            <p className="text-[#8A8275] dark:text-gray-500 text-xs line-through">
-                              {formatPrice(item.priceUsd)}
-                            </p>
-                          )}
-                          <p className={`font-bold ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
-                            {formatPrice(displayPrice)}
+                  <div key={item.productId} className="flex items-center gap-3 p-3.5">
+                    <Link to={`/product/${item.productId}`} className="flex items-center gap-3 flex-1 min-w-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-14 h-14 rounded-xl object-cover border border-[#E8E2D5] dark:border-dark-border flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
+                        {onSale && (
+                          <p className="text-xs text-[#8A8275] dark:text-gray-500 line-through">
+                            {formatPrice(item.priceUsd)}
                           </p>
-                        </div>
-                        <button
-                          onClick={() => removeFromFavorites(item.productId)}
-                          className="text-[#9B3B3B] dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        )}
+                        <p className={`text-sm font-bold ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
+                          {formatPrice(displayPrice)}
+                        </p>
                       </div>
-                    </div>
+                      <ChevronRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+                    </Link>
+                    <button
+                      onClick={() => removeFromFavorites(item.productId)}
+                      title={language === 'ru' ? 'Убрать из избранного' : 'Sevimlilardan o\'chirish'}
+                      className="p-2 rounded-lg text-[#9B3B3B] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 )
               })}
@@ -1417,13 +1444,21 @@ export default function ProfilePage() {
     )
   }
 
+  // ✅ ИСТОРИЯ ЗАКАЗОВ — карточки в стиле страницы заказа
   if (section === 'orders') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
-          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-          </h2>
+          <ListHeaderCard
+            title={language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
+            subtitle={
+              orders.length > 0
+                ? (language === 'ru' ? `Всего заказов: ${orders.length}` : `Jami buyurtmalar: ${orders.length}`)
+                : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
+            }
+            icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
+          />
+
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
@@ -1432,12 +1467,10 @@ export default function ProfilePage() {
               </p>
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-12">
-              <Package size={64} className="text-[#E8E2D5] dark:text-dark-border mx-auto mb-4" />
-              <p className="text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'У вас пока нет заказов' : 'Sizda hali buyurtmalar yo\'q'}
-              </p>
-            </div>
+            <EmptyStateCard
+              icon={<Package size={24} className="text-[#8A8275] dark:text-gray-300" />}
+              text={language === 'ru' ? 'У вас пока нет заказов' : 'Sizda hali buyurtmalar yo\'q'}
+            />
           ) : (
             <div className="space-y-3">
               {orders.map((order) => {
@@ -1446,46 +1479,53 @@ export default function ProfilePage() {
                   <div
                     key={order.id}
                     onClick={() => openOrder(order.id)}
-                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-bold text-[#1B2A4A] dark:text-white">
+                    {/* Шапка карточки: номер + дата + статус-пилл */}
+                    <div className="flex items-start justify-between gap-2 p-4 pb-3">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
                           {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
-                        </p>
-                        <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(order.created_at)}</p>
+                        </h3>
+                        <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{formatDateTime(order.created_at)}</p>
+                        {order.special_order_id && (
+                          <span className="inline-block mt-1.5 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
+                            🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                          </span>
+                        )}
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getOrderStatusColor(order.status)}`}>
                         {getOrderStatusText(order.status, order.delivery_method)}
                       </span>
                     </div>
-                    {order.special_order_id && (
-                      <div className="mb-2 px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full inline-block">
-                        🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
-                      </div>
-                    )}
-                    <div className="flex gap-1 mb-3">
-                      {items.slice(0, 2).map((item: any, idx: number) => (
+
+                    {/* Миниатюры товаров */}
+                    <div className="px-4 pb-3 flex gap-2">
+                      {items.slice(0, 3).map((item: any, idx: number) => (
                         <img
                           key={idx}
                           src={item.image}
                           alt={item.name}
-                          className="w-12 h-12 object-cover rounded border border-[#E8E2D5] dark:border-dark-border"
+                          className="w-14 h-14 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border"
                         />
                       ))}
-                      {items.length > 2 && (
-                        <div className="relative w-12 h-12 rounded border border-[#E8E2D5] dark:border-dark-border overflow-hidden bg-[#F5F1E8] dark:bg-dark-accent">
-                          <img src={items[2].image} alt="more" className="w-full h-full object-cover blur-sm opacity-50" />
+                      {items.length > 3 && (
+                        <div className="relative w-14 h-14 rounded-xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden bg-[#F5F1E8] dark:bg-dark-accent flex-shrink-0">
+                          <img src={items[3].image} alt="more" className="w-full h-full object-cover blur-sm opacity-50" />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[#8A8275] dark:text-gray-300 text-xs font-bold">+{items.length - 2}</span>
+                            <span className="text-[#8A8275] dark:text-gray-300 text-xs font-bold">+{items.length - 3}</span>
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-lg font-bold text-[#1B2A4A] dark:text-white">{formatOrderPrice(order)}</p>
-                    <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
-                      {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                    </p>
+
+                    {/* Нижняя строка «Итого» — как на странице заказа */}
+                    <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
+                      <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                        {items.length} {getItemsLabel(items.length, language)} · {language === 'ru' ? 'детали по нажатию' : 'bosing — tafsilotlar'}
+                      </span>
+                      <span className="text-base font-bold text-[#1B2A4A] dark:text-white">{formatOrderPrice(order)}</span>
+                    </div>
                   </div>
                 )
               })}
@@ -1506,13 +1546,21 @@ export default function ProfilePage() {
     )
   }
 
+  // ✅ МОИ СПЕЦЗАКАЗЫ — карточки в стиле страницы заказа
   if (section === 'china') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
-          <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-          </h2>
+          <ListHeaderCard
+            title={language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
+            subtitle={
+              chinaRequests.length > 0
+                ? (language === 'ru' ? `Всего заявок: ${chinaRequests.length}` : `Jami arizalar: ${chinaRequests.length}`)
+                : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
+            }
+            icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
+          />
+
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
@@ -1521,12 +1569,10 @@ export default function ProfilePage() {
               </p>
             </div>
           ) : chinaRequests.length === 0 ? (
-            <div className="text-center py-12">
-              <Globe size={64} className="text-[#E8E2D5] dark:text-dark-border mx-auto mb-4" />
-              <p className="text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'У вас нет спецзаказов' : 'Sizda maxsus buyurtmalar yo\'q'}
-              </p>
-            </div>
+            <EmptyStateCard
+              icon={<Globe size={24} className="text-[#8A8275] dark:text-gray-300" />}
+              text={language === 'ru' ? 'У вас нет спецзаказов' : 'Sizda maxsus buyurtmalar yo\'q'}
+            />
           ) : (
             <div className="space-y-3">
               {chinaRequests.map((request) => {
@@ -1535,30 +1581,48 @@ export default function ProfilePage() {
                   <div
                     key={request.id}
                     onClick={() => openChinaRequest(request.id)}
-                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-bold text-[#1B2A4A] dark:text-white">
-                          {language === 'ru' ? `Спецзаказ #${request.id}` : `Maxsus buyurtma #${request.id}`}
-                        </p>
-                        <p className="text-sm text-[#8A8275] dark:text-gray-300">{formatDateTime(request.created_at)}</p>
+                    {/* Шапка карточки: номер + дата + статус-пилл */}
+                    <div className="flex items-start justify-between gap-2 p-4 pb-3">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
+                          {language === 'ru' ? `Спецзаказ №${request.id}` : `Maxsus buyurtma №${request.id}`}
+                        </h3>
+                        <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{formatDateTime(request.created_at)}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getChinaStatusColor(request.status)}`}>
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getChinaStatusColor(request.status)}`}>
                         {getChinaStatusText(request.status)}
                       </span>
                     </div>
-                    <p className="text-sm text-[#8A8275] dark:text-gray-300 truncate">
-                      {request.product_name || request.link}
-                    </p>
-                    {request.manager_price && (
-                      <p className="text-sm text-purple-700 dark:text-purple-300 font-medium mt-1">
-                        💰 {language === 'ru' ? 'Оценка:' : 'Baho:'} {priceInSums.toLocaleString()} сум
-                      </p>
+
+                    {/* Строка с названием товара */}
+                    {(request.product_name || request.link) && (
+                      <div className="px-4 pb-3 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                          <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+                        </div>
+                        <p className="flex-1 text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
+                          {request.product_name || request.link}
+                        </p>
+                      </div>
                     )}
-                    <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
-                      {language === 'ru' ? 'Нажмите для деталей' : 'Tafsilotlar uchun bosing'}
-                    </p>
+
+                    {/* Нижняя строка с оценкой — как «Итого» на странице заказа */}
+                    <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
+                      <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                        {language === 'ru' ? '💰 Оценка менеджера' : '💰 Menejer bahosi'}
+                      </span>
+                      {priceInSums > 0 ? (
+                        <span className="text-base font-bold text-[#1B2A4A] dark:text-white">
+                          {priceInSums.toLocaleString()} сум
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                          {language === 'ru' ? 'ожидает оценки' : 'baholanishi kutilmoqda'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )
               })}
