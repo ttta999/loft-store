@@ -28,6 +28,9 @@ import {
   MapPin,
   Clock,
   Languages,
+  Settings,
+  FileText,
+  ScrollText,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -90,6 +93,29 @@ function EmptyStateCard({ icon, text }: { icon: React.ReactNode; text: string })
       </div>
       <p className="text-sm text-[#8A8275] dark:text-gray-300">{text}</p>
     </div>
+  )
+}
+
+// ✅ Квадратная плитка меню профиля (сетка 2×2)
+function MenuTile({ icon, title, subtitle, onClick }: {
+  icon: React.ReactNode
+  title: string
+  subtitle: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 flex flex-col items-start gap-3 text-left hover:shadow-md transition-shadow"
+    >
+      <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-[#1B2A4A] dark:text-white truncate">{title}</p>
+        <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 truncate">{subtitle}</p>
+      </div>
+    </button>
   )
 }
 
@@ -533,7 +559,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
         'На рассмотрении': "Qabul qilindi 📄",
         'Оценён': "Baholandi 💎",
         'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅♂️",
+        'Отменён клиентом': "Siz bekor qildingiz 🙅️",
         'Отклонён': "Rad etildi 🛑",
       }[status] || status
     }
@@ -566,7 +592,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
-        {/* ✅ Шапка: номер + дата + статус-пилл */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -581,7 +606,6 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
           </div>
         </div>
 
-        {/* ✅ Строки с иконками: название и ссылка — ОТДЕЛЬНЫЕ строки */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
           {requestName && (
             <div className="flex items-center gap-3 p-3.5">
@@ -804,7 +828,7 @@ export default function ProfilePage() {
     setTheme,
   } = useStore()
 
-  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | null
+  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | 'settings' | null
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
@@ -865,7 +889,7 @@ export default function ProfilePage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const openSection = (name: 'favorites' | 'orders' | 'china') => navigate(`/profile?section=${name}`)
+  const openSection = (name: 'favorites' | 'orders' | 'china' | 'settings') => navigate(`/profile?section=${name}`)
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
@@ -1070,12 +1094,12 @@ export default function ProfilePage() {
     ? chinaRequests.find((r) => String(r.id) === String(requestIdParam))
     : null
 
-  // ✅ ГЛАВНАЯ ПРОФИЛЯ — единый стиль (без пилюли Telegram)
+  // ✅ ГЛАВНАЯ ПРОФИЛЯ — шапка + 4 квадрата + магазин + соцсети
   if (!section || section === 'main') {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div className="p-4">
-          {/* ✅ Шапка: аватар + имя (как шапка заказа, без статус-пиллы) */}
+          {/* ✅ Шапка: аватар + имя (как шапка заказа) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-center gap-3">
               {telegramUser?.photoUrl ? (
@@ -1104,69 +1128,130 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ✅ Меню: единая карточка со строками-иконками */}
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            <button
+          {/* ✅ МЕНЮ: 4 квадрата (2×2) — избранное, заказы, спецзаказы, настройки */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <MenuTile
+              icon={<Heart size={18} className="text-[#1B2A4A] dark:text-white" />}
+              title={language === 'ru' ? 'Избранное' : 'Sevimlilar'}
+              subtitle={
+                favorites.length > 0
+                  ? `${favorites.length} ${getItemsLabel(favorites.length, language)}`
+                  : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
+              }
               onClick={() => openSection('favorites')}
-              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
-            >
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <Heart size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Избранное' : 'Sevimlilar'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
-                  {language === 'ru' ? 'Мои избранные товары' : 'Mening sevimli mahsulotlarim'}
-                </p>
-              </div>
-              {favorites.length > 0 && (
-                <span className="text-xs text-[#8A8275] dark:text-gray-300 whitespace-nowrap">
-                  {favorites.length} {getItemsLabel(favorites.length, language)}
-                </span>
-              )}
-              <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
-            </button>
-
-            <button
+            />
+            <MenuTile
+              icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
+              title={language === 'ru' ? 'Заказы' : 'Buyurtmalar'}
+              subtitle={language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
               onClick={() => openSection('orders')}
-              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
-            >
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <Package size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Заказы' : 'Buyurtmalar'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
-                  {language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-                </p>
-              </div>
-              <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
-            </button>
-
-            <button
+            />
+            <MenuTile
+              icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
+              title={language === 'ru' ? 'Спецзаказы' : 'Maxsus buyurtmalar'}
+              subtitle={language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
               onClick={() => openSection('china')}
-              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
-            >
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <Globe size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Спецзаказы' : 'Maxsus buyurtmalar'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
-                  {language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-                </p>
-              </div>
-              <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
-            </button>
+            />
+            <MenuTile
+              icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
+              title={language === 'ru' ? 'Настройки' : 'Sozlamalar'}
+              subtitle={`${language.toUpperCase()} · ${currency}`}
+              onClick={() => openSection('settings')}
+            />
           </div>
 
-          {/* ✅ Настройки: единая карточка со строками и переключателями справа */}
+          {/* ✅ Магазин: единая карточка со строками-иконками */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <MapPin size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Адрес магазина' : 'Do\'kon manzili'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'ТЦ Mercato, 2 этаж, магазин 34' : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
+                </p>
+              </div>
+            </div>
+            <a href="tel:+998933788770" className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Phone size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Телефон' : 'Telefon'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">+998 93 378 87 70</p>
+              </div>
+            </a>
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Режим работы' : 'Ish vaqti'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'Ежедневно 10:00 - 20:00' : 'Har kuni 10:00 - 20:00'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ✅ Соцсети */}
+          <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3 px-1">
+            {language === 'ru' ? 'Мы в соцсетях' : 'Biz ijtimoiy tarmoqlarda'}
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href={SOCIAL_LINKS.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 border border-[#E8E2D5] dark:border-dark-border hover:shadow-md hover:border-[#229ED9] transition-all flex flex-col items-center gap-2 group"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#229ED9] to-[#1B7FB8] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+              </div>
+              <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Telegram</span>
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
+            </a>
+            <a
+              href={SOCIAL_LINKS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 border border-[#E8E2D5] dark:border-dark-border hover:shadow-md hover:border-[#E1306C] transition-all flex flex-col items-center gap-2 group"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#833AB4] via-[#E1306C] to-[#F77737] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                </svg>
+              </div>
+              <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Instagram</span>
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ НАСТРОЙКИ — язык, валюта, тема + документы
+  if (section === 'settings') {
+    return (
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+        <div className="p-4">
+          <ListHeaderCard
+            title={language === 'ru' ? 'Настройки' : 'Sozlamalar'}
+            subtitle={language === 'ru' ? 'Язык, валюта, тема и документы' : 'Til, valyuta, mavzu va hujjatlar'}
+            icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
+          />
+
+          {/* ✅ Предпочтения: единая карточка со строками и переключателями */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
             <div className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -1296,80 +1381,42 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ✅ Магазин: единая карточка со строками-иконками */}
+          {/* ✅ Документы: единая карточка со строками-ссылками */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            <div className="flex items-center gap-3 p-3.5">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <MapPin size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Адрес магазина' : 'Do\'kon manzili'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                  {language === 'ru' ? 'ТЦ Mercato, 2 этаж, магазин 34' : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
-                </p>
-              </div>
-            </div>
-            <a href="tel:+998933788770" className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <Phone size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Телефон' : 'Telefon'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">+998 93 378 87 70</p>
-              </div>
-            </a>
-            <div className="flex items-center gap-3 p-3.5">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Режим работы' : 'Ish vaqti'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                  {language === 'ru' ? 'Ежедневно 10:00 - 20:00' : 'Har kuni 10:00 - 20:00'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ✅ Соцсети */}
-          <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3 px-1">
-            {language === 'ru' ? 'Мы в соцсетях' : 'Biz ijtimoiy tarmoqlarda'}
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <a
-              href={SOCIAL_LINKS.telegram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 border border-[#E8E2D5] dark:border-dark-border hover:shadow-md hover:border-[#229ED9] transition-all flex flex-col items-center gap-2 group"
+            <button
+              onClick={() => navigate('/privacy')}
+              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#229ED9] to-[#1B7FB8] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                </svg>
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <FileText size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
-              <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Telegram</span>
-              <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
-            </a>
-            <a
-              href={SOCIAL_LINKS.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#FBF9F4] dark:bg-dark-card rounded-xl p-4 border border-[#E8E2D5] dark:border-dark-border hover:shadow-md hover:border-[#E1306C] transition-all flex flex-col items-center gap-2 group"
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Документы' : 'Hujjatlar'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
+                  {language === 'ru' ? 'Политика конфиденциальности' : 'Maxfiylik siyosati'}
+                </p>
+              </div>
+              <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+            </button>
+            <button
+              onClick={() => navigate('/terms')}
+              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#833AB4] via-[#E1306C] to-[#F77737] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                </svg>
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <ScrollText size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
-              <span className="font-medium text-sm text-[#1B2A4A] dark:text-white">Instagram</span>
-              <span className="text-xs text-[#8A8275] dark:text-gray-300">@loft_mens_shop</span>
-            </a>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Документы' : 'Hujjatlar'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
+                  {language === 'ru' ? 'Пользовательское соглашение' : 'Foydalanish shartnomasi'}
+                </p>
+              </div>
+              <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+            </button>
           </div>
         </div>
       </div>
@@ -1390,7 +1437,6 @@ export default function ProfilePage() {
             }
             icon={<Heart size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
-
           {favorites.length === 0 ? (
             <EmptyStateCard
               icon={<Heart size={24} className="text-[#8A8275] dark:text-gray-300" />}
@@ -1458,7 +1504,6 @@ export default function ProfilePage() {
             }
             icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
-
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
@@ -1481,7 +1526,6 @@ export default function ProfilePage() {
                     onClick={() => openOrder(order.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
-                    {/* Шапка карточки: номер + дата + статус-пилл */}
                     <div className="flex items-start justify-between gap-2 p-4 pb-3">
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -1498,8 +1542,6 @@ export default function ProfilePage() {
                         {getOrderStatusText(order.status, order.delivery_method)}
                       </span>
                     </div>
-
-                    {/* Миниатюры товаров */}
                     <div className="px-4 pb-3 flex gap-2">
                       {items.slice(0, 3).map((item: any, idx: number) => (
                         <img
@@ -1518,8 +1560,6 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </div>
-
-                    {/* Нижняя строка «Итого» — как на странице заказа */}
                     <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
                       <span className="text-xs text-[#8A8275] dark:text-gray-300">
                         {items.length} {getItemsLabel(items.length, language)} · {language === 'ru' ? 'детали по нажатию' : 'bosing — tafsilotlar'}
@@ -1560,7 +1600,6 @@ export default function ProfilePage() {
             }
             icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
-
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
@@ -1583,7 +1622,6 @@ export default function ProfilePage() {
                     onClick={() => openChinaRequest(request.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
-                    {/* Шапка карточки: номер + дата + статус-пилл */}
                     <div className="flex items-start justify-between gap-2 p-4 pb-3">
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -1595,8 +1633,6 @@ export default function ProfilePage() {
                         {getChinaStatusText(request.status)}
                       </span>
                     </div>
-
-                    {/* Строка с названием товара */}
                     {(request.product_name || request.link) && (
                       <div className="px-4 pb-3 flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -1607,8 +1643,6 @@ export default function ProfilePage() {
                         </p>
                       </div>
                     )}
-
-                    {/* Нижняя строка с оценкой — как «Итого» на странице заказа */}
                     <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
                       <span className="text-xs text-[#8A8275] dark:text-gray-300">
                         {language === 'ru' ? '💰 Оценка менеджера' : '💰 Menejer bahosi'}

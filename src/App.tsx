@@ -14,6 +14,8 @@ import CatalogPage from './pages/CatalogPage'
 import BrandsPage from './pages/BrandsPage'
 import CategoryPage from './pages/CategoryPage'
 import AllProductsPage from './pages/AllProductsPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
 import {
   initTelegram,
   getUserData,
@@ -141,7 +143,7 @@ function AppLayout() {
   }, [setTelegramUser])
 
   // ✅ Системная кнопка «назад» Telegram на вкладках
-  // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное)
+  // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное / настройки)
   useEffect(() => {
     const needsBackNow = activeTab === 'search' || (showBackButton && !!onBackClick)
 
@@ -173,9 +175,6 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
-      {/* ❌ ScrollRestoration убран отсюда — теперь живёт в App(), над Routes,
-          чтобы работать на ВСЕХ страницах, включая /product/:id (вне layout) */}
-
       <IslandHeader
         needsBack={needsBack}
         onBack={handleBack}
@@ -194,10 +193,7 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
-      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах,
-          включая внутренние (/product/:id, /catalog, /brands, ...).
-          Это критично: раньше при возврате с карточки товара он монтировался
-          заново с isFirstRender=true и восстановление позиции ломалось. */}
+      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах */}
       <ScrollRestoration />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
@@ -221,6 +217,8 @@ function App() {
         <Route path="/brands" element={<BrandsPage />} />
         <Route path="/category" element={<CategoryPage />} />
         <Route path="/all-products" element={<AllProductsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Routes>
     </BrowserRouter>
   )
