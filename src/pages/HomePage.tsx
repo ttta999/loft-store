@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart, ArrowRight, Search, ShoppingBag, User as UserIcon, Sparkles } from 'lucide-react'
+import { Heart, ArrowRight, ShoppingBag, User as UserIcon, Sparkles } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 
 const CACHE_FRESH_MS = 5 * 60 * 1000
@@ -286,20 +286,6 @@ export default function HomePage() {
             <ShoppingBag size={18} className="text-[#1B2A4A] dark:text-white" />
           </div>
         </div>
-
-        {/* ✅ Поисковая строка-карточка (как строка в карточке заказа) */}
-        <button
-          onClick={() => navigate('/search')}
-          className="w-full bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-3.5 mb-3 flex items-center gap-3 text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
-        >
-          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-            <Search size={16} className="text-[#1B2A4A] dark:text-white" />
-          </div>
-          <span className="flex-1 text-sm text-[#8A8275] dark:text-gray-400">
-            {language === 'ru' ? 'Поиск по товарам...' : 'Mahsulotlar bo\'yicha qidirish...'}
-          </span>
-          <ArrowRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
-        </button>
 
         {/* ✅ Категории — единая карточка со строками-иконками и разделителями */}
         <SectionHeader
