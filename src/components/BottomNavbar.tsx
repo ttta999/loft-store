@@ -52,8 +52,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
-      {/* ✅ items-stretch — кнопка профиля растягивается по высоте пилюли */}
-      <div className="flex items-stretch gap-3 pointer-events-auto">
+      <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
         <div className="flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
           {tabs.map((tab) => {
@@ -91,16 +90,16 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
           })}
         </div>
 
-        {/* ✅ СПРАВА — круглая кнопка Профиль: w-16 + stretch = высота как у пилюли */}
+        {/* ✅ СПРАВА — отдельная круглая кнопка Профиль */}
         <button
           onClick={() => handleTabClick('profile')}
-          className={`w-16 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
+          className={`w-14 h-14 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
             activeTab === 'profile'
               ? 'bg-[#E8E2D5] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-accent text-[#1B2A4A] dark:text-white'
               : 'bg-[#FBF9F4] dark:bg-dark-card border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300'
           }`}
         >
-          <User size={26} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+          <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
         </button>
       </div>
     </div>
