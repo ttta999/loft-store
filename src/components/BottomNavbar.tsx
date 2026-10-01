@@ -24,96 +24,77 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
-  // ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ: меняем и state, и URL
+  // ✅ Меняем и state, и URL
   const handleTabClick = (tab: TabType) => {
     if (tab === activeTab) return // не делаем лишних переходов
     setActiveTab(tab)
     navigate(TAB_PATHS[tab])
   }
 
-  // ✅ СЛЕВА ТОЛЬКО 3 КНОПКИ (поиск ушёл наверх)
+  // ✅ Все 4 вкладки в одном ряду — равного размера
   const tabs = [
     {
       id: 'home' as TabType,
       label: language === 'ru' ? 'Главная' : 'Bosh sahifa',
-      icon: Home
+      icon: Home,
     },
     {
       id: 'cart' as TabType,
       label: language === 'ru' ? 'Корзина' : 'Savat',
-      icon: ShoppingCart
+      icon: ShoppingCart,
     },
     {
       id: 'china' as TabType,
       label: language === 'ru' ? 'Спецзаказ' : 'Maxsus',
-      icon: Globe
+      icon: Globe,
+    },
+    {
+      id: 'profile' as TabType,
+      label: language === 'ru' ? 'Профиль' : 'Profil',
+      icon: User,
     },
   ]
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
-      {/* ✅ Сетка из 4 равных колонок: пилюля на 3, профиль на 1 — всё одного размера */}
-      <div className="grid grid-cols-4 gap-2 pointer-events-auto">
-        {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, занимает 3 колонки */}
-        <div className="col-span-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all ${
-                  isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
+      {/* ✅ Единая карточка в стиле страницы заказа: 4 равные колонки с круглыми иконками */}
+      <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl shadow-lg p-2 grid grid-cols-4 gap-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab.id)}
+              className="flex flex-col items-center gap-1 py-1.5 rounded-xl transition-colors hover:bg-[#F5F1E8] dark:hover:bg-dark-accent"
+            >
+              {/* ✅ Круглый контейнер иконки — как строки-иконки на странице заказа */}
+              <div
+                className={`relative w-9 h-9 rounded-full flex items-center justify-center border transition-colors ${
+                  isActive
+                    ? 'bg-[#1B2A4A] dark:bg-gold border-[#1B2A4A] dark:border-gold text-white dark:text-[#1B2A4A]'
+                    : 'bg-[#F5F1E8] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300'
                 }`}
               >
-                <div className="relative">
-                  <Icon
-                    size={22}
-                    className={isActive ? 'text-[#1B2A4A] dark:text-white' : 'text-[#8A8275] dark:text-gray-300'}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                  {tab.id === 'cart' && cartItemsCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-[#9B3B3B] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                      {cartItemsCount}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className={`text-[10px] ${
-                    isActive ? 'text-[#1B2A4A] dark:text-white font-semibold' : 'text-[#8A8275] dark:text-gray-300'
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* ✅ СПРАВА — круглая кнопка Профиль в 4-й колонке (такого же размера, как пилюля в высоту) */}
-        <button
-          onClick={() => handleTabClick('profile')}
-          className={`aspect-square shrink-0 rounded-full border shadow-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
-            activeTab === 'profile'
-              ? 'bg-[#E8E2D5] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-accent text-[#1B2A4A] dark:text-white'
-              : 'bg-[#FBF9F4] dark:bg-dark-card border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300'
-          }`}
-        >
-          <User
-            size={22}
-            strokeWidth={activeTab === 'profile' ? 2.5 : 2}
-          />
-          <span
-            className={`text-[10px] ${
-              activeTab === 'profile'
-                ? 'text-[#1B2A4A] dark:text-white font-semibold'
-                : 'text-[#8A8275] dark:text-gray-300'
-            }`}
-          >
-            {language === 'ru' ? 'Профиль' : 'Profil'}
-          </span>
-        </button>
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                {tab.id === 'cart' && cartItemsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#9B3B3B] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#FBF9F4] dark:border-dark-card">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </div>
+              <span
+                className={`text-[10px] leading-none ${
+                  isActive
+                    ? 'text-[#1B2A4A] dark:text-white font-semibold'
+                    : 'text-[#8A8275] dark:text-gray-300'
+                }`}
+              >
+                {tab.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
