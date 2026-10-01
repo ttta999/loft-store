@@ -52,9 +52,10 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
-      <div className="flex items-center gap-3 pointer-events-auto">
-        {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
-        <div className="flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
+      {/* ✅ Сетка из 4 равных колонок: пилюля на 3, профиль на 1 — всё одного размера */}
+      <div className="grid grid-cols-4 gap-2 pointer-events-auto">
+        {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, занимает 3 колонки */}
+        <div className="col-span-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -62,7 +63,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all ${
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all ${
                   isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
                 }`}
               >
@@ -90,16 +91,28 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
           })}
         </div>
 
-        {/* ✅ СПРАВА — отдельная круглая кнопка Профиль */}
+        {/* ✅ СПРАВА — круглая кнопка Профиль в 4-й колонке (такого же размера, как пилюля в высоту) */}
         <button
           onClick={() => handleTabClick('profile')}
-          className={`w-14 h-14 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
+          className={`aspect-square shrink-0 rounded-full border shadow-lg flex flex-col items-center justify-center gap-0.5 transition-all ${
             activeTab === 'profile'
               ? 'bg-[#E8E2D5] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-accent text-[#1B2A4A] dark:text-white'
               : 'bg-[#FBF9F4] dark:bg-dark-card border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300'
           }`}
         >
-          <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+          <User
+            size={22}
+            strokeWidth={activeTab === 'profile' ? 2.5 : 2}
+          />
+          <span
+            className={`text-[10px] ${
+              activeTab === 'profile'
+                ? 'text-[#1B2A4A] dark:text-white font-semibold'
+                : 'text-[#8A8275] dark:text-gray-300'
+            }`}
+          >
+            {language === 'ru' ? 'Профиль' : 'Profil'}
+          </span>
         </button>
       </div>
     </div>
