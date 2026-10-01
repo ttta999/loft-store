@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, MessageCircle } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
@@ -116,7 +116,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-32">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-56">
       <Toaster position="top-center" richColors />
 
       <div className="p-4">
@@ -211,14 +211,34 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* ✅ Плавающая панель с кнопкой оформления — над BottomNavbar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-[#F5F1E8] via-[#F5F1E8]/95 to-transparent dark:from-dark-bg dark:via-dark-bg/95 dark:to-transparent">
-        <div className="pointer-events-auto px-4 pb-24 pt-2">
+      {/* ✅ Плавающая карточка оформления — в стиле страницы заказа:
+          строка с круглой иконкой + navy-кнопка rounded-xl внутри белой карточки */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
+        <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
+          {/* Строка «К оформлению» — как строка с иконкой на странице заказа */}
+          <div className="flex items-center gap-3 px-1">
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <ShoppingBag size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'К оформлению' : 'Rasmiylashtirishga'}
+              </p>
+              <p className="text-sm font-bold text-[#1B2A4A] dark:text-white truncate">
+                {totalQty} {getItemsLabel(totalQty, language)}
+              </p>
+            </div>
+            <span className="text-base font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">
+              {formatPrice(getTotalPrice())}
+            </span>
+          </div>
+
+          {/* Кнопка — как кнопки действий на странице заказа */}
           <button
             onClick={() => setShowCheckout(true)}
-            className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-lg flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
           >
-            <CreditCard size={20} />
+            <CreditCard size={18} />
             {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
           </button>
         </div>
@@ -566,8 +586,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
         </div>
 
         {/* ✅ Кнопки действий — ПОДНЯТЫ над BottomNavbar */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-[#F5F1E8] via-[#F5F1E8]/90 to-transparent dark:from-dark-bg dark:via-dark-bg/90 dark:to-transparent">
-          <div className="pointer-events-auto px-4 pb-28 pt-2 space-y-2">
+        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
+          <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
             {screenshotUploaded && (
               <button
                 onClick={() => {
@@ -575,8 +595,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
                   setOrderSuccess(true)
                   clearCart()
                 }}
-                className="w-full py-3.5 rounded-2xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-lg"
+                className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
               >
+                <Check size={18} />
                 {language === 'ru' ? 'Готово' : 'Tayyor'}
               </button>
             )}
@@ -584,9 +605,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
               href={MANAGER_TELEGRAM_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3.5 rounded-2xl bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 shadow-lg"
+              className="w-full py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border"
             >
-              📩 {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
+              <MessageCircle size={18} />
+              {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
             </a>
           </div>
         </div>
@@ -869,9 +891,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className={`w-full py-4 rounded-2xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-md ${
+          className={`w-full py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${
             submitting
-              ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed shadow-none'
+              ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
               : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
           }`}
         >
