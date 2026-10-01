@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
-import { Heart, Filter } from 'lucide-react'
+import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
 import { CATEGORIES } from '../data/categories'
 import IslandHeader from '../components/IslandHeader'
 
@@ -77,19 +77,53 @@ export default function AllProductsPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const getTitle = () => {
-    if (sortBy === 'newest') return language === 'ru' ? '✨ Новые товары' : '✨ Yangi mahsulotlar'
-    if (sortBy === 'popular') return language === 'ru' ? '🔥 Популярные товары' : '🔥 Mashhur mahsulotlar'
-    return language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'
+  // ✅ Динамическая шапка: эмодзи + заголовок + иконка
+  const headerConfig = (() => {
+    if (sortBy === 'newest') {
+      return {
+        title: language === 'ru' ? 'Новые товары' : 'Yangi mahsulotlar',
+        emoji: '✨',
+        icon: <Sparkles size={18} className="text-[#1B2A4A] dark:text-white" />,
+      }
+    }
+    if (sortBy === 'popular') {
+      return {
+        title: language === 'ru' ? 'Популярные товары' : 'Mashhur mahsulotlar',
+        emoji: '🔥',
+        icon: <Flame size={18} className="text-[#1B2A4A] dark:text-white" />,
+      }
+    }
+    return {
+      title: language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar',
+      emoji: '📦',
+      icon: <Package size={18} className="text-[#1B2A4A] dark:text-white" />,
+    }
+  })()
+
+  const activeFiltersCount =
+    (selectedCategory !== 'all' ? 1 : 0) +
+    (selectedSubcategory !== 'all' ? 1 : 0) +
+    (sortBy !== 'newest' ? 1 : 0)
+
+  const clearFilters = () => {
+    setSelectedCategory('all')
+    setSelectedSubcategory('all')
+    setSortBy('newest')
   }
 
+  // ✅ Карточка товара в стиле страницы заказа
   const ProductCard = ({ product }: { product: any }) => {
     const onSale = isProductOnSale(product, saleModeEnabled)
     const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
+    const discountPercent = onSale
+      ? Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)
+      : 0
+    const favorite = isFavorite(product.id)
+
     return (
       <div
         onClick={() => navigate(`/product/${product.id}`)}
-        className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer"
+        className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
           <img
@@ -99,13 +133,13 @@ export default function AllProductsPage() {
           />
           {onSale && (
             <span className="absolute top-2 left-2 bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full">
-              -{Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)}%
+              -{discountPercent}%
             </span>
           )}
           <button
             onClick={(e) => {
               e.stopPropagation()
-              if (isFavorite(product.id)) {
+              if (favorite) {
                 removeFromFavorites(product.id)
               } else {
                 addToFavorites({
@@ -116,14 +150,15 @@ export default function AllProductsPage() {
                 })
               }
             }}
-            className="absolute top-2 right-2 bg-white dark:bg-dark-card rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
           >
             <Heart
-              size={20}
-              className={isFavorite(product.id) ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
+              size={18}
+              className={favorite ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
             />
           </button>
         </div>
+
         <div className="p-3">
           <p className="text-sm font-medium truncate text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? product.name_ru : product.name_uz}
@@ -133,22 +168,46 @@ export default function AllProductsPage() {
               {formatPrice(product.price_usd)}
             </p>
           )}
-          <p className={`font-bold mt-1 ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
+        </div>
+
+        {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
+        <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
+          <span className="text-xs text-[#8A8275] dark:text-gray-300">
+            {language === 'ru' ? 'Цена' : 'Narx'}
+          </span>
+          <span className={`text-sm font-bold ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
             {formatPrice(effectivePrice)}
-          </p>
+          </span>
         </div>
       </div>
     )
   }
 
+  // ✅ Лоадер — шапка-карточка + карточка со спиннером
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
-          <p className="text-[#8A8275] dark:text-gray-300">
-            {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-          </p>
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+        <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
+        <div className="p-4">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
+                {headerConfig.title}
+              </h1>
+              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              {headerConfig.icon}
+            </div>
+          </div>
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-3"></div>
+            <p className="text-sm text-[#8A8275] dark:text-gray-300">
+              {language === 'ru' ? 'Загрузка товаров...' : 'Mahsulotlar yuklanmoqda...'}
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -158,100 +217,212 @@ export default function AllProductsPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
       <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4 text-[#1B2A4A] dark:text-white">{getTitle()}</h2>
-
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="w-full p-3 rounded-2xl border border-[#E8E2D5] dark:border-dark-border flex items-center justify-between bg-[#FBF9F4] dark:bg-dark-card mb-4"
-        >
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-[#1B2A4A] dark:text-white" />
-            <span className="font-medium text-[#1B2A4A] dark:text-white">
-              {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
-            </span>
-          </div>
-        </button>
-
-        {showFilters && (
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 mb-4 border border-[#E8E2D5] dark:border-dark-border space-y-4">
-            <div>
-              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? 'Категория' : 'Kategoriya'}
-              </h3>
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value)
-                  setSelectedSubcategory('all')
-                }}
-                className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white focus:outline-none focus:border-gold"
-              >
-                <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {language === 'ru' ? cat.name_ru : cat.name_uz}
-                  </option>
-                ))}
-              </select>
+        {/* ✅ Шапка-карточка: динамический заголовок + счётчик + круглая иконка */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <span className="text-xl leading-none">{headerConfig.emoji}</span>
             </div>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
+                {headerConfig.title}
+              </h1>
+              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                {language === 'ru' ? 'Найдено' : 'Topildi'}: {filteredProducts.length}
+              </p>
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+            {headerConfig.icon}
+          </div>
+        </div>
 
-            {selectedCategory !== 'all' && (
-              <div>
-                <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                  {language === 'ru' ? 'Подкатегория' : 'Pastki kategoriya'}
-                </h3>
-                <select
-                  value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full p-3 border border-[#E8E2D5] dark:border-dark-border rounded-xl bg-white dark:bg-dark-accent text-[#1B2A4A] dark:text-white focus:outline-none focus:border-gold"
-                >
-                  <option value="all">{language === 'ru' ? 'Все' : 'Barchasi'}</option>
-                  {CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {language === 'ru' ? sub.name_ru : sub.name_uz}
-                    </option>
-                  ))}
-                </select>
+        {/* ✅ Карточка фильтров: кнопка toggle + (если открыта) строки с иконками */}
+        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`w-full flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
+              activeFiltersCount > 0
+                ? 'bg-[#F5F1E8] dark:bg-dark-accent'
+                : 'bg-[#F5F1E8]/60 dark:bg-dark-accent/40'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                activeFiltersCount > 0
+                  ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                  : 'bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border'
+              }`}>
+                <SlidersHorizontal size={16} className={activeFiltersCount > 0 ? 'text-white dark:text-[#1B2A4A]' : 'text-[#1B2A4A] dark:text-white'} />
               </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
+                </p>
+                {activeFiltersCount > 0 && (
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                    {language === 'ru' ? 'Активных фильтров' : 'Faol filtrlar'}: {activeFiltersCount}
+                  </p>
+                )}
+              </div>
+            </div>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  clearFilters()
+                }}
+                className="text-xs text-[#9B3B3B] dark:text-red-400 hover:underline whitespace-nowrap flex-shrink-0"
+              >
+                {language === 'ru' ? 'Сбросить' : 'Tozalash'}
+              </button>
             )}
+          </button>
 
-            <div>
-              <h3 className="font-bold mb-2 text-[#1B2A4A] dark:text-white">
-                {language === 'ru' ? 'Сортировка' : 'Saralash'}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: 'newest', ru: 'Сначала новые', uz: 'Avval yangilar' },
-                  { key: 'popular', ru: 'Популярные', uz: 'Mashhur' },
-                  { key: 'price_asc', ru: 'Цена ↑', uz: 'Narx ↑' },
-                  { key: 'price_desc', ru: 'Цена ↓', uz: 'Narx ↓' },
-                ].map((s) => (
+          {/* ✅ Панель фильтров: строки с круглыми иконками и разделителями */}
+          {showFilters && (
+            <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
+              {/* Категория */}
+              <div className="p-3.5">
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                    <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
+                  </div>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 font-medium">
+                    {language === 'ru' ? 'Категория' : 'Kategoriya'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 ml-12">
                   <button
-                    key={s.key}
-                    onClick={() => setSortBy(s.key)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                      sortBy === s.key
+                    onClick={() => {
+                      setSelectedCategory('all')
+                      setSelectedSubcategory('all')
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      selectedCategory === 'all'
                         ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
-                        : 'bg-[#E8E2D5] dark:bg-dark-accent text-[#1B2A4A] dark:text-gray-300'
+                        : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
                     }`}
                   >
-                    {language === 'ru' ? s.ru : s.uz}
+                    {language === 'ru' ? 'Все' : 'Barchasi'}
                   </button>
-                ))}
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setSelectedCategory(cat.id)
+                        setSelectedSubcategory('all')
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        selectedCategory === cat.id
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
+                      }`}
+                    >
+                      {cat.icon} {language === 'ru' ? cat.name_ru : cat.name_uz}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Подкатегория — показываем только если выбрана категория */}
+              {selectedCategory !== 'all' && (
+                <div className="p-3.5">
+                  <div className="flex items-center gap-3 mb-2.5">
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      <Layers size={16} className="text-[#1B2A4A] dark:text-white" />
+                    </div>
+                    <p className="text-xs text-[#8A8275] dark:text-gray-300 font-medium">
+                      {language === 'ru' ? 'Подкатегория' : 'Pastki kategoriya'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 ml-12">
+                    <button
+                      onClick={() => setSelectedSubcategory('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        selectedSubcategory === 'all'
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
+                      }`}
+                    >
+                      {language === 'ru' ? 'Все' : 'Barchasi'}
+                    </button>
+                    {CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories
+                      .filter((sub) => sub.id !== 'all')
+                      .map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => setSelectedSubcategory(sub.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            selectedSubcategory === sub.id
+                              ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                              : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
+                          }`}
+                        >
+                          {language === 'ru' ? sub.name_ru : sub.name_uz}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Сортировка */}
+              <div className="p-3.5">
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                    <ListOrdered size={16} className="text-[#1B2A4A] dark:text-white" />
+                  </div>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 font-medium">
+                    {language === 'ru' ? 'Сортировка' : 'Saralash'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 ml-12">
+                  {[
+                    { key: 'newest', ru: 'Сначала новые', uz: 'Avval yangilar' },
+                    { key: 'popular', ru: 'Популярные', uz: 'Mashhur' },
+                    { key: 'price_asc', ru: 'Цена ↑', uz: 'Narx ↑' },
+                    { key: 'price_desc', ru: 'Цена ↓', uz: 'Narx ↓' },
+                  ].map((s) => (
+                    <button
+                      key={s.key}
+                      onClick={() => setSortBy(s.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        sortBy === s.key
+                          ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
+                          : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
+                      }`}
+                    >
+                      {language === 'ru' ? s.ru : s.uz}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-3">
-          {language === 'ru' ? 'Найдено:' : 'Topildi:'} {filteredProducts.length}
-        </p>
-
+        {/* ✅ Результаты / пустое состояние */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#8A8275] dark:text-gray-300">
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">
+              <Search size={24} className="text-[#8A8275] dark:text-gray-300" />
+            </div>
+            <p className="text-sm font-medium text-[#1B2A4A] dark:text-white mb-1">
               {language === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
             </p>
+            <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-4 px-2">
+              {language === 'ru'
+                ? 'Попробуйте изменить фильтры или выбрать другую категорию'
+                : 'Filtrlarni o\'zgartirib ko\'ring yoki boshqa kategoriyani tanlang'}
+            </p>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="px-6 py-2.5 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] text-sm font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+              >
+                {language === 'ru' ? 'Сбросить фильтры' : 'Filtrlarni tozalash'}
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
