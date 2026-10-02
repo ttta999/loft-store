@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../store/useStore'
+import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, MessageCircle } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import { createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
+import { supabase, createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
@@ -62,15 +62,61 @@ const getItemsLabel = (count: number, lang: string): string => {
 // ✅ БЕЗ пропсов — telegramUser берём из store
 export default function CartPage() {
   const navigate = useNavigate()
-  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language } = useStore()
+  const {
+    cart,
+    removeFromCart,
+    addToCart,
+    getTotalPrice,
+    currency,
+    exchangeRate,
+    language,
+    saleModeEnabled,
+    ensureProducts,
+  } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
+  const [deliveryPriceUzs, setDeliveryPriceUzs] = useState<number>(0)
+
+  // ✅ Цена доставки из настроек админки (settings → delivery_price)
+  useEffect(() => {
+    const loadDeliveryPrice = async () => {
+      try {
+        const { data } = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', 'delivery_price')
+          .single()
+        const price = (data?.value as any)?.price
+        setDeliveryPriceUzs(typeof price === 'number' && price > 0 ? price : 0)
+      } catch (error) {
+        // Настройки ещё не созданы — доставка бесплатная
+        setDeliveryPriceUzs(0)
+      }
+    }
+    loadDeliveryPrice()
+  }, [])
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
+  // ✅ Суммы для разбивки
+  const productsUsd = getTotalPrice()
+  const deliveryUsd = deliveryPriceUzs > 0 ? deliveryPriceUzs / exchangeRate : 0
+  const finalUsd = productsUsd + deliveryUsd
+
+  // ✅ Экономия на скидках: (обычная цена − скидочная) × кол-во по товарам в корзине
+  const savingsUsd = (() => {
+    if (!saleModeEnabled) return 0
+    const catalog = ensureProducts() || []
+    return cart.reduce((sum: number, item: any) => {
+      const p = catalog.find((pp: any) => pp.id === item.productId)
+      if (p && isProductOnSale(p, saleModeEnabled) && p.sale_price != null) {
+        sum += (Number(p.price_usd) - Number(p.sale_price)) * (item.quantity || 1)
+      }
+      return sum
+    }, 0)
+  })()
 
   // ✅ ПУСТАЯ КОРЗИНА — шапка-карточка + карточка пустого состояния (стиль страницы заказа)
   if (cart.length === 0) {
@@ -120,22 +166,19 @@ export default function CartPage() {
       <Toaster position="top-center" richColors />
 
       <div className="p-4">
-        {/* ✅ Шапка-карточка: заголовок + счётчик + круглая иконка (как шапка заказа) */}
+        {/* ✅ Шапка-карточка: только заголовок + круглая иконка (без счётчика) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
               {language === 'ru' ? 'Корзина' : 'Savat'}
             </h1>
-            <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-              {totalQty} {getItemsLabel(totalQty, language)} · {cart.length} {language === 'ru' ? 'поз.' : 'poz.'}
-            </p>
           </div>
           <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
             <ShoppingBag size={18} className="text-[#1B2A4A] dark:text-white" />
           </div>
         </div>
 
-        {/* ✅ Карточка «Товары»: строки с миниатюрами + разделители + строка «Итого» (как на странице заказа) */}
+        {/* ✅ Карточка «Товары»: строки с миниатюрами + разделители (без строки «Итого») */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
             {cart.map((item) => (
@@ -198,39 +241,57 @@ export default function CartPage() {
               </div>
             ))}
           </div>
-
-          {/* ✅ Строка «Итого» — как на странице заказа */}
-          <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
-            <span className="font-bold text-[#1B2A4A] dark:text-white">
-              {language === 'ru' ? 'Итого:' : 'Jami:'}
-            </span>
-            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-              {formatPrice(getTotalPrice())}
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* ✅ Плавающая карточка оформления — в стиле страницы заказа:
-          строка с круглой иконкой + navy-кнопка rounded-xl внутри белой карточки */}
+      {/* ✅ Плавающая карточка оформления: разбивка цен + кнопка */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
         <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
-          {/* Строка «К оформлению» — как строка с иконкой на странице заказа */}
-          <div className="flex items-center gap-3 px-1">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <ShoppingBag size={16} className="text-[#1B2A4A] dark:text-white" />
+          {/* ✅ Разбивка: Товары → Скидка → Доставка → Итого */}
+          <div className="px-1 space-y-1.5">
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
+              </span>
+              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white whitespace-nowrap">
+                {formatPrice(productsUsd)}
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'К оформлению' : 'Rasmiylashtirishga'}
-              </p>
-              <p className="text-sm font-bold text-[#1B2A4A] dark:text-white truncate">
-                {totalQty} {getItemsLabel(totalQty, language)}
-              </p>
+
+            {savingsUsd > 0 && (
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Скидка' : 'Chegirma'}
+                </span>
+                <span className="text-sm font-bold text-[#9B3B3B] dark:text-red-400 whitespace-nowrap">
+                  −{formatPrice(savingsUsd)}
+                </span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'Доставка' : 'Yetkazib berish'}
+              </span>
+              {deliveryPriceUzs > 0 ? (
+                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white whitespace-nowrap">
+                  {formatPrice(deliveryUsd)}
+                </span>
+              ) : (
+                <span className="text-sm font-bold text-green-700 dark:text-green-400 whitespace-nowrap">
+                  {language === 'ru' ? 'Бесплатно' : 'Bepul'}
+                </span>
+              )}
             </div>
-            <span className="text-base font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">
-              {formatPrice(getTotalPrice())}
-            </span>
+
+            <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
+              <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">
+                {language === 'ru' ? 'Итого' : 'Jami'}
+              </span>
+              <span className="text-base font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">
+                {formatPrice(finalUsd)}
+              </span>
+            </div>
           </div>
 
           {/* Кнопка — как кнопки действий на странице заказа */}
@@ -250,6 +311,7 @@ export default function CartPage() {
           formatPrice={formatPrice}
           getTotalPrice={getTotalPrice}
           language={language}
+          deliveryPriceUzs={deliveryPriceUzs}
         />
       )}
     </div>
@@ -257,7 +319,7 @@ export default function CartPage() {
 }
 
 // ✅ telegramUser берём из store внутри модалки
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs }: any) {
   // ✅ Блокируем скролл body пока модалка открыта
   useBodyScrollLock(true)
 
@@ -282,6 +344,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
   const isSpecialOrder = !!specialItem
 
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
+
+  // ✅ Доставка: платная только при методе «Доставка»
+  const deliveryCostUsd = deliveryMethod === 'delivery' && deliveryPriceUzs > 0
+    ? deliveryPriceUzs / exchangeRate
+    : 0
+  const finalUsd = getTotalPrice() + deliveryCostUsd
 
   // ✅ Карта оплаты подстраивается под валюту корзины
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
@@ -336,7 +404,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
 
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
-    const totalInSums = Math.round(getTotalPrice() * exchangeRate)
+    const totalInSums = Math.round(finalUsd * exchangeRate)
     const itemsWithPrices = cart.map(item => ({
       ...item,
       priceUzs: Math.round(item.priceUsd * exchangeRate),
@@ -349,7 +417,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
       delivery_method: deliveryMethod,
       delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
       payment_method: paymentMethod,
-      total_price_usd: getTotalPrice(),
+      total_price_usd: finalUsd,
       total_price_uzs: totalInSums,
       exchange_rate_at_order: exchangeRate,
       // ✅ ВАЛЮТА ЗАКАЗА — сохраняем, чтобы в истории показывать в ней же
@@ -482,7 +550,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
               <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-                {formatPrice(getTotalPrice())}
+                {formatPrice(finalUsd)}
               </span>
             </div>
           </div>
@@ -676,7 +744,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
               {language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}
             </h2>
             <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-              {totalQty} {getItemsLabel(totalQty, language)} · {formatPrice(getTotalPrice())}
+              {totalQty} {getItemsLabel(totalQty, language)} · {formatPrice(finalUsd)}
             </p>
           </div>
           <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -818,7 +886,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
           )}
         </div>
 
-        {/* ✅ Оплата + строка «Итого» с border-t (как на странице заказа) */}
+        {/* ✅ Оплата + разбивка цен с border-t (как на странице заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm overflow-hidden">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -877,14 +945,38 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language }: any) {
             </div>
           </div>
 
-          {/* ✅ Строка «Итого» — как на странице заказа */}
-          <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
-            <span className="font-bold text-[#1B2A4A] dark:text-white">
-              {language === 'ru' ? 'Итого:' : 'Jami:'}
-            </span>
-            <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-              {formatPrice(getTotalPrice())}
-            </span>
+          {/* ✅ Разбивка: Товары → Доставка → Итого */}
+          <div className="px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40 space-y-1.5">
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'Товары' : 'Mahsulotlar'}
+              </span>
+              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                {formatPrice(getTotalPrice())}
+              </span>
+            </div>
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                {language === 'ru' ? 'Доставка' : 'Yetkazib berish'}
+              </span>
+              {deliveryCostUsd > 0 ? (
+                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {formatPrice(deliveryCostUsd)}
+                </span>
+              ) : (
+                <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                  {language === 'ru' ? 'Бесплатно' : 'Bepul'}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
+              <span className="font-bold text-[#1B2A4A] dark:text-white">
+                {language === 'ru' ? 'Итого:' : 'Jami:'}
+              </span>
+              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+                {formatPrice(finalUsd)}
+              </span>
+            </div>
           </div>
         </div>
 
