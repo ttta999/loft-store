@@ -1702,6 +1702,10 @@ export default function ProfilePage() {
             <div className="space-y-3">
               {chinaRequests.map((request) => {
                 const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
+                // ✅ Отменён клиентом или отклонён менеджером
+                const isClosed = request.status === 'Отменён клиентом' || request.status === 'Отклонён'
+                // ✅ Строку оценки показываем, если есть сумма ИЛИ заявка ещё жива
+                const showPriceRow = priceInSums > 0 || !isClosed
                 return (
                   <div
                     key={request.id}
@@ -1729,20 +1733,23 @@ export default function ProfilePage() {
                         </p>
                       </div>
                     )}
-                    <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
-                      <span className="text-xs text-[#8A8275] dark:text-gray-300">
-                        {language === 'ru' ? '💰 Оценка менеджера' : '💰 Menejer bahosi'}
-                      </span>
-                      {priceInSums > 0 ? (
-                        <span className="text-base font-bold text-[#1B2A4A] dark:text-white">
-                          {priceInSums.toLocaleString()} сум
-                        </span>
-                      ) : (
+                    {/* ✅ Нижняя строка с оценкой — СКРЫТА для отменённых/отклонённых без оценки */}
+                    {showPriceRow && (
+                      <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
                         <span className="text-xs text-[#8A8275] dark:text-gray-300">
-                          {language === 'ru' ? 'ожидает оценки' : 'baholanishi kutilmoqda'}
+                          {language === 'ru' ? '💰 Оценка менеджера' : '💰 Menejer bahosi'}
                         </span>
-                      )}
-                    </div>
+                        {priceInSums > 0 ? (
+                          <span className="text-base font-bold text-[#1B2A4A] dark:text-white">
+                            {priceInSums.toLocaleString()} сум
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[#8A8275] dark:text-gray-300">
+                            {language === 'ru' ? 'ожидает оценки' : 'baholanishi kutilmoqda'}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               })}
