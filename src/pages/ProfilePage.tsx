@@ -344,14 +344,10 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
         </div>
 
         {order.payment_method === 'online_card' && (
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
-            <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
-              {language === 'ru' ? '💳 Оплата заказа' : "💳 Buyurtmani to'lash"}
-            </h3>
-
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
             {order.status === 'Отменён' ? (
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
-                <div className="flex items-start gap-3">
+              <div className="p-3.5">
+                <div className="flex items-start gap-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
                   <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
                     <X size={16} className="text-red-700 dark:text-red-300" />
                   </div>
@@ -377,24 +373,26 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                 )}
               </div>
             ) : order.status === 'Ожидает оплаты' ? (
-              <div className="space-y-2.5">
-                <div className="bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-xl p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-[#1B2A4A] dark:bg-dark-card flex items-center justify-center flex-shrink-0">
-                        <CreditCard size={16} className="text-[#C9A961]" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white truncate">
-                          {payCard.number}
-                        </p>
-                        <p className="text-[11px] text-[#8A8275] dark:text-gray-400 truncate">
-                          {payCard.holder}
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex-shrink-0">
-                        {orderCurrency}
-                      </span>
+              <>
+                {/* ✅ ЕДИНАЯ КАРТОЧКА ОПЛАТЫ в стиле страницы заказа:
+                    строки-иконки с divide-y (реквизиты → скриншот → кнопки) */}
+                <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
+                  {/* ✅ Строка 1: Реквизиты карты (как в CartPage) */}
+                  <div className="flex items-center gap-3 p-3.5">
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      <CreditCard size={16} className="text-[#1B2A4A] dark:text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[#8A8275] dark:text-gray-300 flex items-center gap-1.5">
+                        {language === 'ru' ? 'Карта для оплаты' : "To'lov kartasi"}
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]">
+                          {orderCurrency}
+                        </span>
+                      </p>
+                      <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white break-all">
+                        {payCard.number}
+                      </p>
+                      <p className="text-xs text-[#C9A961] font-medium mt-0.5">{payCard.holder}</p>
                     </div>
                     <button
                       onClick={handleCopyCard}
@@ -404,59 +402,78 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                       <Copy size={16} />
                     </button>
                   </div>
-                </div>
 
-                {!order.payment_screenshot_url ? (
-                  <label
-                    className={`flex items-center gap-3 w-full p-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                      uploadingScreenshot
-                        ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
-                        : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                      {uploadingScreenshot ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1B2A4A] dark:border-gold"></div>
-                      ) : (
-                        <Upload size={16} className="text-[#8A8275] dark:text-gray-300" />
-                      )}
+                  {/* ✅ Строка 2: Загрузка скриншота */}
+                  <div className="flex items-start gap-3 p-3.5">
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      <Upload size={16} className="text-[#1B2A4A] dark:text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                        {language === 'ru' ? 'Скриншот оплаты' : "To'lov screenshoti"}
+                      <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-1.5">
+                        {language === 'ru' ? '📸 Подтвердите оплату скриншотом' : "📸 To'lovni screenshot bilan tasdiqlang"}
                       </p>
-                      <p className="text-xs text-[#8A8275] dark:text-gray-400">
-                        {uploadingScreenshot
-                          ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
-                          : (language === 'ru' ? 'Нажмите, чтобы загрузить' : 'Yuklash uchun bosing')}
-                      </p>
+                      {!order.payment_screenshot_url ? (
+                        <label
+                          className={`flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
+                            uploadingScreenshot
+                              ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent'
+                              : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold bg-[#F5F1E8]/50 dark:bg-dark-accent/40'
+                          }`}
+                        >
+                          <div className="flex flex-col items-center justify-center">
+                            {uploadingScreenshot ? (
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1B2A4A] dark:border-gold mb-1"></div>
+                            ) : (
+                              <Upload className="w-5 h-5 mb-1 text-[#8A8275] dark:text-gray-300" />
+                            )}
+                            <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                              {uploadingScreenshot
+                                ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                                : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}
+                            </p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUploadScreenshot}
+                            className="hidden"
+                            disabled={uploadingScreenshot}
+                          />
+                        </label>
+                      ) : (
+                        <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3">
+                          <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-base">✅</span>
+                          </div>
+                          <p className="flex-1 text-sm font-medium text-green-800 dark:text-green-300">
+                            {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
+                          </p>
+                          <button
+                            onClick={() => setShowScreenshotModal(true)}
+                            className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadScreenshot}
-                      className="hidden"
-                      disabled={uploadingScreenshot}
-                    />
-                  </label>
-                ) : (
-                  <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3">
-                    <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-base">✅</span>
-                    </div>
-                    <p className="flex-1 text-sm font-medium text-green-800 dark:text-green-300">
-                      {language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}
-                    </p>
-                    <button
-                      onClick={() => setShowScreenshotModal(true)}
-                      className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0"
-                    >
-                      <Eye size={16} />
-                    </button>
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  {/* ✅ Строка 3: Инфо-примечание */}
+                  <div className="flex items-center gap-3 p-3.5 bg-[#F5F1E8]/40 dark:bg-dark-accent/30">
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      <span className="text-base">⏳</span>
+                    </div>
+                    <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
+                      {language === 'ru'
+                        ? 'Заказ будет обработан после подтверждения оплаты менеджером'
+                        : 'Buyurtma menejer to\'lovni tasdiqlagandan so\'ng ko\'rib chiqiladi'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* ✅ Кнопки действий — на той же карточке, через border-t */}
+                <div className="grid grid-cols-2 gap-2 p-3 border-t border-[#E8E2D5] dark:border-dark-border">
                   <a
                     href={MANAGER_TELEGRAM_LINK}
                     target="_blank"
@@ -474,9 +491,9 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                     {language === 'ru' ? 'Отменить' : 'Bekor qilish'}
                   </button>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
+              <div className="flex items-center gap-3 p-3.5 bg-green-50 dark:bg-green-500/10">
                 <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-base">✅</span>
                 </div>
@@ -543,8 +560,11 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 }
 
 // ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа, название и ссылка раздельно
-function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchangeRate }: any) {
+// ✅ + кнопка отмены для статусов «На рассмотрении» и «Оценён»
+function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCancel, exchangeRate }: any) {
   useBodyScrollLock(true)
+  const [cancelling, setCancelling] = useState(false)
+
   const formatDateTime = (dateStr: string) =>
     new Date(dateStr).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -587,6 +607,38 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
     typeof request.link === 'string' && request.link.startsWith('http') ? request.link : null
   const requestName =
     request.product_name || (request.link && !requestLink ? request.link : null)
+
+  // ✅ ОТМЕНА СПЕЦЗАКАЗА — переводим статус в «Отменён клиентом» через supabase
+  const handleCancelRequest = async () => {
+    const confirmed = confirm(
+      language === 'ru'
+        ? `Вы уверены что хотите отменить спецзаказ №${request.id}?`
+        : `${request.id}-maxsus buyurtmani bekor qilishga ishonchingiz komilmi?`
+    )
+    if (!confirmed) return
+    setCancelling(true)
+    try {
+      const { error } = await supabase
+        .from('china_requests')
+        .update({ status: 'Отменён клиентом' })
+        .eq('id', request.id)
+      if (error) throw error
+      toast.success(
+        language === 'ru' ? 'Спецзаказ отменён' : 'Maxsus buyurtma bekor qilindi'
+      )
+      // Сбрасываем кеш — при следующем открытии секции список перезагрузится
+      profileChinaRequestsCache = null
+      if (onCancel) onCancel()
+      else onClose()
+    } catch (error) {
+      console.error('Ошибка отмены спецзаказа:', error)
+      toast.error(
+        language === 'ru' ? 'Ошибка при отмене' : 'Bekor qilishda xatolik'
+      )
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -730,22 +782,46 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, exchang
                   ? `Оплатить ${priceInSums.toLocaleString()} сум`
                   : `To'lash ${priceInSums.toLocaleString()} so'm`}
               </button>
+              {/* ✅ КНОПКА ОТМЕНЫ для статуса «Оценён» */}
+              <button
+                onClick={handleCancelRequest}
+                disabled={cancelling}
+                className="w-full py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <X size={18} />
+                {cancelling
+                  ? (language === 'ru' ? 'Отмена...' : 'Bekor qilinmoqda...')
+                  : (language === 'ru' ? 'Отменить спецзаказ' : 'Maxsus buyurtmani bekor qilish')}
+              </button>
             </div>
           ) : request.status === 'На рассмотрении' ? (
-            <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-3.5">
-              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-base">⏳</span>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-3.5">
+                <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-base">⏳</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                    {language === 'ru' ? 'Заявка на рассмотрении' : 'Ariza ko\'rib chiqilmoqda'}
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                    {language === 'ru'
+                      ? 'Менеджер оценит стоимость и свяжется с вами'
+                      : 'Menejer narxni baholaydi va siz bilan bog\'lanadi'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
-                  {language === 'ru' ? 'Заявка на рассмотрении' : 'Ariza ko\'rib chiqilmoqda'}
-                </p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                  {language === 'ru'
-                    ? 'Менеджер оценит стоимость и свяжется с вами'
-                    : 'Menejer narxni baholaydi va siz bilan bog\'lanadi'}
-                </p>
-              </div>
+              {/* ✅ КНОПКА ОТМЕНЫ для статуса «На рассмотрении» */}
+              <button
+                onClick={handleCancelRequest}
+                disabled={cancelling}
+                className="w-full py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <X size={18} />
+                {cancelling
+                  ? (language === 'ru' ? 'Отмена...' : 'Bekor qilinmoqda...')
+                  : (language === 'ru' ? 'Отменить спецзаказ' : 'Maxsus buyurtmani bekor qilish')}
+              </button>
             </div>
           ) : request.status === 'Оплачен' ? (
             <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
@@ -1060,6 +1136,16 @@ export default function ProfilePage() {
       console.error('Ошибка отмены:', error)
       toast.error(language === 'ru' ? 'Ошибка при отмене заказа' : 'Buyurtmani bekor qilishda xatolik')
     }
+  }
+
+  // ✅ ОБРАБОТЧИК ОТМЕНЫ СПЕЦЗАКАЗА — вызывается из ChinaRequestDetailModal
+  const handleCancelChinaRequest = () => {
+    // Кеш уже сброшен внутри модалки, просто закрываем и перезагружаем список
+    navigate(-1)
+    // Небольшая задержка, чтобы navigate сработал, потом перезагружаем
+    setTimeout(() => {
+      loadChinaRequests()
+    }, 100)
   }
 
   const handleAcceptSpecialOrder = (request: any) => {
@@ -1669,6 +1755,7 @@ export default function ProfilePage() {
               language={language}
               exchangeRate={exchangeRate}
               onAccept={handleAcceptSpecialOrder}
+              onCancel={handleCancelChinaRequest}
             />
           )}
         </div>
