@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { cacheProducts } from '../lib/productCache'
 import type { CategoryTree } from '../lib/supabase'
@@ -44,8 +44,9 @@ export default function BrandsPage() {
     isFavorite,
   } = useStore()
 
-  // ✅ Категории из БД (через стор, с кешем 5 минут)
-  const categories = ensureCategories() || []
+  // ✅ Категории из БД: raw = null пока не загрузились
+  const categoriesRaw = ensureCategories()
+  const categories = categoriesRaw || []
 
   // ✅ Мгновенная инициализация из кеша
   const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
@@ -60,9 +61,9 @@ export default function BrandsPage() {
   const selectedBrand =
     brands.find((b) => b.id === brandParam || b.name === brandParam) || null
 
-  // ✅ Данные из общего кеша + клиентская фильтрация по brand
+  // ✅ Данные из общего кеша + фильтрация по активным категориям + по бренду
   const cachedItems = ensureProducts()
-  const products = (cachedItems || []).filter((p: any) => {
+  const products = filterVisibleProducts(cachedItems || [], categoriesRaw).filter((p: any) => {
     if (!brandParam || !selectedBrand) return false
     return p.brand === selectedBrand.name
   })

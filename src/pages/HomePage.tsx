@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
-import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, ArrowRight, ShoppingBag, User as UserIcon, Sparkles } from 'lucide-react'
 
@@ -36,8 +36,11 @@ export default function HomePage() {
     ensureCategories,
   } = useStore()
 
-  // ✅ Категории из БД (с фолбэком, если ещё не загрузились)
-  const categories = ensureCategories() || []
+  // ✅ Категории из БД: raw = null пока не загрузились (нужно для фильтрации товаров)
+  const categoriesRaw = ensureCategories()
+  const categories = categoriesRaw || []
+  // ✅ Товары только активных категорий/подкатегорий
+  const visibleItems = filterVisibleProducts(productsCache?.items || [], categoriesRaw)
 
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
@@ -84,14 +87,14 @@ export default function HomePage() {
   }
 
   const getNewProducts = (limit: number = 6) => {
-    const items = productsCache?.items || []
+    const items = visibleItems
     return [...items]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, limit)
   }
 
   const getPopularProducts = (limit: number = 6) => {
-    const items = productsCache?.items || []
+    const items = visibleItems
     const pop = popularityMap || {}
 
     return [...items]
@@ -102,7 +105,7 @@ export default function HomePage() {
 
   const getDiscountProducts = (limit: number = 6) => {
     if (!saleModeEnabled) return []
-    const items = productsCache?.items || []
+    const items = visibleItems
     return items
       .filter((p) => p.sale_price != null && Number(p.sale_price) > 0)
       .slice(0, limit)

@@ -142,6 +142,23 @@ export const isProductOnSale = (product: any, saleModeEnabled: boolean): boolean
 export const getEffectivePriceUsd = (product: any, saleModeEnabled: boolean): number =>
   isProductOnSale(product, saleModeEnabled) ? Number(product.sale_price) : (product?.price_usd || 0)
 
+// ✅ Фильтрация товаров: показываем только товары АКТИВНЫХ категорий и подкатегорий.
+// categories === null → категории ещё не загрузились → не фильтруем (чтобы не мигать пустотой).
+// categories === [] → все категории отключены → скрываем все товары.
+export const filterVisibleProducts = (items: any[], categories: CategoryTree[] | null): any[] => {
+  if (!Array.isArray(items) || items.length === 0) return items || []
+  if (categories === null) return items
+  const catIds = new Set(categories.map((c) => c.id))
+  const subIds = new Set(
+    categories.flatMap((c) => c.subcategories.filter((s) => s.id !== 'all').map((s) => s.id))
+  )
+  return items.filter((p) => {
+    if (!p || !catIds.has(p.category)) return false
+    if (p.subcategory && !subIds.has(p.subcategory)) return false
+    return true
+  })
+}
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -250,7 +267,9 @@ export const useStore = create<AppState>()(
 
         getCategoriesTree()
           .then((tree) => {
-            if (tree && tree.length > 0) {
+            // ✅ null = ошибка сети/RLS → кеш НЕ трогаем
+            // ✅ [] = все категории отключены → легитимно обновляем кеш
+            if (tree !== null) {
               get().setCategoriesCache(tree)
             }
           })
@@ -338,7 +357,7 @@ if (typeof window !== 'undefined') {
   useStore.getState().updateSaleMode()
   useStore.getState().updatePopularity()
   useStore.getState().ensureProducts()
-  useStore.getState().ensureCategories()
+  useStore.getState().ensureCategories(0) // ✅ FORCE: скрытие категорий видно при каждом запуске
 
   setInterval(() => {
     useStore.getState().updateExchangeRate()
@@ -354,7 +373,7 @@ if (typeof window !== 'undefined') {
       useStore.getState().updateSaleMode()
       useStore.getState().updatePopularity()
       useStore.getState().ensureProducts()
-      useStore.getState().ensureCategories()
+      useStore.getState().ensureCategories(0) // ✅ FORCE: при возврате во вкладку
     }
   })
 }

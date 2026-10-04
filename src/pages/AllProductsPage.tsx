@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
+import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 
@@ -23,8 +23,9 @@ export default function AllProductsPage() {
     ensureCategories,
   } = useStore()
 
-  // ✅ Категории из БД
-  const categories = ensureCategories() || []
+  // ✅ Категории из БД: raw = null пока не загрузились
+  const categoriesRaw = ensureCategories()
+  const categories = categoriesRaw || []
 
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -35,7 +36,8 @@ export default function AllProductsPage() {
 
   const cachedItems = ensureProducts()
   const loading = !cachedItems
-  const products = cachedItems || []
+  // ✅ Товары только активных категорий/подкатегорий
+  const products = filterVisibleProducts(cachedItems || [], categoriesRaw)
 
   useEffect(() => {
     if (hasLoadedPopularityRef.current) return

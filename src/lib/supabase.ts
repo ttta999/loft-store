@@ -134,8 +134,9 @@ export interface SubcategoryRow {
  * Загружает дерево активных категорий с активными подкатегориями.
  * В каждую категорию в начало подкатегорий добавляется виртуальная «Все товары».
  * Отключённые категории и подкатегории НЕ возвращаются — приложение их не видит.
+ * ✅ Возвращает null при ошибке (сеть/RLS), чтобы НЕ затирать кеш мусором.
  */
-export const getCategoriesTree = async (): Promise<CategoryTree[]> => {
+export const getCategoriesTree = async (): Promise<CategoryTree[] | null> => {
   try {
     const [{ data: cats, error: catsErr }, { data: subs, error: subsErr }] = await Promise.all([
       supabase
@@ -152,7 +153,7 @@ export const getCategoriesTree = async (): Promise<CategoryTree[]> => {
 
     if (catsErr || subsErr) {
       console.error('❌ Ошибка загрузки категорий:', catsErr || subsErr)
-      return []
+      return null // ✅ null = ошибка → кеш не трогаем
     }
 
     const subsByCategory = new Map<string, SubcategoryRow[]>()
@@ -183,7 +184,7 @@ export const getCategoriesTree = async (): Promise<CategoryTree[]> => {
     }))
   } catch (error) {
     console.error('❌ Ошибка getCategoriesTree:', error)
-    return []
+    return null // ✅ null = ошибка → кеш не трогаем
   }
 }
 
@@ -417,6 +418,7 @@ export const notifyNewOrder = async (order: any) => {
       const priceText = isUZS
         ? `${item.priceUzs ? Number(item.priceUzs).toLocaleString() : Math.round(item.priceUsd * exchangeRate).toLocaleString()} сум`
         : `$${item.priceUsd}`
+
       return `${index + 1}. ${item.name}\nРазмер: ${item.size}\nКоличество: ${item.quantity} шт.\nЦена: ${priceText}`
     })
     .join('\n\n')
@@ -482,6 +484,7 @@ export const notifyNewChinaRequest = async (request: any) => {
 📏 Размер/Цвет: ${request.size_color || 'Не указан'}
 💬 Комментарий: ${request.comment || 'Нет'}
   `.trim()
+
   await sendNotificationToManager(message)
 }
 
