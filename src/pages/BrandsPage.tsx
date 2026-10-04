@@ -2,7 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { cacheProducts } from '../lib/productCache'
-import { CATEGORIES } from '../data/categories'
+import type { CategoryTree } from '../lib/supabase'
 import { useState, useEffect } from 'react'
 import {
   ChevronRight,
@@ -38,10 +38,14 @@ export default function BrandsPage() {
     exchangeRate,
     saleModeEnabled,
     ensureProducts,
+    ensureCategories,
     addToFavorites,
     removeFromFavorites,
     isFavorite,
   } = useStore()
+
+  // ✅ Категории из БД (через стор, с кешем 5 минут)
+  const categories = ensureCategories() || []
 
   // ✅ Мгновенная инициализация из кеша
   const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
@@ -404,7 +408,7 @@ export default function BrandsPage() {
               {/* ✅ Панель фильтров: строки с круглыми иконками и разделителями */}
               {showFilters && (
                 <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
-                  {/* Категория */}
+                  {/* ✅ Категория — из БД */}
                   <div className="p-3.5">
                     <div className="flex items-center gap-3 mb-2.5">
                       <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -425,7 +429,7 @@ export default function BrandsPage() {
                       >
                         {language === 'ru' ? 'Все' : 'Barchasi'}
                       </button>
-                      {CATEGORIES.map((cat) => (
+                      {categories.map((cat: CategoryTree) => (
                         <button
                           key={cat.id}
                           onClick={() => setSelectedCategory(cat.id)}
