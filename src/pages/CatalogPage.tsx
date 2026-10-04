@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { CATEGORIES } from '../data/categories'
 import { useState, useEffect } from 'react'
 import {
   DollarSign,
@@ -24,14 +23,17 @@ export default function CatalogPage() {
     exchangeRate,
     saleModeEnabled,
     ensureProducts,
+    ensureCategories,
     addToFavorites,
     removeFromFavorites,
     isFavorite,
   } = useStore()
 
+  // ✅ Категории из БД
+  const categories = ensureCategories() || []
   const categoryId = location.state?.category
   const subcategoryId = location.state?.subcategory
-  const category = CATEGORIES.find((c) => c.id === categoryId)
+  const category = categories.find((c) => c.id === categoryId)
 
   const [brands, setBrands] = useState<any[]>(() => catalogBrandsCache || [])
   const [loadingBrands, setLoadingBrands] = useState(() => !catalogBrandsCache)
@@ -41,7 +43,6 @@ export default function CatalogPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Данные из общего кеша + клиентская фильтрация по категории/подкатегории
   const cachedItems = ensureProducts()
   const loading = !cachedItems
   const products = (cachedItems || []).filter((p: any) => {
@@ -55,7 +56,6 @@ export default function CatalogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ✅ Наполняем productCache (для мгновенного открытия карточек)
   useEffect(() => {
     if (products.length > 0) {
       cacheProducts(products)
@@ -153,7 +153,6 @@ export default function CatalogPage() {
     return sub ? (language === 'ru' ? sub.name_ru : sub.name_uz) : ''
   }
 
-  // ✅ Карточка товара в стиле страницы заказа
   const ProductCard = ({ product }: { product: any }) => {
     const onSale = isProductOnSale(product, saleModeEnabled)
     const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
@@ -212,7 +211,6 @@ export default function CatalogPage() {
           )}
         </div>
 
-        {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
         <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
           <span className="text-xs text-[#8A8275] dark:text-gray-300">
             {language === 'ru' ? 'Цена' : 'Narx'}
@@ -225,7 +223,6 @@ export default function CatalogPage() {
     )
   }
 
-  // ✅ Лоадер — шапка-карточка + карточка со спиннером
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
@@ -234,7 +231,7 @@ export default function CatalogPage() {
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
-                {language === 'ru' ? category?.name_ru : category?.name_uz}
+                {language === 'ru' ? category?.name_ru || 'Каталог' : category?.name_uz || 'Katalog'}
               </h1>
               <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
                 {language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
@@ -260,7 +257,6 @@ export default function CatalogPage() {
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
       <div className="p-4">
-        {/* ✅ Шапка-карточка: эмодзи категории + название + подкатегория + счётчик */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -280,7 +276,6 @@ export default function CatalogPage() {
           </span>
         </div>
 
-        {/* ✅ Карточка фильтров: кнопка toggle + строки с круглыми иконками */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -322,10 +317,8 @@ export default function CatalogPage() {
             )}
           </button>
 
-          {/* ✅ Панель фильтров: строки с круглыми иконками и разделителями */}
           {showFilters && (
             <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
-              {/* Бренд — мультиселект */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -369,7 +362,6 @@ export default function CatalogPage() {
                 </div>
               </div>
 
-              {/* Цена */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -397,7 +389,6 @@ export default function CatalogPage() {
                 </div>
               </div>
 
-              {/* Сортировка */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -454,7 +445,6 @@ export default function CatalogPage() {
           )}
         </div>
 
-        {/* ✅ Результаты / пустое состояние */}
         {filteredProducts.length === 0 ? (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
             <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">

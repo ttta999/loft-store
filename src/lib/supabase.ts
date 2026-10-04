@@ -7,17 +7,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// ✅ In-memory кеш популярности (переживает переходы между страницами)
+// ========== ПОПУЛЯРНОСТЬ ==========
 const popularityCache = {
   data: null as Record<string, number> | null,
   updatedAt: 0,
 }
-const POPULARITY_CACHE_TTL = 10 * 60 * 1000 // 10 минут
+const POPULARITY_CACHE_TTL = 10 * 60 * 1000
 
-// ✅ Получение реальной популярности товаров через SQL-функцию
-export const fetchProductPopularity = async (
-  force = false
-): Promise<Record<string, number>> => {
+export const fetchProductPopularity = async (force = false): Promise<Record<string, number>> => {
   const age = Date.now() - popularityCache.updatedAt
   if (!force && popularityCache.data && age < POPULARITY_CACHE_TTL) {
     return popularityCache.data
@@ -38,7 +35,6 @@ export const fetchProductPopularity = async (
 
     popularityCache.data = map
     popularityCache.updatedAt = Date.now()
-    console.log('✅ Популярность обновлена:', Object.keys(map).length, 'товаров')
     return map
   } catch (error) {
     console.error('❌ Ошибка запроса популярности:', error)
@@ -46,14 +42,12 @@ export const fetchProductPopularity = async (
   }
 }
 
-// ✅ Сколько раз конкретный товар был продан (с учётом кеша)
-export const getProductSoldCount = async (
-  productId: string
-): Promise<number> => {
+export const getProductSoldCount = async (productId: string): Promise<number> => {
   const map = await fetchProductPopularity()
   return map[productId] || 0
 }
 
+// ========== ТОВАРЫ ==========
 export const getProducts = async () => {
   const { data, error } = await supabase
     .from('products')
@@ -66,9 +60,7 @@ export const getProducts = async () => {
     return []
   }
 
-  // ✅ Наполняем общий кеш — карточки товаров открываются мгновенно
   cacheProducts(data)
-
   return data || []
 }
 
@@ -85,10 +77,7 @@ export const getProductSizes = async (productId: string) => {
   }
 
   const rows = data || []
-
-  // ✅ Кешируем размеры — повторное открытие карточки мгновенное
   cacheSizes(productId, rows.map((v: any) => v.size_value))
-
   return rows
 }
 
@@ -105,29 +94,100 @@ export const checkProductStock = async (
     .single()
 
   if (error || !variant) {
-    return {
-      available: false,
-      error: `К сожалению, размер "${size}" временно отсутствует`,
-    }
+    return { available: false, error: `К сожалению, размер "${size}" временно отсутствует` }
   }
 
   if ((variant.stock || 0) < quantity) {
     if (variant.stock === 0) {
-      return {
-        available: false,
-        error: `Размер "${size}" закончился. Мы уже работаем над пополнением! 🙏`,
-      }
+      return { available: false, error: `Размер "${size}" закончился. Мы уже работаем над пополнением! 🙏` }
     } else {
-      return {
-        available: false,
-        error: `Осталось только ${variant.stock} шт.`,
-      }
+      return { available: false, error: `Осталось только ${variant.stock} шт.` }
     }
   }
 
   return { available: true }
 }
 
+// ========== КАТЕГОРИИ (из БД, с учётом is_active) ==========
+export interface CategoryTree {
+  id: string
+  name_ru: string
+  name_uz: string
+  icon: string
+  sort_order: number
+  is_active: boolean
+  subcategories: SubcategoryRow[]
+}
+
+export interface SubcategoryRow {
+  id: string
+  category_id: string
+  name_ru: string
+  name_uz: string
+  size_type: string
+  sizes: string[]
+  sort_order: number
+  is_active: boolean
+}
+
+/**
+ * Загружает дерево активных категорий с активными подкатегориями.
+ * В каждую категорию в начало подкатегорий добавляется виртуальная «Все товары».
+ * Отключённые категории и подкатегории НЕ возвращаются — приложение их не видит.
+ */
+export const getCategoriesTree = async (): Promise<CategoryTree[]> => {
+  try {
+    const [{ data: cats, error: catsErr }, { data: subs, error: subsErr }] = await Promise.all([
+      supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true }),
+      supabase
+        .from('subcategories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true }),
+    ])
+
+    if (catsErr || subsErr) {
+      console.error('❌ Ошибка загрузки категорий:', catsErr || subsErr)
+      return []
+    }
+
+    const subsByCategory = new Map<string, SubcategoryRow[]>()
+    for (const s of (subs || []) as any[]) {
+      const row: SubcategoryRow = {
+        ...s,
+        sizes: Array.isArray(s.sizes) ? s.sizes : [],
+      }
+      const list = subsByCategory.get(s.category_id) || []
+      list.push(row)
+      subsByCategory.set(s.category_id, list)
+    }
+
+    const allSub: SubcategoryRow = {
+      id: 'all',
+      category_id: '',
+      name_ru: 'Все товары',
+      name_uz: 'Barcha mahsulotlar',
+      size_type: 'all',
+      sizes: [],
+      sort_order: -1,
+      is_active: true,
+    }
+
+    return ((cats || []) as any[]).map((c) => ({
+      ...c,
+      subcategories: [allSub, ...(subsByCategory.get(c.id) || [])],
+    }))
+  } catch (error) {
+    console.error('❌ Ошибка getCategoriesTree:', error)
+    return []
+  }
+}
+
+// ========== ЗАКАЗЫ ==========
 const updateStockAfterOrder = async (items: any[]) => {
   console.log('📦 Обновляем остатки после заказа:', items)
 
@@ -152,8 +212,6 @@ const updateStockAfterOrder = async (items: any[]) => {
 
     const variant = variants[0]
     const newStock = Math.max(0, (variant.stock || 0) - item.quantity)
-
-    console.log(`📉 Товар ${item.productId} (${item.size}): ${variant.stock} → ${newStock}`)
 
     const { error: updateError } = await supabase
       .from('product_variants')
@@ -211,11 +269,7 @@ export const createOrder = async (orderData: any) => {
     const stockCheck = await checkStockAvailability(orderData.items)
     if (!stockCheck.available) {
       console.error('❌ Недостаточно товара:', stockCheck.error)
-      return {
-        data: null,
-        error: { message: stockCheck.error },
-        stockError: true,
-      }
+      return { data: null, error: { message: stockCheck.error }, stockError: true }
     }
   }
 
@@ -231,31 +285,18 @@ export const createOrder = async (orderData: any) => {
 
   if (orderData.items && orderData.items.length > 0) {
     await updateStockAfterOrder(orderData.items)
-    // ✅ Инвалидируем кеш популярности — появились новые продажи
     popularityCache.updatedAt = 0
   }
 
   return { data, error: null }
 }
 
-export const createOrderFromSpecial = async (
-  specialRequestId: string,
-  orderData: any
-) => {
-  console.log('Создаём заказ из спецзаказа:', {
-    specialRequestId,
-    type: typeof specialRequestId,
-    orderData,
-  })
-
+export const createOrderFromSpecial = async (specialRequestId: string, orderData: any) => {
   const specialOrderIdStr = specialRequestId.toString()
 
   const { data, error } = await supabase
     .from('orders')
-    .insert({
-      ...orderData,
-      special_order_id: specialOrderIdStr,
-    })
+    .insert({ ...orderData, special_order_id: specialOrderIdStr })
     .select()
 
   if (error) {
@@ -264,28 +305,20 @@ export const createOrderFromSpecial = async (
   }
 
   const createdOrder = Array.isArray(data) ? data[0] : data
-  console.log('✅ Заказ создан:', createdOrder)
 
   const { error: updateError } = await supabase
     .from('china_requests')
-    .update({
-      status: 'Оплачен',
-      converted_to_order_id: createdOrder.id.toString(),
-    })
+    .update({ status: 'Оплачен', converted_to_order_id: createdOrder.id.toString() })
     .eq('id', specialRequestId)
 
   if (updateError) {
     console.error('❌ Ошибка обновления спецзаказа:', updateError)
-  } else {
-    console.log('✅ Спецзаказ обновлён на "Оплачен"')
   }
 
   return { data, error: null }
 }
 
 export const restoreStockAfterCancel = async (items: any[]) => {
-  console.log('📈 Возвращаем остатки после отмены:', items)
-
   for (const item of items) {
     if (!item.productId || item.isSpecialOrder) continue
 
@@ -300,8 +333,6 @@ export const restoreStockAfterCancel = async (items: any[]) => {
     const variant = variants[0]
     const newStock = (variant.stock || 0) + item.quantity
 
-    console.log(`📈 Товар ${item.productId} (${item.size}): ${variant.stock} → ${newStock}`)
-
     await supabase
       .from('product_variants')
       .update({ stock: newStock })
@@ -309,11 +340,7 @@ export const restoreStockAfterCancel = async (items: any[]) => {
   }
 }
 
-// ✅ ПОЛНОЕ удаление неоплаченного заказа — без следа «Отменён».
-// Сначала пробуем серверную функцию delete_unpaid_order (атомарно, обходит RLS),
-// при её отсутствии — клиентский фолбэк: остатки + откат спецзаказа + DELETE.
 export const deleteUnpaidOrder = async (orderId: string): Promise<boolean> => {
-  // 1) Серверная функция (рекомендуется — выполнить SQL из инструкции)
   try {
     const { data, error } = await supabase.rpc('delete_unpaid_order', {
       p_order_id: Number(orderId),
@@ -326,7 +353,6 @@ export const deleteUnpaidOrder = async (orderId: string): Promise<boolean> => {
     console.warn('⚠️ Ошибка RPC delete_unpaid_order:', err)
   }
 
-  // 2) Клиентский фолбэк
   try {
     const { data: order, error: fetchError } = await supabase
       .from('orders')
@@ -334,23 +360,15 @@ export const deleteUnpaidOrder = async (orderId: string): Promise<boolean> => {
       .eq('id', orderId)
       .single()
 
-    if (fetchError || !order) {
-      console.error('❌ Заказ не найден для удаления:', fetchError)
-      return false
-    }
+    if (fetchError || !order) return false
 
-    // 🔒 Защита: удаляем ТОЛЬКО неоплаченные заказы
-    if (order.payment_status && order.payment_status !== 'pending') {
-      return false
-    }
+    if (order.payment_status && order.payment_status !== 'pending') return false
 
-    // Возвращаем остатки на склад
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
     if (Array.isArray(items)) {
       await restoreStockAfterCancel(items)
     }
 
-    // Откатываем спецзаказ в «Оценён»
     if (order.special_order_id) {
       await supabase
         .from('china_requests')
@@ -358,16 +376,12 @@ export const deleteUnpaidOrder = async (orderId: string): Promise<boolean> => {
         .eq('id', order.special_order_id)
     }
 
-    // Полностью удаляем заказ
     const { error: deleteError } = await supabase
       .from('orders')
       .delete()
       .eq('id', orderId)
 
-    if (deleteError) {
-      console.error('❌ Ошибка удаления заказа:', deleteError)
-      return false
-    }
+    if (deleteError) return false
     return true
   } catch (error) {
     console.error('❌ Ошибка клиентского удаления заказа:', error)
@@ -403,11 +417,7 @@ export const notifyNewOrder = async (order: any) => {
       const priceText = isUZS
         ? `${item.priceUzs ? Number(item.priceUzs).toLocaleString() : Math.round(item.priceUsd * exchangeRate).toLocaleString()} сум`
         : `$${item.priceUsd}`
-
-      return `${index + 1}. ${item.name}
-Размер: ${item.size}
-Количество: ${item.quantity} шт.
-Цена: ${priceText}`
+      return `${index + 1}. ${item.name}\nРазмер: ${item.size}\nКоличество: ${item.quantity} шт.\nЦена: ${priceText}`
     })
     .join('\n\n')
 
@@ -442,7 +452,6 @@ ${itemsList}
   await sendNotificationToManager(managerMessage)
 
   const clientChatId = order.user_chat_id || order.user_id
-
   if (clientChatId && clientChatId !== 'guest-user') {
     const clientMessage = `
 ✅ <b>Ваш заказ №${order.id} принят!</b>
@@ -460,25 +469,19 @@ ${itemsList}
 
 Спасибо за заказ! 🙏
 `.trim()
-
     await sendNotificationToClient(clientMessage, clientChatId)
   }
 }
 
 export const notifyNewChinaRequest = async (request: any) => {
-  const nameLine = request.product_name
-    ? `\n📦 Название: ${request.product_name}`
-    : ''
-  const linkLine = request.link
-    ? `\n🔗 Ссылка: ${request.link}`
-    : ''
+  const nameLine = request.product_name ? `\n📦 Название: ${request.product_name}` : ''
+  const linkLine = request.link ? `\n🔗 Ссылка: ${request.link}` : ''
   const message = `
 🌍 <b>Новый спецзаказ №${request.id}</b>${nameLine}${linkLine}
 
 📏 Размер/Цвет: ${request.size_color || 'Не указан'}
 💬 Комментарий: ${request.comment || 'Нет'}
   `.trim()
-
   await sendNotificationToManager(message)
 }
 

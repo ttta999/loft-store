@@ -25,12 +25,14 @@ export default function SearchPage() {
     removeFromFavorites,
     isFavorite,
     ensureProducts,
+    ensureCategories,
   } = useStore()
 
-  // ✅ Данные из общего кеша (мгновенно)
   const cachedItems = ensureProducts()
   const loading = !cachedItems
   const products = cachedItems || []
+  // ✅ Категории из БД
+  const categories = ensureCategories() || []
 
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState(initialQuery)
@@ -42,13 +44,6 @@ export default function SearchPage() {
   const [brands, setBrands] = useState<Brand[]>(() => searchBrandsCache || [])
   const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null)
 
-  const categories = [
-    { id: 'shoes', name_ru: 'Обувь', name_uz: 'Oyoq kiyim' },
-    { id: 'clothes', name_ru: 'Одежда', name_uz: 'Kiyim' },
-    { id: 'accessories', name_ru: 'Аксессуары', name_uz: 'Aksessuarlar' },
-  ]
-
-  // ✅ Автофокус на поле поиска при первом рендере
   useEffect(() => {
     if (searchInputRef && !initialQuery) {
       searchInputRef.focus()
@@ -56,7 +51,6 @@ export default function SearchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInputRef])
 
-  // ✅ Бренды: async/await (без .catch на PromiseLike)
   useEffect(() => {
     const load = async () => {
       if (searchBrandsCache) {
@@ -79,7 +73,6 @@ export default function SearchPage() {
     load()
   }, [])
 
-  // ✅ Синхронизируем searchQuery ↔ URL (?q=...)
   useEffect(() => {
     if (searchQuery.trim()) {
       setSearchParams({ q: searchQuery }, { replace: true })
@@ -168,7 +161,6 @@ export default function SearchPage() {
     (priceRange[0] > 0 || priceRange[1] < 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
-  // ✅ Состояние загрузки — шапка-карточка + карточка со спиннером
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
@@ -200,7 +192,6 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <div className="p-4">
-        {/* ✅ Шапка-карточка: заголовок + счётчик + круглая иконка (стиль страницы заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -216,7 +207,6 @@ export default function SearchPage() {
           </div>
         </div>
 
-        {/* ✅ Поисковая строка-карточка (строка внутри карточки с иконкой) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -241,7 +231,6 @@ export default function SearchPage() {
             )}
           </div>
 
-          {/* ✅ Кнопка фильтров — как строка внутри той же карточки с border-t */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`w-full flex items-center justify-between gap-3 px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border transition-colors ${
@@ -283,10 +272,9 @@ export default function SearchPage() {
           </button>
         </div>
 
-        {/* ✅ Панель фильтров: единая карточка со строками-иконками и разделителями */}
         {showFilters && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            {/* Категория */}
+            {/* ✅ Категория — из БД */}
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -323,7 +311,6 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* Бренд */}
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -360,7 +347,6 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* Цена */}
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -388,7 +374,6 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* Сортировка */}
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -444,7 +429,6 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* ✅ Результаты / пустое состояние */}
         {filteredProducts.length === 0 ? (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
             <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">
@@ -526,7 +510,6 @@ export default function SearchPage() {
                       )}
                     </div>
 
-                    {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
                     <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
                       <span className="text-xs text-[#8A8275] dark:text-gray-300">
                         {language === 'ru' ? 'Цена' : 'Narx'}

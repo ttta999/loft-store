@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
-import { CATEGORIES } from '../data/categories'
 import IslandHeader from '../components/IslandHeader'
 
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
@@ -21,7 +20,11 @@ export default function AllProductsPage() {
     popularityMap,
     getPopularityAge,
     ensureProducts,
+    ensureCategories,
   } = useStore()
+
+  // ✅ Категории из БД
+  const categories = ensureCategories() || []
 
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -30,12 +33,10 @@ export default function AllProductsPage() {
 
   const hasLoadedPopularityRef = useRef(false)
 
-  // ✅ Данные из общего кеша + клиентская фильтрация
   const cachedItems = ensureProducts()
   const loading = !cachedItems
   const products = cachedItems || []
 
-  // ✅ Подгружаем популярность для сортировки «popular»
   useEffect(() => {
     if (hasLoadedPopularityRef.current) return
     hasLoadedPopularityRef.current = true
@@ -77,7 +78,6 @@ export default function AllProductsPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Динамическая шапка: эмодзи + заголовок + иконка
   const headerConfig = (() => {
     if (sortBy === 'newest') {
       return {
@@ -111,7 +111,6 @@ export default function AllProductsPage() {
     setSortBy('newest')
   }
 
-  // ✅ Карточка товара в стиле страницы заказа
   const ProductCard = ({ product }: { product: any }) => {
     const onSale = isProductOnSale(product, saleModeEnabled)
     const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
@@ -170,7 +169,6 @@ export default function AllProductsPage() {
           )}
         </div>
 
-        {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
         <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
           <span className="text-xs text-[#8A8275] dark:text-gray-300">
             {language === 'ru' ? 'Цена' : 'Narx'}
@@ -183,7 +181,6 @@ export default function AllProductsPage() {
     )
   }
 
-  // ✅ Лоадер — шапка-карточка + карточка со спиннером
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
@@ -217,7 +214,6 @@ export default function AllProductsPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
       <div className="p-4">
-        {/* ✅ Шапка-карточка: динамический заголовок + счётчик + круглая иконка */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -237,7 +233,6 @@ export default function AllProductsPage() {
           </div>
         </div>
 
-        {/* ✅ Карточка фильтров: кнопка toggle + (если открыта) строки с иконками */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -279,10 +274,9 @@ export default function AllProductsPage() {
             )}
           </button>
 
-          {/* ✅ Панель фильтров: строки с круглыми иконками и разделителями */}
           {showFilters && (
             <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
-              {/* Категория */}
+              {/* ✅ Категория — из БД */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -306,7 +300,7 @@ export default function AllProductsPage() {
                   >
                     {language === 'ru' ? 'Все' : 'Barchasi'}
                   </button>
-                  {CATEGORIES.map((cat) => (
+                  {categories.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => {
@@ -325,7 +319,7 @@ export default function AllProductsPage() {
                 </div>
               </div>
 
-              {/* Подкатегория — показываем только если выбрана категория */}
+              {/* ✅ Подкатегория — из БД (пропускаем виртуальную «Все товары» id='all') */}
               {selectedCategory !== 'all' && (
                 <div className="p-3.5">
                   <div className="flex items-center gap-3 mb-2.5">
@@ -347,8 +341,9 @@ export default function AllProductsPage() {
                     >
                       {language === 'ru' ? 'Все' : 'Barchasi'}
                     </button>
-                    {CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories
-                      .filter((sub) => sub.id !== 'all')
+                    {categories
+                      .find((c) => c.id === selectedCategory)
+                      ?.subcategories.filter((sub) => sub.id !== 'all')
                       .map((sub) => (
                         <button
                           key={sub.id}
@@ -366,7 +361,6 @@ export default function AllProductsPage() {
                 </div>
               )}
 
-              {/* Сортировка */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -401,7 +395,6 @@ export default function AllProductsPage() {
           )}
         </div>
 
-        {/* ✅ Результаты / пустое состояние */}
         {filteredProducts.length === 0 ? (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
             <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">

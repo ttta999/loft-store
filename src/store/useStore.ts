@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase, fetchProductPopularity, getProducts } from '../lib/supabase'
+import {
+  supabase,
+  fetchProductPopularity,
+  getProducts,
+  getCategoriesTree,
+  type CategoryTree,
+} from '../lib/supabase'
 
 type Currency = 'USD' | 'UZS'
 type Language = 'ru' | 'uz'
@@ -38,6 +44,11 @@ interface CachedProducts {
   updatedAt: number
 }
 
+interface CachedCategories {
+  items: CategoryTree[]
+  updatedAt: number
+}
+
 interface AppState {
   language: Language
   currency: Currency
@@ -49,6 +60,7 @@ interface AppState {
   chatId: string | null
   telegramUser: TelegramUser | null
   productsCache: CachedProducts | null
+  categoriesCache: CachedCategories | null
   popularityMap: Record<string, number> | null
   popularityUpdatedAt: number
   setLanguage: (lang: Language) => void
@@ -58,15 +70,17 @@ interface AppState {
   setTheme: (theme: Theme) => void
   setTelegramUser: (user: TelegramUser | null) => void
   setProductsCache: (items: any[]) => void
+  setCategoriesCache: (items: CategoryTree[]) => void
   setPopularityMap: (map: Record<string, number>) => void
   getProductsCacheAge: () => number
+  getCategoriesCacheAge: () => number
   getPopularityAge: () => number
   getProductSoldCount: (productId: string) => number
   updateExchangeRate: () => Promise<void>
   updateSaleMode: () => Promise<void>
   updatePopularity: (force?: boolean) => Promise<void>
-  // ✅ НОВОЕ: вернуть кеш если свежий, иначе тихо обновить в фоне
   ensureProducts: (maxAgeMs?: number) => any[] | null
+  ensureCategories: (maxAgeMs?: number) => CategoryTree[] | null
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string, size: string) => void
   clearCart: () => void
@@ -141,6 +155,7 @@ export const useStore = create<AppState>()(
       chatId: null,
       telegramUser: null,
       productsCache: null,
+      categoriesCache: null,
       popularityMap: null,
       popularityUpdatedAt: 0,
 
@@ -152,11 +167,18 @@ export const useStore = create<AppState>()(
       setTelegramUser: (user) => set({ telegramUser: user }),
       setProductsCache: (items) =>
         set({ productsCache: { items, updatedAt: Date.now() } }),
+      setCategoriesCache: (items) =>
+        set({ categoriesCache: { items, updatedAt: Date.now() } }),
       setPopularityMap: (map) =>
         set({ popularityMap: map, popularityUpdatedAt: Date.now() }),
 
       getProductsCacheAge: () => {
         const cache = get().productsCache
+        if (!cache) return Infinity
+        return Date.now() - cache.updatedAt
+      },
+      getCategoriesCacheAge: () => {
+        const cache = get().categoriesCache
         if (!cache) return Infinity
         return Date.now() - cache.updatedAt
       },
@@ -184,7 +206,6 @@ export const useStore = create<AppState>()(
         const enabled = await fetchSaleModeFromDB()
         if (enabled !== null && enabled !== get().saleModeEnabled) {
           set({ saleModeEnabled: enabled })
-          console.log('🏷️ Режим скидок:', enabled ? 'ВКЛ' : 'ВЫКЛ')
         }
       },
 
@@ -197,9 +218,6 @@ export const useStore = create<AppState>()(
         }
       },
 
-      // ✅ НОВОЕ: обеспечивает данные без блокировки UI
-      // Возвращает кеш синхронно (или null если его нет).
-      // Если кеш устарел — запускает фоновое обновление (без setState loading=true).
       ensureProducts: (maxAgeMs = 5 * 60 * 1000) => {
         const state = get()
         const age = state.getProductsCacheAge()
@@ -208,7 +226,6 @@ export const useStore = create<AppState>()(
           return state.productsCache.items
         }
 
-        // Фоновое обновление — не блокирует UI
         getProducts()
           .then((data) => {
             if (data && data.length > 0) {
@@ -219,8 +236,29 @@ export const useStore = create<AppState>()(
             console.error('❌ ensureProducts background fetch failed:', err)
           })
 
-        // Возвращаем текущий (пусть устаревший) кеш, если есть
         return state.productsCache?.items || null
+      },
+
+      // ✅ Категории: синхронный возврат + фоновое обновление
+      ensureCategories: (maxAgeMs = 5 * 60 * 1000) => {
+        const state = get()
+        const age = state.getCategoriesCacheAge()
+
+        if (state.categoriesCache && age < maxAgeMs) {
+          return state.categoriesCache.items
+        }
+
+        getCategoriesTree()
+          .then((tree) => {
+            if (tree && tree.length > 0) {
+              get().setCategoriesCache(tree)
+            }
+          })
+          .catch((err) => {
+            console.error('❌ ensureCategories background fetch failed:', err)
+          })
+
+        return state.categoriesCache?.items || null
       },
 
       addToCart: (item) =>
@@ -254,9 +292,7 @@ export const useStore = create<AppState>()(
 
       removeFromCart: (productId, size) =>
         set((state) => ({
-          cart: state.cart.filter(
-            (i) => !(i.productId === productId && i.size === size)
-          ),
+          cart: state.cart.filter((i) => !(i.productId === productId && i.size === size)),
         })),
       clearCart: () => set({ cart: [] }),
       getTotalPrice: () => {
@@ -289,6 +325,7 @@ export const useStore = create<AppState>()(
         cart: state.cart,
         favorites: state.favorites,
         productsCache: state.productsCache,
+        categoriesCache: state.categoriesCache,
         popularityMap: state.popularityMap,
         popularityUpdatedAt: state.popularityUpdatedAt,
       }),
@@ -300,14 +337,15 @@ if (typeof window !== 'undefined') {
   useStore.getState().updateExchangeRate()
   useStore.getState().updateSaleMode()
   useStore.getState().updatePopularity()
-  // ✅ Pre-warm productsCache при старте приложения
   useStore.getState().ensureProducts()
+  useStore.getState().ensureCategories()
 
   setInterval(() => {
     useStore.getState().updateExchangeRate()
     useStore.getState().updateSaleMode()
     useStore.getState().updatePopularity()
     useStore.getState().ensureProducts()
+    useStore.getState().ensureCategories()
   }, 5 * 60 * 1000)
 
   document.addEventListener('visibilitychange', () => {
@@ -316,6 +354,7 @@ if (typeof window !== 'undefined') {
       useStore.getState().updateSaleMode()
       useStore.getState().updatePopularity()
       useStore.getState().ensureProducts()
+      useStore.getState().ensureCategories()
     }
   })
 }

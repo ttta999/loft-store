@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { CATEGORIES } from '../data/categories'
 import { ChevronRight, AlertCircle } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 
@@ -17,10 +16,12 @@ const getSubcategoriesLabelRu = (count: number): string => {
 export default function CategoryPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { language } = useStore()
+  const { language, ensureCategories } = useStore()
 
+  // ✅ Категории из БД
+  const categories = ensureCategories() || []
   const categoryId = location.state?.categoryId
-  const category = CATEGORIES.find(c => c.id === categoryId)
+  const category = categories.find(c => c.id === categoryId)
 
   const handleSubcategoryClick = (subcategoryId: string) => {
     navigate('/catalog', {
@@ -70,7 +71,6 @@ export default function CategoryPage() {
       />
 
       <div className="p-4">
-        {/* ✅ Шапка-карточка: эмодзи категории + название + счётчик (как шапка заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -94,7 +94,6 @@ export default function CategoryPage() {
           </span>
         </div>
 
-        {/* ✅ Единая карточка подкатегорий: строки с круглыми иконками и разделителями */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
           {category.subcategories.map((sub) => (
             <button
@@ -132,7 +131,6 @@ export default function CategoryPage() {
           ))}
         </div>
 
-        {/* ✅ Инфо-примечание — строка с круглой иконкой (как в деталях заказа) */}
         <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
           <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
             <span className="text-base leading-none">💡</span>

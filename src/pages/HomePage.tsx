@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import { Heart, ArrowRight, ShoppingBag, User as UserIcon, Sparkles } from 'lucide-react'
-import { CATEGORIES } from '../data/categories'
 
 const CACHE_FRESH_MS = 5 * 60 * 1000
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
@@ -34,7 +33,11 @@ export default function HomePage() {
     popularityMap,
     getPopularityAge,
     telegramUser,
+    ensureCategories,
   } = useStore()
+
+  // ✅ Категории из БД (с фолбэком, если ещё не загрузились)
+  const categories = ensureCategories() || []
 
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
@@ -170,7 +173,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
           <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
             <span className="text-xs text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Цена' : 'Narx'}
@@ -261,7 +263,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <div className="p-4">
-        {/* ✅ Шапка-карточка: приветствие (как шапка заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center gap-3">
           {telegramUser?.photoUrl ? (
             <img
@@ -287,35 +288,41 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ✅ Категории — единая карточка со строками-иконками и разделителями */}
+        {/* ✅ Категории — из БД через ensureCategories() */}
         <SectionHeader
           emoji="🗂"
           title={language === 'ru' ? 'Категории' : 'Kategoriyalar'}
-          count={CATEGORIES.length + 1}
+          count={categories.length + 1}
         />
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-6 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryClick(cat.id)}
-              className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
-            >
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <span className="text-lg leading-none">{cat.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
-                  {language === 'ru' ? cat.name_ru : cat.name_uz}
-                </p>
-                <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-                  {cat.subcategories.length - 1} {language === 'ru'
-                    ? getItemsLabelRu(cat.subcategories.length - 1)
-                    : 'ta pastki kategoriya'}
-                </p>
-              </div>
-              <ArrowRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
-            </button>
-          ))}
+          {categories.length === 0 ? (
+            <div className="p-6 text-center text-sm text-[#8A8275] dark:text-gray-300">
+              {language === 'ru' ? 'Загрузка категорий...' : 'Kategoriyalar yuklanmoqda...'}
+            </div>
+          ) : (
+            categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg leading-none">{cat.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
+                    {language === 'ru' ? cat.name_ru : cat.name_uz}
+                  </p>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                    {cat.subcategories.length - 1} {language === 'ru'
+                      ? getItemsLabelRu(cat.subcategories.length - 1)
+                      : 'ta pastki kategoriya'}
+                  </p>
+                </div>
+                <ArrowRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+              </button>
+            ))
+          )}
           <button
             onClick={() => navigate('/brands')}
             className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
@@ -335,7 +342,6 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* ✅ Скидки — карточки в едином стиле */}
         {discountProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
@@ -354,7 +360,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ✅ Новые товары */}
         {newProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
@@ -372,7 +377,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ✅ Популярные товары */}
         {popularProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
@@ -390,7 +394,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ✅ Пустое состояние — если совсем ничего нет */}
         {discountProducts.length === 0 && newProducts.length === 0 && popularProducts.length === 0 && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
             <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">
