@@ -23,13 +23,11 @@ interface Brand {
   is_active: boolean
 }
 
-// ✅ Module-level кеш: список брендов переживает размонтирование
 let brandsListCache: Brand[] | null = null
 
 export default function BrandsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  // ✅ ВЫБРАННЫЙ БРЕНД ТЕПЕРЬ В URL: /brands?brand=<id>
   const brandParam = searchParams.get('brand')
 
   const {
@@ -44,11 +42,9 @@ export default function BrandsPage() {
     isFavorite,
   } = useStore()
 
-  // ✅ Категории из БД: raw = null пока не загрузились
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
 
-  // ✅ Мгновенная инициализация из кеша
   const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
   const [loadingBrands, setLoadingBrands] = useState(() => !brandsListCache)
   const [showFilters, setShowFilters] = useState(false)
@@ -57,11 +53,9 @@ export default function BrandsPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Бренд выводится из URL — история и «назад» работают корректно
   const selectedBrand =
     brands.find((b) => b.id === brandParam || b.name === brandParam) || null
 
-  // ✅ Данные из общего кеша + фильтрация по активным категориям + по бренду
   const cachedItems = ensureProducts()
   const products = filterVisibleProducts(cachedItems || [], categoriesRaw).filter((p: any) => {
     if (!brandParam || !selectedBrand) return false
@@ -69,13 +63,11 @@ export default function BrandsPage() {
   })
   const loading = !cachedItems && !!brandParam
 
-  // ✅ Загрузка брендов: async/await (без .catch на PromiseLike)
   useEffect(() => {
     loadBrands()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ✅ Сброс фильтров при смене бренда
   useEffect(() => {
     setSelectedCategory('')
     setMinPrice(0)
@@ -84,7 +76,6 @@ export default function BrandsPage() {
     setShowFilters(false)
   }, [brandParam])
 
-  // ✅ Наполняем productCache (для мгновенного открытия карточек)
   useEffect(() => {
     if (products.length > 0) {
       cacheProducts(products)
@@ -114,14 +105,12 @@ export default function BrandsPage() {
     }
   }
 
-  // ✅ ОБРАБОТЧИК ПОВТОРА — вынесен из JSX
   const retryLoadBrands = async () => {
     brandsListCache = null
     await loadBrands()
   }
 
   const handleBrandClick = (brand: Brand) => {
-    // ✅ PUSH новой записи истории с брендом в URL
     navigate(`/brands?brand=${encodeURIComponent(brand.id)}`)
   }
 
@@ -131,7 +120,6 @@ export default function BrandsPage() {
     if (canPop) {
       navigate(-1)
     } else {
-      // ✅ Фолбэк для прямого входа по ссылке
       navigate(brandParam ? '/brands' : '/')
     }
   }
@@ -185,7 +173,6 @@ export default function BrandsPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
-  // ✅ Карточка товара в стиле страницы заказа
   const ProductCard = ({ product }: { product: any }) => {
     const onSale = isProductOnSale(product, saleModeEnabled)
     const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
@@ -244,7 +231,6 @@ export default function BrandsPage() {
           )}
         </div>
 
-        {/* ✅ Нижняя строка «Цена» — как «Итого» в деталях заказа */}
         <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
           <span className="text-xs text-[#8A8275] dark:text-gray-300">
             {language === 'ru' ? 'Цена' : 'Narx'}
@@ -262,10 +248,8 @@ export default function BrandsPage() {
       <IslandHeader needsBack={true} onBack={handleBack} />
 
       <div className="p-4">
-        {/* ✅ РЕЖИМ 1: Список брендов */}
         {!brandParam ? (
           <>
-            {/* ✅ Шапка-карточка: заголовок + счётчик + круглая иконка (стиль страницы заказа) */}
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -278,7 +262,7 @@ export default function BrandsPage() {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <span className="text-xl leading-none">🏷️</span>
+                <Tag size={18} className="text-[#1B2A4A] dark:text-white" />
               </div>
             </div>
 
@@ -309,7 +293,6 @@ export default function BrandsPage() {
                 </button>
               </div>
             ) : (
-              /* ✅ Единая карточка брендов: строки с круглыми иконками и разделителями */
               <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
                 {brands.map((brand) => (
                   <button
@@ -337,14 +320,12 @@ export default function BrandsPage() {
             )}
           </>
         ) : (
-          /* ✅ РЕЖИМ 2: Товары конкретного бренда */
           <>
-            {/* ✅ Шапка-карточка: бренд + счётчик + круглая иконка */}
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                   <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-                    {selectedBrand?.name?.charAt(0).toUpperCase() || '🏷'}
+                    {selectedBrand?.name?.charAt(0).toUpperCase() || '?'}
                   </span>
                 </div>
                 <div className="min-w-0">
@@ -363,9 +344,7 @@ export default function BrandsPage() {
               </div>
             </div>
 
-            {/* ✅ Карточка фильтров: кнопка toggle + (если открыта) строки с иконками */}
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
-              {/* Кнопка toggle фильтров */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`w-full flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
@@ -406,10 +385,8 @@ export default function BrandsPage() {
                 )}
               </button>
 
-              {/* ✅ Панель фильтров: строки с круглыми иконками и разделителями */}
               {showFilters && (
                 <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
-                  {/* ✅ Категория — из БД */}
                   <div className="p-3.5">
                     <div className="flex items-center gap-3 mb-2.5">
                       <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -446,7 +423,6 @@ export default function BrandsPage() {
                     </div>
                   </div>
 
-                  {/* Цена */}
                   <div className="p-3.5">
                     <div className="flex items-center gap-3 mb-2.5">
                       <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -474,7 +450,6 @@ export default function BrandsPage() {
                     </div>
                   </div>
 
-                  {/* Сортировка */}
                   <div className="p-3.5">
                     <div className="flex items-center gap-3 mb-2.5">
                       <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -531,7 +506,6 @@ export default function BrandsPage() {
               )}
             </div>
 
-            {/* ✅ Результаты / лоадер / пустое состояние */}
             {loading ? (
               <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-3"></div>

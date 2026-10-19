@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
+import CategoryIcon from '../components/CategoryIcon'
 
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
 
@@ -23,7 +24,6 @@ export default function AllProductsPage() {
     ensureCategories,
   } = useStore()
 
-  // ✅ Категории из БД: raw = null пока не загрузились
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
 
@@ -36,7 +36,6 @@ export default function AllProductsPage() {
 
   const cachedItems = ensureProducts()
   const loading = !cachedItems
-  // ✅ Товары только активных категорий/подкатегорий
   const products = filterVisibleProducts(cachedItems || [], categoriesRaw)
 
   useEffect(() => {
@@ -84,20 +83,17 @@ export default function AllProductsPage() {
     if (sortBy === 'newest') {
       return {
         title: language === 'ru' ? 'Новые товары' : 'Yangi mahsulotlar',
-        emoji: '✨',
         icon: <Sparkles size={18} className="text-[#1B2A4A] dark:text-white" />,
       }
     }
     if (sortBy === 'popular') {
       return {
         title: language === 'ru' ? 'Популярные товары' : 'Mashhur mahsulotlar',
-        emoji: '🔥',
         icon: <Flame size={18} className="text-[#1B2A4A] dark:text-white" />,
       }
     }
     return {
       title: language === 'ru' ? 'Все товары' : 'Barcha mahsulotlar',
-      emoji: '📦',
       icon: <Package size={18} className="text-[#1B2A4A] dark:text-white" />,
     }
   })()
@@ -219,7 +215,7 @@ export default function AllProductsPage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-xl leading-none">{headerConfig.emoji}</span>
+              {headerConfig.icon}
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -278,7 +274,6 @@ export default function AllProductsPage() {
 
           {showFilters && (
             <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
-              {/* ✅ Категория — из БД */}
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -309,19 +304,19 @@ export default function AllProductsPage() {
                         setSelectedCategory(cat.id)
                         setSelectedSubcategory('all')
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
                         selectedCategory === cat.id
                           ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                           : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
                       }`}
                     >
-                      {cat.icon} {language === 'ru' ? cat.name_ru : cat.name_uz}
+                      <CategoryIcon name={cat.icon} size={12} className="inline" />
+                      <span>{language === 'ru' ? cat.name_ru : cat.name_uz}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* ✅ Подкатегория — из БД (пропускаем виртуальную «Все товары» id='all') */}
               {selectedCategory !== 'all' && (
                 <div className="p-3.5">
                   <div className="flex items-center gap-3 mb-2.5">

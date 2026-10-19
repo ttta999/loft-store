@@ -31,7 +31,6 @@ export default function SearchPage() {
   const cachedItems = ensureProducts()
   const loading = !cachedItems
   const products = cachedItems || []
-  // ✅ Категории из БД
   const categories = ensureCategories() || []
 
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
@@ -274,7 +273,6 @@ export default function SearchPage() {
 
         {showFilters && (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            {/* ✅ Категория — из БД */}
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -314,7 +312,7 @@ export default function SearchPage() {
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                  <span className="text-base leading-none">🏷️</span>
+                  <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
                 </div>
                 <p className="text-xs text-[#8A8275] dark:text-gray-300 font-medium">
                   {language === 'ru' ? 'Бренд' : 'Brend'}

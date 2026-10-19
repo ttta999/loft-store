@@ -8,9 +8,11 @@ import {
   SlidersHorizontal,
   Heart,
   Search,
+  Tag,
 } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import { cacheProducts } from '../lib/productCache'
+import CategoryIcon from '../components/CategoryIcon'
 
 let catalogBrandsCache: any[] | null = null
 
@@ -29,7 +31,6 @@ export default function CatalogPage() {
     isFavorite,
   } = useStore()
 
-  // ✅ Категории из БД: raw = null пока не загрузились
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
   const categoryId = location.state?.category
@@ -44,7 +45,6 @@ export default function CatalogPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  // ✅ Данные из общего кеша + фильтрация по активным категориям + по выбранной
   const cachedItems = ensureProducts()
   const loading = !cachedItems
   const products = filterVisibleProducts(cachedItems || [], categoriesRaw).filter((p: any) => {
@@ -240,7 +240,11 @@ export default function CatalogPage() {
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-xl leading-none">{category?.icon || '📦'}</span>
+              {category?.icon ? (
+                <CategoryIcon name={category.icon} size={18} className="text-[#1B2A4A] dark:text-white" />
+              ) : (
+                <span className="text-xl leading-none">📦</span>
+              )}
             </div>
           </div>
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
@@ -262,7 +266,7 @@ export default function CatalogPage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl leading-none">{category?.icon || '📦'}</span>
+              <CategoryIcon name={category?.icon || ''} size={24} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -324,7 +328,7 @@ export default function CatalogPage() {
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                    <span className="text-base leading-none">🏷️</span>
+                    <Tag size={16} className="text-[#1B2A4A] dark:text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-[#8A8275] dark:text-gray-300 font-medium">

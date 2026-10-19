@@ -1,9 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { ChevronRight, AlertCircle } from 'lucide-react'
+import { ChevronRight, AlertCircle, Package, Lightbulb } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
+import CategoryIcon from '../components/CategoryIcon'
 
-// ✅ Склонение «подкатегорий» для русского
 const getSubcategoriesLabelRu = (count: number): string => {
   const lastTwo = count % 100
   const lastOne = count % 10
@@ -18,7 +18,6 @@ export default function CategoryPage() {
   const location = useLocation()
   const { language, ensureCategories } = useStore()
 
-  // ✅ Категории из БД
   const categories = ensureCategories() || []
   const categoryId = location.state?.categoryId
   const category = categories.find(c => c.id === categoryId)
@@ -32,7 +31,6 @@ export default function CategoryPage() {
     })
   }
 
-  // ✅ Пустое состояние — в стиле карточки заказа
   if (!category) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
@@ -74,7 +72,7 @@ export default function CategoryPage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl leading-none">{category.icon}</span>
+              <CategoryIcon name={category.icon} size={24} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -108,16 +106,14 @@ export default function CategoryPage() {
                   ? 'bg-[#1B2A4A] dark:bg-gold border-[#1B2A4A] dark:border-gold'
                   : 'bg-[#F5F1E8] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-border'
               }`}>
-                <span className={`text-lg leading-none ${sub.id === 'all' ? '' : ''}`}>
-                  {sub.id === 'all' ? '📦' : category.icon}
-                </span>
+                {sub.id === 'all' ? (
+                  <Package size={18} className="text-white dark:text-[#1B2A4A]" />
+                ) : (
+                  <CategoryIcon name={category.icon} size={18} className="text-[#1B2A4A] dark:text-white" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${
-                  sub.id === 'all'
-                    ? 'text-[#1B2A4A] dark:text-white'
-                    : 'text-[#1B2A4A] dark:text-white'
-                }`}>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                   {language === 'ru' ? sub.name_ru : sub.name_uz}
                 </p>
                 {sub.id === 'all' && (
@@ -133,7 +129,7 @@ export default function CategoryPage() {
 
         <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
           <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-            <span className="text-base leading-none">💡</span>
+            <Lightbulb size={18} className="text-[#1B2A4A] dark:text-white" />
           </div>
           <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
             {language === 'ru'

@@ -2,7 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { Heart, ArrowRight, ShoppingBag, User as UserIcon, Sparkles } from 'lucide-react'
+import {
+  Heart, ArrowRight, ShoppingBag, User as UserIcon, Sparkles,
+  FolderOpen, Banknote, Flame, Tag,
+} from 'lucide-react'
+import CategoryIcon from '../components/CategoryIcon'
 
 const CACHE_FRESH_MS = 5 * 60 * 1000
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
@@ -36,10 +40,8 @@ export default function HomePage() {
     ensureCategories,
   } = useStore()
 
-  // ✅ Категории из БД: raw = null пока не загрузились (нужно для фильтрации товаров)
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
-  // ✅ Товары только активных категорий/подкатегорий
   const visibleItems = filterVisibleProducts(productsCache?.items || [], categoriesRaw)
 
   const hasLoadedRef = useRef(false)
@@ -190,14 +192,14 @@ export default function HomePage() {
   }
 
   const SectionHeader = ({
-    emoji,
+    icon,
     title,
     titleColor = 'text-[#1B2A4A] dark:text-white',
     count,
     moreLabel,
     onMore,
   }: {
-    emoji: string
+    icon: React.ReactNode
     title: string
     titleColor?: string
     count?: number
@@ -206,7 +208,9 @@ export default function HomePage() {
   }) => (
     <div className="flex items-center justify-between mb-3 px-1">
       <div className="flex items-center gap-2">
-        <span className="text-lg">{emoji}</span>
+        <div className="w-7 h-7 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+          {icon}
+        </div>
         <h3 className={`font-bold ${titleColor}`}>{title}</h3>
         {count !== undefined && count > 0 && (
           <span className="text-xs text-[#8A8275] dark:text-gray-300">
@@ -291,9 +295,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ✅ Категории — из БД через ensureCategories() */}
         <SectionHeader
-          emoji="🗂"
+          icon={<FolderOpen size={14} className="text-[#1B2A4A] dark:text-white" />}
           title={language === 'ru' ? 'Категории' : 'Kategoriyalar'}
           count={categories.length + 1}
         />
@@ -310,7 +313,7 @@ export default function HomePage() {
                 className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
               >
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg leading-none">{cat.icon}</span>
+                  <CategoryIcon name={cat.icon} size={18} className="text-[#1B2A4A] dark:text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
@@ -331,7 +334,7 @@ export default function HomePage() {
             className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
           >
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <span className="text-lg leading-none">🏷️</span>
+              <Tag size={18} className="text-[#1B2A4A] dark:text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
@@ -348,7 +351,7 @@ export default function HomePage() {
         {discountProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
-              emoji="💰"
+              icon={<Banknote size={14} className="text-[#9B3B3B] dark:text-red-400" />}
               title={language === 'ru' ? 'Скидки' : 'Chegirmalar'}
               titleColor="text-[#9B3B3B] dark:text-red-400"
               count={discountProducts.length}
@@ -366,7 +369,7 @@ export default function HomePage() {
         {newProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
-              emoji="✨"
+              icon={<Sparkles size={14} className="text-[#1B2A4A] dark:text-white" />}
               title={language === 'ru' ? 'Новые товары' : 'Yangi mahsulotlar'}
               count={newProducts.length}
               moreLabel={language === 'ru' ? 'Больше' : 'Ko\'proq'}
@@ -383,7 +386,7 @@ export default function HomePage() {
         {popularProducts.length > 0 && (
           <div className="mb-6">
             <SectionHeader
-              emoji="🔥"
+              icon={<Flame size={14} className="text-[#1B2A4A] dark:text-white" />}
               title={language === 'ru' ? 'Популярные' : 'Mashhurlar'}
               count={popularProducts.length}
               moreLabel={language === 'ru' ? 'Больше' : 'Ko\'proq'}
