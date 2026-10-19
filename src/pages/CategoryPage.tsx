@@ -4,6 +4,7 @@ import { ChevronRight, AlertCircle, Package, Lightbulb } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import CategoryIcon from '../components/CategoryIcon'
 
+// ✅ Склонение «подкатегорий» для русского
 const getSubcategoriesLabelRu = (count: number): string => {
   const lastTwo = count % 100
   const lastOne = count % 10
@@ -18,6 +19,7 @@ export default function CategoryPage() {
   const location = useLocation()
   const { language, ensureCategories } = useStore()
 
+  // ✅ Категории из БД
   const categories = ensureCategories() || []
   const categoryId = location.state?.categoryId
   const category = categories.find(c => c.id === categoryId)
@@ -31,6 +33,7 @@ export default function CategoryPage() {
     })
   }
 
+  // ✅ Пустое состояние — в стиле карточки заказа
   if (!category) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
@@ -69,6 +72,7 @@ export default function CategoryPage() {
       />
 
       <div className="p-4">
+        {/* ✅ Шапка-карточка категории */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -92,6 +96,7 @@ export default function CategoryPage() {
           </span>
         </div>
 
+        {/* ✅ Список подкатегорий: у каждой СВОЯ иконка (фолбэк — иконка категории) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
           {category.subcategories.map((sub) => (
             <button
@@ -109,7 +114,11 @@ export default function CategoryPage() {
                 {sub.id === 'all' ? (
                   <Package size={18} className="text-white dark:text-[#1B2A4A]" />
                 ) : (
-                  <CategoryIcon name={category.icon} size={18} className="text-[#1B2A4A] dark:text-white" />
+                  <CategoryIcon
+                    name={sub.icon || category.icon}
+                    size={18}
+                    className="text-[#1B2A4A] dark:text-white"
+                  />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -127,6 +136,7 @@ export default function CategoryPage() {
           ))}
         </div>
 
+        {/* ✅ Подсказка */}
         <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
           <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
             <Lightbulb size={18} className="text-[#1B2A4A] dark:text-white" />
