@@ -128,7 +128,7 @@ export interface SubcategoryRow {
   sizes: string[]
   sort_order: number
   is_active: boolean
-  icon: string | null // ✅ FIX ts2339: своя иконка подкатегории (NULL → иконка категории)
+  icon: string | null // ✅ своя иконка подкатегории (NULL → иконка категории)
 }
 
 /**
@@ -178,7 +178,7 @@ export const getCategoriesTree = async (): Promise<CategoryTree[] | null> => {
       sizes: [],
       sort_order: -1,
       is_active: true,
-      icon: 'package', // ✅ иконка для «Все товары»
+      icon: 'all', // ✅ иконка для «Все товары»
     }
 
     return ((cats || []) as any[]).map((c) => ({
