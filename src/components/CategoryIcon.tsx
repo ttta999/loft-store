@@ -3,13 +3,13 @@ import {
   CATEGORY_ICONS,
   BLOCK_ICONS,
   SUBCATEGORY_ICONS,
-  AllItemsIcon,
+  PackageIcon,
   type IconProps,
 } from '../lib/customIcons'
 
 /**
  * Карта «ключ из БД / алиас / эмодзи → компонент иконки».
- * Фолбэк для неизвестных ключей — AllItemsIcon (кубики).
+ * Фолбэк для неизвестных ключей — PackageIcon (коробка).
  */
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   // ===== Категории =====
@@ -54,11 +54,11 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   backpack: SUBCATEGORY_ICONS.bags,
 
   // ===== «Все товары» =====
-  all: AllItemsIcon,
-  package: AllItemsIcon,
-  'shoes-all': AllItemsIcon,
-  'clothes-all': AllItemsIcon,
-  'accessories-all': AllItemsIcon,
+  all: PackageIcon,
+  package: PackageIcon,
+  'shoes-all': PackageIcon,
+  'clothes-all': PackageIcon,
+  'accessories-all': PackageIcon,
 
   // ===== Эмодзи из старой БД =====
   '👟': SUBCATEGORY_ICONS.sneakers,
@@ -69,13 +69,13 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   '🧥': SUBCATEGORY_ICONS.outerwear,
   '🧢': SUBCATEGORY_ICONS.caps,
   '🎩': SUBCATEGORY_ICONS.beanies,
-  '👑': CATEGORY_ICONS.accessories,
+  '': CATEGORY_ICONS.accessories,
   '🎒': SUBCATEGORY_ICONS.bags,
-  '📦': AllItemsIcon,
+  '📦': PackageIcon,
   '🏷️': CATEGORY_ICONS.brands,
   '🏷': CATEGORY_ICONS.brands,
-  '🛏️': AllItemsIcon,
-  '🛏': AllItemsIcon,
+  '🛏️': PackageIcon,
+  '🛏': PackageIcon,
 }
 
 interface CategoryIconProps {
@@ -95,6 +95,6 @@ export default function CategoryIcon({
   strokeWidth,
 }: CategoryIconProps) {
   const key = (name || '').toLowerCase().trim()
-  const Component = (ICON_MAP[key] || AllItemsIcon) as React.ComponentType<IconProps>
+  const Component = (ICON_MAP[key] || PackageIcon) as React.ComponentType<IconProps>
   return <Component size={size} className={className} color={color} strokeWidth={strokeWidth} />
 }
