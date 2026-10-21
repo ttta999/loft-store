@@ -21,13 +21,16 @@ interface TelegramUser {
   languageCode: string
 }
 
-interface CartItem {
+// ✅ CartItem с поддержкой цвета
+export interface CartItem {
   productId: string
   name: string
   priceUsd: number
   size: string
   quantity: number
   image: string
+  colorId?: string | null
+  colorName?: string | null
   isSpecialOrder?: boolean
   specialRequestId?: string
 }
@@ -39,15 +42,8 @@ interface FavoriteItem {
   image: string
 }
 
-interface CachedProducts {
-  items: any[]
-  updatedAt: number
-}
-
-interface CachedCategories {
-  items: CategoryTree[]
-  updatedAt: number
-}
+interface CachedProducts { items: any[]; updatedAt: number }
+interface CachedCategories { items: CategoryTree[]; updatedAt: number }
 
 interface AppState {
   language: Language
@@ -82,7 +78,7 @@ interface AppState {
   ensureProducts: (maxAgeMs?: number) => any[] | null
   ensureCategories: (maxAgeMs?: number) => CategoryTree[] | null
   addToCart: (item: CartItem) => void
-  removeFromCart: (productId: string, size: string) => void
+  removeFromCart: (productId: string, size: string, colorId?: string | null) => void
   clearCart: () => void
   getTotalPrice: () => number
   addToFavorites: (item: FavoriteItem) => void
@@ -93,11 +89,7 @@ interface AppState {
 
 const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: number } | null> => {
   try {
-    const { data, error } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'exchange_rate')
-      .single()
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'exchange_rate').single()
     if (error || !data) return null
     const rate = (data.value as any)?.rate
     const version = (data.value as any)?.version || 0
@@ -111,11 +103,7 @@ const fetchExchangeRateFromDB = async (): Promise<{ rate: number; version: numbe
 
 const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
   try {
-    const { data, error } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'sale_mode_enabled')
-      .single()
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'sale_mode_enabled').single()
     if (error || !data) return null
     return Boolean((data.value as any)?.enabled)
   } catch (error) {
@@ -141,7 +129,6 @@ export const isProductOnSale = (product: any, saleModeEnabled: boolean): boolean
 
 export const getEffectivePriceUsd = (product: any, saleModeEnabled: boolean): number =>
   isProductOnSale(product, saleModeEnabled) ? Number(product.sale_price) : (product?.price_usd || 0)
-
 // ✅ Фильтрация товаров: показываем только товары АКТИВНЫХ категорий и подкатегорий.
 // categories === null → категории ещё не загрузились → не фильтруем (чтобы не мигать пустотой).
 // categories === [] → все категории отключены → скрываем все товары.
@@ -182,12 +169,9 @@ export const useStore = create<AppState>()(
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
       setTelegramUser: (user) => set({ telegramUser: user }),
-      setProductsCache: (items) =>
-        set({ productsCache: { items, updatedAt: Date.now() } }),
-      setCategoriesCache: (items) =>
-        set({ categoriesCache: { items, updatedAt: Date.now() } }),
-      setPopularityMap: (map) =>
-        set({ popularityMap: map, popularityUpdatedAt: Date.now() }),
+      setProductsCache: (items) => set({ productsCache: { items, updatedAt: Date.now() } }),
+      setCategoriesCache: (items) => set({ categoriesCache: { items, updatedAt: Date.now() } }),
+      setPopularityMap: (map) => set({ popularityMap: map, popularityUpdatedAt: Date.now() }),
 
       getProductsCacheAge: () => {
         const cache = get().productsCache
@@ -238,69 +222,50 @@ export const useStore = create<AppState>()(
       ensureProducts: (maxAgeMs = 5 * 60 * 1000) => {
         const state = get()
         const age = state.getProductsCacheAge()
-
-        if (state.productsCache && age < maxAgeMs) {
-          return state.productsCache.items
-        }
-
+        if (state.productsCache && age < maxAgeMs) return state.productsCache.items
         getProducts()
-          .then((data) => {
-            if (data && data.length > 0) {
-              get().setProductsCache(data)
-            }
-          })
-          .catch((err) => {
-            console.error('❌ ensureProducts background fetch failed:', err)
-          })
-
+          .then((data) => { if (data && data.length > 0) get().setProductsCache(data) })
+          .catch((err) => { console.error('❌ ensureProducts failed:', err) })
         return state.productsCache?.items || null
       },
 
-      // ✅ Категории: синхронный возврат + фоновое обновление
       ensureCategories: (maxAgeMs = 5 * 60 * 1000) => {
         const state = get()
         const age = state.getCategoriesCacheAge()
-
-        if (state.categoriesCache && age < maxAgeMs) {
-          return state.categoriesCache.items
-        }
-
+        if (state.categoriesCache && age < maxAgeMs) return state.categoriesCache.items
         getCategoriesTree()
-          .then((tree) => {
-            // ✅ null = ошибка сети/RLS → кеш НЕ трогаем
-            // ✅ [] = все категории отключены → легитимно обновляем кеш
-            if (tree !== null) {
-              get().setCategoriesCache(tree)
-            }
-          })
-          .catch((err) => {
-            console.error('❌ ensureCategories background fetch failed:', err)
-          })
-
+          .then((tree) => { if (tree !== null) get().setCategoriesCache(tree) })
+          .catch((err) => { console.error('❌ ensureCategories failed:', err) })
         return state.categoriesCache?.items || null
       },
 
+      // ✅ addToCart: уникальность = productId + size + colorId
       addToCart: (item) =>
         set((state) => {
-          if (item.isSpecialOrder) {
-            return { cart: [...state.cart, item] }
-          }
+          if (item.isSpecialOrder) return { cart: [...state.cart, item] }
           if (item.quantity < 0) {
             return {
               cart: state.cart.map((i) =>
-                i.productId === item.productId && i.size === item.size
+                i.productId === item.productId &&
+                i.size === item.size &&
+                (i.colorId || null) === (item.colorId || null)
                   ? { ...i, quantity: Math.max(1, i.quantity - 1) }
                   : i
               ),
             }
           }
           const existing = state.cart.find(
-            (i) => i.productId === item.productId && i.size === item.size
+            (i) =>
+              i.productId === item.productId &&
+              i.size === item.size &&
+              (i.colorId || null) === (item.colorId || null)
           )
           if (existing) {
             return {
               cart: state.cart.map((i) =>
-                i.productId === item.productId && i.size === item.size
+                i.productId === item.productId &&
+                i.size === item.size &&
+                (i.colorId || null) === (item.colorId || null)
                   ? { ...i, quantity: i.quantity + item.quantity }
                   : i
               ),
@@ -309,10 +274,14 @@ export const useStore = create<AppState>()(
           return { cart: [...state.cart, item] }
         }),
 
-      removeFromCart: (productId, size) =>
+      // ✅ removeFromCart: с учётом цвета
+      removeFromCart: (productId, size, colorId) =>
         set((state) => ({
-          cart: state.cart.filter((i) => !(i.productId === productId && i.size === size)),
+          cart: state.cart.filter(
+            (i) => !(i.productId === productId && i.size === size && (i.colorId || null) === (colorId || null))
+          ),
         })),
+
       clearCart: () => set({ cart: [] }),
       getTotalPrice: () => {
         const state = get()
@@ -326,13 +295,8 @@ export const useStore = create<AppState>()(
           return { favorites: [...state.favorites, item] }
         }),
       removeFromFavorites: (productId) =>
-        set((state) => ({
-          favorites: state.favorites.filter((i) => i.productId !== productId),
-        })),
-      isFavorite: (productId) => {
-        const state = get()
-        return state.favorites.some((i) => i.productId === productId)
-      },
+        set((state) => ({ favorites: state.favorites.filter((i) => i.productId !== productId) })),
+      isFavorite: (productId) => get().favorites.some((i) => i.productId === productId),
       setChatId: (id) => set({ chatId: id }),
     }),
     {
@@ -357,7 +321,7 @@ if (typeof window !== 'undefined') {
   useStore.getState().updateSaleMode()
   useStore.getState().updatePopularity()
   useStore.getState().ensureProducts()
-  useStore.getState().ensureCategories(0) // ✅ FORCE: скрытие категорий видно при каждом запуске
+  useStore.getState().ensureCategories(0)
 
   setInterval(() => {
     useStore.getState().updateExchangeRate()
@@ -373,7 +337,7 @@ if (typeof window !== 'undefined') {
       useStore.getState().updateSaleMode()
       useStore.getState().updatePopularity()
       useStore.getState().ensureProducts()
-      useStore.getState().ensureCategories(0) // ✅ FORCE: при возврате во вкладку
+      useStore.getState().ensureCategories(0)
     }
   })
 }

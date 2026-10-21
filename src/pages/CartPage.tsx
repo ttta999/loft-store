@@ -157,12 +157,22 @@ export default function CartPage() {
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
+            {/* ✅ key учитывает цвет: один товар разных цветов = разные строки */}
             {cart.map((item) => (
-              <div key={`${item.productId}-${item.size}`} className="p-3.5 flex gap-3">
+              <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex gap-3">
                 <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })} />
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}>
                   <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
-                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}</p>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                    {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
+                    {/* ✅ Цвет товара (если выбран) */}
+                    {item.colorName && (
+                      <>
+                        <span className="mx-1">·</span>
+                        <span className="text-[#C9A961] dark:text-gold font-medium">{item.colorName}</span>
+                      </>
+                    )}
+                  </p>
                   <p className="font-bold text-sm text-[#1B2A4A] dark:text-white mt-1">{formatPrice(item.priceUsd)}</p>
                   {item.isSpecialOrder && (
                     <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
@@ -171,7 +181,8 @@ export default function CartPage() {
                   )}
                 </div>
                 <div className="flex flex-col items-end justify-between flex-shrink-0">
-                  <button onClick={() => removeFromCart(item.productId, item.size)} title={language === 'ru' ? 'Удалить из корзины' : 'Savatdan o\'chirish'} className="p-1.5 rounded-lg text-[#9B3B3B] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                  {/* ✅ Удаление с учётом цвета */}
+                  <button onClick={() => removeFromCart(item.productId, item.size, item.colorId || null)} title={language === 'ru' ? 'Удалить из корзины' : 'Savatdan o\'chirish'} className="p-1.5 rounded-lg text-[#9B3B3B] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
                     <Trash2 size={16} />
                   </button>
                   {!item.isSpecialOrder ? (
@@ -306,6 +317,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
+  // ✅ Цвет (colorId/colorName) уходит в заказ автоматически через spread {...item}
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     const totalInSums = Math.round(finalUsd * exchangeRate)

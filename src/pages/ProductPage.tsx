@@ -5,15 +5,34 @@ import { Toaster, toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import IslandHeader from '../components/IslandHeader'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
-import { supabase, getProductSizes, checkProductStock } from '../lib/supabase'
-import { getCachedProduct, getCachedSizes, cacheProduct, cacheSizes } from '../lib/productCache'
+import {
+  supabase,
+  getProductSizes,
+  checkProductStock,
+  getProductColors,
+  invalidateColorsCache,
+  type ProductColor,
+} from '../lib/supabase'
+import { getCachedProduct, getCachedSizes, cacheProduct } from '../lib/productCache'
 import { sortSizeStrings } from '../lib/sortSizes'
 
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { language, currency, exchangeRate, saleModeEnabled, addToCart, addToFavorites, removeFromFavorites, isFavorite } = useStore()
+  const {
+    language,
+    currency,
+    exchangeRate,
+    saleModeEnabled,
+    addToCart,
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite,
+  } = useStore()
+
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
+  const [colors, setColors] = useState<ProductColor[]>([])
 
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
   const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id) || [])
@@ -34,12 +53,22 @@ export default function ProductPage() {
     setSizes(cachedSizes || [])
     setSizesLoading(!cachedSizes)
     setSelectedSize(null)
+    setSelectedColor(null)
     setCurrentImageIndex(0)
     setShowFullScreen(false)
 
     loadProduct()
-    loadSizes()
+    loadColors()
   }, [id])
+
+  // ✅ При смене цвета — перезагружаем размеры и сбрасываем выбор
+  useEffect(() => {
+    if (!id) return
+    loadSizesForColor()
+    setSelectedSize(null)
+    setCurrentImageIndex(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor?.id, id])
 
   const loadProduct = async () => {
     const cached = getCachedProduct(id)
@@ -57,8 +86,7 @@ export default function ProductPage() {
           cacheProduct(data)
           setProduct(data)
         }
-      } catch (err) {
-      }
+      } catch (err) {}
       return
     }
 
@@ -83,21 +111,23 @@ export default function ProductPage() {
     setLoading(false)
   }
 
-  const loadSizes = async () => {
+  const loadColors = async () => {
     if (!id) return
-
-    const cachedSizes = getCachedSizes(id)
-    if (cachedSizes) {
-      setSizes(cachedSizes)
-      setSizesLoading(false)
-      return
+    invalidateColorsCache(id)
+    const colorsList = await getProductColors(id)
+    setColors(colorsList)
+    // Если у товара есть цвета — выбираем первый по умолчанию
+    if (colorsList.length > 0) {
+      setSelectedColor(colorsList[0])
     }
+  }
 
+  const loadSizesForColor = async () => {
+    if (!id) return
     setSizesLoading(true)
-    const variants = await getProductSizes(id)
+    const variants = await getProductSizes(id, selectedColor?.id || null)
     const rawValues = variants.map((v: any) => v.size_value)
     const sortedValues = sortSizeStrings(rawValues)
-    cacheSizes(id, sortedValues)
     setSizes(sortedValues)
     setSizesLoading(false)
   }
@@ -129,28 +159,44 @@ export default function ProductPage() {
       )
       return
     }
+    if (colors.length > 0 && !selectedColor) {
+      toast.error(language === 'ru' ? 'Выберите цвет' : 'Rangni tanlang', {
+        description: language === 'ru'
+          ? 'Без этого мы не сможем отправить товар'
+          : 'Bunsiz mahsulotni yubora olmaymiz',
+        duration: 3000,
+      })
+      return
+    }
+
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
-    const stockCheck = await checkProductStock(product.id, sizeToAdd, 1)
+    const stockCheck = await checkProductStock(product.id, sizeToAdd, 1, selectedColor?.id || null)
     if (!stockCheck.available) {
       toast.error(stockCheck.error || 'Товар недоступен', {
         description: language === 'ru'
-          ? 'Попробуйте выбрать другой размер или посмотрите другие товары'
-          : 'Boshqa o\'lchamni tanlang yoki boshqa mahsulotlarga qarang',
+          ? 'Попробуйте выбрать другой вариант или посмотрите другие товары'
+          : 'Boshqa variantni tanlang yoki boshqa mahsulotlarga qarang',
         duration: 4000,
       })
       return
     }
+
     addToCart({
       productId: product.id,
       name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
       priceUsd: effectivePrice,
       size: sizeToAdd,
       quantity: 1,
-      image: product.images?.[0] || '',
+      image: getImages()[0] || '',
+      colorId: selectedColor?.id || null,
+      colorName: selectedColor
+        ? (language === 'ru' ? selectedColor.name_ru : (selectedColor.name_uz || selectedColor.name_ru))
+        : null,
     })
+
     toast.success(language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!', {
-  duration: 2000,
-})
+      duration: 2000,
+    })
   }
 
   const handleToggleFavorite = () => {
@@ -229,7 +275,11 @@ export default function ProductPage() {
     return `${(usd * exchangeRate).toLocaleString()} сум`
   }
 
+  // ✅ Галерея: если выбран цвет и у него есть фото — используем их; иначе общие фото товара
   const getImages = (): string[] => {
+    if (selectedColor && selectedColor.images && selectedColor.images.length > 0) {
+      return selectedColor.images.filter((img: string) => img)
+    }
     if (!product) return ['https://via.placeholder.com/500']
     if (Array.isArray(product.images)) {
       return product.images.filter((img: string) => img)
@@ -294,7 +344,7 @@ export default function ProductPage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           <div className="relative">
             <img
-              src={images[currentImageIndex]}
+              src={images[currentImageIndex] || images[0] || 'https://via.placeholder.com/500'}
               alt={language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
               className="w-full aspect-square object-cover cursor-pointer"
               onClick={() => openFullScreen(currentImageIndex)}
@@ -405,6 +455,47 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* ✅ ВЫБОР ЦВЕТА (если у товара есть цвета) */}
+          {colors.length > 0 && (
+            <div className="mb-4">
+              <p className="text-sm font-bold text-[#1B2A4A] dark:text-white mb-2">
+                {language === 'ru' ? 'Цвет' : 'Rang'}:{' '}
+                <span className="font-normal text-[#8A8275] dark:text-gray-300">
+                  {selectedColor
+                    ? (language === 'ru' ? selectedColor.name_ru : (selectedColor.name_uz || selectedColor.name_ru))
+                    : '—'}
+                </span>
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {colors.map((color) => {
+                  const isSelected = selectedColor?.id === color.id
+                  const colorHex = color.hex_code || '#E8E2D5'
+                  const colorName = language === 'ru' ? color.name_ru : (color.name_uz || color.name_ru)
+                  return (
+                    <button
+                      key={color.id}
+                      onClick={() => setSelectedColor(color)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${
+                        isSelected
+                          ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent shadow-sm'
+                          : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#C9A961] dark:hover:border-gold'
+                      }`}
+                      title={colorName}
+                    >
+                      <span
+                        className="w-6 h-6 rounded-full border border-[#E8E2D5] dark:border-dark-border flex-shrink-0 shadow-inner"
+                        style={{ backgroundColor: colorHex }}
+                      />
+                      <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                        {colorName}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <SizeSelector
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes.length > 0 ? sizes : ['One Size']}
@@ -415,7 +506,7 @@ export default function ProductPage() {
           <button
             onClick={handleAddToCart}
             disabled={sizesLoading || sizes.length === 0}
-            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
+            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors mt-4 ${
               sizesLoading || sizes.length === 0
                 ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
                 : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
@@ -431,8 +522,8 @@ export default function ProductPage() {
           {!sizesLoading && sizes.length === 0 && (
             <p className="text-center text-sm text-[#8A8275] dark:text-gray-400 mt-2">
               {language === 'ru'
-                ? 'Этот товар временно отсутствует'
-                : 'Bu mahsulot vaqtincha mavjud emas'}
+                ? 'Этот вариант временно отсутствует'
+                : 'Bu variant vaqtincha mavjud emas'}
             </p>
           )}
         </div>
