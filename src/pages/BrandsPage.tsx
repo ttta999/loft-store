@@ -21,6 +21,7 @@ interface Brand {
   id: string
   name: string
   is_active: boolean
+  logo_url: string | null
 }
 
 let brandsListCache: Brand[] | null = null
@@ -53,8 +54,7 @@ export default function BrandsPage() {
   const [maxPrice, setMaxPrice] = useState<number>(100000000)
   const [sortBy, setSortBy] = useState<string>('newest')
 
-  const selectedBrand =
-    brands.find((b) => b.id === brandParam || b.name === brandParam) || null
+  const selectedBrand = brands.find((b) => b.id === brandParam || b.name === brandParam) || null
 
   const cachedItems = ensureProducts()
   const products = filterVisibleProducts(cachedItems || [], categoriesRaw).filter((p: any) => {
@@ -300,10 +300,15 @@ export default function BrandsPage() {
                     onClick={() => handleBrandClick(brand)}
                     className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">
-                        {brand.name.charAt(0).toUpperCase()}
-                      </span>
+                    {/* ✅ Круглая иконка: Логотип или первая буква */}
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0 overflow-hidden bg-white dark:bg-dark-card">
+                      {brand.logo_url ? (
+                        <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-contain p-1" />
+                      ) : (
+                        <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">
+                          {brand.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[#1B2A4A] dark:text-white truncate">
@@ -323,10 +328,15 @@ export default function BrandsPage() {
           <>
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-                    {selectedBrand?.name?.charAt(0).toUpperCase() || '?'}
-                  </span>
+                {/* ✅ Шапка бренда: Логотип или первая буква */}
+                <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0 overflow-hidden bg-white dark:bg-dark-card">
+                  {selectedBrand?.logo_url ? (
+                    <img src={selectedBrand.logo_url} alt={selectedBrand.name} className="w-full h-full object-contain p-1.5" />
+                  ) : (
+                    <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
+                      {selectedBrand?.name?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
