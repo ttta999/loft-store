@@ -148,15 +148,9 @@ export default function ProductPage() {
       quantity: 1,
       image: product.images?.[0] || '',
     })
-    toast.success(
-      language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!',
-      {
-        description: language === 'ru'
-          ? 'Нажмите на иконку корзины внизу'
-          : 'Pastdagi savat belgisini bosing',
-        duration: 3000,
-      }
-    )
+    toast.success(language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!', {
+  duration: 2000,
+})
   }
 
   const handleToggleFavorite = () => {
