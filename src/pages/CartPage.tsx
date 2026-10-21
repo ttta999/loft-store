@@ -21,13 +21,39 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="relative max-w-4xl w-full flex items-center justify-center">
-        <button onClick={onClose} className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10">
+        <button
+          onClick={onClose}
+          className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
+        >
           <X size={24} />
           {language === 'ru' ? 'Закрыть' : 'Yopish'}
         </button>
-        <img src={url} alt="Screenshot" className="w-full h-auto rounded-lg object-contain" style={{ maxHeight: '85vh' }} onClick={(e) => e.stopPropagation()} />
+        <img
+          src={url}
+          alt="Screenshot"
+          className="w-full h-auto rounded-lg object-contain"
+          style={{ maxHeight: '85vh' }}
+          onClick={(e) => e.stopPropagation()}
+        />
       </div>
     </div>
+  )
+}
+
+// ✅ Круглая кнопка «i» — как InfoToggle в админке
+function InfoToggle({ open, onClick, title }: { open: boolean; onClick: () => void; title: string }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`w-7 h-7 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+        open
+          ? 'bg-[#1B2A4A] dark:bg-gold border-[#1B2A4A] dark:border-gold text-white dark:text-[#1B2A4A]'
+          : 'bg-[#F5F1E8] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300 hover:text-[#1B2A4A] dark:hover:text-gold'
+      }`}
+    >
+      <Info size={13} />
+    </button>
   )
 }
 
@@ -45,7 +71,7 @@ export default function CartPage() {
   const navigate = useNavigate()
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
-  
+
   // ✅ Состояния для настроек доставки
   const [deliveryPriceUzs, setDeliveryPriceUzs] = useState<number>(0)
   const [freeDeliveryThresholdUzs, setFreeDeliveryThresholdUzs] = useState<number>(0)
@@ -74,7 +100,6 @@ export default function CartPage() {
   }
 
   const productsUsd = getTotalPrice()
-  const productsTotalUzs = Math.round(productsUsd * exchangeRate)
 
   // ✅ Экономия на скидках
   const savingsUsd = (() => {
@@ -165,7 +190,7 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* ✅ Плавающая карточка оформления */}
+      {/* ✅ Плавающая карточка: БЕЗ строки «Доставка» — только товары и итого */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
         <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
           <div className="px-1 space-y-1.5">
@@ -179,19 +204,12 @@ export default function CartPage() {
                 <span className="text-sm font-bold text-[#9B3B3B] dark:text-red-400 whitespace-nowrap">−{formatPrice(savingsUsd)}</span>
               </div>
             )}
-            <div className="flex justify-between items-center gap-2">
-              <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
-              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white whitespace-nowrap">
-                {deliveryPriceUzs > 0 ? formatPrice(deliveryPriceUzs / exchangeRate) : (language === 'ru' ? 'Бесплатно' : 'Bepul')}
-              </span>
-            </div>
             <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
               <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Итого' : 'Jami'}</span>
-              <span className="text-base font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">{formatPrice(productsUsd + (deliveryPriceUzs > 0 ? deliveryPriceUzs / exchangeRate : 0))}</span>
+              <span className="text-base font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">{formatPrice(productsUsd)}</span>
             </div>
           </div>
 
-          {/* ✅ ПУНКТ 2: Убран эмодзи 💳 с кнопки */}
           <button
             onClick={() => setShowCheckout(true)}
             className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
@@ -210,14 +228,13 @@ export default function CartPage() {
           language={language}
           deliveryPriceUzs={deliveryPriceUzs}
           freeDeliveryThresholdUzs={freeDeliveryThresholdUzs}
-          productsTotalUzs={productsTotalUzs}
         />
       )}
     </div>
   )
 }
 
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs, productsTotalUzs }: any) {
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs }: any) {
   useBodyScrollLock(true)
   const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
@@ -234,18 +251,22 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [screenshotUploaded, setScreenshotUploaded] = useState(false)
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
+  // ✅ Раскрываемая подсказка об оплате (как InfoToggle в админке)
+  const [showPaymentNote, setShowPaymentNote] = useState(false)
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
 
-  // ✅ ПУНКТ 3 и 4: Логика бесплатной доставки
+  const productsUsd = getTotalPrice()
+  const productsTotalUzs = Math.round(productsUsd * exchangeRate)
+
+  // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0)
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
-  const actualDeliveryUzs = isFreeDelivery ? 0 : deliveryPriceUzs
-  const deliveryCostUsd = actualDeliveryUzs / exchangeRate
-  const finalUsd = getTotalPrice() + deliveryCostUsd
-  
-  // Текст "До бесплатной доставки осталось..."
+  const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
+  const finalUsd = productsUsd + deliveryCostUsd
+
+  // ✅ Остаток до порога бесплатной доставки
   const remainingForFreeDeliveryUzs = Math.max(0, freeDeliveryThresholdUzs - productsTotalUzs)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
@@ -258,6 +279,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
     if (method === 'delivery') setPaymentMethod('online_card')
+    setShowPaymentNote(false)
   }
 
   const handlePhoneChange = (value: string) => {
@@ -301,7 +323,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     let result: any = isSpecialOrder && specialItem.specialRequestId
       ? await createOrderFromSpecial(specialItem.specialRequestId, orderData)
       : await createOrder(orderData)
-    
+
     const data = Array.isArray(result.data) ? result.data[0] : result.data
     if (result.error || !data) throw new Error(result.error?.message || 'Ошибка создания заказа')
     return data
@@ -484,7 +506,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}</h2>
-            {/* ✅ ПУНКТ 5: Убрана сумма ({formatPrice(finalUsd)}) из заголовка, оставлено только количество товаров */}
             <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
               {totalQty} {getItemsLabel(totalQty, language)}
             </p>
@@ -557,7 +578,30 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><CreditCard size={16} className="text-[#1B2A4A] dark:text-white" /></div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-2">{language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}</p>
+              {/* ✅ Заголовок «Способ оплаты» + круглая кнопка «i» (только если есть подсказка) */}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}</p>
+                {(deliveryMethod === 'delivery' || isSpecialOrder) && (
+                  <InfoToggle
+                    open={showPaymentNote}
+                    onClick={() => setShowPaymentNote(v => !v)}
+                    title={language === 'ru' ? 'Об условиях оплаты' : 'To\'lov shartlari haqida'}
+                  />
+                )}
+              </div>
+
+              {/* ✅ Раскрываемая подсказка (по нажатию на «i») */}
+              {showPaymentNote && (deliveryMethod === 'delivery' || isSpecialOrder) && (
+                <div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
+                  <Info size={14} className="text-[#1B2A4A] dark:text-gold mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-[#1B2A4A] dark:text-white leading-relaxed">
+                    {isSpecialOrder
+                      ? (language === 'ru' ? 'Спецзаказ — только полная предоплата переводом' : 'Maxsus buyurtma — faqat to\'liq oldindan to\'lov')
+                      : (language === 'ru' ? 'Доставка по адресу — только полная предоплата переводом на карту' : 'Manzilga yetkazib berish — faqat kartaga to\'liq oldindan to\'lov')}
+                  </p>
+                </div>
+              )}
+
               <label className="flex items-center gap-2 cursor-pointer mb-2">
                 <input type="radio" name="payment" checked={paymentMethod === 'online_card'} onChange={() => setPaymentMethod('online_card')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
                 <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}</span>
@@ -568,55 +612,52 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash'}</span>
                 </label>
               )}
-              {deliveryMethod === 'delivery' && (
-                <div className="flex items-start gap-1.5 mt-2 p-2 bg-[#F5F1E8] dark:bg-dark-accent rounded-lg">
-                  <Info size={14} className="text-[#8A8275] dark:text-gray-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">{language === 'ru' ? 'Доставка — по предоплате переводом на карту' : "Yetkazib berish — kartaga oldindan to'lov bilan"}</p>
-                </div>
-              )}
-              {isSpecialOrder && (
-                <div className="flex items-start gap-1.5 mt-2 p-2 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
-                  <Info size={14} className="text-purple-600 dark:text-purple-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">{language === 'ru' ? 'Спецзаказ — только полная предоплата переводом' : "Maxsus buyurtma — faqat to'liq oldindan to'lov"}</p>
-                </div>
-              )}
             </div>
           </div>
 
+          {/* ✅ Разбивка цен: доставка только при методе «Доставка» */}
           <div className="px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40 space-y-1.5">
             <div className="flex justify-between items-center gap-2">
               <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Товары' : 'Mahsulotlar'}</span>
-              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(getTotalPrice())}</span>
+              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(productsUsd)}</span>
             </div>
-            
-            {/* ✅ ПУНКТ 4: Отображение порога бесплатной доставки */}
-            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs > 0 && (
-              <div className="flex items-center gap-1.5 p-2 bg-[#1B2A4A]/5 dark:bg-gold/10 rounded-lg">
-                <Truck size={14} className="text-[#C9A961] flex-shrink-0" />
-                <p className="text-xs text-[#1B2A4A] dark:text-white font-medium">
-                  До бесплатной доставки осталось: <span className="font-bold text-[#C9A961]">{remainingForFreeDeliveryUzs.toLocaleString()} сум</span>
-                </p>
-              </div>
-            )}
-            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs === 0 && (
-              <div className="flex items-center gap-1.5 p-2 bg-green-50 dark:bg-green-500/10 rounded-lg">
-                <Truck size={14} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                  У вас бесплатная доставка! 🎉
-                </p>
-              </div>
+
+            {deliveryMethod === 'delivery' && (
+              <>
+                {/* ✅ Уведомление о пороге — в стиле страницы (круглая иконка + карточка) */}
+                {freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs > 0 && (
+                  <div className="flex items-center gap-3 p-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                      <Truck size={16} className="text-[#C9A961]" />
+                    </div>
+                    <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
+                      {language === 'ru' ? 'До бесплатной доставки осталось:' : 'Bepul yetkazib berishgacha qoldi:'}{' '}
+                      <span className="font-bold text-[#C9A961]">{remainingForFreeDeliveryUzs.toLocaleString('ru-RU')} сум</span>
+                    </p>
+                  </div>
+                )}
+                {freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs === 0 && (
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center flex-shrink-0">
+                      <Truck size={16} className="text-green-700 dark:text-green-300" />
+                    </div>
+                    <p className="flex-1 text-xs text-green-700 dark:text-green-300 font-medium leading-relaxed">
+                      {language === 'ru' ? 'Поздравляем! У вас бесплатная доставка' : 'Tabriklaymiz! Sizda bepul yetkazib berish'}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
+                  {isFreeDelivery || deliveryPriceUzs === 0 ? (
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
+                  ) : (
+                    <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
+                  )}
+                </div>
+              </>
             )}
 
-            <div className="flex justify-between items-center gap-2">
-              <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
-              {isFreeDelivery ? (
-                <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
-              ) : actualDeliveryUzs > 0 ? (
-                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
-              ) : (
-                <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
-              )}
-            </div>
             <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
               <span className="font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Итого:' : 'Jami:'}</span>
               <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formatPrice(finalUsd)}</span>
