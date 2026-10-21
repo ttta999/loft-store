@@ -261,13 +261,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const productsUsd = getTotalPrice()
   const productsTotalUzs = Math.round(productsUsd * exchangeRate)
 
-  // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0)
+  // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0).
+  // ✅ Бесплатно, если сумма заказа достигла порога из настроек админки.
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
   const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
   const finalUsd = productsUsd + deliveryCostUsd
-
-  // ✅ Остаток до порога бесплатной доставки
-  const remainingForFreeDeliveryUzs = Math.max(0, freeDeliveryThresholdUzs - productsTotalUzs)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
   const payCard = PAYMENT_CARDS[orderCurrency]
@@ -615,14 +613,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Разбивка цен: доставка только при методе «Доставка» */}
+          {/* ✅ Разбивка цен: доставка только при методе «Доставка», без лишних уведомлений */}
           <div className="px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40 space-y-1.5">
             <div className="flex justify-between items-center gap-2">
               <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Товары' : 'Mahsulotlar'}</span>
               <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(productsUsd)}</span>
             </div>
 
-            {/* ✅ Строка «Доставка» — только при выборе доставки */}
+            {/* ✅ Строка «Доставка»: цена или «Бесплатно» (порог из настроек админки) */}
             {deliveryMethod === 'delivery' && (
               <div className="flex justify-between items-center gap-2">
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
@@ -631,34 +629,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 ) : (
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
                 )}
-              </div>
-            )}
-
-            {/* ✅ Уведомление о пороге — ПОД строкой «Доставка», в общем стиле страницы */}
-            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs > 0 && (
-              <div className="flex items-center gap-3 p-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-xl">
-                <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                  <Truck size={16} className="text-[#C9A961]" />
-                </div>
-                <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-                  {language === 'ru' ? 'До бесплатной доставки осталось:' : 'Bepul yetkazib berishgacha qoldi:'}{' '}
-                  <span className="font-bold text-[#C9A961]">{remainingForFreeDeliveryUzs.toLocaleString('ru-RU')} сум</span>
-                </p>
-              </div>
-            )}
-
-            {/* ✅ Поздравление с бесплатной доставкой — в общем стиле страницы (нейтральная карточка + бежевый круг) */}
-            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs === 0 && (
-              <div className="flex items-center gap-3 p-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-xl">
-                <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                  <Truck size={16} className="text-green-700 dark:text-green-400" />
-                </div>
-                <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-                  {language === 'ru' ? 'Поздравляем! У вас' : 'Tabriklaymiz! Sizda'}{' '}
-                  <span className="font-bold text-green-700 dark:text-green-400">
-                    {language === 'ru' ? 'бесплатная доставка' : 'bepul yetkazib berish'}
-                  </span>
-                </p>
               </div>
             )}
 
