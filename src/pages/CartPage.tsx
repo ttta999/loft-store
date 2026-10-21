@@ -622,40 +622,39 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(productsUsd)}</span>
             </div>
 
+            {/* ✅ Строка «Доставка» — только при выборе доставки */}
             {deliveryMethod === 'delivery' && (
-              <>
-                {/* ✅ Уведомление о пороге — в стиле страницы (круглая иконка + карточка) */}
-                {freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs > 0 && (
-                  <div className="flex items-center gap-3 p-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-xl">
-                    <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                      <Truck size={16} className="text-[#C9A961]" />
-                    </div>
-                    <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-                      {language === 'ru' ? 'До бесплатной доставки осталось:' : 'Bepul yetkazib berishgacha qoldi:'}{' '}
-                      <span className="font-bold text-[#C9A961]">{remainingForFreeDeliveryUzs.toLocaleString('ru-RU')} сум</span>
-                    </p>
-                  </div>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
+                {isFreeDelivery || deliveryPriceUzs === 0 ? (
+                  <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
+                ) : (
+                  <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
                 )}
-                {freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs === 0 && (
-                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
-                    <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center flex-shrink-0">
-                      <Truck size={16} className="text-green-700 dark:text-green-300" />
-                    </div>
-                    <p className="flex-1 text-xs text-green-700 dark:text-green-300 font-medium leading-relaxed">
-                      {language === 'ru' ? 'Поздравляем! У вас бесплатная доставка' : 'Tabriklaymiz! Sizda bepul yetkazib berish'}
-                    </p>
-                  </div>
-                )}
+              </div>
+            )}
 
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
-                  {isFreeDelivery || deliveryPriceUzs === 0 ? (
-                    <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
-                  ) : (
-                    <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
-                  )}
+            {/* ✅ Уведомление о пороге бесплатной доставки — ПОД строкой «Доставка» */}
+            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs > 0 && (
+              <div className="flex items-center gap-3 p-3 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-xl">
+                <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                  <Truck size={16} className="text-[#C9A961]" />
                 </div>
-              </>
+                <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
+                  {language === 'ru' ? 'До бесплатной доставки осталось:' : 'Bepul yetkazib berishgacha qoldi:'}{' '}
+                  <span className="font-bold text-[#C9A961]">{remainingForFreeDeliveryUzs.toLocaleString('ru-RU')} сум</span>
+                </p>
+              </div>
+            )}
+            {deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && remainingForFreeDeliveryUzs === 0 && (
+              <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
+                <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center flex-shrink-0">
+                  <Truck size={16} className="text-green-700 dark:text-green-300" />
+                </div>
+                <p className="flex-1 text-xs text-green-700 dark:text-green-300 font-medium leading-relaxed">
+                  {language === 'ru' ? 'Поздравляем! У вас бесплатная доставка' : 'Tabriklaymiz! Sizda bepul yetkazib berish'}
+                </p>
+              </div>
             )}
 
             <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
