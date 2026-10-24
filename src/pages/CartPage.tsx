@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, MessageCircle } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, MessageCircle, Clock } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { supabase, createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
@@ -49,7 +49,7 @@ function InfoToggle({ open, onClick, title }: { open: boolean; onClick: () => vo
       className={`w-7 h-7 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
         open
           ? 'bg-[#1B2A4A] dark:bg-gold border-[#1B2A4A] dark:border-gold text-white dark:text-[#1B2A4A]'
-          : 'bg-[#F5F1E8] dark:bg-dark-accent border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300 hover:text-[#1B2A4A] dark:hover:text-gold'
+          : 'bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#8A8275] dark:text-gray-300 hover:text-[#1B2A4A] dark:hover:text-gold'
       }`}
     >
       <Info size={13} />
@@ -397,6 +397,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
+  // ✅ ЭКРАН ОПЛАТЫ — редизайн в общем стиле приложения
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -405,14 +406,16 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           else { await cancelUnpaidOrder(); setShowPaymentInfo(false) }
         }} />
         <div className="flex-1 overflow-y-auto px-4 pb-48">
+          {/* ✅ Шапка-карточка: номер заказа + статус + итого */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{language === 'ru' ? `Заказ №${currentOrderId}` : `Buyurtma №${currentOrderId}`}</h2>
                 <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">{language === 'ru' ? 'Сумма к оплате' : "To'lov summasi"}</p>
               </div>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300">
-                ⏳ {language === 'ru' ? 'Ожидает оплаты' : "To'lovni kutmoqda"}
+              <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300 flex items-center gap-1.5">
+                <Clock size={12} />
+                {language === 'ru' ? 'Ожидает оплаты' : "To'lovni kutmoqda"}
               </span>
             </div>
             <div className="border-t border-[#E8E2D5] dark:border-dark-border mt-3 pt-3 flex justify-between items-center">
@@ -421,7 +424,34 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          {/* ✅ Товары заказа: строки с фото (стиль корзины) */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
+            <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
+              {cart.map((item: any) => (
+                <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex items-center gap-3">
+                  <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
+                    <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
+                      {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
+                      {item.colorName && (
+                        <>
+                          <span className="mx-1">·</span>
+                          <span className="text-[#C9A961] dark:text-gold font-medium">{item.colorName}</span>
+                        </>
+                      )}
+                      <span className="mx-1">·</span>
+                      {item.quantity} {language === 'ru' ? 'шт.' : 'donа'}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">{formatPrice(item.priceUsd * item.quantity)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ✅ Оплата: строка карты + строка скриншота (карточка с разделителями) */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border overflow-hidden">
             <div className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                 <CreditCard size={16} className="text-[#1B2A4A] dark:text-white" />
@@ -438,12 +468,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 <Copy size={16} />
               </button>
             </div>
+
             <div className="flex items-start gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                 <Upload size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-1.5">{language === 'ru' ? '📸 Подтвердите оплату скриншотом' : "📸 To'lovni screenshot bilan tasdiqlang"}</p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300 mb-1.5">{language === 'ru' ? 'Подтвердите оплату скриншотом' : "To'lovni screenshot bilan tasdiqlang"}</p>
                 {!screenshotUploaded ? (
                   <label className={`flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${uploadingScreenshot ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent' : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold bg-[#F5F1E8]/50 dark:bg-dark-accent/40'}`}>
                     <div className="flex flex-col items-center justify-center">
@@ -458,7 +489,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                   </label>
                 ) : (
                   <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3">
-                    <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0"><span className="text-base">✅</span></div>
+                    <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center flex-shrink-0">
+                      <Check size={16} className="text-green-700 dark:text-green-300" />
+                    </div>
                     <p className="flex-1 text-sm font-medium text-green-800 dark:text-green-300">{language === 'ru' ? 'Скриншот загружен' : 'Screenshot yuklandi'}</p>
                     {screenshotUrl && (
                       <button onClick={() => setShowScreenshotModal(true)} className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0" title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}>
@@ -470,21 +503,38 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               </div>
             </div>
           </div>
+
+          {/* ✅ Подсказка-примечание (круглая иконка часов вместо эмодзи) */}
           <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
-            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><span className="text-base">⏳</span></div>
+            <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+              <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
+            </div>
             <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">{language === 'ru' ? 'Заказ будет обработан после подтверждения оплаты менеджером' : 'Buyurtma menejer to\'lovni tasdiqlagandan so\'ng ko\'rib chiqiladi'}</p>
           </div>
         </div>
+
+        {/* ✅ Плавающая панель действий (как в корзине) */}
         <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
-          <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
-            {screenshotUploaded && (
-              <button onClick={() => { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }} className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">
-                <Check size={18} /> {language === 'ru' ? 'Готово' : 'Tayyor'}
-              </button>
+          <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2">
+            {screenshotUploaded ? (
+              <>
+                <button onClick={() => { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }} className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">
+                  <Check size={18} /> {language === 'ru' ? 'Готово' : 'Tayyor'}
+                </button>
+                <a href={MANAGER_TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="w-full py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border">
+                  <MessageCircle size={18} /> {language === 'ru' ? 'Менеджеру' : 'Menejerga'}
+                </a>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <a href={MANAGER_TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border">
+                  <MessageCircle size={16} /> {language === 'ru' ? 'Менеджеру' : 'Menejerga'}
+                </a>
+                <button onClick={async () => { await cancelUnpaidOrder(); setShowPaymentInfo(false) }} className="py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-[#9B3B3B] dark:text-red-400 font-bold flex items-center justify-center gap-2 transition-colors hover:bg-red-100 dark:hover:bg-red-500/20">
+                  <X size={16} /> {language === 'ru' ? 'Отменить' : 'Bekor qilish'}
+                </button>
+              </div>
             )}
-            <a href={MANAGER_TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="w-full py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border">
-              <MessageCircle size={18} /> {language === 'ru' ? 'Написать менеджеру' : 'Menejerga yozish'}
-            </a>
           </div>
         </div>
         {showScreenshotModal && screenshotUrl && <ScreenshotViewer url={screenshotUrl} language={language} onClose={() => setShowScreenshotModal(false)} />}
