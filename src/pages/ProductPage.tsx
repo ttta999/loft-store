@@ -28,6 +28,7 @@ export default function ProductPage() {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
+    theme, // ✅ Добавлено для поддержки тёмной темы в тостах
   } = useStore()
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
@@ -336,7 +337,8 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-      <Toaster position="top-center" richColors />
+      {/* ✅ Тосты в текущей теме */}
+      <Toaster position="top-center" richColors theme={theme} />
 
       <IslandHeader needsBack onBack={handleBack} />
 

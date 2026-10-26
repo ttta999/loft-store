@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { supabase, createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
@@ -69,7 +69,8 @@ const getItemsLabel = (count: number, lang: string): string => {
 
 export default function CartPage() {
   const navigate = useNavigate()
-  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts } = useStore()
+  // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
+  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts, theme } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
   // ✅ Состояния для настроек доставки
@@ -144,7 +145,8 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-56">
-      <Toaster position="top-center" richColors />
+      {/* ✅ Тосты в текущей теме */}
+      <Toaster position="top-center" richColors theme={theme} />
       <div className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -274,7 +276,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const productsTotalUzs = Math.round(productsUsd * exchangeRate)
 
   // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0).
-  // ✅ Бесплатно, если сумма заказа достигла порога из настроек админки.
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
   const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
   const finalUsd = productsUsd + deliveryCostUsd
@@ -398,7 +399,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
-  // ✅ ЭКРАН ОПЛАТЫ — единый стиль приложения
+  // ✅ ЭКРАН ОПЛАТЫ — банковская карта + карточка подтверждения
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -451,51 +452,84 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Карточка оплаты: шапка с картой + секция скриншота */}
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
-            {/* Строка карты */}
-            <div className="flex items-center gap-3 p-3.5 border-b border-[#E8E2D5] dark:border-dark-border">
-              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-                <CreditCard size={16} className="text-[#1B2A4A] dark:text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300 flex items-center gap-1.5">
+          {/* ✅ ВИЗУАЛЬНАЯ БАНКОВСКАЯ КАРТА */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B2A4A] via-[#22345C] to-[#142038] border border-[#C9A961]/30 dark:border-gold/30 shadow-lg mb-3">
+            <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#C9A961]/10 pointer-events-none" />
+            <div className="absolute -bottom-20 -right-6 w-52 h-52 rounded-full bg-[#C9A961]/5 pointer-events-none" />
+            <div className="relative p-4">
+              <div className="flex items-center justify-between gap-2 mb-5">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">
                   {language === 'ru' ? 'Карта для оплаты' : "To'lov kartasi"}
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]">{orderCurrency}</span>
-                </p>
-                <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white break-all">{payCard.number}</p>
-                <p className="text-xs text-[#C9A961] font-medium mt-0.5">{payCard.holder}</p>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#C9A961] text-[#1B2A4A]">{orderCurrency}</span>
               </div>
-              <button onClick={handleCopyCard} title={language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'} className="w-9 h-9 rounded-lg bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex items-center justify-center flex-shrink-0 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">
-                <Copy size={16} />
-              </button>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-10 h-7 rounded-md bg-gradient-to-br from-[#E8C88A] to-[#C9A961] flex items-center justify-center flex-shrink-0">
+                  <div className="w-6 h-3.5 rounded-[3px] border border-[#1B2A4A]/25" />
+                </div>
+                <CreditCard size={16} className="text-white/40" />
+              </div>
+              <p className="text-lg font-bold tracking-[0.14em] text-white mb-4 break-all leading-relaxed">{payCard.number}</p>
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase tracking-widest text-white/50 mb-0.5">{language === 'ru' ? 'Получатель' : 'Qabul qiluvchi'}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#C9A961] truncate">{payCard.holder}</p>
+                </div>
+                <button
+                  onClick={handleCopyCard}
+                  title={language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#C9A961] text-[#1B2A4A] text-xs font-bold hover:bg-[#b8954f] transition-colors flex-shrink-0"
+                >
+                  <Copy size={14} />
+                  {language === 'ru' ? 'Скопировать' : 'Nusxalash'}
+                </button>
+              </div>
             </div>
+          </div>
 
-            {/* Секция скриншота */}
-            <div className="p-3.5">
-              <div className="flex items-center gap-3 mb-2">
+          {/* ✅ Карточка подтверждения оплаты */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
+            <div className="flex items-center justify-between gap-2 p-3.5 border-b border-[#E8E2D5] dark:border-dark-border">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                   <Upload size={16} className="text-[#1B2A4A] dark:text-white" />
                 </div>
-                <p className="flex-1 text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Подтвердите оплату скриншотом' : "To'lovni screenshot bilan tasdiqlang"}
-                </p>
-                {screenshotUrl && (
-                  <button onClick={() => setShowScreenshotModal(true)} title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'} className="w-9 h-9 rounded-lg bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center text-[#1B2A4A] dark:text-white hover:bg-[#E8E2D5] dark:hover:bg-dark-border transition-colors flex-shrink-0">
-                    <Eye size={16} />
-                  </button>
-                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#1B2A4A] dark:text-white truncate">
+                    {language === 'ru' ? 'Подтверждение оплаты' : "To'lovni tasdiqlash"}
+                  </p>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 truncate">
+                    {screenshotUploaded
+                      ? (language === 'ru' ? 'Скриншот получен' : 'Screenshot qabul qilindi')
+                      : (language === 'ru' ? 'Загрузите чек перевода' : 'O\'tkazma chekini yuklang')}
+                  </p>
+                </div>
               </div>
+              {/* ✅ Миниатюра скриншота вместо кнопки-глаза */}
+              {screenshotUploaded && screenshotUrl && (
+                <button
+                  onClick={() => setShowScreenshotModal(true)}
+                  title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
+                  className="w-10 h-10 rounded-xl overflow-hidden border border-[#E8E2D5] dark:border-dark-border flex-shrink-0 hover:opacity-80 transition-opacity"
+                >
+                  <img src={screenshotUrl} alt="screenshot" className="w-full h-full object-cover" />
+                </button>
+              )}
+            </div>
+            <div className="p-3.5">
               {!screenshotUploaded ? (
-                <label className={`flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${uploadingScreenshot ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent' : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#1B2A4A] dark:hover:border-gold bg-[#F5F1E8]/50 dark:bg-dark-accent/40'}`}>
-                  <div className="flex flex-col items-center justify-center">
+                <label className={`flex flex-col items-center justify-center w-full h-28 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${uploadingScreenshot ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent' : 'border-[#E8E2D5] dark:border-dark-border hover:border-[#C9A961] dark:hover:border-gold bg-[#F5F1E8]/50 dark:bg-dark-accent/40'}`}>
+                  <div className="w-11 h-11 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center mb-2">
                     {uploadingScreenshot ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1B2A4A] dark:border-gold mb-1"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1B2A4A] dark:border-gold"></div>
                     ) : (
-                      <Upload className="w-5 h-5 mb-1 text-[#8A8275] dark:text-gray-300" />
+                      <Upload size={18} className="text-[#C9A961]" />
                     )}
-                    <p className="text-xs text-[#8A8275] dark:text-gray-300">{uploadingScreenshot ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...') : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}</p>
                   </div>
+                  <p className="text-sm font-bold text-[#1B2A4A] dark:text-white">
+                    {uploadingScreenshot ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...') : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}
+                  </p>
+                  <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">PNG/JPG · {language === 'ru' ? 'чек перевода' : 'o\'tkazma cheki'}</p>
                   <input type="file" accept="image/*" onChange={handleUploadScreenshot} className="hidden" disabled={uploadingScreenshot} />
                 </label>
               ) : (
@@ -542,7 +576,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     )
   }
 
-  // ✅ ЭКРАН УСПЕХА — в карточном стиле приложения (как успех спецзаказа)
+  // ✅ ЭКРАН УСПЕХА — в карточном стиле, как успех спецзаказа
   if (orderSuccess) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -568,9 +602,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 <Package size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Номер заказа' : 'Buyurtma raqami'}
-                </p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Номер заказа' : 'Buyurtma raqami'}</p>
                 <p className="text-sm font-bold text-[#1B2A4A] dark:text-white">№{orderId}</p>
               </div>
               {isSpecialOrder && (
@@ -587,12 +619,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                  {language === 'ru' ? 'Статус заказа' : 'Buyurtma holati'}
-                </p>
-                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                  {language === 'ru' ? 'Профиль → Мои заказы' : 'Profil → Buyurtmalarim'}
-                </p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Статус заказа' : 'Buyurtma holati'}</p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Профиль → Мои заказы' : 'Profil → Buyurtmalarim'}</p>
               </div>
               <ChevronRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
             </button>
@@ -699,7 +727,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><CreditCard size={16} className="text-[#1B2A4A] dark:text-white" /></div>
             <div className="flex-1 min-w-0">
-              {/* ✅ Заголовок «Способ оплаты» + круглая кнопка «i» (только если есть подсказка) */}
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}</p>
                 {(deliveryMethod === 'delivery' || isSpecialOrder) && (
@@ -711,7 +738,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 )}
               </div>
 
-              {/* ✅ Раскрываемая подсказка (по нажатию на «i») */}
               {showPaymentNote && (deliveryMethod === 'delivery' || isSpecialOrder) && (
                 <div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
                   <Info size={14} className="text-[#1B2A4A] dark:text-gold mt-0.5 flex-shrink-0" />
@@ -736,14 +762,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Разбивка цен: доставка только при методе «Доставка», без лишних уведомлений */}
           <div className="px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40 space-y-1.5">
             <div className="flex justify-between items-center gap-2">
               <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Товары' : 'Mahsulotlar'}</span>
               <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(productsUsd)}</span>
             </div>
 
-            {/* ✅ Строка «Доставка»: цена или «Бесплатно» (порог из настроек админки) */}
             {deliveryMethod === 'delivery' && (
               <div className="flex justify-between items-center gap-2">
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>

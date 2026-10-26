@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
@@ -10,7 +10,8 @@ import { supabase, notifyNewChinaRequest } from '../lib/supabase'
 
 export default function ChinaPage() {
   const navigate = useNavigate()
-  const { language, telegramUser } = useStore()
+  // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
+  const { language, telegramUser, theme } = useStore()
   const [productName, setProductName] = useState('')
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
@@ -19,6 +20,14 @@ export default function ChinaPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // ✅ FIX: при показе экрана успеха — скролл всегда вверх
+  // (иначе подтверждение открывается «пролистаннным», если форма была прокручена)
+  useEffect(() => {
+    if (submitted) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }
+  }, [submitted])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -128,13 +137,15 @@ export default function ChinaPage() {
     setImageFile(null)
     setImagePreview(null)
     setSubmitted(false)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }
 
   // ✅ ЭКРАН УСПЕХА — в карточном стиле приложения
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-        <Toaster position="top-center" richColors />
+        {/* ✅ Тосты в текущей теме */}
+        <Toaster position="top-center" richColors theme={theme} />
 
         <div className="p-4">
           {/* ✅ Шапка-карточка успеха */}
@@ -213,10 +224,11 @@ export default function ChinaPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-      <Toaster position="top-center" richColors />
+      {/* ✅ Тосты в текущей теме */}
+      <Toaster position="top-center" richColors theme={theme} />
 
       <div className="p-4">
-        {/* ✅ Шапка-карточка в стиле страницы заказа (без бейджа срока доставки) */}
+        {/* ✅ Шапка-карточка в стиле страницы заказа */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
             {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
@@ -228,7 +240,7 @@ export default function ChinaPage() {
           </p>
         </div>
 
-        {/* ✅ Единая карточка со строками-иконками (как на странице заказа) */}
+        {/* ✅ Единая карточка со строками-иконками */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
           {/* Название товара */}
           <div className="flex items-start gap-3 p-3.5">
