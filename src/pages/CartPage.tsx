@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
-import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, MessageCircle, Clock } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Eye, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { supabase, createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
@@ -247,6 +247,7 @@ export default function CartPage() {
 
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs }: any) {
   useBodyScrollLock(true)
+  const navigate = useNavigate()
   const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
@@ -541,18 +542,79 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     )
   }
 
+  // ✅ ЭКРАН УСПЕХА — в карточном стиле приложения (как успех спецзаказа)
   if (orderSuccess) {
     return (
-      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col items-center justify-center p-6">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-8 border border-[#E8E2D5] dark:border-dark-border shadow-sm max-w-sm w-full text-center">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-5xl">✅</span></div>
-          <h2 className="text-2xl font-bold mb-2 text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}</h2>
-          <p className="text-[#8A8275] dark:text-gray-300 mb-4">{language === 'ru' ? 'Номер вашего заказа: ' : 'Sizning buyurtma raqamingiz: '}<span className="font-bold text-[#1B2A4A] dark:text-white">№{orderId}</span></p>
-          {isSpecialOrder && <span className="inline-block mb-2 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-sm rounded-full">🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}</span>}
-          <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-6">{language === 'ru' ? 'Спасибо за ваш заказ!' : 'Buyurtmangiz uchun rahmat!'}</p>
-          <button onClick={onClose} className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-2xl font-bold hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors shadow-md">
-            {language === 'ru' ? 'Отлично' : 'Ajoyib'}
-          </button>
+      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+        <IslandHeader needsBack={true} onBack={onClose} />
+        <div className="flex-1 overflow-y-auto p-4 pb-32">
+          {/* ✅ Шапка-карточка успеха */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white mb-1">
+              {language === 'ru' ? 'Заказ оформлен!' : 'Buyurtma tasdiqlandi!'}
+            </h2>
+            <p className="text-xs text-[#8A8275] dark:text-gray-300">
+              {language === 'ru' ? 'Спасибо за ваш заказ!' : 'Buyurtmangiz uchun rahmat!'}
+            </p>
+          </div>
+
+          {/* ✅ Инфо-карточка: номер заказа + где отслеживать */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border overflow-hidden">
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Package size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Номер заказа' : 'Buyurtma raqami'}
+                </p>
+                <p className="text-sm font-bold text-[#1B2A4A] dark:text-white">№{orderId}</p>
+              </div>
+              {isSpecialOrder && (
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full whitespace-nowrap">
+                  🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus'}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => { onClose(); navigate('/profile?section=orders') }}
+              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Статус заказа' : 'Buyurtma holati'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'Профиль → Мои заказы' : 'Profil → Buyurtmalarim'}
+                </p>
+              </div>
+              <ChevronRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+            </button>
+          </div>
+
+          {/* ✅ Кнопки действий */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onClose}
+              className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+            >
+              <Check size={16} />
+              {language === 'ru' ? 'Отлично' : 'Ajoyib'}
+            </button>
+            <button
+              onClick={() => { onClose(); navigate('/profile?section=orders') }}
+              className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border"
+            >
+              <Package size={16} />
+              {language === 'ru' ? 'Мои заказы' : 'Buyurtmalarim'}
+            </button>
+          </div>
         </div>
       </div>
     )

@@ -1,10 +1,15 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { Upload, Send, CheckCircle, X, Tag, Link2, Ruler, MessageCircle, Image as ImageIcon } from 'lucide-react'
+import {
+  Upload, Send, CheckCircle, X, Tag, Link2, Ruler, MessageCircle,
+  Image as ImageIcon, Clock, Globe, ChevronRight, Plus, Package,
+} from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { supabase, notifyNewChinaRequest } from '../lib/supabase'
 
 export default function ChinaPage() {
+  const navigate = useNavigate()
   const { language, telegramUser } = useStore()
   const [productName, setProductName] = useState('')
   const [link, setLink] = useState('')
@@ -125,43 +130,82 @@ export default function ChinaPage() {
     setSubmitted(false)
   }
 
+  // ✅ ЭКРАН УСПЕХА — в карточном стиле приложения
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg flex flex-col">
+      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <Toaster position="top-center" richColors />
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <div className="w-24 h-24 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle size={56} className="text-green-500 dark:text-green-300" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4 text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
-          </h2>
-          <p className="text-[#8A8275] dark:text-gray-300 text-lg mb-8 max-w-md">
-            {language === 'ru'
-              ? 'Менеджер рассмотрит ваш спецзаказ'
-              : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
-          </p>
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 mb-8 max-w-sm w-full border border-[#E8E2D5] dark:border-dark-border">
-            <p className="text-[#8A8275] dark:text-gray-300 text-sm leading-relaxed">
-              {language === 'ru' ? (
-                <>
-                  Статус заявки можно посмотреть в разделе<br />
-                  <span className="font-semibold text-[#1B2A4A] dark:text-white">"Профиль"</span> → <span className="font-semibold text-[#1B2A4A] dark:text-white">"Мои спецзаказы"</span>
-                </>
-              ) : (
-                <>
-                  Ariza holatini bo'limdan ko'rishingiz mumkin<br />
-                  <span className="font-semibold text-[#1B2A4A] dark:text-white">"Profil"</span> → <span className="font-semibold text-[#1B2A4A] dark:text-white">"Maxsus buyurtmalarim"</span>
-                </>
-              )}
+
+        <div className="p-4">
+          {/* ✅ Шапка-карточка успеха */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white mb-1">
+              {language === 'ru' ? 'Заявка отправлена!' : 'Ariza yuborildi!'}
+            </h2>
+            <p className="text-xs text-[#8A8275] dark:text-gray-300">
+              {language === 'ru'
+                ? 'Менеджер рассмотрит ваш спецзаказ'
+                : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
             </p>
           </div>
-          <button
-            onClick={handleReset}
-            className="bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
-          >
-            {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
-          </button>
+
+          {/* ✅ Инфо-карточка: статус + где отслеживать */}
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border overflow-hidden">
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Статус заявки' : 'Ariza holati'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'}
+                </p>
+              </div>
+              <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300">
+                ⏳
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/profile?section=china')}
+              className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+                <Globe size={16} className="text-[#1B2A4A] dark:text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[#8A8275] dark:text-gray-300">
+                  {language === 'ru' ? 'Где отслеживать' : 'Qayerda kuzatish'}
+                </p>
+                <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
+                  {language === 'ru' ? 'Профиль → Мои спецзаказы' : 'Profil → Maxsus buyurtmalarim'}
+                </p>
+              </div>
+              <ChevronRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
+            </button>
+          </div>
+
+          {/* ✅ Кнопки действий */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleReset}
+              className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
+            >
+              <Plus size={16} />
+              {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
+            </button>
+            <button
+              onClick={() => navigate('/profile?section=china')}
+              className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border"
+            >
+              <Package size={16} />
+              {language === 'ru' ? 'Мои заявки' : 'Arizalarim'}
+            </button>
+          </div>
         </div>
       </div>
     )
