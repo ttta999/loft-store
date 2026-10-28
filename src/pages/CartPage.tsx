@@ -180,7 +180,7 @@ export default function CartPage() {
                   <p className="font-bold text-sm text-[#1B2A4A] dark:text-white mt-1">{formatPrice(item.priceUsd)}</p>
                   {item.isSpecialOrder && (
                     <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
-                      🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                      {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                     </span>
                   )}
                 </div>
@@ -610,7 +610,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               </div>
               {isSpecialOrder && (
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full whitespace-nowrap">
-                  🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus'}
+                  {language === 'ru' ? 'Спецзаказ' : 'Maxsus'}
                 </span>
               )}
             </div>
@@ -669,7 +669,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
         {isSpecialOrder && (
           <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl">
-            <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">🌍 {language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}</p>
+            <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">{language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}</p>
             <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{language === 'ru' ? 'После оплаты менеджер приступит к заказу товара' : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}</p>
           </div>
         )}

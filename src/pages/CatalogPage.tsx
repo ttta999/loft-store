@@ -9,6 +9,7 @@ import {
   Heart,
   Search,
   Tag,
+  Package,
 } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import { cacheProducts } from '../lib/productCache'
@@ -243,7 +244,7 @@ export default function CatalogPage() {
               {category?.icon ? (
                 <CategoryIcon name={category.icon} size={18} className="text-[#1B2A4A] dark:text-white" />
               ) : (
-                <span className="text-xl leading-none">📦</span>
+                <Package size={18} className="text-[#1B2A4A] dark:text-white" />
               )}
             </div>
           </div>

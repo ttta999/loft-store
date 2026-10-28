@@ -216,7 +216,7 @@ export default function ProductPage() {
         image: product.images?.[0] || '',
       })
       toast.success(
-        language === 'ru' ? 'Добавлено в избранное ❤️' : 'Sevimlilarga qo\'shildi ❤️',
+        language === 'ru' ? 'Добавлено в избранное' : 'Sevimlilarga qo\'shildi',
         { duration: 2000 }
       )
     }
@@ -442,7 +442,7 @@ export default function ProductPage() {
           </p>
           {onSale && (
             <span className="inline-block bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full mb-2">
-              💰 {language === 'ru' ? `Скидка -${discountPercent}%` : `Chegirma -${discountPercent}%`}
+              {language === 'ru' ? `Скидка -${discountPercent}%` : `Chegirma -${discountPercent}%`}
             </span>
           )}
 

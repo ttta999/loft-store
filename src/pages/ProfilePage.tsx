@@ -32,6 +32,8 @@ import {
   FileText,
   ScrollText,
   Check,
+  Gem,
+  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -162,42 +164,42 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
         return {
-          'Активный': "Qabul qilindi 📄",
-          'В обработке': "Yig'ilmoqda 📦",
-          'Готов': "Berishga tayyor 🎉",
-          'Выдан': "Olab bo'lindi 🤝",
-          'Отменён': "Bekor qilindi 🚫",
-          'Ожидает оплаты': "To'lovni kutmoqda ⏳",
+          'Активный': "Qabul qilindi",
+          'В обработке': "Yig'ilmoqda",
+          'Готов': "Berishga tayyor",
+          'Выдан': "Olab bo'lindi",
+          'Отменён': "Bekor qilindi",
+          'Ожидает оплаты': "To'lovni kutmoqda",
         }[status] || status
       }
       return {
-        'Активный': "Qabul qilindi 📄",
-        'В обработке': "Yig'ilmoqda 📦",
-        'Готов': "Qadoqlandi 🛍️",
-        'Выдан': "Kuryerga topshirildi 🚀",
-        'Доставлен': "Yetkazib berildi ✅",
-        'Отменён': "Bekor qilindi 🚫",
-        'Ожидает оплаты': "To'lovni kutmoqda ⏳",
+        'Активный': "Qabul qilindi",
+        'В обработке': "Yig'ilmoqda",
+        'Готов': "Qadoqlandi",
+        'Выдан': "Kuryerga topshirildi",
+        'Доставлен': "Yetkazib berildi",
+        'Отменён': "Bekor qilindi",
+        'Ожидает оплаты': "To'lovni kutmoqda",
       }[status] || status
     }
     if (deliveryMethod === 'pickup') {
       return {
-        'Активный': 'Принят 📄',
-        'В обработке': 'Собирается 📦',
-        'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен 🤝',
-        'Отменён': 'Отменен 🚫',
-        'Ожидает оплаты': 'Ожидает оплаты ⏳',
+        'Активный': 'Принят',
+        'В обработке': 'Собирается',
+        'Готов': 'Готов к выдаче',
+        'Выдан': 'Получен',
+        'Отменён': 'Отменен',
+        'Ожидает оплаты': 'Ожидает оплаты',
       }[status] || status
     }
     return {
-      'Активный': 'Принят 📄',
-      'В обработке': 'Собирается 📦',
-      'Готов': 'Упакован 🛍️',
-      'Выдан': 'Передан курьеру 🚀',
-      'Доставлен': 'Доставлен ✅',
-      'Отменён': 'Отменен 🚫',
-      'Ожидает оплаты': 'Ожидает оплаты ⏳',
+      'Активный': 'Принят',
+      'В обработке': 'Собирается',
+      'Готов': 'Упакован',
+      'Выдан': 'Передан курьеру',
+      'Доставлен': 'Доставлен',
+      'Отменён': 'Отменен',
+      'Ожидает оплаты': 'Ожидает оплаты',
     }[status] || status
   }
 
@@ -260,7 +262,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
           </div>
           {order.special_order_id && (
             <span className="inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
-              🌍 {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+              {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
             </span>
           )}
         </div>
@@ -287,11 +289,15 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                   : (language === 'ru' ? 'Доставка' : 'Yetkazib berish')}
               </p>
               {order.delivery_method === 'pickup' ? (
-                <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-                  📍 {language === 'ru' ? 'ТЦ Mercato, 2 этаж, магазин 34' : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
+                <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 flex items-center gap-1">
+                  <MapPin size={12} className="flex-shrink-0" />
+                  <span>{language === 'ru' ? 'ТЦ Mercato, 2 этаж, магазин 34' : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}</span>
                 </p>
               ) : order.delivery_address ? (
-                <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">📍 {order.delivery_address}</p>
+                <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 flex items-center gap-1">
+                  <MapPin size={12} className="flex-shrink-0" />
+                  <span>{order.delivery_address}</span>
+                </p>
               ) : null}
             </div>
           </div>
@@ -317,7 +323,8 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
             rel="noopener noreferrer"
             className="w-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors mb-3"
           >
-            🚚 {language === 'ru' ? 'Отследить курьера' : 'Kuryerni kuzatish'}
+            <Truck size={16} />
+            {language === 'ru' ? 'Отследить курьера' : 'Kuryerni kuzatish'}
           </a>
         )}
 
@@ -591,19 +598,19 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   const getStatusText = (status: string) => {
     if (language === 'uz') {
       return {
-        'На рассмотрении': "Qabul qilindi 📄",
-        'Оценён': "Baholandi 💎",
-        'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅️",
-        'Отклонён': "Rad etildi 🛑",
+        'На рассмотрении': "Qabul qilindi",
+        'Оценён': "Baholandi",
+        'Оплачен': "To'landi",
+        'Отменён клиентом': "Siz bekor qildingiz",
+        'Отклонён': "Rad etildi",
       }[status] || status
     }
     return {
-      'На рассмотрении': 'Принят 📄',
-      'Оценён': 'Оценён 💎',
-      'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅️',
-      'Отклонён': 'Отклонён 🛑',
+      'На рассмотрении': 'Принят',
+      'Оценён': 'Оценён',
+      'Оплачен': 'Оплачен',
+      'Отменён клиентом': 'Отменён вами',
+      'Отклонён': 'Отклонён',
     }[status] || status
   }
 
@@ -754,7 +761,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
             <div className="flex justify-between items-center">
               <span className="font-bold text-[#1B2A4A] dark:text-white">
-                💰 {language === 'ru' ? 'Итого:' : 'Jami:'}
+                {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
               <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
                 {priceInSums.toLocaleString()} сум
@@ -762,7 +769,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
             </div>
             {request.manager_comment && (
               <p className="text-sm text-purple-700 dark:text-purple-300 mt-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3">
-                💬 {request.manager_comment}
+                {request.manager_comment}
               </p>
             )}
           </div>
@@ -770,13 +777,13 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 mb-3">
           <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
-            {language === 'ru' ? '📦 Статус заявки' : '📦 Ariza holati'}
+            {language === 'ru' ? 'Статус заявки' : 'Ariza holati'}
           </h3>
           {request.status === 'Оценён' && request.manager_price ? (
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3.5">
                 <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-base">💎</span>
+                  <Gem size={18} className="text-purple-700 dark:text-purple-300" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
@@ -814,7 +821,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-3.5">
                 <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-base">⏳</span>
+                  <Clock size={18} className="text-yellow-700 dark:text-yellow-300" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
@@ -842,7 +849,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
           ) : request.status === 'Оплачен' ? (
             <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
               <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-base">✅</span>
+                <Check size={18} className="text-green-700 dark:text-green-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">
@@ -858,7 +865,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
           ) : request.status === 'Отменён клиентом' ? (
             <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-3.5">
               <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-base">🙅</span>
+                <X size={18} className="text-orange-700 dark:text-orange-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
@@ -874,7 +881,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
           ) : (
             <div className="flex items-center gap-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3.5">
               <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-base">🛑</span>
+                <XCircle size={18} className="text-red-700 dark:text-red-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-red-800 dark:text-red-300">
@@ -1009,42 +1016,42 @@ export default function ProfilePage() {
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
         return {
-          'Активный': "Qabul qilindi 📄",
-          'В обработке': "Yig'ilmoqda 📦",
-          'Готов': "Berishga tayyor 🎉",
-          'Выдан': "Olab bo'lindi 🤝",
-          'Отменён': "Bekor qilindi 🚫",
-          'Ожидает оплаты': "To'lovni kutmoqda ⏳",
+          'Активный': "Qabul qilindi",
+          'В обработке': "Yig'ilmoqda",
+          'Готов': "Berishga tayyor",
+          'Выдан': "Olab bo'lindi",
+          'Отменён': "Bekor qilindi",
+          'Ожидает оплаты': "To'lovni kutmoqda",
         }[status] || status
       }
       return {
-        'Активный': "Qabul qilindi 📄",
-        'В обработке': "Yig'ilmoqda 📦",
-        'Готов': "Qadoqlandi 🛍️",
-        'Выдан': "Kuryerga topshirildi 🚀",
-        'Доставлен': "Yetkazib berildi ✅",
-        'Отменён': "Bekor qilindi 🚫",
-        'Ожидает оплаты': "To'lovni kutmoqda ⏳",
+        'Активный': "Qabul qilindi",
+        'В обработке': "Yig'ilmoqda",
+        'Готов': "Qadoqlandi",
+        'Выдан': "Kuryerga topshirildi",
+        'Доставлен': "Yetkazib berildi",
+        'Отменён': "Bekor qilindi",
+        'Ожидает оплаты': "To'lovni kutmoqda",
       }[status] || status
     }
     if (deliveryMethod === 'pickup') {
       return {
-        'Активный': 'Принят 📄',
-        'В обработке': 'Собирается 📦',
-        'Готов': 'Готов к выдаче 🎉',
-        'Выдан': 'Получен 🤝',
-        'Отменён': 'Отменен 🚫',
-        'Ожидает оплаты': 'Ожидает оплаты ⏳',
+        'Активный': 'Принят',
+        'В обработке': 'Собирается',
+        'Готов': 'Готов к выдаче',
+        'Выдан': 'Получен',
+        'Отменён': 'Отменен',
+        'Ожидает оплаты': 'Ожидает оплаты',
       }[status] || status
     }
     return {
-      'Активный': 'Принят 📄',
-      'В обработке': 'Собирается 📦',
-      'Готов': 'Упакован 🛍️',
-      'Выдан': 'Передан курьеру 🚀',
-      'Доставлен': 'Доставлен ✅',
-      'Отменён': 'Отменен 🚫',
-      'Ожидает оплаты': 'Ожидает оплаты ⏳',
+      'Активный': 'Принят',
+      'В обработке': 'Собирается',
+      'Готов': 'Упакован',
+      'Выдан': 'Передан курьеру',
+      'Доставлен': 'Доставлен',
+      'Отменён': 'Отменен',
+      'Ожидает оплаты': 'Ожидает оплаты',
     }[status] || status
   }
 
@@ -1063,19 +1070,19 @@ export default function ProfilePage() {
   const getChinaStatusText = (status: string) => {
     if (language === 'uz') {
       return {
-        'На рассмотрении': "Qabul qilindi 📄",
-        'Оценён': "Baholandi 💎",
-        'Оплачен': "To'landi ✅",
-        'Отменён клиентом': "Siz bekor qildingiz 🙅️",
-        'Отклонён': "Rad etildi 🛑",
+        'На рассмотрении': "Qabul qilindi",
+        'Оценён': "Baholandi",
+        'Оплачен': "To'landi",
+        'Отменён клиентом': "Siz bekor qildingiz",
+        'Отклонён': "Rad etildi",
       }[status] || status
     }
     return {
-      'На рассмотрении': 'Принят 📄',
-      'Оценён': 'Оценён 💎',
-      'Оплачен': 'Оплачен ✅',
-      'Отменён клиентом': 'Отменён вами 🙅️',
-      'Отклонён': 'Отклонён 🛑',
+      'На рассмотрении': 'Принят',
+      'Оценён': 'Оценён',
+      'Оплачен': 'Оплачен',
+      'Отменён клиентом': 'Отменён вами',
+      'Отклонён': 'Отклонён',
     }[status] || status
   }
 
@@ -1634,7 +1641,7 @@ export default function ProfilePage() {
                         <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{formatDateTime(order.created_at)}</p>
                         {order.special_order_id && (
                           <span className="inline-block mt-1.5 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
-                            🌍 {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                            {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                           </span>
                         )}
                       </div>
@@ -1751,7 +1758,7 @@ export default function ProfilePage() {
                     {showPriceRow && (
                       <div className="flex justify-between items-center px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
                         <span className="text-xs text-[#8A8275] dark:text-gray-300">
-                          {language === 'ru' ? '💰 Оценка менеджера' : '💰 Menejer bahosi'}
+                          {language === 'ru' ? 'Оценка менеджера' : 'Menejer bahosi'}
                         </span>
                         {priceInSums > 0 ? (
                           <span className="text-base font-bold text-[#1B2A4A] dark:text-white">

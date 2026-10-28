@@ -284,7 +284,7 @@ export default function HomePage() {
           )}
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
-              {language === 'ru' ? `Привет, ${userName.split(' ')[0]} 👋` : `Salom, ${userName.split(' ')[0]} 👋`}
+              {language === 'ru' ? `Привет, ${userName.split(' ')[0]}` : `Salom, ${userName.split(' ')[0]}`}
             </h1>
             <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 truncate">
               {language === 'ru' ? 'Что ищете сегодня?' : 'Bugun nima qidiryapsiz?'}

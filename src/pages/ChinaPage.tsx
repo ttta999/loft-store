@@ -177,9 +177,6 @@ export default function ChinaPage() {
                   {language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'}
                 </p>
               </div>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300">
-                ⏳
-              </span>
             </div>
             <button
               onClick={() => navigate('/profile?section=china')}
@@ -231,7 +228,7 @@ export default function ChinaPage() {
         {/* ✅ Шапка-карточка в стиле страницы заказа */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? '🌍 Спецзаказ' : '🌍 Maxsus buyurtma'}
+            {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
           </h2>
           <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
             {language === 'ru'
