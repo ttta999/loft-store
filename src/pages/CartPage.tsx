@@ -40,7 +40,6 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
   )
 }
 
-// ✅ Круглая кнопка «i» — как InfoToggle в админке
 function InfoToggle({ open, onClick, title }: { open: boolean; onClick: () => void; title: string }) {
   return (
     <button
@@ -69,11 +68,9 @@ const getItemsLabel = (count: number, lang: string): string => {
 
 export default function CartPage() {
   const navigate = useNavigate()
-  // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts, theme } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
 
-  // ✅ Состояния для настроек доставки
   const [deliveryPriceUzs, setDeliveryPriceUzs] = useState<number>(0)
   const [freeDeliveryThresholdUzs, setFreeDeliveryThresholdUzs] = useState<number>(0)
 
@@ -102,7 +99,6 @@ export default function CartPage() {
 
   const productsUsd = getTotalPrice()
 
-  // ✅ Экономия на скидках
   const savingsUsd = (() => {
     if (!saleModeEnabled) return 0
     const catalog = ensureProducts() || []
@@ -145,7 +141,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-56">
-      {/* ✅ Тосты в текущей теме */}
       <Toaster position="top-center" richColors theme={theme} />
       <div className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
@@ -159,7 +154,6 @@ export default function CartPage() {
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
           <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            {/* ✅ key учитывает цвет: один товар разных цветов = разные строки */}
             {cart.map((item) => (
               <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex gap-3">
                 <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })} />
@@ -167,7 +161,6 @@ export default function CartPage() {
                   <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
                     {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
-                    {/* ✅ Цвет товара (если выбран) */}
                     {item.colorName && (
                       <>
                         <span className="mx-1">·</span>
@@ -183,7 +176,6 @@ export default function CartPage() {
                   )}
                 </div>
                 <div className="flex flex-col items-end justify-between flex-shrink-0">
-                  {/* ✅ Удаление с учётом цвета */}
                   <button onClick={() => removeFromCart(item.productId, item.size, item.colorId || null)} title={language === 'ru' ? 'Удалить из корзины' : 'Savatdan o\'chirish'} className="p-1.5 rounded-lg text-[#9B3B3B] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
                     <Trash2 size={16} />
                   </button>
@@ -203,7 +195,6 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* ✅ Плавающая карточка: БЕЗ строки «Доставка» — только товары и итого */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
         <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
           <div className="px-1 space-y-1.5">
@@ -265,7 +256,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [screenshotUploaded, setScreenshotUploaded] = useState(false)
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
-  // ✅ Раскрываемая подсказка об оплате (как InfoToggle в админке)
   const [showPaymentNote, setShowPaymentNote] = useState(false)
 
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
@@ -275,7 +265,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const productsUsd = getTotalPrice()
   const productsTotalUzs = Math.round(productsUsd * exchangeRate)
 
-  // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0).
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
   const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
   const finalUsd = productsUsd + deliveryCostUsd
@@ -319,7 +308,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
-  // ✅ Цвет (colorId/colorName) уходит в заказ автоматически через spread {...item}
   const createOrderInDb = async (): Promise<any> => {
     const userId = telegramUser?.id?.toString() || 'guest-user'
     const totalInSums = Math.round(finalUsd * exchangeRate)
@@ -399,7 +387,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
-  // ✅ ЭКРАН ОПЛАТЫ — банковская карта + карточка подтверждения
+  // ✅ ЭКРАН ОПЛАТЫ
   if (showPaymentInfo) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
@@ -408,7 +396,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           else { await cancelUnpaidOrder(); setShowPaymentInfo(false) }
         }} />
         <div className="flex-1 overflow-y-auto px-4 pb-44">
-          {/* ✅ Шапка-карточка: номер заказа + статус + итого */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -426,7 +413,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Товары заказа: строки с фото (стиль корзины) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
             <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
               {cart.map((item: any) => (
@@ -452,7 +438,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ ВИЗУАЛЬНАЯ БАНКОВСКАЯ КАРТА */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B2A4A] via-[#22345C] to-[#142038] border border-[#C9A961]/30 dark:border-gold/30 shadow-lg mb-3">
             <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#C9A961]/10 pointer-events-none" />
             <div className="absolute -bottom-20 -right-6 w-52 h-52 rounded-full bg-[#C9A961]/5 pointer-events-none" />
@@ -487,7 +472,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Карточка подтверждения оплаты */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
             <div className="flex items-center justify-between gap-2 p-3.5 border-b border-[#E8E2D5] dark:border-dark-border">
               <div className="flex items-center gap-3 min-w-0">
@@ -505,7 +489,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                   </p>
                 </div>
               </div>
-              {/* ✅ Миниатюра скриншота вместо кнопки-глаза */}
               {screenshotUploaded && screenshotUrl && (
                 <button
                   onClick={() => setShowScreenshotModal(true)}
@@ -543,7 +526,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
 
-          {/* ✅ Подсказка-примечание */}
           <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <Clock size={16} className="text-[#1B2A4A] dark:text-white" />
@@ -552,7 +534,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           </div>
         </div>
 
-        {/* ✅ Плавающая панель: ОДНА строка из двух кнопок — ничего не перекрывает */}
         <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
           <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3">
             <div className="grid grid-cols-2 gap-2">
@@ -576,13 +557,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     )
   }
 
-  // ✅ ЭКРАН УСПЕХА — в карточном стиле, как успех спецзаказа
+  // ✅ ЭКРАН УСПЕХА (подтверждение заказа)
   if (orderSuccess) {
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={onClose} />
         <div className="flex-1 overflow-y-auto p-4 pb-32">
-          {/* ✅ Шапка-карточка успеха */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
@@ -595,7 +575,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </p>
           </div>
 
-          {/* ✅ Инфо-карточка: номер заказа + где отслеживать */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border overflow-hidden">
             <div className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -626,7 +605,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </button>
           </div>
 
-          {/* ✅ Кнопки действий */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onClose}
