@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
@@ -270,6 +270,34 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   // ✅ Раскрываемая подсказка об оплате (как InfoToggle в админке)
   const [showPaymentNote, setShowPaymentNote] = useState(false)
 
+  // ✅ FIX «висящий заказ»: refs дублируют состояние для cleanup-эффекта при размонтировании
+  const showPaymentInfoRef = useRef(false)
+  const screenshotUploadedRef = useRef(false)
+  const currentOrderIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    showPaymentInfoRef.current = showPaymentInfo
+    screenshotUploadedRef.current = screenshotUploaded
+    currentOrderIdRef.current = currentOrderId
+  }, [showPaymentInfo, screenshotUploaded, currentOrderId])
+
+  // ✅ FIX: если пользователь ушёл с экрана оплаты БЕЗ скриншота ЛЮБЫМ способом
+  // (навбар, роутинг, закрытие вкладки) — неоплаченный заказ ПОЛНОСТЬЮ удаляется из БД,
+  // остатки возвращаются. Со скриншотом — заказ остаётся для подтверждения менеджером.
+  useEffect(() => {
+    return () => {
+      if (
+        showPaymentInfoRef.current &&
+        !screenshotUploadedRef.current &&
+        currentOrderIdRef.current
+      ) {
+        deleteUnpaidOrder(currentOrderIdRef.current).catch((err) =>
+          console.error('Ошибка авто-удаления неоплаченного заказа:', err)
+        )
+      }
+    }
+  }, [])
+
   const specialItem = cart.find((i: any) => i.isSpecialOrder)
   const isSpecialOrder = !!specialItem
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
@@ -410,7 +438,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           if (screenshotUploaded) { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }
           else { await cancelUnpaidOrder(); setShowPaymentInfo(false) }
         }} />
-        <div className="flex-1 overflow-y-auto px-4 pb-44">
+        {/* ✅ key: принудительный remount скролл-контейнера → экран открывается сверху */}
+        <div key="payment-scroll" className="flex-1 overflow-y-auto px-4 pb-44">
           {/* ✅ Шапка-карточка: номер заказа + статус + итого */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-start justify-between gap-2">
@@ -584,7 +613,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     return (
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={onClose} />
-        <div className="flex-1 overflow-y-auto p-4 pb-32">
+        {/* ✅ key: remount → скролл сверху */}
+        <div key="success-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
           {/* ✅ Шапка-карточка успеха */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
@@ -654,7 +684,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   return (
     <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      <div className="flex-1 overflow-y-auto p-4 pb-32">
+      {/* ✅ key: remount → скролл сверху */}
+      <div key="form-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{language === 'ru' ? 'Оформление заказа' : 'Buyurtmani rasmiylashtirish'}</h2>

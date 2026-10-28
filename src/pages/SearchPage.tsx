@@ -66,7 +66,7 @@ export default function SearchPage() {
         searchBrandsCache = (data || []) as Brand[]
         setBrands(searchBrandsCache)
       } catch (error) {
-        console.error('❌ Ошибка загрузки брендов:', error)
+        console.error('Ошибка загрузки брендов:', error)
       }
     }
     load()
