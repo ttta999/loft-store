@@ -22,10 +22,10 @@ do $$ declare n integer; begin
   begin perform public.store_admin_cancel_order(0); raise exception 'SECURITY TEST FAILED: outsider cancels'; exception when insufficient_privilege then null; end;
   begin perform public.store_admin_confirm_payment(0); raise exception 'SECURITY TEST FAILED: outsider confirms payment'; exception when insufficient_privilege then null; end;
 end $$;
-select set_config('request.jwt.claims','{"sub":"157d5707-f831-4853-bc29-80e0d904a3da","role":"authenticated"}',true);
+-- A manager ID alone no longer grants access; the MFA-positive session matrix is in 13_verify_admin_mfa.sql.
+select set_config('request.jwt.claims','{"sub":"157d5707-f831-4853-bc29-80e0d904a3da","role":"authenticated","aal":"aal1"}',true);
 do $$ begin
-  if not public.store_is_admin() then raise exception 'SECURITY TEST FAILED: existing manager lost access'; end if;
-  perform count(*) from public.orders;
+  if public.store_is_admin() or exists(select 1 from public.orders) then raise exception 'SECURITY TEST FAILED: manager bypassed MFA'; end if;
 end $$;
 reset role;
 do $$ begin
