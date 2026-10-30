@@ -74,6 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const phone = text(order.client_phone, 13, 13)
         if (!/^\+998\d{9}$/.test(phone) || !['pickup','delivery'].includes(order.delivery_method) || !['online_card','upon_receipt'].includes(order.payment_method) || !['UZS','USD'].includes(order.order_currency)) throw new HttpError(400, 'Проверьте данные заказа')
         if (!Array.isArray(order.items) || order.items.length < 1 || order.items.length > 50 || !Number.isFinite(order.total_price_usd) || order.total_price_usd<0) throw new HttpError(400, 'Проверьте корзину')
+        if (order.order_currency === 'UZS' && (!Number.isSafeInteger(order.total_price_uzs) || order.total_price_uzs < 0)) throw new HttpError(400, 'Проверьте корзину')
         const items = order.items.map((item: { quantity: number; productId: unknown; size: unknown; colorId?: unknown; isSpecialOrder?: unknown }) => {
           if (!item || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) throw new HttpError(400, 'Некорректное количество товара')
           return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true }
@@ -81,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const payload = { client_name: name, client_phone: phone, delivery_method: order.delivery_method,
           delivery_address: order.delivery_method === 'delivery' ? text(order.delivery_address, 500, 5) : null,
           payment_method: order.payment_method, order_currency: order.order_currency, items,
-          special_order_id: order.special_order_id ? recordId(order.special_order_id) : null, expected_total_usd: order.total_price_usd }
+          special_order_id: order.special_order_id ? recordId(order.special_order_id) : null, expected_total_usd: order.total_price_usd, expected_total_uzs: order.total_price_uzs }
         const { data, error } = await db.rpc('store_create_order', { p_user: userId, p_payload: payload, p_key: uuid(body.requestKey) })
         if (error) dbError(error.message)
         await dispatchNotification(userId, 'order', data)

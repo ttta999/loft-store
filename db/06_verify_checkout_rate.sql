@@ -14,7 +14,7 @@ begin
   total:=210+30000/11843.74;
   result:=public.store_create_order('900000123',jsonb_build_object(
     'client_name','Rate test','client_phone','+998901234567','delivery_method','delivery','delivery_address','Test fixture address',
-    'payment_method','online_card','order_currency','UZS','expected_total_usd',total,
+    'payment_method','online_card','order_currency','UZS','expected_total_usd',total,'expected_total_uzs',2517185,
     'items',jsonb_build_array(jsonb_build_object('productId',product,'size','42','quantity',1))),gen_random_uuid());
   if (result->>'total_price_uzs')::numeric<>2517185 or (result->>'exchange_rate_at_order')::numeric<>11843.74
     then raise exception 'Checkout rate regression'; end if;
