@@ -73,6 +73,7 @@ interface AppState {
   getPopularityAge: () => number
   getProductSoldCount: (productId: string) => number
   updateExchangeRate: () => Promise<void>
+  refreshCheckout: () => Promise<{ deliveryPriceUzs: number; freeDeliveryThresholdUzs: number }>
   updateSaleMode: () => Promise<void>
   updatePopularity: (force?: boolean) => Promise<void>
   ensureProducts: (maxAgeMs?: number) => any[] | null
@@ -195,12 +196,34 @@ export const useStore = create<AppState>()(
           return
         }
         const { rate, version } = dbData
-        const storedVersion = localStorage.getItem('exchangeRateVersion')
-        if (!(storedVersion && Number(storedVersion) === version)) {
-          set({ exchangeRate: rate })
-          localStorage.setItem('exchangeRateVersion', version.toString())
-        }
+        // The saved version survives reloads; the in-memory rate does not.
+        // Always hydrate the current rate, even when the version is unchanged.
+        set({ exchangeRate: rate })
+        localStorage.setItem('exchangeRateVersion', version.toString())
         localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
+      },
+
+      refreshCheckout: async () => {
+        const [{ data: rows, error }, products] = await Promise.all([
+          supabase.from('settings').select('key, value').in('key', ['exchange_rate', 'sale_mode_enabled', 'delivery_price', 'free_delivery_threshold']),
+          getProducts(),
+        ])
+        if (error || !rows) throw new Error('Не удалось обновить корзину. Попробуйте ещё раз.')
+        const settings = Object.fromEntries(rows.map(row => [row.key, row.value]))
+        const rate = Number(settings.exchange_rate?.rate)
+        if (!Number.isFinite(rate) || rate <= 0) throw new Error('Не удалось получить курс магазина. Попробуйте ещё раз.')
+        const sale = settings.sale_mode_enabled?.enabled === true
+        const cart = get().cart.map(item => {
+          if (item.isSpecialOrder) return item
+          const product = products.find(product => product.id === item.productId)
+          if (!product) throw new Error('Товар больше недоступен. Удалите его из корзины.')
+          return { ...item, priceUsd: Number(getEffectivePriceUsd(product, sale)) }
+        })
+        set({ exchangeRate: rate, saleModeEnabled: sale, cart, productsCache: { items: products, updatedAt: Date.now() } })
+        return {
+          deliveryPriceUzs: Math.max(0, Number(settings.delivery_price?.price) || 0),
+          freeDeliveryThresholdUzs: Math.max(0, Number(settings.free_delivery_threshold?.amount) || 0),
+        }
       },
 
       updateSaleMode: async () => {

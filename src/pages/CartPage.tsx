@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import { supabase, createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
+import { createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
@@ -72,32 +72,28 @@ export default function CartPage() {
   // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts, theme } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
+  const [preparingCheckout, setPreparingCheckout] = useState(false)
 
   // ✅ Состояния для настроек доставки
   const [deliveryPriceUzs, setDeliveryPriceUzs] = useState<number>(0)
   const [freeDeliveryThresholdUzs, setFreeDeliveryThresholdUzs] = useState<number>(0)
 
-  useEffect(() => {
-    const loadDeliverySettings = async () => {
-      try {
-        const { data: deliveryData } = await supabase.from('settings').select('value').eq('key', 'delivery_price').single()
-        const price = (deliveryData?.value as any)?.price
-        setDeliveryPriceUzs(typeof price === 'number' && price > 0 ? price : 0)
-
-        const { data: thresholdData } = await supabase.from('settings').select('value').eq('key', 'free_delivery_threshold').single()
-        const threshold = (thresholdData?.value as any)?.amount
-        setFreeDeliveryThresholdUzs(typeof threshold === 'number' && threshold > 0 ? threshold : 0)
-      } catch (error) {
-        setDeliveryPriceUzs(0)
-        setFreeDeliveryThresholdUzs(0)
-      }
-    }
-    loadDeliverySettings()
-  }, [])
+  const openCheckout = async () => {
+    if (preparingCheckout) return
+    setPreparingCheckout(true)
+    try {
+      const settings = await useStore.getState().refreshCheckout()
+      setDeliveryPriceUzs(settings.deliveryPriceUzs)
+      setFreeDeliveryThresholdUzs(settings.freeDeliveryThresholdUzs)
+      setShowCheckout(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось обновить корзину')
+    } finally { setPreparingCheckout(false) }
+  }
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
+    return `${Math.round(usd * exchangeRate).toLocaleString()} сум`
   }
 
   const productsUsd = getTotalPrice()
@@ -226,7 +222,8 @@ export default function CartPage() {
           </div>
 
           <button
-            onClick={() => setShowCheckout(true)}
+            onClick={openCheckout}
+            disabled={preparingCheckout}
             className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
           >
             <CreditCard size={18} />
@@ -263,6 +260,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [submitting, setSubmitting] = useState(false)
   const requestKey = useRef(crypto.randomUUID())
   const [serverTotalUsd, setServerTotalUsd] = useState<number | null>(null)
+  const [serverTotalUzs, setServerTotalUzs] = useState<number | null>(null)
   const [showPaymentInfo, setShowPaymentInfo] = useState(false)
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
@@ -312,6 +310,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
   const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
   const finalUsd = serverTotalUsd ?? productsUsd + deliveryCostUsd
+  const formattedTotal = serverTotalUzs !== null && currency === 'UZS' ? `${serverTotalUzs.toLocaleString()} сум` : formatPrice(finalUsd)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
   const payCard = PAYMENT_CARDS[orderCurrency]
@@ -395,6 +394,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     if (!success) { toast.error(language === 'ru' ? 'Не удалось отменить заказ. Обновите страницу.' : 'Buyurtmani bekor qilib bo‘lmadi.'); return false }
     requestKey.current = crypto.randomUUID()
     setServerTotalUsd(null)
+    setServerTotalUzs(null)
     currentOrderIdRef.current = null
     setCurrentOrderId(null)
     return true
@@ -418,6 +418,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     try {
       const orderData = await createOrderInDb()
       setServerTotalUsd(Number(orderData.total_price_usd))
+      setServerTotalUzs(Number(orderData.total_price_uzs))
       const newOrderId = orderData.id
       if (paymentMethod === 'online_card') {
         setCurrentOrderId(newOrderId.toString())
@@ -459,7 +460,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
             <div className="border-t border-[#E8E2D5] dark:border-dark-border mt-3 pt-3 flex justify-between items-center">
               <span className="font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Итого:' : 'Jami:'}</span>
-              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formatPrice(finalUsd)}</span>
+              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formattedTotal}</span>
             </div>
           </div>
 
@@ -824,7 +825,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
             <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
               <span className="font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Итого:' : 'Jami:'}</span>
-              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formatPrice(finalUsd)}</span>
+              <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">{formattedTotal}</span>
             </div>
           </div>
         </div>
