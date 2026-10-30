@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
-import { supabase, getProducts } from '../lib/supabase'
+import { getProducts } from '../lib/supabase'
+import { storeApi } from '../lib/api'
 import {
   User,
   Package,
@@ -41,7 +42,6 @@ import {
   MANAGER_TELEGRAM_LINK,
   PAYMENT_CARDS,
   uploadPaymentScreenshot,
-  savePaymentScreenshot,
 } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
@@ -230,12 +230,9 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
     if (!file) return
     setUploadingScreenshot(true)
     try {
-      const screenshotUrl = await uploadPaymentScreenshot(order.id.toString(), file)
-      const saved = await savePaymentScreenshot(order.id.toString(), screenshotUrl)
-      if (saved) {
-        toast.success(language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!')
-        if (onScreenshotUploaded) onScreenshotUploaded()
-      }
+      await uploadPaymentScreenshot(order.id.toString(), file)
+      toast.success(language === 'ru' ? 'Скриншот загружен!' : 'Screenshot yuklandi!')
+      if (onScreenshotUploaded) onScreenshotUploaded()
     } catch (error) {
       console.error('Ошибка загрузки:', error)
       toast.error(language === 'ru' ? 'Ошибка загрузки скриншота' : 'Screenshot yuklashda xatolik')
@@ -642,11 +639,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
     if (!confirmed) return
     setCancelling(true)
     try {
-      const { error } = await supabase
-        .from('china_requests')
-        .update({ status: 'Отменён клиентом' })
-        .eq('id', request.id)
-      if (error) throw error
+      await storeApi('cancelRequest', { requestId: String(request.id) })
       toast.success(
         language === 'ru' ? 'Спецзаказ отменён' : 'Maxsus buyurtma bekor qilindi'
       )
@@ -1099,19 +1092,15 @@ export default function ProfilePage() {
   const loadOrders = async () => {
     const hadCache = !!profileOrdersCache
     if (!hadCache) setLoading(true)
-    const userId = telegramUser?.id || 'guest-user'
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-      if (!error && data) {
+      const { data } = await storeApi('orders')
+      if (data) {
         profileOrdersCache = data
         setOrders(data)
       }
     } catch (err) {
-      console.error('Ошибка при загрузке заказов:', err)
+      console.error('Ошибка при загрузке заказов')
+      toast.error(err instanceof Error ? err.message : 'Не удалось загрузить заказы')
     } finally {
       if (!hadCache) setLoading(false)
     }
@@ -1120,19 +1109,15 @@ export default function ProfilePage() {
   const loadChinaRequests = async () => {
     const hadCache = !!profileChinaRequestsCache
     if (!hadCache) setLoading(true)
-    const userId = telegramUser?.id || 'guest-user'
     try {
-      const { data, error } = await supabase
-        .from('china_requests')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-      if (!error && data) {
+      const { data } = await storeApi('requests')
+      if (data) {
         profileChinaRequestsCache = data
         setChinaRequests(data)
       }
     } catch (err) {
-      console.error('Ошибка при загрузке спецзаказов:', err)
+      console.error('Ошибка при загрузке спецзаказов')
+      toast.error(err instanceof Error ? err.message : 'Не удалось загрузить спецзаказы')
     } finally {
       if (!hadCache) setLoading(false)
     }
@@ -1192,10 +1177,9 @@ export default function ProfilePage() {
   }
 
   const handleScreenshotUploaded = (order: any) => {
-    const updated = { ...order, payment_screenshot_url: 'uploaded' }
-    const newOrders = orders.map((o) => (o.id === order.id ? updated : o))
-    profileOrdersCache = newOrders
-    setOrders(newOrders)
+    void order
+    profileOrdersCache = null
+    loadOrders()
   }
 
   const selectedOrder = orderIdParam ? orders.find((o) => String(o.id) === String(orderIdParam)) : null

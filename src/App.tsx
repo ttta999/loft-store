@@ -19,7 +19,6 @@ import TermsPage from './pages/TermsPage'
 import {
   initTelegram,
   getUserData,
-  getChatId,
   subscribeUser,
   setupTelegramBackButton,
   hideTelegramBackButton,
@@ -125,21 +124,17 @@ function AppLayout() {
   // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
     const tg = initTelegram()
-    if (tg) {
-      const userData = getUserData()
-      if (userData) {
-        setTelegramUser(userData)
-        console.log('Telegram пользователь:', userData)
-        const chatId = getChatId()
-        if (chatId && chatId !== useStore.getState().chatId) {
-          useStore.getState().setChatId(chatId)
-          console.log('Chat ID сохранён:', chatId)
-          subscribeUser()
-        }
-      }
-    } else {
-      console.log('Приложение открыто в браузере (не в Telegram)')
-    }
+    if (!tg) return
+    let active = true
+    getUserData().then(user => {
+      if (!active) return
+      setTelegramUser(user)
+      useStore.getState().setChatId(user.id)
+      subscribeUser().catch(() => {})
+    }).catch(() => {
+      if (active) { setTelegramUser(null); useStore.getState().setChatId(null) }
+    })
+    return () => { active = false }
   }, [setTelegramUser])
 
   // ✅ Системная кнопка «назад» Telegram на вкладках

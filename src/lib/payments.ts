@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { storeApi, uploadPrivateImage } from './api'
 
 interface PaymentData {
   orderId: string
@@ -39,114 +39,11 @@ ${PAYMENT_DETAILS.cardNumber}
   return message
 }
 
-// ✅ Загрузка скриншота оплаты в Supabase Storage
-export const uploadPaymentScreenshot = async (
-  orderId: string,
-  file: File
-): Promise<string> => {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${orderId}-${Date.now()}.${fileExt}`
-
-  const { error } = await supabase.storage
-    .from('payment-screenshots')
-    .upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: false
-    })
-
-  if (error) throw error
-
-  const { data: urlData } = supabase.storage
-    .from('payment-screenshots')
-    .getPublicUrl(fileName)
-
-  return urlData.publicUrl
+// The upload endpoint verifies ownership and attaches the receipt atomically.
+export const uploadPaymentScreenshot = async (orderId: string, file: File): Promise<string> => {
+  const result = await uploadPrivateImage('payment-screenshots', file, orderId)
+  return result.url
 }
-
-// ✅ Сохранение ссылки на скриншот в заказе
-export const savePaymentScreenshot = async (
-  orderId: string,
-  screenshotUrl: string
-): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('orders')
-      .update({
-        payment_screenshot_url: screenshotUrl,
-      })
-      .eq('id', orderId)
-
-    if (error) throw error
-    return true
-  } catch (error) {
-    console.error('Ошибка сохранения скриншота:', error)
-    return false
-  }
-}
-
-// ✅ Отмена заказа — ИСПРАВЛЕНО
-export const cancelOrder = async (orderId: string) => {
-  try {
-    // ✅ Преобразуем orderId в число (Supabase id обычно integer/bigint)
-    const numericId = Number(orderId)
-    
-    if (isNaN(numericId)) {
-      console.error('Неверный формат ID заказа:', orderId)
-      return false
-    }
-
-    const { data, error } = await supabase
-      .from('orders')
-      .update({
-        status: 'Отменён',
-        payment_status: 'cancelled',
-      })
-      .eq('id', numericId)
-      .select()
-
-    if (error) {
-      console.error('Ошибка Supabase при отмене:', error)
-      throw error
-    }
-
-    // Проверяем, что реально обновили запись
-    if (!data || data.length === 0) {
-      console.error('Заказ не найден или не обновлён')
-      return false
-    }
-
-    console.log('✅ Заказ успешно отменён:', data[0])
-    return true
-  } catch (error) {
-    console.error('Ошибка отмены заказа:', error)
-    return false
-  }
-}
-
-// ✅ Подтверждение оплаты (для менеджера)
-export const confirmPayment = async (orderId: string) => {
-  try {
-    const numericId = Number(orderId)
-    
-    if (isNaN(numericId)) {
-      console.error('Неверный формат ID заказа:', orderId)
-      return false
-    }
-
-    const { error } = await supabase
-      .from('orders')
-      .update({
-        status: 'Активный',
-        payment_status: 'paid',
-        paid_at: new Date().toISOString(),
-        payment_provider: 'manual'
-      })
-      .eq('id', numericId)
-
-    if (error) throw error
-    return true
-  } catch (error) {
-    console.error('Ошибка подтверждения оплаты:', error)
-    return false
-  }
+export const cancelOrder = async (orderId: string): Promise<boolean> => {
+  try { await storeApi('cancelOrder', { orderId }); return true } catch { return false }
 }

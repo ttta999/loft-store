@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
@@ -17,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('🔄 Получаем курс USD к UZS...')
     
     const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      signal: AbortSignal.timeout(5000),
       headers: {
         'User-Agent': 'LOFT-Store/1.0',
       },
@@ -47,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({
       rate: 12100,
       source: 'fallback',
-      error: error instanceof Error ? error.message : 'Unknown error',
       date: new Date().toISOString()
     })
   }
