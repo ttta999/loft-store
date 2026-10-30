@@ -1,5 +1,6 @@
 declare namespace Telegram {
   interface WebApp {
+    initData: string
     ready(): void
     expand(): void
     close(): void

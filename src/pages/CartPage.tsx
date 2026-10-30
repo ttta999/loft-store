@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import { supabase, createOrder, createOrderFromSpecial, notifyNewOrder, deleteUnpaidOrder } from '../lib/supabase'
-import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot, savePaymentScreenshot } from '../lib/payments'
+import { supabase, createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
+import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
 const useBodyScrollLock = (active: boolean) => {
@@ -252,7 +252,7 @@ export default function CartPage() {
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs }: any) {
   useBodyScrollLock(true)
   const navigate = useNavigate()
-  const { cart, clearCart, currency, exchangeRate, telegramUser } = useStore()
+  const { cart, clearCart, currency, exchangeRate } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
   const [paymentMethod, setPaymentMethod] = useState<'online_card' | 'upon_receipt'>('online_card')
   const [name, setName] = useState('')
@@ -261,6 +261,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const requestKey = useRef(crypto.randomUUID())
+  const [serverTotalUsd, setServerTotalUsd] = useState<number | null>(null)
   const [showPaymentInfo, setShowPaymentInfo] = useState(false)
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
@@ -309,7 +311,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   // ✅ Бесплатно, если сумма заказа достигла порога из настроек админки.
   const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
   const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
-  const finalUsd = productsUsd + deliveryCostUsd
+  const finalUsd = serverTotalUsd ?? productsUsd + deliveryCostUsd
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
   const payCard = PAYMENT_CARDS[orderCurrency]
@@ -350,22 +352,21 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
-  // ✅ Цвет (colorId/colorName) уходит в заказ автоматически через spread {...item}
+  // The backend determines ownership, prices, payment state and inventory.
   const createOrderInDb = async (): Promise<any> => {
-    const userId = telegramUser?.id?.toString() || 'guest-user'
     const totalInSums = Math.round(finalUsd * exchangeRate)
     const itemsWithPrices = cart.map(item => ({ ...item, priceUzs: Math.round(item.priceUsd * exchangeRate) }))
     const orderData = {
-      user_id: userId, user_chat_id: userId, client_name: name.trim(), client_phone: phone,
+      client_name: name.trim(), client_phone: phone,
       delivery_method: deliveryMethod, delivery_address: deliveryMethod === 'delivery' ? address.trim() : null,
       payment_method: paymentMethod, total_price_usd: finalUsd, total_price_uzs: totalInSums,
       exchange_rate_at_order: exchangeRate, order_currency: orderCurrency, items: itemsWithPrices,
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
-      payment_status: paymentMethod === 'online_card' ? 'pending' : 'paid',
+      payment_status: 'pending',
     }
-    let result: any = isSpecialOrder && specialItem.specialRequestId
-      ? await createOrderFromSpecial(specialItem.specialRequestId, orderData)
-      : await createOrder(orderData)
+    const result: any = isSpecialOrder && specialItem.specialRequestId
+      ? await createOrderFromSpecial(specialItem.specialRequestId, orderData, requestKey.current)
+      : await createOrder(orderData, requestKey.current)
 
     const data = Array.isArray(result.data) ? result.data[0] : result.data
     if (result.error || !data) throw new Error(result.error?.message || 'Ошибка создания заказа')
@@ -378,12 +379,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     setUploadingScreenshot(true)
     try {
       const screenshotUrlResult = await uploadPaymentScreenshot(currentOrderId, file)
-      const saved = await savePaymentScreenshot(currentOrderId, screenshotUrlResult)
-      if (saved) {
-        setScreenshotUploaded(true)
-        setScreenshotUrl(screenshotUrlResult)
-        toast.success(language === 'ru' ? 'Скриншот загружен! Ожидайте подтверждения.' : 'Screenshot yuklandi! Tasdiqlashni kuting.')
-      }
+      setScreenshotUploaded(true)
+      setScreenshotUrl(screenshotUrlResult)
+      toast.success(language === 'ru' ? 'Скриншот загружен! Ожидайте подтверждения.' : 'Screenshot yuklandi! Tasdiqlashni kuting.')
     } catch (error) {
       toast.error(language === 'ru' ? 'Ошибка загрузки скриншота' : 'Screenshot yuklashda xatolik')
     } finally {
@@ -392,11 +390,18 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   }
 
   const cancelUnpaidOrder = async () => {
-    if (!currentOrderId) return
-    try { await deleteUnpaidOrder(currentOrderId) } catch (err) { console.error('Ошибка удаления:', err) }
+    if (!currentOrderId) return true
+    const success = await deleteUnpaidOrder(currentOrderId)
+    if (!success) { toast.error(language === 'ru' ? 'Не удалось отменить заказ. Обновите страницу.' : 'Buyurtmani bekor qilib bo‘lmadi.'); return false }
+    requestKey.current = crypto.randomUUID()
+    setServerTotalUsd(null)
+    currentOrderIdRef.current = null
+    setCurrentOrderId(null)
+    return true
   }
 
   const handleSubmit = async () => {
+    if (submitting) return
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -412,7 +417,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     setSubmitting(true)
     try {
       const orderData = await createOrderInDb()
-      await notifyNewOrder(orderData)
+      setServerTotalUsd(Number(orderData.total_price_usd))
       const newOrderId = orderData.id
       if (paymentMethod === 'online_card') {
         setCurrentOrderId(newOrderId.toString())
@@ -436,7 +441,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
       <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={async () => {
           if (screenshotUploaded) { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }
-          else { await cancelUnpaidOrder(); setShowPaymentInfo(false) }
+          else { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }
         }} />
         {/* ✅ key: принудительный remount скролл-контейнера → экран открывается сверху */}
         <div key="payment-scroll" className="flex-1 overflow-y-auto px-4 pb-44">
@@ -596,7 +601,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                   <Check size={16} /> {language === 'ru' ? 'Готово' : 'Tayyor'}
                 </button>
               ) : (
-                <button onClick={async () => { await cancelUnpaidOrder(); setShowPaymentInfo(false) }} className="py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors">
+                <button onClick={async () => { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }} className="py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors">
                   <X size={16} /> {language === 'ru' ? 'Отменить' : 'Bekor qilish'}
                 </button>
               )}

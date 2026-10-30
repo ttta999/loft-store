@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
@@ -6,12 +6,12 @@ import {
   Image as ImageIcon, Clock, Globe, ChevronRight, Plus, Package,
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import { supabase, notifyNewChinaRequest } from '../lib/supabase'
+import { storeApi, uploadPrivateImage } from '../lib/api'
 
 export default function ChinaPage() {
   const navigate = useNavigate()
   // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
-  const { language, telegramUser, theme } = useStore()
+  const { language, theme } = useStore()
   const [productName, setProductName] = useState('')
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
@@ -20,6 +20,7 @@ export default function ChinaPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const requestKey = useRef(crypto.randomUUID())
 
   // ✅ FIX: при показе экрана успеха — скролл всегда вверх
   // (иначе подтверждение открывается «пролистаннным», если форма была прокручена)
@@ -32,8 +33,8 @@ export default function ChinaPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(language === 'ru' ? 'Фото слишком большое (макс 5MB)' : 'Rasm juda katta (max 5MB)')
+      if (file.size > 2 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast.error(language === 'ru' ? 'Выберите JPG, PNG или WebP размером до 2 МБ' : 'JPG, PNG yoki WebP, 2 MB gacha')
         return
       }
       setImageFile(file)
@@ -54,6 +55,7 @@ export default function ChinaPage() {
   }
 
   const handleSubmit = async () => {
+    if (submitting) return
     if (!productName.trim()) {
       toast.error(
         language === 'ru' ? 'Укажите название товара' : 'Mahsulot nomini kiriting',
@@ -65,31 +67,10 @@ export default function ChinaPage() {
     try {
       let imageUrl = null
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        try {
-          const { error: uploadError } = await supabase.storage
-            .from('china-requests')
-            .upload(fileName, imageFile, {
-              cacheControl: '3600',
-              upsert: false
-            })
-          if (uploadError) {
-            console.error('Ошибка загрузки:', uploadError)
-            toast.error(language === 'ru' ? 'Не удалось загрузить фото' : 'Rasm yuklab bo\'lmadi')
-          } else {
-            const { data: urlData } = supabase.storage
-              .from('china-requests')
-              .getPublicUrl(fileName)
-            imageUrl = urlData.publicUrl
-          }
-        } catch (err) {
-          console.error('Ошибка:', err)
-        }
+        const uploaded = await uploadPrivateImage('china-requests', imageFile)
+        imageUrl = uploaded.path
       }
-      const userId = telegramUser?.id?.toString() || 'guest-user'
       const requestData = {
-        user_id: userId,
         product_name: productName.trim(),
         link: link.trim() || null,
         size_color: sizeColor || null,
@@ -97,31 +78,15 @@ export default function ChinaPage() {
         image_url: imageUrl,
         status: 'На рассмотрении',
       }
-      const { data, error } = await supabase
-        .from('china_requests')
-        .insert(requestData)
-        .select()
-      if (error) {
-        console.error('Ошибка при создании спецзаказа:', error)
-        toast.error(
-          language === 'ru' ? 'Ошибка при отправке' : 'Yuborishda xatolik',
-          { duration: 3000 }
-        )
-        setSubmitting(false)
-        return
-      }
-      if (data && data[0]) {
-        await notifyNewChinaRequest(data[0])
-      }
+      await storeApi('createRequest', { request: requestData, requestKey: requestKey.current })
       setSubmitted(true)
       toast.success(
         language === 'ru' ? 'Спецзаказ отправлен!' : 'Maxsus buyurtma yuborildi!',
         { duration: 3000 }
       )
     } catch (error) {
-      console.error('Ошибка:', error)
       toast.error(
-        language === 'ru' ? 'Произошла ошибка' : 'Xatolik yuz berdi',
+        error instanceof Error ? error.message : (language === 'ru' ? 'Произошла ошибка' : 'Xatolik yuz berdi'),
         { duration: 3000 }
       )
     } finally {
@@ -137,6 +102,7 @@ export default function ChinaPage() {
     setImageFile(null)
     setImagePreview(null)
     setSubmitted(false)
+    requestKey.current = crypto.randomUUID()
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }
 
