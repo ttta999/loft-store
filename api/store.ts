@@ -4,6 +4,7 @@ import { HttpError } from '../server/auth.ts'
 import { database, fail, limit, recordId, start, text, userFromRequest } from '../server/http.ts'
 import { decodeImage } from '../server/images.ts'
 import { dispatchNotification } from '../server/notifications.ts'
+import type { StoredRecord } from '../server/models.ts'
 
 function uuid(value: unknown) {
   if (typeof value !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value)) throw new HttpError(400, 'Некорректный запрос')
@@ -15,7 +16,7 @@ function privatePath(value: unknown, bucket: string, userId?: string) {
   if (path.includes('..') || !/^[a-zA-Z0-9/_.,-]+$/.test(path) || (userId && !path.startsWith(`${userId}/`))) throw new HttpError(400, 'Некорректный файл')
   return path
 }
-async function signedUrl(value: string | null, bucket: string) {
+async function signedUrl(value: string | null | undefined, bucket: string) {
   if (!value) return null
   let path: string
   if (value.startsWith('private:')) path = privatePath(value, bucket)
@@ -33,9 +34,9 @@ async function signedUrl(value: string | null, bucket: string) {
   if (error) return null
   return data.signedUrl
 }
-async function presentOrder(order: Record<string, any>) {
+async function presentOrder(order: StoredRecord) {
   return { ...order, payment_screenshot_url: await signedUrl(order.payment_screenshot_url, 'payment-screenshots'),
-    items: await Promise.all((order.items || []).map(async (item: any) => item.isSpecialOrder ? { ...item, image: await signedUrl(item.image, 'china-requests') } : item)) }
+    items: await Promise.all((order.items || []).map(async (item) => item.isSpecialOrder ? { ...item, image: await signedUrl(item.image, 'china-requests') } : item)) }
 }
 function dbError(message?: string): never {
   if (message?.includes('Price changed')) throw new HttpError(409, 'Цена или доставка изменилась. Обновите корзину и оформите заказ заново.')
@@ -73,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const phone = text(order.client_phone, 13, 13)
         if (!/^\+998\d{9}$/.test(phone) || !['pickup','delivery'].includes(order.delivery_method) || !['online_card','upon_receipt'].includes(order.payment_method) || !['UZS','USD'].includes(order.order_currency)) throw new HttpError(400, 'Проверьте данные заказа')
         if (!Array.isArray(order.items) || order.items.length < 1 || order.items.length > 50 || !Number.isFinite(order.total_price_usd) || order.total_price_usd<0) throw new HttpError(400, 'Проверьте корзину')
-        const items = order.items.map((item: any) => {
+        const items = order.items.map((item: { quantity: number; productId: unknown; size: unknown; colorId?: unknown; isSpecialOrder?: unknown }) => {
           if (!item || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) throw new HttpError(400, 'Некорректное количество товара')
           return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true }
         })

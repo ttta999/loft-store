@@ -457,7 +457,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                         </div>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp"
                           onChange={handleUploadScreenshot}
                           className="hidden"
                           disabled={uploadingScreenshot}

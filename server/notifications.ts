@@ -1,4 +1,5 @@
 import { database } from './http.ts'
+import type { StoredRecord } from './models.ts'
 
 async function send(token: string | undefined, chatId: string | undefined, message: string) {
   if (!token || !chatId) throw new Error('Notification configuration missing')
@@ -11,13 +12,13 @@ async function send(token: string | undefined, chatId: string | undefined, messa
   if (!response.ok || !result.ok) throw new Error('Notification delivery failed')
 }
 // All text and recipients come from persisted records, never from the request body.
-export async function dispatchNotification(userId: string, kind: 'order' | 'request', record: Record<string, any>) {
+export async function dispatchNotification(userId: string, kind: 'order' | 'request', record: StoredRecord) {
   const db = database()
   const { data: event, error } = await db.rpc('store_claim_notification', { p_user: userId, p_kind: kind, p_id: record.id })
   if (error) return
   if (event) try {
     const message = kind === 'order'
-      ? `🛍 Новый заказ №${record.id}\n👤 ${record.client_name}\n📞 ${record.client_phone}\n💰 ${record.total_price_uzs} сум\n📦 ${record.items.map((i: any) => `${i.name}, ${i.size}${i.colorName ? ', '+i.colorName : ''} × ${i.quantity}`).join('\n')}\n🚚 ${record.delivery_method === 'pickup' ? 'Самовывоз' : record.delivery_address}\n💳 ${record.payment_method === 'online_card' ? 'Переводом, ожидает оплаты' : 'При получении, ещё не оплачен'}`
+      ? `🛍 Новый заказ №${record.id}\n👤 ${record.client_name}\n📞 ${record.client_phone}\n💰 ${record.total_price_uzs} сум\n📦 ${(record.items || []).map((i) => `${i.name}, ${i.size}${i.colorName ? ', '+i.colorName : ''} × ${i.quantity}`).join('\n')}\n🚚 ${record.delivery_method === 'pickup' ? 'Самовывоз' : record.delivery_address}\n💳 ${record.payment_method === 'online_card' ? 'Переводом, ожидает оплаты' : 'При получении, ещё не оплачен'}`
       : `🌍 Новый спецзаказ №${record.id}\n📦 ${record.product_name}\n🔗 ${record.link || 'Нет ссылки'}\n📏 ${record.size_color || 'Не указан'}\n💬 ${record.comment || 'Нет комментария'}`
     await send(process.env.TELEGRAM_MANAGER_BOT_TOKEN, process.env.TELEGRAM_MANAGER_CHAT_ID || '6150570809', message)
     // A separate outbox row prevents re-sending the manager message if client delivery fails.

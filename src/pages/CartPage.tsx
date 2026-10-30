@@ -567,7 +567,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                     {uploadingScreenshot ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...') : (language === 'ru' ? 'Нажмите для загрузки' : 'Yuklash uchun bosing')}
                   </p>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">PNG/JPG · {language === 'ru' ? 'чек перевода' : 'o\'tkazma cheki'}</p>
-                  <input type="file" accept="image/*" onChange={handleUploadScreenshot} className="hidden" disabled={uploadingScreenshot} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleUploadScreenshot} className="hidden" disabled={uploadingScreenshot} />
                 </label>
               ) : (
                 <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3">

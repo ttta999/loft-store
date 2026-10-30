@@ -28,6 +28,8 @@ dist-ssr
 .env.local
 .env.production
 .env.*.local
+.env.*
+!.env.example
 
 # Telegram bot tokens (никогда не коммитьте токены!)
 *.token
