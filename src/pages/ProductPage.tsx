@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import IslandHeader from '../components/IslandHeader'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
@@ -10,7 +10,6 @@ import {
   getProductSizes,
   checkProductStock,
   getProductColors,
-  invalidateColorsCache,
   type ProductColor,
 } from '../lib/supabase'
 import { getCachedProduct, getCachedSizes, cacheProduct } from '../lib/productCache'
@@ -19,6 +18,9 @@ import { sortSizeStrings } from '../lib/sortSizes'
 export default function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const activeId = useRef(id)
+  activeId.current = id
+  const sizesRequest = useRef(0)
   const {
     language,
     currency,
@@ -28,7 +30,6 @@ export default function ProductPage() {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
-    theme, // ✅ Добавлено для поддержки тёмной темы в тостах
   } = useStore()
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
@@ -54,6 +55,7 @@ export default function ProductPage() {
     setSizes(cachedSizes || [])
     setSizesLoading(!cachedSizes)
     setSelectedSize(null)
+    setColors([])
     setSelectedColor(null)
     setCurrentImageIndex(0)
     setShowFullScreen(false)
@@ -77,17 +79,6 @@ export default function ProductPage() {
     if (cached) {
       setProduct(cached)
       setLoading(false)
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', id)
-          .single()
-        if (!error && data) {
-          cacheProduct(data)
-          setProduct(data)
-        }
-      } catch (err) {}
       return
     }
 
@@ -98,6 +89,7 @@ export default function ProductPage() {
         .select('*')
         .eq('id', id)
         .single()
+      if (activeId.current !== id) return
       if (error) {
         console.error('Ошибка при загрузке товара:', error)
         setProduct(null)
@@ -114,23 +106,25 @@ export default function ProductPage() {
 
   const loadColors = async () => {
     if (!id) return
-    invalidateColorsCache(id)
-    const colorsList = await getProductColors(id)
-    setColors(colorsList)
-    // Если у товара есть цвета — выбираем первый по умолчанию
-    if (colorsList.length > 0) {
-      setSelectedColor(colorsList[0])
-    }
+    try {
+      const colorsList = await getProductColors(id)
+      if (activeId.current !== id) return
+      setColors(colorsList)
+      if (colorsList.length > 0) setSelectedColor(colorsList[0])
+    } catch (error) { console.error('Ошибка загрузки цветов:', error) }
   }
 
   const loadSizesForColor = async () => {
     if (!id) return
-    setSizesLoading(true)
-    const variants = await getProductSizes(id, selectedColor?.id || null)
-    const rawValues = variants.map((v: any) => v.size_value)
-    const sortedValues = sortSizeStrings(rawValues)
-    setSizes(sortedValues)
-    setSizesLoading(false)
+    const request = ++sizesRequest.current
+    const cached = getCachedSizes(id, selectedColor?.id)
+    if (cached) { setSizes(sortSizeStrings(cached)); setSizesLoading(false) }
+    else { setSizes([]); setSizesLoading(true) }
+    try {
+      const variants = await getProductSizes(id, selectedColor?.id || null)
+      if (activeId.current === id && request === sizesRequest.current) setSizes(sortSizeStrings(variants.map(v => v.size_value)))
+    } catch (error) { console.error('Ошибка загрузки размеров:', error) }
+    finally { if (activeId.current === id && request === sizesRequest.current) setSizesLoading(false) }
   }
 
   const handleBack = () => {
@@ -338,7 +332,6 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
       {/* ✅ Тосты в текущей теме */}
-      <Toaster position="top-center" richColors theme={theme} />
 
       <IslandHeader needsBack onBack={handleBack} />
 

@@ -55,3 +55,19 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #3d5075;
 }
+/* Shared toast palette follows the resolved app theme, including system changes. */
+:root [data-sonner-toaster].loft-toaster {
+  --normal-bg: #fbf9f4; --normal-text: #1b2a4a; --normal-border: #e8e2d5;
+  --success-bg: #edf7ee; --success-text: #22613a; --success-border: #c3dfc9;
+  --info-bg: #edf2fa; --info-text: #294a78; --info-border: #ccd9ed;
+  --warning-bg: #fff6e5; --warning-text: #815a18; --warning-border: #ebd5a8;
+  --error-bg: #fff0f0; --error-text: #9b3b3b; --error-border: #ecc5c5;
+}
+:root.dark [data-sonner-toaster].loft-toaster {
+  --normal-bg: #151f33; --normal-text: #f3f4f6; --normal-border: #31415f;
+  --success-bg: #142e29; --success-text: #a7e3bd; --success-border: #2f5c4c;
+  --info-bg: #172940; --info-text: #b9d7ff; --info-border: #345574;
+  --warning-bg: #342a19; --warning-text: #ecd49a; --warning-border: #665331;
+  --error-bg: #351f2a; --error-text: #f4b8bf; --error-border: #6b3949;
+}
+:root [data-sonner-toaster].loft-toaster [data-sonner-toast] { border-radius: 16px; }

@@ -1,6 +1,6 @@
+import { getBrands, getCachedBrands } from '../lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
-import { supabase } from '../lib/supabase'
 import { useState, useEffect } from 'react'
 import {
   DollarSign,
@@ -15,7 +15,6 @@ import IslandHeader from '../components/IslandHeader'
 import { cacheProducts } from '../lib/productCache'
 import CategoryIcon from '../components/CategoryIcon'
 
-let catalogBrandsCache: any[] | null = null
 
 export default function CatalogPage() {
   const navigate = useNavigate()
@@ -38,8 +37,8 @@ export default function CatalogPage() {
   const subcategoryId = location.state?.subcategory
   const category = categories.find((c) => c.id === categoryId)
 
-  const [brands, setBrands] = useState<any[]>(() => catalogBrandsCache || [])
-  const [loadingBrands, setLoadingBrands] = useState(() => !catalogBrandsCache)
+  const [brands, setBrands] = useState<any[]>(() => getCachedBrands() || [])
+  const [loadingBrands, setLoadingBrands] = useState(() => !getCachedBrands())
   const [showFilters, setShowFilters] = useState(false)
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minPrice, setMinPrice] = useState<number>(0)
@@ -66,21 +65,15 @@ export default function CatalogPage() {
   }, [products])
 
   const loadBrands = async () => {
-    if (catalogBrandsCache) {
-      setBrands(catalogBrandsCache)
+    if (getCachedBrands()) {
+      setBrands(getCachedBrands()!)
       setLoadingBrands(false)
       return
     }
     setLoadingBrands(true)
     try {
-      const { data, error } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
-      if (error) throw error
-      catalogBrandsCache = data || []
-      setBrands(catalogBrandsCache)
+      const data = await getBrands()
+      setBrands(data || [])
     } catch (error) {
       console.error('Ошибка загрузки брендов:', error)
     } finally {

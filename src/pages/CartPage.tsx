@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
@@ -70,7 +70,7 @@ const getItemsLabel = (count: number, lang: string): string => {
 export default function CartPage() {
   const navigate = useNavigate()
   // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
-  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts, theme } = useStore()
+  const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
   const [preparingCheckout, setPreparingCheckout] = useState(false)
 
@@ -144,7 +144,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-56">
       {/* ✅ Тосты в текущей теме */}
-      <Toaster position="top-center" richColors theme={theme} />
+
       <div className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">

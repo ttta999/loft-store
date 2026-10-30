@@ -206,7 +206,7 @@ export const useStore = create<AppState>()(
       refreshCheckout: async () => {
         const [{ data: rows, error }, products] = await Promise.all([
           supabase.from('settings').select('key, value').in('key', ['exchange_rate', 'sale_mode_enabled', 'delivery_price', 'free_delivery_threshold']),
-          getProducts(),
+          getProducts(true),
         ])
         if (error || !rows) throw new Error('Не удалось обновить корзину. Попробуйте ещё раз.')
         const settings = Object.fromEntries(rows.map(row => [row.key, row.value]))
@@ -246,8 +246,8 @@ export const useStore = create<AppState>()(
         const state = get()
         const age = state.getProductsCacheAge()
         if (state.productsCache && age < maxAgeMs) return state.productsCache.items
-        getProducts()
-          .then((data) => { if (data && data.length > 0) get().setProductsCache(data) })
+        getProducts(maxAgeMs === 0)
+          .then((data) => { if (data) get().setProductsCache(data) })
           .catch((err) => { console.error('❌ ensureProducts failed:', err) })
         return state.productsCache?.items || null
       },
@@ -256,7 +256,7 @@ export const useStore = create<AppState>()(
         const state = get()
         const age = state.getCategoriesCacheAge()
         if (state.categoriesCache && age < maxAgeMs) return state.categoriesCache.items
-        getCategoriesTree()
+        getCategoriesTree(maxAgeMs === 0)
           .then((tree) => { if (tree !== null) get().setCategoriesCache(tree) })
           .catch((err) => { console.error('❌ ensureCategories failed:', err) })
         return state.categoriesCache?.items || null

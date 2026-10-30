@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
-import { storeApi } from '../lib/api'
+import { storeApi, peekStoreData, invalidateStoreData } from '../lib/api'
 import {
   User,
   Package,
@@ -49,10 +49,6 @@ const SOCIAL_LINKS = {
   telegram: 'https://t.me/Loft_mens_shop',
   instagram: 'https://www.instagram.com/loft_mens_shop',
 }
-
-// ✅ Module-level кеш: переживает размонтирование ProfilePage.
-let profileOrdersCache: any[] | null = null
-let profileChinaRequestsCache: any[] | null = null
 
 // ✅ Валюта заказа: из поля order_currency, для старых заказов — фолбэк UZS
 const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
@@ -644,7 +640,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
         language === 'ru' ? 'Спецзаказ отменён' : 'Maxsus buyurtma bekor qilindi'
       )
       // Сбрасываем кеш — при следующем открытии секции список перезагрузится
-      profileChinaRequestsCache = null
+      invalidateStoreData()
       if (onCancel) onCancel()
       else onClose()
     } catch (error) {
@@ -924,17 +920,17 @@ export default function ProfilePage() {
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
-  const [orders, setOrders] = useState<any[]>(() => profileOrdersCache || [])
-  const [chinaRequests, setChinaRequests] = useState<any[]>(() => profileChinaRequestsCache || [])
+  const [orders, setOrders] = useState<any[]>(() => peekStoreData('orders') || [])
+  const [chinaRequests, setChinaRequests] = useState<any[]>(() => peekStoreData('requests') || [])
   const [loading, setLoading] = useState(() => {
-    if (section === 'orders') return !profileOrdersCache
-    if (section === 'china') return !profileChinaRequestsCache
+    if (section === 'orders') return !peekStoreData('orders')
+    if (section === 'china') return !peekStoreData('requests')
     return false
   })
   const [allProducts, setAllProducts] = useState<any[]>([])
 
   useEffect(() => {
-    getProducts().then(setAllProducts)
+    getProducts().then(setAllProducts).catch(error => console.error('Ошибка загрузки товаров', error))
   }, [])
 
   useEffect(() => {
@@ -1090,12 +1086,11 @@ export default function ProfilePage() {
   }
 
   const loadOrders = async () => {
-    const hadCache = !!profileOrdersCache
+    const hadCache = !!peekStoreData('orders')
     if (!hadCache) setLoading(true)
     try {
       const { data } = await storeApi('orders')
       if (data) {
-        profileOrdersCache = data
         setOrders(data)
       }
     } catch (err) {
@@ -1107,12 +1102,11 @@ export default function ProfilePage() {
   }
 
   const loadChinaRequests = async () => {
-    const hadCache = !!profileChinaRequestsCache
+    const hadCache = !!peekStoreData('requests')
     if (!hadCache) setLoading(true)
     try {
       const { data } = await storeApi('requests')
       if (data) {
-        profileChinaRequestsCache = data
         setChinaRequests(data)
       }
     } catch (err) {
@@ -1134,7 +1128,7 @@ export default function ProfilePage() {
       const success = await cancelOrder(order.id.toString())
       if (success) {
         toast.success(language === 'ru' ? 'Заказ отменён' : 'Buyurtma bekor qilindi')
-        profileOrdersCache = null
+        invalidateStoreData()
         await loadOrders()
         navigate(-1)
       } else {
@@ -1178,7 +1172,7 @@ export default function ProfilePage() {
 
   const handleScreenshotUploaded = (order: any) => {
     void order
-    profileOrdersCache = null
+    invalidateStoreData()
     loadOrders()
   }
 

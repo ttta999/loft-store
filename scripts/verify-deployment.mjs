@@ -8,6 +8,28 @@ for (const origin of [site,admin]) {
   const parsed=new URL(origin)
   if(parsed.protocol!=='https:' || parsed.pathname!=='/') throw new Error('Use HTTPS origins only')
 }
+// Versioned assets can be reused; HTML must revalidate so new releases reach every SPA route.
+async function verifyStaticCache(origin, route) {
+  for (const path of ['/', route]) {
+    const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(15000) })
+    if (!response.ok) throw new Error(`Static route failed: ${origin}${path}: ${response.status}`)
+    const cache = response.headers.get('cache-control') || ''
+    if (!/max-age=0(?:,|$)/.test(cache) || !cache.includes('must-revalidate')) throw new Error(`HTML cache policy: ${origin}${path}: ${cache}`)
+    const html = await response.text()
+    const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"?]+\.(?:js|css))"/g)].map(match => match[1]))]
+    if (!assets.length) throw new Error(`Build assets missing: ${origin}${path}`)
+    for (const asset of assets) {
+      const response = await fetch(new URL(asset, origin), { method: 'HEAD', signal: AbortSignal.timeout(15000) })
+      const cache = response.headers.get('cache-control') || ''
+      if (!response.ok || !cache.includes('max-age=31536000') || !cache.includes('immutable')) throw new Error(`Asset cache policy: ${origin}${asset}: ${response.status} ${cache}`)
+    }
+  }
+  console.log(`PASS HTML revalidates and versioned JS/CSS are cached: ${origin}`)
+}
+await verifyStaticCache(site, '/catalog')
+await verifyStaticCache(admin, '/analytics')
+if (process.argv[4] === '--cache-only') process.exit(0)
+
 async function call(origin,path,body,bearer) {
   return fetch(new URL(path,origin),{
     method:'POST',headers:{'Content-Type':'application/json',...(bearer?{Authorization:`Bearer ${bearer}`}:{})},
@@ -16,6 +38,7 @@ async function call(origin,path,body,bearer) {
 }
 async function expect(label,response,status) {
   if(response.status!==status) { const detail=(await response.text()).slice(0,800); throw new Error(`${label}: expected ${status}, got ${response.status}; ${detail}`) }
+  if (!(response.headers.get('cache-control') || '').includes('no-store')) throw new Error(`${label}: private API response must use no-store`)
   console.log(`PASS ${label}: ${status}`)
 }
 if (process.argv[4] === '--diagnostic') {

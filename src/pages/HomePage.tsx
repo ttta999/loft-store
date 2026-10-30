@@ -68,7 +68,7 @@ export default function HomePage() {
     if (hasFreshCache && !force) return
 
     try {
-      const data = await getProducts()
+      const data = await getProducts(force)
       setProductsCache(data)
     } catch (error) {
       console.error('Ошибка загрузки товаров:', error)

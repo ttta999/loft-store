@@ -1,3 +1,5 @@
+import { dataCache } from './resourceCache'
+import { createDataFetch } from './dataFetch'
 import { createClient } from '@supabase/supabase-js'
 import { storeApi } from './api'
 import { cacheProducts, cacheSizes } from './productCache'
@@ -5,7 +7,7 @@ import { cacheProducts, cacheSizes } from './productCache'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { fetch: createDataFetch(() => dataCache.clear()) } })
 
 // ========== ПОПУЛЯРНОСТЬ ==========
 const popularityCache = {
@@ -44,18 +46,23 @@ export const getProductSoldCount = async (productId: string): Promise<number> =>
 }
 
 // ========== ТОВАРЫ ==========
-export const getProducts = async () => {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-  if (error) {
-    console.error('Ошибка при загрузке товаров:', error)
-    return []
-  }
-  cacheProducts(data)
-  return data || []
+export const getProducts = async (force = false) => {
+  if (force) dataCache.invalidate('http:')
+  return dataCache.load('catalog:products', async () => {
+    const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false })
+    if (error) throw error
+    cacheProducts(data || [])
+    return data || []
+  }, 60_000, force)
+}
+export const getCachedBrands = (): any[] | null => dataCache.get('catalog:brands')
+export const getBrands = async (force = false): Promise<any[]> => {
+  if (force) dataCache.invalidate('http:')
+  return dataCache.load('catalog:brands', async () => {
+    const { data, error } = await supabase.from('brands').select('*').eq('is_active', true).order('name')
+    if (error) throw error
+    return data || []
+  }, 300_000, force)
 }
 
 // ✅ ЦВЕТА ТОВАРА
@@ -69,51 +76,28 @@ export interface ProductColor {
   sort_order: number
 }
 
-const colorsCache: Record<string, ProductColor[]> = {}
-
-export const getProductColors = async (productId: string): Promise<ProductColor[]> => {
-  if (colorsCache[productId]) return colorsCache[productId]
-  const { data, error } = await supabase
-    .from('product_colors')
-    .select('*')
-    .eq('product_id', productId)
-    .order('sort_order', { ascending: true })
-  if (error) {
-    console.error('Ошибка загрузки цветов:', error)
-    return []
-  }
-  const colors = (data || []) as ProductColor[]
-  colorsCache[productId] = colors
-  return colors
-}
-
+export const getProductColors = (productId: string): Promise<ProductColor[]> =>
+  dataCache.load(`colors:${productId}`, async () => {
+    const { data, error } = await supabase.from('product_colors').select('*').eq('product_id', productId).order('sort_order', { ascending: true })
+    if (error) throw error
+    return (data || []) as ProductColor[]
+  }, 60_000)
 export const invalidateColorsCache = (productId: string) => {
-  delete colorsCache[productId]
+  dataCache.invalidate(`colors:${productId}`)
+  dataCache.invalidate('http:')
 }
 
 // ✅ Размеры: по товару + (опционально) цвету
-export const getProductSizes = async (productId: string, colorId?: string | null) => {
-  let query = supabase
-    .from('product_variants')
-    .select('size_value, color_id')
-    .eq('product_id', productId)
-    .gt('stock', 0)
-
-  if (colorId) {
-    query = query.eq('color_id', colorId)
-  } else {
-    query = query.is('color_id', null)
-  }
-
-  const { data, error } = await query
-  if (error) {
-    console.error('Ошибка при загрузке размеров:', error)
-    return []
-  }
-  const rows = data || []
-  if (!colorId) cacheSizes(productId, rows.map((v: any) => v.size_value))
-  return rows
-}
+export const getProductSizes = (productId: string, colorId?: string | null) =>
+  dataCache.load(`variant-sizes:${productId}:${colorId || 'all'}`, async () => {
+    let query = supabase.from('product_variants').select('size_value, color_id').eq('product_id', productId).gt('stock', 0)
+    query = colorId ? query.eq('color_id', colorId) : query.is('color_id', null)
+    const { data, error } = await query
+    if (error) throw error
+    const rows = data || []
+    cacheSizes(productId, rows.map(v => v.size_value), colorId)
+    return rows
+  }, 30_000)
 
 // ✅ Проверка стока с учётом цвета
 export const checkProductStock = async (
@@ -174,7 +158,8 @@ export interface SubcategoryRow {
   icon: string | null
 }
 
-export const getCategoriesTree = async (): Promise<CategoryTree[] | null> => {
+export const getCategoriesTree = async (force = false): Promise<CategoryTree[] | null> => {
+  if (force) dataCache.invalidate('http:')
   try {
     const [{ data: cats, error: catsErr }, { data: subs, error: subsErr }] = await Promise.all([
       supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }),

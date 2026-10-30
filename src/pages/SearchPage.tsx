@@ -1,7 +1,7 @@
+import { getBrands, getCachedBrands } from '../lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
-import { supabase } from '../lib/supabase'
 import { Search, X, Heart, Tag, DollarSign, SlidersHorizontal, ListOrdered } from 'lucide-react'
 
 interface Brand {
@@ -10,7 +10,6 @@ interface Brand {
   is_active: boolean
 }
 
-let searchBrandsCache: Brand[] | null = null
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -40,7 +39,7 @@ export default function SearchPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000])
   const [sortBy, setSortBy] = useState<string>('newest')
   const [showFilters, setShowFilters] = useState(false)
-  const [brands, setBrands] = useState<Brand[]>(() => searchBrandsCache || [])
+  const [brands, setBrands] = useState<Brand[]>(() => getCachedBrands() || [])
   const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -52,19 +51,13 @@ export default function SearchPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (searchBrandsCache) {
-        setBrands(searchBrandsCache)
+      if (getCachedBrands()) {
+        setBrands(getCachedBrands()!)
         return
       }
       try {
-        const { data, error } = await supabase
-          .from('brands')
-          .select('*')
-          .eq('is_active', true)
-          .order('name')
-        if (error) throw error
-        searchBrandsCache = (data || []) as Brand[]
-        setBrands(searchBrandsCache)
+        const data = await getBrands()
+        setBrands(data || [])
       } catch (error) {
         console.error('Ошибка загрузки брендов:', error)
       }

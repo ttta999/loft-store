@@ -1,3 +1,4 @@
+import AppToaster from './components/AppToaster'
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
@@ -188,6 +189,7 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
+      <AppToaster />
       {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах */}
       <ScrollRestoration />
 

@@ -5,13 +5,13 @@ import {
   Upload, Send, CheckCircle, X, Tag, Link2, Ruler, MessageCircle,
   Image as ImageIcon, Clock, Globe, ChevronRight, Plus, Package,
 } from 'lucide-react'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { storeApi, uploadPrivateImage } from '../lib/api'
 
 export default function ChinaPage() {
   const navigate = useNavigate()
   // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
-  const { language, theme } = useStore()
+  const { language } = useStore()
   const [productName, setProductName] = useState('')
   const [link, setLink] = useState('')
   const [sizeColor, setSizeColor] = useState('')
@@ -111,7 +111,6 @@ export default function ChinaPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         {/* ✅ Тосты в текущей теме */}
-        <Toaster position="top-center" richColors theme={theme} />
 
         <div className="p-4">
           {/* ✅ Шапка-карточка успеха */}
@@ -188,7 +187,6 @@ export default function ChinaPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       {/* ✅ Тосты в текущей теме */}
-      <Toaster position="top-center" richColors theme={theme} />
 
       <div className="p-4">
         {/* ✅ Шапка-карточка в стиле страницы заказа */}

@@ -1,6 +1,6 @@
+import { getBrands, getCachedBrands } from '../lib/supabase'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
-import { supabase } from '../lib/supabase'
 import { cacheProducts } from '../lib/productCache'
 import type { CategoryTree } from '../lib/supabase'
 import { useState, useEffect } from 'react'
@@ -24,7 +24,6 @@ interface Brand {
   logo_url: string | null
 }
 
-let brandsListCache: Brand[] | null = null
 
 export default function BrandsPage() {
   const navigate = useNavigate()
@@ -46,8 +45,8 @@ export default function BrandsPage() {
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
 
-  const [brands, setBrands] = useState<Brand[]>(() => brandsListCache || [])
-  const [loadingBrands, setLoadingBrands] = useState(() => !brandsListCache)
+  const [brands, setBrands] = useState<Brand[]>(() => getCachedBrands() || [])
+  const [loadingBrands, setLoadingBrands] = useState(() => !getCachedBrands())
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [minPrice, setMinPrice] = useState<number>(0)
@@ -83,21 +82,15 @@ export default function BrandsPage() {
   }, [products])
 
   const loadBrands = async () => {
-    if (brandsListCache) {
-      setBrands(brandsListCache)
+    if (getCachedBrands()) {
+      setBrands(getCachedBrands()!)
       setLoadingBrands(false)
       return
     }
     setLoadingBrands(true)
     try {
-      const { data, error } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
-      if (error) throw error
-      brandsListCache = (data || []) as Brand[]
-      setBrands(brandsListCache)
+      const data = await getBrands()
+      setBrands(data || [])
     } catch (error) {
       console.error('❌ Ошибка загрузки брендов:', error)
     } finally {
@@ -106,7 +99,7 @@ export default function BrandsPage() {
   }
 
   const retryLoadBrands = async () => {
-    brandsListCache = null
+    await getBrands(true)
     await loadBrands()
   }
 
