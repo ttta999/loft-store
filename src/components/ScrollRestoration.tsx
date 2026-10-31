@@ -53,11 +53,18 @@ export default function ScrollRestoration() {
 
           // Страховка для списков, которые рендерятся асинхронно
           const observer = new ResizeObserver(() => {
-            if (document.documentElement.scrollHeight >= saved) {
+            if (document.documentElement.scrollHeight >= saved + window.innerHeight) {
               window.scrollTo(0, saved)
+              observer.disconnect()
             }
           })
-          observer.observe(document.documentElement)
+          // Stop restoring as soon as the user starts scrolling themselves.
+          const stop = () => observer.disconnect()
+          window.addEventListener('wheel', stop, { passive: true, once: true })
+          window.addEventListener('touchstart', stop, { passive: true, once: true })
+          window.addEventListener('keydown', stop, { once: true })
+          if (document.documentElement.scrollHeight >= saved + window.innerHeight) observer.disconnect()
+          else observer.observe(document.documentElement)
           
           // Отключаем обсервер через 400мс
           const timer = setTimeout(() => observer.disconnect(), 400)
@@ -65,6 +72,9 @@ export default function ScrollRestoration() {
           prevLocRef.current = location
           return () => {
             observer.disconnect()
+            window.removeEventListener('wheel', stop)
+            window.removeEventListener('touchstart', stop)
+            window.removeEventListener('keydown', stop)
             clearTimeout(timer)
           }
         } else {
