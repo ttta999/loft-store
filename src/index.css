@@ -89,7 +89,7 @@ body {
 ::view-transition-new(loft-header), ::view-transition-new(loft-navigation) { animation: none; mix-blend-mode: normal; }
 :where(button, a[role="button"], input[type="submit"]) {
   -webkit-tap-highlight-color: transparent;
-  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform, scale, translate, rotate;
   transition-duration: 240ms;
   transition-timing-function: var(--loft-motion-ease);
 }
