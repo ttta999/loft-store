@@ -1,11 +1,14 @@
 begin;
 do $$
 declare session_id uuid:=gen_random_uuid(); factor_id uuid:=gen_random_uuid();
-  admin_id uuid:='157d5707-f831-4853-bc29-80e0d904a3da';
+  admin_id uuid:=gen_random_uuid();
 begin
+  -- A fresh transaction-only user keeps this test independent of real enrolled factors.
+  insert into auth.users(id,aud,role,email,created_at,updated_at)
+    values(admin_id,'authenticated','authenticated',admin_id::text||'@fixture.invalid',now(),now());
+  insert into private.store_admins(user_id,mfa_required) values(admin_id,true);
   insert into auth.sessions(id,user_id,created_at,updated_at,aal) values(session_id,admin_id,now(),now(),'aal1');
   perform set_config('loft_test.session_id',session_id::text,true);
-  update private.store_admins set mfa_required=true where user_id=admin_id;
   perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'session_id',session_id,'role','authenticated','aal','aal1')::text,true);
   if public.store_is_admin() then raise exception 'TEST FAILED: password alone granted admin'; end if;
   if not (public.store_admin_auth_state()->>'isAdmin')::boolean then raise exception 'TEST FAILED: enrollment inaccessible'; end if;

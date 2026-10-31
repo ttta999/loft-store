@@ -367,6 +367,7 @@ export default function ProductPage() {
             )}
             <div className="absolute top-4 right-4 flex gap-2">
               <button
+                aria-label={isFavorite(product.id) ? (language === 'ru' ? 'Убрать из избранного' : 'Sevimlilardan olib tashlash') : (language === 'ru' ? 'В избранное' : 'Sevimlilarga')}
                 onClick={handleToggleFavorite}
                 className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
               >
@@ -493,7 +494,8 @@ export default function ProductPage() {
 
           <SizeSelector
             sizeType={product.size_type || 'numeric'}
-            availableSizes={sizes.length > 0 ? sizes : ['One Size']}
+            availableSizes={sizes}
+            selectedSize={selectedSize}
             onSelect={setSelectedSize}
             language={language}
           />

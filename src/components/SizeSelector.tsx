@@ -6,6 +6,7 @@ type SizeType = 'numeric' | 'alphabetical' | 'one_size'
 interface SizeSelectorProps {
   sizeType: SizeType
   availableSizes: string[]
+  selectedSize: string | null
   onSelect: (size: string) => void
   language?: 'ru' | 'uz'
 }
@@ -23,10 +24,10 @@ const getSizesLabelRu = (count: number): string => {
 export default function SizeSelector({
   sizeType,
   availableSizes,
+  selectedSize,
   onSelect,
   language = 'ru'
 }: SizeSelectorProps) {
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
 
   // ✅ Блокируем скролл страницы, пока открыт sheet
@@ -41,7 +42,6 @@ export default function SizeSelector({
 
   // ✅ Выбрал размер → отметился → sheet ЗАКРЫВАЕТСЯ сам
   const handleSizeClick = (size: string) => {
-    setSelectedSize(size)
     onSelect(size)
     setOpen(false)
   }

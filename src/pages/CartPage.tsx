@@ -187,9 +187,9 @@ export default function CartPage() {
                   </button>
                   {!item.isSpecialOrder ? (
                     <div className="flex items-center gap-1 bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-lg px-1.5 py-1">
-                      <button onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Minus size={14} /></button>
+                      <button aria-label={language === 'ru' ? 'Уменьшить количество' : 'Miqdorni kamaytirish'} onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Minus size={14} /></button>
                       <span className="font-bold text-sm text-[#1B2A4A] dark:text-white w-5 text-center">{item.quantity}</span>
-                      <button onClick={() => addToCart({ ...item, quantity: 1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Plus size={14} /></button>
+                      <button aria-label={language === 'ru' ? 'Увеличить количество' : 'Miqdorni oshirish'} onClick={() => addToCart({ ...item, quantity: 1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Plus size={14} /></button>
                     </div>
                   ) : (
                     <span className="text-xs text-[#8A8275] dark:text-gray-300">1 {language === 'ru' ? 'шт.' : 'donа'}</span>

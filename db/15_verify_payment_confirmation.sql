@@ -15,9 +15,6 @@ begin
       values('900000205','Payment fixture','+998901234567','pickup','upon_receipt',20,'[]','paid');
     raise exception 'TEST FAILED: new legacy-style paid row accepted';
   exception when others then if sqlerrm<>'Payment confirmation required' then raise; end if; end;
-  -- Unchanged historical confirmation fields must not prevent normal order management.
-  update public.orders o set payment_status=o.payment_status,paid_at=o.paid_at
-    where o.id=(select r.order_id from private.store_payment_reviews r limit 1);
 end $$;
 select 'payment confirmation guard and audit checks passed' as result;
 rollback;

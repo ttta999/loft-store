@@ -34,3 +34,6 @@ dist-ssr
 # Telegram bot tokens (никогда не коммитьте токены!)
 *.token
 bot-token.txt
+# Isolated browser test artifacts
+/playwright-report/
+/test-results/
