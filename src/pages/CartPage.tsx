@@ -19,7 +19,7 @@ const useBodyScrollLock = (active: boolean) => {
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="relative max-w-4xl w-full flex items-center justify-center">
         <button
           onClick={onClose}
@@ -439,7 +439,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   // ✅ ЭКРАН ОПЛАТЫ — банковская карта + карточка подтверждения
   if (showPaymentInfo) {
     return (
-      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+      <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={async () => {
           if (screenshotUploaded) { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }
           else { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }
@@ -617,7 +617,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   // ✅ ЭКРАН УСПЕХА — в карточном стиле, как успех спецзаказа
   if (orderSuccess) {
     return (
-      <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+      <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={onClose} />
         {/* ✅ key: remount → скролл сверху */}
         <div key="success-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
@@ -688,7 +688,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       {/* ✅ key: remount → скролл сверху */}
       <div key="form-scroll" className="flex-1 overflow-y-auto p-4 pb-32">

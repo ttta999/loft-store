@@ -1,9 +1,9 @@
+import AnimatedRoutes from './components/AnimatedRoutes'
 import AppToaster from './components/AppToaster'
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
-import ScrollRestoration from './components/ScrollRestoration'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
 import CartPage from './pages/CartPage'
@@ -190,13 +190,11 @@ function App() {
   return (
     <BrowserRouter>
       <AppToaster />
-      {/* ✅ ScrollRestoration живёт НАД Routes — работает на всех страницах */}
-      <ScrollRestoration />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
       <TelegramBackButtonManager />
 
-      <Routes>
+      <AnimatedRoutes>
         {/* ✅ LAYOUT ROUTE — основные вкладки */}
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
@@ -216,7 +214,7 @@ function App() {
         <Route path="/all-products" element={<AllProductsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
-      </Routes>
+      </AnimatedRoutes>
     </BrowserRouter>
   )
 }

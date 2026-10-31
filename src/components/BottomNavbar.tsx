@@ -51,7 +51,7 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
+    <div className="loft-navigation fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
         <div className="flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">

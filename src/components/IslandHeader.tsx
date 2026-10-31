@@ -14,7 +14,7 @@ export default function IslandHeader({
   onSearchClick,
 }: IslandHeaderProps) {
   return (
-    <div className="sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8] dark:bg-dark-bg">
+    <div className="loft-header sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8] dark:bg-dark-bg">
       <div className="flex items-center gap-3">
         {/* Островок с названием */}
         <div className="flex-1 h-14 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg relative flex items-center justify-center">

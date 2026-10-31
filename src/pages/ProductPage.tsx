@@ -525,7 +525,7 @@ export default function ProductPage() {
       </div>
 
       {showFullScreen && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <div className="loft-modal fixed inset-0 bg-black z-50 flex items-center justify-center">
           <button
             onClick={closeFullScreen}
             className="absolute top-4 right-4 text-white z-50 bg-black/50 rounded-full p-2"

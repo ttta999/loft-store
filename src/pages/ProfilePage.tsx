@@ -238,7 +238,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
@@ -550,7 +550,7 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
   useBodyScrollLock(true)
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
+      className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div className="relative max-w-4xl w-full flex items-center justify-center">
@@ -654,7 +654,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">

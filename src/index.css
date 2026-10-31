@@ -71,3 +71,40 @@ body {
   --error-bg: #351f2a; --error-text: #f4b8bf; --error-border: #6b3949;
 }
 :root [data-sonner-toaster].loft-toaster [data-sonner-toast] { border-radius: 16px; }
+
+/* Quiet, short motion; live page geometry and fixed overlays stay unchanged. */
+:root {
+  --loft-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --loft-route-enter: 16px;
+  --loft-route-exit: -8px;
+}
+:root[data-route-motion="back"] { --loft-route-enter: -16px; --loft-route-exit: 8px; }
+:root[data-route-motion="tab"] { --loft-route-enter: 0px; --loft-route-exit: 0px; }
+::view-transition { pointer-events: none; }
+::view-transition-group(root) { animation-duration: 320ms; animation-timing-function: var(--loft-motion-ease); }
+::view-transition-old(root) { animation: loft-route-out 200ms ease-out both; }
+::view-transition-new(root) { animation: loft-route-in 320ms var(--loft-motion-ease) both; }
+@keyframes loft-route-in { from { opacity: 0; transform: translateX(var(--loft-route-enter)); } to { opacity: 1; transform: translateX(0); } }
+@keyframes loft-route-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(var(--loft-route-exit)); } }
+.loft-header { view-transition-name: loft-header; }
+.loft-navigation { view-transition-name: loft-navigation; }
+:root:has(.loft-modal) :is(.loft-header, .loft-navigation) { view-transition-name: none; }
+/* Shared chrome remains steady while the content changes. */
+::view-transition-group(loft-header), ::view-transition-group(loft-navigation) { animation-duration: 220ms; animation-timing-function: var(--loft-motion-ease); }
+::view-transition-old(loft-header), ::view-transition-old(loft-navigation) { display: none; }
+::view-transition-new(loft-header), ::view-transition-new(loft-navigation) { animation: none; mix-blend-mode: normal; }
+:where(button, a[role="button"], input[type="submit"]) {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: background-color, border-color, color, box-shadow, opacity, scale, transform, translate, rotate;
+  transition-duration: 180ms;
+  transition-timing-function: var(--loft-motion-ease);
+}
+:where(button, a[role="button"], input[type="submit"]):not(:disabled):not([aria-disabled="true"]):active { scale: 0.97; }
+.loft-modal { animation: loft-overlay-in 200ms ease-out; }
+.loft-modal > :is(.rounded-2xl, .rounded-3xl) { animation: loft-panel-in 300ms var(--loft-motion-ease); }
+@keyframes loft-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes loft-panel-in { from { opacity: 0; translate: 0 12px; scale: 0.98; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }
+}
