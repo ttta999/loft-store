@@ -296,7 +296,7 @@ export default function BrandsPage() {
                     {/* ✅ Круглая иконка: Логотип или первая буква */}
                     <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0 overflow-hidden bg-white dark:bg-dark-card">
                       {brand.logo_url ? (
-                        <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-contain p-1" />
+                        <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-contain p-1 bg-white" />
                       ) : (
                         <span className="text-sm font-bold text-[#1B2A4A] dark:text-white">
                           {brand.name.charAt(0).toUpperCase()}
@@ -324,7 +324,7 @@ export default function BrandsPage() {
                 {/* ✅ Шапка бренда: Логотип или первая буква */}
                 <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0 overflow-hidden bg-white dark:bg-dark-card">
                   {selectedBrand?.logo_url ? (
-                    <img src={selectedBrand.logo_url} alt={selectedBrand.name} className="w-full h-full object-contain p-1.5" />
+                    <img src={selectedBrand.logo_url} alt={selectedBrand.name} className="w-full h-full object-contain p-1.5 bg-white" />
                   ) : (
                     <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
                       {selectedBrand?.name?.charAt(0).toUpperCase() || '?'}

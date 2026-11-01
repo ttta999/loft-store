@@ -14,10 +14,10 @@ export default function IslandHeader({
   onSearchClick,
 }: IslandHeaderProps) {
   return (
-    <div className="loft-header sticky top-0 z-40 px-4 pt-4 pb-2 bg-[#F5F1E8] dark:bg-dark-bg">
+    <div className="loft-header sticky top-0 z-40 px-4 pt-4 pb-2 pointer-events-none">
       <div className="flex items-center gap-3">
         {/* Островок с названием */}
-        <div className="flex-1 h-14 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg relative flex items-center justify-center">
+        <div className="pointer-events-auto flex-1 h-14 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg relative flex items-center justify-center">
           {needsBack && (
             <button
               onClick={onBack}
@@ -36,7 +36,7 @@ export default function IslandHeader({
         {showSearch && (
           <button
             onClick={onSearchClick}
-            className="w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border shadow-lg flex items-center justify-center text-[#1B2A4A] dark:text-white hover:text-[#C9A961] transition-colors"
+            className="pointer-events-auto w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border shadow-lg flex items-center justify-center text-[#1B2A4A] dark:text-white hover:text-[#C9A961] transition-colors"
           >
             <Search size={22} />
           </button>
