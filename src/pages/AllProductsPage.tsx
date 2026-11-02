@@ -1,4 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { ChevronDown } from 'lucide-react'
+import Collapse from '../components/Collapse'
+import { usePageState } from '../lib/usePageState'
+import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
@@ -27,10 +30,10 @@ export default function AllProductsPage() {
   const categoriesRaw = ensureCategories()
   const categories = categoriesRaw || []
 
-  const [showFilters, setShowFilters] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<string>(location.state?.sortBy || 'newest')
+  const [showFilters, setShowFilters] = usePageState('showFilters', false)
+  const [selectedCategory, setSelectedCategory] = usePageState<string>('selectedCategory', 'all')
+  const [selectedSubcategory, setSelectedSubcategory] = usePageState<string>('selectedSubcategory', 'all')
+  const [sortBy, setSortBy] = usePageState<string>('sortBy', location.state?.sortBy || 'newest')
 
   const hasLoadedPopularityRef = useRef(false)
 
@@ -119,6 +122,7 @@ export default function AllProductsPage() {
 
     return (
       <div
+        data-product-card={product.id}
         onClick={() => navigate(`/product/${product.id}`)}
         className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
       >
@@ -148,7 +152,7 @@ export default function AllProductsPage() {
                 })
               }
             }}
-            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
           >
             <Heart
               size={18}
@@ -184,7 +188,7 @@ export default function AllProductsPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -212,7 +216,7 @@ export default function AllProductsPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -233,15 +237,14 @@ export default function AllProductsPage() {
         </div>
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
+          <div
             className={`w-full flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
               activeFiltersCount > 0
                 ? 'bg-[#F5F1E8] dark:bg-dark-accent'
                 : 'bg-[#F5F1E8]/60 dark:bg-dark-accent/40'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                 activeFiltersCount > 0
                   ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
@@ -259,7 +262,7 @@ export default function AllProductsPage() {
                   </p>
                 )}
               </div>
-            </div>
+            <ChevronDown size={16} style={{ rotate: showFilters ? "180deg" : "0deg", transition: "rotate 220ms ease-out" }} className="shrink-0 text-[#8A8275] dark:text-gray-300" /></button>
             {activeFiltersCount > 0 && (
               <button
                 onClick={(e) => {
@@ -271,10 +274,9 @@ export default function AllProductsPage() {
                 {language === 'ru' ? 'Сбросить' : 'Tozalash'}
               </button>
             )}
-          </button>
+          </div>
 
-          {showFilters && (
-            <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          <Collapse open={showFilters}><div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -389,8 +391,7 @@ export default function AllProductsPage() {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            </div></Collapse>
         </div>
 
         {filteredProducts.length === 0 ? (

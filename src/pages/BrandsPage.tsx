@@ -1,9 +1,12 @@
+import { ChevronDown } from 'lucide-react'
+import Collapse from '../components/Collapse'
+import { usePageState } from '../lib/usePageState'
 import { getBrands, getCachedBrands } from '../lib/supabase'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { cacheProducts } from '../lib/productCache'
 import type { CategoryTree } from '../lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   ChevronRight,
   Tag,
@@ -47,11 +50,11 @@ export default function BrandsPage() {
 
   const [brands, setBrands] = useState<Brand[]>(() => getCachedBrands() || [])
   const [loadingBrands, setLoadingBrands] = useState(() => !getCachedBrands())
-  const [showFilters, setShowFilters] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(100000000)
-  const [sortBy, setSortBy] = useState<string>('newest')
+  const [showFilters, setShowFilters] = usePageState('showFilters', false)
+  const [selectedCategory, setSelectedCategory] = usePageState<string>('selectedCategory', '')
+  const [minPrice, setMinPrice] = usePageState<number>('minPrice', 0)
+  const [maxPrice, setMaxPrice] = usePageState<number>('maxPrice', 100000000)
+  const [sortBy, setSortBy] = usePageState<string>('sortBy', 'newest')
 
   const selectedBrand = brands.find((b) => b.id === brandParam || b.name === brandParam) || null
 
@@ -67,7 +70,10 @@ export default function BrandsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const previousBrand = useRef(brandParam)
   useEffect(() => {
+    if (previousBrand.current === brandParam) return
+    previousBrand.current = brandParam
     setSelectedCategory('')
     setMinPrice(0)
     setMaxPrice(100000000)
@@ -176,6 +182,7 @@ export default function BrandsPage() {
 
     return (
       <div
+        data-product-card={product.id}
         onClick={() => navigate(`/product/${product.id}`)}
         className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
       >
@@ -205,7 +212,7 @@ export default function BrandsPage() {
                 })
               }
             }}
-            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
           >
             <Heart
               size={18}
@@ -349,15 +356,14 @@ export default function BrandsPage() {
             </div>
 
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
+              <div
                 className={`w-full flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
                   activeFiltersCount > 0
                     ? 'bg-[#F5F1E8] dark:bg-dark-accent'
                     : 'bg-[#F5F1E8]/60 dark:bg-dark-accent/40'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                     activeFiltersCount > 0
                       ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
@@ -375,7 +381,7 @@ export default function BrandsPage() {
                       </p>
                     )}
                   </div>
-                </div>
+                <ChevronDown size={16} style={{ rotate: showFilters ? "180deg" : "0deg", transition: "rotate 220ms ease-out" }} className="shrink-0 text-[#8A8275] dark:text-gray-300" /></button>
                 {activeFiltersCount > 0 && (
                   <button
                     onClick={(e) => {
@@ -387,10 +393,9 @@ export default function BrandsPage() {
                     {language === 'ru' ? 'Сбросить' : 'Tozalash'}
                   </button>
                 )}
-              </button>
+              </div>
 
-              {showFilters && (
-                <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
+              <Collapse open={showFilters}><div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
                   <div className="p-3.5">
                     <div className="flex items-center gap-3 mb-2.5">
                       <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -506,8 +511,7 @@ export default function BrandsPage() {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                </div></Collapse>
             </div>
 
             {loading ? (

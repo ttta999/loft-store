@@ -33,7 +33,7 @@ export async function install(context: BrowserContext): Promise<Harness> {
   context.on('page', page => { void h.setup(page) })
   await context.addInitScript(() => {
     const win = window as any
-    win.Telegram = { WebApp: { initData: 'fixture-signed-login', initDataUnsafe: { user: { id: 900000001, first_name: 'Тестовый покупатель' } }, ready() {}, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick() {}, offClick() {} }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
+    win.Telegram = { WebApp: { initData: 'fixture-signed-login', initDataUnsafe: { user: { id: 900000001, first_name: 'Тестовый покупатель' } }, ready() {}, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick(callback: any) { win.telegramBack = callback }, offClick(callback: any) { if (win.telegramBack === callback) win.telegramBack = null } }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
   })
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method()

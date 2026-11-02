@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { Ruler, Check, ChevronDown, X } from 'lucide-react'
 
@@ -29,6 +30,7 @@ export default function SizeSelector({
   language = 'ru'
 }: SizeSelectorProps) {
   const [open, setOpen] = useState(false)
+  const reduced = useReducedMotion()
 
   // ✅ Блокируем скролл страницы, пока открыт sheet
   useEffect(() => {
@@ -98,8 +100,8 @@ export default function SizeSelector({
       </button>
 
       {/* ✅ BOTTOM-SHEET в стиле страницы заказа */}
-      {open && (
-        <div className="fixed inset-0 z-[90]">
+      <AnimatePresence>{open && (
+        <motion.div key="size-sheet" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.26 }} className="fixed inset-0 z-[90]">
           {/* Затемнение — клик закрывает */}
           <div
             className="absolute inset-0 bg-black/50"
@@ -107,7 +109,7 @@ export default function SizeSelector({
           />
 
           {/* Панель: бежевый фон страницы, контент — карточками */}
-          <div className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
+          <motion.div initial={{ y: reduced ? 0 : '100%' }} animate={{ y: 0 }} exit={{ y: reduced ? 0 : '100%' }} transition={{ duration: reduced ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }} className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
             {/* Ручка */}
             <div className="flex-shrink-0 pt-2 pb-1 flex justify-center">
               <div className="w-10 h-1 rounded-full bg-[#E8E2D5] dark:bg-dark-border" />
@@ -128,7 +130,7 @@ export default function SizeSelector({
                 </p>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                data-loft-dismiss onClick={() => setOpen(false)}
                 className="w-9 h-9 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center text-[#8A8275] dark:text-gray-300 flex-shrink-0"
               >
                 <X size={16} />
@@ -181,9 +183,9 @@ export default function SizeSelector({
                 })}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        </motion.div>
+      )}</AnimatePresence>
     </div>
   )
 }

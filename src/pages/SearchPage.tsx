@@ -1,5 +1,8 @@
+import { ChevronDown } from 'lucide-react'
+import Collapse from '../components/Collapse'
+import { usePageState } from '../lib/usePageState'
 import { getBrands, getCachedBrands } from '../lib/supabase'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 import { Search, X, Heart, Tag, DollarSign, SlidersHorizontal, ListOrdered } from 'lucide-react'
@@ -32,13 +35,12 @@ export default function SearchPage() {
   const products = cachedItems || []
   const categories = ensureCategories() || []
 
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState(initialQuery)
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [selectedBrand, setSelectedBrand] = useState<string>('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000])
-  const [sortBy, setSortBy] = useState<string>('newest')
-  const [showFilters, setShowFilters] = useState(false)
+  const [selectedCategory, setSelectedCategory] = usePageState<string>('selectedCategory', '')
+  const [selectedBrand, setSelectedBrand] = usePageState<string>('selectedBrand', '')
+  const [priceRange, setPriceRange] = usePageState<[number, number]>('priceRange', [0, 100000000])
+  const [sortBy, setSortBy] = usePageState<string>('sortBy', 'newest')
+  const [showFilters, setShowFilters] = usePageState('showFilters', false)
   const [brands, setBrands] = useState<Brand[]>(() => getCachedBrands() || [])
   const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null)
 
@@ -79,7 +81,7 @@ export default function SearchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  const applyFiltersAndSort = useCallback(() => {
+  const filteredProducts = useMemo(() => {
     let filtered = [...products]
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -120,12 +122,8 @@ export default function SearchPage() {
         filtered.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    setFilteredProducts(filtered)
+    return filtered
   }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands, saleModeEnabled, exchangeRate])
-
-  useEffect(() => {
-    applyFiltersAndSort()
-  }, [applyFiltersAndSort])
 
   const formatPrice = (usd: number) => {
     if (currency === 'USD') return `$${usd}`
@@ -156,7 +154,7 @@ export default function SearchPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -183,7 +181,7 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -223,15 +221,14 @@ export default function SearchPage() {
             )}
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
+          <div
             className={`w-full flex items-center justify-between gap-3 px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border transition-colors ${
               hasActiveFilters
                 ? 'bg-[#F5F1E8] dark:bg-dark-accent'
                 : 'bg-[#F5F1E8]/60 dark:bg-dark-accent/40'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                 hasActiveFilters
                   ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
@@ -249,7 +246,7 @@ export default function SearchPage() {
                   </p>
                 )}
               </div>
-            </div>
+            <ChevronDown size={16} style={{ rotate: showFilters ? "180deg" : "0deg", transition: "rotate 220ms ease-out" }} className="shrink-0 text-[#8A8275] dark:text-gray-300" /></button>
             {hasActiveFilters && (
               <button
                 onClick={(e) => {
@@ -261,11 +258,10 @@ export default function SearchPage() {
                 {language === 'ru' ? 'Сбросить' : 'Tozalash'}
               </button>
             )}
-          </button>
+          </div>
         </div>
 
-        {showFilters && (
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
+        <Collapse open={showFilters}><div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
             <div className="p-3.5">
               <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -417,8 +413,7 @@ export default function SearchPage() {
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          </div></Collapse>
 
         {filteredProducts.length === 0 ? (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
@@ -453,7 +448,7 @@ export default function SearchPage() {
               const favorite = isFavorite(product.id)
 
               return (
-                <Link key={product.id} to={`/product/${product.id}`} className="block">
+                <Link data-product-card={product.id} key={product.id} to={`/product/${product.id}`} className="block">
                   <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border hover:shadow-md transition-shadow">
                     <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
                       <img
@@ -481,7 +476,7 @@ export default function SearchPage() {
                             })
                           }
                         }}
-                        className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+                        className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
                       >
                         <Heart
                           size={18}

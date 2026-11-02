@@ -112,7 +112,7 @@ export default function FavoritesPage() {
             const displayPrice = onSale ? Number(product.sale_price) : item.priceUsd
 
             return (
-              <div key={item.productId} className="flex items-center gap-3 p-3.5">
+              <div data-product-card={item.productId} key={item.productId} className="flex items-center gap-3 p-3.5">
                 {/* Миниатюра товара — клик ведёт на карточку */}
                 <Link to={`/product/${item.productId}`} className="flex-shrink-0">
                   <img

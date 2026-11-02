@@ -212,22 +212,25 @@ test('скидочный режим из админки меняет цену в
   await expect(buyer.getByText(/960[,\s]000 сум/, { exact: true })).toBeVisible()
 })
 
-test('страницы пролистываются без затухания и уважают уменьшение движения', async ({ page }) => {
+test('навигация спокойная: шапка и меню не участвуют в снимках, уменьшение движения учитывается', async ({ page }) => {
   await page.goto(STORE)
   await page.evaluate(() => {
     const win = window as any; win.transitionCount = 0
     const original = document.startViewTransition.bind(document)
     document.startViewTransition = (callback: any) => { win.transitionCount++; return original(callback) }
   })
+  const header = await page.locator('.loft-header').boundingBox()
+  const nav = await page.locator('.loft-navigation').boundingBox()
   await page.getByRole('button', { name: 'Корзина', exact: true }).click()
-  await expect(page).toHaveURL(STORE + '/cart')
-  await expect.poll(() => page.evaluate(() => (window as any).transitionCount)).toBe(1)
-  const motion = await page.evaluate(() => { const style = getComputedStyle(document.documentElement, '::view-transition-new(root)'); return { name: style.animationName, duration: style.animationDuration } })
-  expect(motion.name).toBe('loft-page-in'); expect(motion.duration).toBe('0.28s')
+  await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => (window as any).transitionCount)).toBe(0)
+  expect(await page.locator('.loft-header').boundingBox()).toEqual(header)
+  expect(await page.locator('.loft-navigation').boundingBox()).toEqual(nav)
+  await expect(page.locator('.loft-header')).toHaveCSS('view-transition-name', 'none')
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.getByRole('button', { name: 'Главная', exact: true }).click()
   await expect(page).toHaveURL(STORE + '/')
-  expect(await page.evaluate(() => (window as any).transitionCount)).toBe(1)
+  expect(await page.evaluate(() => (window as any).transitionCount)).toBe(0)
 })
 
 test('отмена незавершённой оплаты не оставляет активный заказ', async ({ page, harness }) => {

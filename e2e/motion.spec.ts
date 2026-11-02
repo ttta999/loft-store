@@ -12,27 +12,25 @@ for (const kind of ['orders', 'china'] as const) {
     const scroll = await page.evaluate(() => scrollY)
     expect(scroll).toBeGreaterThan(100)
     const reads = harness.calls.filter(c => c.body?.action === (kind === 'orders' ? 'orders' : 'requests')).length
-    await page.evaluate(() => {
-      const original = document.startViewTransition.bind(document)
-      document.startViewTransition = (callback: any) => { const transition = original(callback); (window as any).detailTransition = transition; return transition }
-    })
     await row.click()
     const detail = page.getByRole('dialog')
     await expect(detail).toBeVisible()
     await expect(detail.getByRole('heading', { name: title, exact: true })).toBeVisible()
     expect(await page.evaluate(() => scrollY)).toBe(scroll)
     const frames = await detail.evaluate(async element => {
-      const frames: { opacity: string; background: string; scroll: number }[] = []
+      const frames: { opacity: string; background: string; scroll: number; navY: number; navTransform: string }[] = []
       for (let i = 0; i < 20; i++) {
         await new Promise(requestAnimationFrame)
         const style = getComputedStyle(element)
-        frames.push({ opacity: style.opacity, background: style.backgroundColor, scroll: scrollY })
+        const nav = document.querySelector('.loft-navigation')!
+        frames.push({ opacity: style.opacity, background: style.backgroundColor, scroll: scrollY, navY: nav.getBoundingClientRect().y, navTransform: getComputedStyle(nav).transform })
       }
       return frames
     })
     expect(frames.every(f => f.opacity === '1' && !f.background.includes('rgba') && f.scroll === scroll)).toBe(true)
-    await page.evaluate(() => (window as any).detailTransition.finished)
-    expect(await detail.evaluate(element => element.getAnimations().length)).toBe(0)
+    expect(frames.every(frame => frame.navY === frames[0].navY && frame.navTransform === 'none')).toBe(true)
+    await expect(detail).toHaveCSS('opacity', '1')
+    await expect(page.locator('.loft-navigation')).toHaveCSS('view-transition-name', 'none')
     await test.info().attach('Детали после перехода', { body: await detail.screenshot(), contentType: 'image/png' })
     expect(harness.calls.filter(c => c.body?.action === (kind === 'orders' ? 'orders' : 'requests')).length).toBe(reads)
     await page.goBack()
@@ -70,11 +68,11 @@ test('возврат пролистывает назад, нажатие кно�
   await page.getByRole('button', { name: 'Корзина', exact: true }).click()
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
   await page.goBack()
-  await expect(page.locator('html')).toHaveAttribute('data-loft-direction', 'back')
+  await expect(page.locator('.loft-navigation')).toBeInViewport()
   const button = page.getByRole('button', { name: 'Корзина', exact: true })
   await button.focus()
   await page.keyboard.down('Space')
-  await expect(button).toHaveCSS('scale', '0.95')
+  await expect(button).toHaveCSS('scale', '0.98')
   await page.keyboard.up('Space')
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
   await page.emulateMedia({ reducedMotion: 'reduce' })

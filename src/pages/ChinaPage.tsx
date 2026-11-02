@@ -1,3 +1,5 @@
+import { motion, useReducedMotion } from 'framer-motion'
+import PlaneFlight from '../components/PlaneFlight'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
@@ -20,6 +22,9 @@ export default function ChinaPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [flight, setFlight] = useState<{ x: number; y: number } | null>(null)
+  const submitButton = useRef<HTMLButtonElement>(null)
+  const reduced = useReducedMotion()
   const requestKey = useRef(crypto.randomUUID())
 
   // ✅ FIX: при показе экрана успеха — скролл всегда вверх
@@ -79,6 +84,8 @@ export default function ChinaPage() {
         status: 'На рассмотрении',
       }
       await storeApi('createRequest', { request: requestData, requestKey: requestKey.current })
+      const icon = submitButton.current?.querySelector('svg')?.getBoundingClientRect()
+      if (icon && !reduced) setFlight({ x: icon.x, y: icon.y })
       setSubmitted(true)
       toast.success(
         language === 'ru' ? 'Спецзаказ отправлен!' : 'Maxsus buyurtma yuborildi!',
@@ -110,11 +117,12 @@ export default function ChinaPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+        {flight && <PlaneFlight origin={flight} onComplete={() => setFlight(null)} />}
         {/* ✅ Тосты в текущей теме */}
 
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           {/* ✅ Шапка-карточка успеха */}
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
+          <motion.div initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.26, delay: reduced ? 0 : 0.12, ease: [0.22, 1, 0.36, 1] }} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
             </div>
@@ -126,7 +134,7 @@ export default function ChinaPage() {
                 ? 'Менеджер рассмотрит ваш спецзаказ'
                 : 'Menejer sizning maxsus buyurtmangizni ko\'rib chiqadi'}
             </p>
-          </div>
+          </motion.div>
 
           {/* ✅ Инфо-карточка: статус + где отслеживать */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border overflow-hidden">
@@ -188,7 +196,7 @@ export default function ChinaPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       {/* ✅ Тосты в текущей теме */}
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         {/* ✅ Шапка-карточка в стиле страницы заказа */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
@@ -323,6 +331,7 @@ export default function ChinaPage() {
 
         {/* ✅ Кнопка отправки */}
         <button
+          ref={submitButton}
           onClick={handleSubmit}
           disabled={submitting}
           className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md ${

@@ -1,7 +1,7 @@
 import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
 import AnimatedRoutes from './components/AnimatedRoutes'
 import AppToaster from './components/AppToaster'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { BrowserRouter, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
@@ -36,6 +36,8 @@ function TelegramBackButtonManager() {
 
     // ✅ На внутренних страницах показываем системную кнопку и вешаем history.pop()
     const handleBack = () => {
+      const dismiss = document.querySelector<HTMLButtonElement>('[data-loft-dismiss]')
+      if (dismiss) { dismiss.click(); return }
       const idx = (window.history.state as any)?.idx
       if (typeof idx === 'number' && idx === 0) {
         // ✅ Если в стеке больше нет страниц — возвращаемся на главную
@@ -61,41 +63,7 @@ function AppLayout() {
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
 
-  const theme = useStore((state) => state.theme)
   const setTelegramUser = useStore((state) => state.setTelegramUser)
-
-  // ✅ Применение тёмной темы к <html>
-  useEffect(() => {
-    const root = document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else if (theme === 'light') {
-      root.classList.remove('dark')
-    } else {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      if (isDark) {
-        root.classList.add('dark')
-      } else {
-        root.classList.remove('dark')
-      }
-    }
-  }, [theme])
-
-  // ✅ Следим за изменением системной темы
-  useEffect(() => {
-    if (theme !== 'system') return
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      const root = document.documentElement
-      if (e.matches) {
-        root.classList.add('dark')
-      } else {
-        root.classList.remove('dark')
-      }
-    }
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [theme])
 
   // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
@@ -124,6 +92,8 @@ function AppLayout() {
     }
 
     const handler = () => {
+      const dismiss = document.querySelector<HTMLButtonElement>('[data-loft-dismiss]')
+      if (dismiss) { dismiss.click(); return }
       if (activeTab === 'search') navigate('/')
       else if (onBackClick) onBackClick()
     }
@@ -161,9 +131,22 @@ function AppLayout() {
   )
 }
 
+function ThemeManager() {
+  const theme = useStore(state => state.theme)
+  useLayoutEffect(() => {
+    const media = matchMedia('(prefers-color-scheme: dark)')
+    const apply = () => document.documentElement.classList.toggle('dark', theme === 'dark' || (theme === 'system' && media.matches))
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [theme])
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <ThemeManager />
       <AppToaster />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}

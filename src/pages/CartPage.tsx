@@ -1,3 +1,4 @@
+import Collapse from '../components/Collapse'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
@@ -751,16 +752,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               </div>
             </div>
           )}
-          {deliveryMethod === 'delivery' && (
-            <div className="flex items-center gap-3 p-3.5">
+          <Collapse open={deliveryMethod === 'delivery'}><div className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><MapPin size={16} className="text-[#1B2A4A] dark:text-white" /></div>
               <div className="flex-1 min-w-0">
                 <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-1">{language === 'ru' ? 'Адрес доставки' : 'Yetkazib berish manzili'}</label>
                 <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={language === 'ru' ? 'Улица, дом, квартира' : 'Ko\'cha, uy, kvartira'} rows={2} className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-[#F5F1E8] dark:bg-dark-accent text-sm text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
                 <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language === 'ru' ? 'Пример: ул. Навои, дом 15, квартира 23' : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}</p>
               </div>
-            </div>
-          )}
+            </div></Collapse>
         </div>
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 shadow-sm overflow-hidden">
@@ -780,16 +779,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               </div>
 
               {/* ✅ Раскрываемая подсказка (по нажатию на «i») */}
-              {showPaymentNote && (deliveryMethod === 'delivery' || isSpecialOrder) && (
-                <div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
+              <Collapse open={showPaymentNote && (deliveryMethod === 'delivery' || isSpecialOrder)}><div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
                   <Info size={14} className="text-[#1B2A4A] dark:text-gold mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-[#1B2A4A] dark:text-white leading-relaxed">
                     {isSpecialOrder
                       ? (language === 'ru' ? 'Спецзаказ — только полная предоплата переводом' : 'Maxsus buyurtma — faqat to\'liq oldindan to\'lov')
                       : (language === 'ru' ? 'Доставка по адресу — только полная предоплата переводом на карту' : 'Manzilga yetkazib berish — faqat kartaga to\'liq oldindan to\'lov')}
                   </p>
-                </div>
-              )}
+                </div></Collapse>
 
               <label className="flex items-center gap-2 cursor-pointer mb-2">
                 <input type="radio" name="payment" checked={paymentMethod === 'online_card'} onChange={() => setPaymentMethod('online_card')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
@@ -812,16 +809,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
 
             {/* ✅ Строка «Доставка»: цена или «Бесплатно» (порог из настроек админки) */}
-            {deliveryMethod === 'delivery' && (
-              <div className="flex justify-between items-center gap-2">
+            <Collapse open={deliveryMethod === 'delivery'}><div className="flex justify-between items-center gap-2">
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
                 {isFreeDelivery || deliveryPriceUzs === 0 ? (
                   <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
                 ) : (
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
                 )}
-              </div>
-            )}
+              </div></Collapse>
 
             <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-[#E8E2D5] dark:border-dark-border">
               <span className="font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Итого:' : 'Jami:'}</span>

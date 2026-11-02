@@ -72,51 +72,39 @@ body {
 }
 :root [data-sonner-toaster].loft-toaster [data-sonner-toast] { border-radius: 16px; }
 
-/* Short directional slides, with fixed chrome kept outside the moving snapshots. */
+/* Product imagery carries the expressive motion. Chrome is never snapshotted separately. */
 :root { --loft-motion-ease: cubic-bezier(0.22, 1, 0.36, 1); }
 ::view-transition { pointer-events: none; }
-::view-transition-group(root) { animation: none; overflow: clip; }
-::view-transition-image-pair(root) { isolation: isolate; }
-::view-transition-old(root), ::view-transition-new(root) {
-  animation: 280ms var(--loft-motion-ease) both;
-  mix-blend-mode: normal;
-}
-::view-transition-old(root) { animation-name: loft-page-out; }
-::view-transition-new(root) { animation-name: loft-page-in; }
-:root[data-loft-direction="back"]::view-transition-old(root) { animation-name: loft-page-back-out; z-index: 2; }
-:root[data-loft-direction="back"]::view-transition-new(root) { animation-name: loft-page-back-in; }
-@keyframes loft-page-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-@keyframes loft-page-out { from { transform: translateX(0); } to { transform: translateX(-22%); } }
-@keyframes loft-page-back-in { from { transform: translateX(-22%); } to { transform: translateX(0); } }
-@keyframes loft-page-back-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
-.loft-header { view-transition-name: loft-header; }
-.loft-navigation { view-transition-name: loft-navigation; }
-:root:has(.loft-modal) :is(.loft-header, .loft-navigation) { view-transition-name: none; }
-::view-transition-group(loft-header), ::view-transition-group(loft-navigation) { animation: none; }
-::view-transition-old(loft-header), ::view-transition-old(loft-navigation) { display: none; }
-::view-transition-new(loft-header), ::view-transition-new(loft-navigation) { animation: none; mix-blend-mode: normal; }
+::view-transition-group(root) { animation: none; }
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+[data-loft-content] { view-transition-name: none; }
+:root[data-loft-motion] [data-loft-snapshot] { view-transition-name: loft-content; }
+::view-transition-group(loft-content) { animation: none; }
+::view-transition-old(loft-content) { animation: loft-fade-out 100ms ease-out both; }
+::view-transition-new(loft-content) { animation: loft-fade-in 180ms var(--loft-motion-ease) 100ms both; }
+::view-transition-group(loft-product-photo) { animation-duration: 340ms; animation-timing-function: var(--loft-motion-ease); z-index: 3; }
+::view-transition-image-pair(loft-product-photo) { isolation: isolate; overflow: clip; border-radius: var(--loft-photo-to-radius, 16px); animation: loft-photo-radius 340ms var(--loft-motion-ease) both; }
+::view-transition-old(loft-product-photo) { display: none; }
+::view-transition-new(loft-product-photo) { animation: none; width: 100%; height: 100%; object-fit: cover; }
+:root[data-loft-motion="dissolve"]::view-transition-group(loft-product-photo) { animation: none; }
+:root[data-loft-motion="dissolve"]::view-transition-old(loft-product-photo) { display: block; animation: loft-fade-out 160ms ease-out both; }
+:root[data-loft-motion="dissolve"]::view-transition-new(loft-product-photo) { animation: loft-fade-in 180ms ease-out both; }
+@keyframes loft-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes loft-fade-out { from { opacity: 1; } to { opacity: 0; } }
 :where(button, a[role="button"], input[type="submit"]) {
   -webkit-tap-highlight-color: transparent;
-  transition-property: background-color, border-color, color, box-shadow, opacity, transform, scale, translate, rotate;
-  transition-duration: 280ms;
-  transition-timing-function: cubic-bezier(0.22, 1.4, 0.36, 1);
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform, scale, translate, rotate, fill;
+  transition-duration: 200ms;
+  transition-timing-function: var(--loft-motion-ease);
 }
-:where(button, a[role="button"], input[type="submit"]):not(:disabled):not([aria-disabled="true"]):active {
-  scale: 0.95;
-  transition-duration: 100ms;
-  transition-timing-function: ease-out;
-}
-.loft-modal > :not(.loft-header) { animation: loft-panel-in 240ms var(--loft-motion-ease); }
-@keyframes loft-panel-in { from { translate: 0 12px; } to { translate: 0 0; } }
-.loft-detail { view-transition-name: loft-detail; }
-.loft-detail > :not(.loft-header) { animation: none; }
-/* Detail snapshots slide over the unchanged, opaque list in both directions. */
-:root[data-loft-detail-transition]::view-transition-old(root),
-:root[data-loft-detail-transition]::view-transition-new(root) { animation: none; }
-::view-transition-group(loft-detail) { animation: none; }
-::view-transition-old(loft-detail) { animation: loft-page-back-out 280ms var(--loft-motion-ease) both; mix-blend-mode: normal; }
-::view-transition-new(loft-detail) { animation: loft-page-in 280ms var(--loft-motion-ease) both; mix-blend-mode: normal; }
+:where(button, a[role="button"], input[type="submit"]):not(:disabled):not([aria-disabled="true"]):active { scale: 0.98; transition-duration: 80ms; }
+svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }
 }
+
+.lucide-check { animation: loft-fade-in 180ms ease-out; }
+
+@keyframes loft-photo-radius { from { border-radius: var(--loft-photo-from-radius, 16px); } to { border-radius: var(--loft-photo-to-radius, 16px); } }

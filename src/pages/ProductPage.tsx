@@ -1,6 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import ProductPhotoViewer from '../components/ProductPhotoViewer'
+import { getOpeningPhoto } from '../lib/productTransition'
+import { useDecodedImage } from '../lib/useDecodedImage'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
+import { ShoppingCart, Check, LoaderCircle, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import SizeSelector from '../components/SizeSelector'
 import IslandHeader from '../components/IslandHeader'
@@ -17,6 +21,11 @@ import { sortSizeStrings } from '../lib/sortSizes'
 
 export default function ProductPage() {
   const { id } = useParams()
+  const reduced = useReducedMotion()
+  const adding = useRef(false)
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [cartState, setCartState] = useState<'idle' | 'checking' | 'added'>('idle')
+  useEffect(() => () => clearTimeout(addedTimer.current), [])
   const navigate = useNavigate()
   const activeId = useRef(id)
   activeId.current = id
@@ -43,13 +52,33 @@ export default function ProductPage() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showFullScreen, setShowFullScreen] = useState(false)
+  const [viewerActive, setViewerActive] = useState(false)
+  const [viewerAspect, setViewerAspect] = useState(1)
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState(0)
+  const [openingPhoto, setOpeningPhoto] = useState(() => getOpeningPhoto(id))
+  useEffect(() => {
+    const release = () => setOpeningPhoto(undefined)
+    window.addEventListener('loft:product-photo-end', release)
+    return () => window.removeEventListener('loft:product-photo-end', release)
+  }, [])
+  const colorImages = selectedColor?.images?.filter(Boolean)
+  const desiredPhoto = (colorImages?.length ? colorImages : product?.images)?.[currentImageIndex]
+  const decodedPhoto = useDecodedImage(desiredPhoto)
+  useLayoutEffect(() => {
+    if (!viewerActive) return
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = overflow }
+  }, [viewerActive])
 
   useEffect(() => {
     if (!id) return
 
     const cachedProduct = getCachedProduct(id)
     const cachedSizes = getCachedSizes(id)
+    setOpeningPhoto(getOpeningPhoto(id))
+    clearTimeout(addedTimer.current)
+    setCartState('idle')
     setProduct(cachedProduct)
     setLoading(!cachedProduct)
     setSizes(cachedSizes || [])
@@ -128,7 +157,8 @@ export default function ProductPage() {
   }
 
   const handleBack = () => {
-    navigate(-1)
+    if (Number(history.state?.idx) > 0) navigate(-1)
+    else navigate('/', { replace: true })
   }
 
   const onSale = isProductOnSale(product, saleModeEnabled)
@@ -138,6 +168,7 @@ export default function ProductPage() {
     : 0
 
   const handleAddToCart = async () => {
+    if (adding.current) return
     if (!product) {
       toast.error('Товар недоступен')
       return
@@ -165,33 +196,46 @@ export default function ProductPage() {
     }
 
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
-    const stockCheck = await checkProductStock(product.id, sizeToAdd, 1, selectedColor?.id || null)
-    if (!stockCheck.available) {
-      toast.error(stockCheck.error || 'Товар недоступен', {
-        description: language === 'ru'
-          ? 'Попробуйте выбрать другой вариант или посмотрите другие товары'
-          : 'Boshqa variantni tanlang yoki boshqa mahsulotlarga qarang',
-        duration: 4000,
+    adding.current = true
+    setCartState('checking')
+    try {
+      const stockCheck = await checkProductStock(product.id, sizeToAdd, 1, selectedColor?.id || null)
+      if (activeId.current !== product.id) return
+      if (!stockCheck.available) {
+        toast.error(stockCheck.error || 'Товар недоступен', {
+          description: language === 'ru'
+            ? 'Попробуйте выбрать другой вариант или посмотрите другие товары'
+            : 'Boshqa variantni tanlang yoki boshqa mahsulotlarga qarang',
+          duration: 4000,
+        })
+        return
+      }
+
+      addToCart({
+        productId: product.id,
+        name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
+        priceUsd: effectivePrice,
+        size: sizeToAdd,
+        quantity: 1,
+        image: getImages()[0] || '',
+        colorId: selectedColor?.id || null,
+        colorName: selectedColor
+          ? (language === 'ru' ? selectedColor.name_ru : (selectedColor.name_uz || selectedColor.name_ru))
+          : null,
       })
-      return
+
+      setCartState('added')
+      clearTimeout(addedTimer.current)
+      addedTimer.current = setTimeout(() => setCartState('idle'), 1400)
+      toast.success(language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!', {
+        duration: 2000,
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось проверить наличие товара')
+    } finally {
+      adding.current = false
+      setCartState(state => state === 'checking' ? 'idle' : state)
     }
-
-    addToCart({
-      productId: product.id,
-      name: language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot'),
-      priceUsd: effectivePrice,
-      size: sizeToAdd,
-      quantity: 1,
-      image: getImages()[0] || '',
-      colorId: selectedColor?.id || null,
-      colorName: selectedColor
-        ? (language === 'ru' ? selectedColor.name_ru : (selectedColor.name_uz || selectedColor.name_ru))
-        : null,
-    })
-
-    toast.success(language === 'ru' ? 'Товар добавлен в корзину!' : 'Mahsulot savatga qo\'shildi!', {
-      duration: 2000,
-    })
   }
 
   const handleToggleFavorite = () => {
@@ -249,11 +293,15 @@ export default function ProductPage() {
   }
 
   const openFullScreen = (index: number) => {
+    const image = document.querySelector<HTMLImageElement>('[data-product-hero]')
+    if (image?.naturalWidth && image.naturalHeight) setViewerAspect(image.naturalWidth / image.naturalHeight)
     setFullScreenImageIndex(index)
+    setViewerActive(true)
     setShowFullScreen(true)
   }
 
   const closeFullScreen = () => {
+    setCurrentImageIndex(fullScreenImageIndex)
     setShowFullScreen(false)
   }
 
@@ -330,7 +378,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+    <MotionConfig reducedMotion="user"><div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
       {/* ✅ Тосты в текущей теме */}
 
       <IslandHeader needsBack onBack={handleBack} />
@@ -338,8 +386,8 @@ export default function ProductPage() {
       <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           <div className="relative">
-            <img
-              src={images[currentImageIndex] || images[0] || 'https://via.placeholder.com/500'}
+            <img data-product-hero={id} style={{ visibility: viewerActive ? 'hidden' : 'visible' }}
+              src={openingPhoto || decodedPhoto || images[0] || 'https://via.placeholder.com/500'}
               alt={language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
               className="w-full aspect-square object-cover cursor-pointer"
               onClick={() => openFullScreen(currentImageIndex)}
@@ -369,7 +417,7 @@ export default function ProductPage() {
               <button
                 aria-label={isFavorite(product.id) ? (language === 'ru' ? 'Убрать из избранного' : 'Sevimlilardan olib tashlash') : (language === 'ru' ? 'В избранное' : 'Sevimlilarga')}
                 onClick={handleToggleFavorite}
-                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
               >
                 <Heart
                   size={24}
@@ -378,7 +426,7 @@ export default function ProductPage() {
               </button>
               <button
                 onClick={handleShare}
-                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+                className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
               >
                 <Share2 size={24} className="text-[#8A8275] dark:text-gray-300" />
               </button>
@@ -502,19 +550,19 @@ export default function ProductPage() {
 
           <button
             onClick={handleAddToCart}
-            disabled={sizesLoading || sizes.length === 0}
-            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors mt-4 ${
+            disabled={sizesLoading || sizes.length === 0 || cartState === 'checking'}
+            className={`w-full min-h-[60px] py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors mt-4 ${
               sizesLoading || sizes.length === 0
                 ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed'
                 : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
             }`}
           >
-            <ShoppingCart size={20} />
-            {sizesLoading
+            <motion.span key={cartState} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.12 }} className="inline-flex items-center justify-center gap-2">            {cartState === 'checking' ? <LoaderCircle size={20} className="animate-spin" /> : cartState === 'added' ? <Check size={20} /> : <ShoppingCart size={20} />}
+            {cartState === 'checking' ? (language === 'ru' ? 'Проверяем...' : 'Tekshirilmoqda...') : cartState === 'added' ? (language === 'ru' ? 'Добавлено' : 'Qo‘shildi') : sizesLoading
               ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
               : sizes.length === 0
                 ? (language === 'ru' ? 'Нет в наличии' : 'Mavjud emas')
-                : (language === 'ru' ? 'В корзину' : 'Savatga')}
+                : (language === 'ru' ? 'В корзину' : 'Savatga')}</motion.span>
           </button>
           {!sizesLoading && sizes.length === 0 && (
             <p className="text-center text-sm text-[#8A8275] dark:text-gray-400 mt-2">
@@ -526,35 +574,32 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {showFullScreen && (
-        <div className="loft-modal fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <button
+      <AnimatePresence onExitComplete={() => setViewerActive(false)}>{showFullScreen && (
+        <ProductPhotoViewer key="photo-viewer" src={images[fullScreenImageIndex]} aspect={viewerAspect}>
+          <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
+            data-loft-dismiss
             onClick={closeFullScreen}
             className="absolute top-4 right-4 text-white z-50 bg-black/50 rounded-full p-2"
           >
             <X size={32} />
-          </button>
+          </motion.button>
           {images.length > 1 && (
             <>
-              <button
+              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
                 onClick={fullScreenPrev}
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
               >
                 <ChevronLeft size={32} />
-              </button>
-              <button
+              </motion.button>
+              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
                 onClick={fullScreenNext}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
               >
                 <ChevronRight size={32} />
-              </button>
+              </motion.button>
             </>
           )}
-          <img
-            src={images[fullScreenImageIndex]}
-            alt="Full screen"
-            className="max-w-full max-h-full object-contain"
-          />
+
           {images.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               {images.map((_, index) => (
@@ -569,8 +614,8 @@ export default function ProductPage() {
               ))}
             </div>
           )}
-        </div>
-      )}
-    </div>
+        </ProductPhotoViewer>
+      )}</AnimatePresence>
+    </div></MotionConfig>
   )
 }

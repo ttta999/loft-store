@@ -71,7 +71,7 @@ export default function CategoryPage() {
         onBack={() => navigate(-1)}
       />
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         {/* ✅ Шапка-карточка категории */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">

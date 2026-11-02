@@ -1,29 +1,56 @@
-import { lazy } from 'react'
+import { createElement, type ComponentType } from 'react'
 
-const loadSearchPage = () => import('../pages/SearchPage')
-export const SearchPage = lazy(loadSearchPage)
-const loadCartPage = () => import('../pages/CartPage')
-export const CartPage = lazy(loadCartPage)
-const loadChinaPage = () => import('../pages/ChinaPage')
-export const ChinaPage = lazy(loadChinaPage)
-const loadProfilePage = () => import('../pages/ProfilePage')
-export const ProfilePage = lazy(loadProfilePage)
-const loadProductPage = () => import('../pages/ProductPage')
-export const ProductPage = lazy(loadProductPage)
-const loadFavoritesPage = () => import('../pages/FavoritesPage')
-export const FavoritesPage = lazy(loadFavoritesPage)
-const loadCatalogPage = () => import('../pages/CatalogPage')
-export const CatalogPage = lazy(loadCatalogPage)
-const loadBrandsPage = () => import('../pages/BrandsPage')
-export const BrandsPage = lazy(loadBrandsPage)
-const loadCategoryPage = () => import('../pages/CategoryPage')
-export const CategoryPage = lazy(loadCategoryPage)
-const loadAllProductsPage = () => import('../pages/AllProductsPage')
-export const AllProductsPage = lazy(loadAllProductsPage)
-const loadPrivacyPage = () => import('../pages/PrivacyPage')
-export const PrivacyPage = lazy(loadPrivacyPage)
-const loadTermsPage = () => import('../pages/TermsPage')
-export const TermsPage = lazy(loadTermsPage)
+function deferredPage(loader: () => Promise<{ default: ComponentType }>) {
+  let Page: ComponentType | undefined
+  let pending: Promise<unknown> | undefined
+  let failure: unknown
+  const load = () => pending ||= loader().then(module => { Page = module.default }, error => { failure = error; throw error })
+  return {
+    load,
+    Component() {
+      if (failure) throw failure
+      if (!Page) throw load()
+      return createElement(Page)
+    },
+  }
+}
+
+const SearchPageResource = deferredPage(() => import('../pages/SearchPage'))
+const loadSearchPage = SearchPageResource.load
+export const SearchPage = SearchPageResource.Component
+const CartPageResource = deferredPage(() => import('../pages/CartPage'))
+const loadCartPage = CartPageResource.load
+export const CartPage = CartPageResource.Component
+const ChinaPageResource = deferredPage(() => import('../pages/ChinaPage'))
+const loadChinaPage = ChinaPageResource.load
+export const ChinaPage = ChinaPageResource.Component
+const ProfilePageResource = deferredPage(() => import('../pages/ProfilePage'))
+const loadProfilePage = ProfilePageResource.load
+export const ProfilePage = ProfilePageResource.Component
+const ProductPageResource = deferredPage(() => import('../pages/ProductPage'))
+const loadProductPage = ProductPageResource.load
+export const ProductPage = ProductPageResource.Component
+const FavoritesPageResource = deferredPage(() => import('../pages/FavoritesPage'))
+const loadFavoritesPage = FavoritesPageResource.load
+export const FavoritesPage = FavoritesPageResource.Component
+const CatalogPageResource = deferredPage(() => import('../pages/CatalogPage'))
+const loadCatalogPage = CatalogPageResource.load
+export const CatalogPage = CatalogPageResource.Component
+const BrandsPageResource = deferredPage(() => import('../pages/BrandsPage'))
+const loadBrandsPage = BrandsPageResource.load
+export const BrandsPage = BrandsPageResource.Component
+const CategoryPageResource = deferredPage(() => import('../pages/CategoryPage'))
+const loadCategoryPage = CategoryPageResource.load
+export const CategoryPage = CategoryPageResource.Component
+const AllProductsPageResource = deferredPage(() => import('../pages/AllProductsPage'))
+const loadAllProductsPage = AllProductsPageResource.load
+export const AllProductsPage = AllProductsPageResource.Component
+const PrivacyPageResource = deferredPage(() => import('../pages/PrivacyPage'))
+const loadPrivacyPage = PrivacyPageResource.load
+export const PrivacyPage = PrivacyPageResource.Component
+const TermsPageResource = deferredPage(() => import('../pages/TermsPage'))
+const loadTermsPage = TermsPageResource.load
+export const TermsPage = TermsPageResource.Component
 
 const loaders: Record<string, () => Promise<unknown>> = {
   '/search': loadSearchPage,

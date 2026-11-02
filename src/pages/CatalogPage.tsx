@@ -1,3 +1,6 @@
+import { ChevronDown } from 'lucide-react'
+import Collapse from '../components/Collapse'
+import { usePageState } from '../lib/usePageState'
 import { getBrands, getCachedBrands } from '../lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
@@ -39,11 +42,11 @@ export default function CatalogPage() {
 
   const [brands, setBrands] = useState<any[]>(() => getCachedBrands() || [])
   const [loadingBrands, setLoadingBrands] = useState(() => !getCachedBrands())
-  const [showFilters, setShowFilters] = useState(false)
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
-  const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(100000000)
-  const [sortBy, setSortBy] = useState<string>('newest')
+  const [showFilters, setShowFilters] = usePageState('showFilters', false)
+  const [selectedBrands, setSelectedBrands] = usePageState<string[]>('selectedBrands', [])
+  const [minPrice, setMinPrice] = usePageState<number>('minPrice', 0)
+  const [maxPrice, setMaxPrice] = usePageState<number>('maxPrice', 100000000)
+  const [sortBy, setSortBy] = usePageState<string>('sortBy', 'newest')
 
   const cachedItems = ensureProducts()
   const loading = !cachedItems
@@ -159,6 +162,7 @@ export default function CatalogPage() {
 
     return (
       <div
+        data-product-card={product.id}
         onClick={() => navigate(`/product/${product.id}`)}
         className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
       >
@@ -187,7 +191,7 @@ export default function CatalogPage() {
                 })
               }
             }}
-            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-110 transition-transform border border-transparent dark:border-dark-border"
+            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
           >
             <Heart
               size={18}
@@ -223,7 +227,7 @@ export default function CatalogPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
@@ -256,7 +260,7 @@ export default function CatalogPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -277,15 +281,14 @@ export default function CatalogPage() {
         </div>
 
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
+          <div
             className={`w-full flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
               activeFiltersCount > 0
                 ? 'bg-[#F5F1E8] dark:bg-dark-accent'
                 : 'bg-[#F5F1E8]/60 dark:bg-dark-accent/40'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                 activeFiltersCount > 0
                   ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
@@ -303,7 +306,7 @@ export default function CatalogPage() {
                   </p>
                 )}
               </div>
-            </div>
+            <ChevronDown size={16} style={{ rotate: showFilters ? "180deg" : "0deg", transition: "rotate 220ms ease-out" }} className="shrink-0 text-[#8A8275] dark:text-gray-300" /></button>
             {activeFiltersCount > 0 && (
               <button
                 onClick={(e) => {
@@ -315,10 +318,9 @@ export default function CatalogPage() {
                 {language === 'ru' ? 'Сбросить' : 'Tozalash'}
               </button>
             )}
-          </button>
+          </div>
 
-          {showFilters && (
-            <div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          <Collapse open={showFilters}><div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -441,8 +443,7 @@ export default function CatalogPage() {
                   </button>
                 </div>
               </div>
-            </div>
-          )}
+            </div></Collapse>
         </div>
 
         {filteredProducts.length === 0 ? (

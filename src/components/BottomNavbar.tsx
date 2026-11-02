@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { warmPage } from '../lib/pagePreload'
 import { useNavigate } from 'react-router-dom'
 import { Home, ShoppingCart, Globe, User } from 'lucide-react'
@@ -19,8 +20,20 @@ const TAB_PATHS: Record<TabType, string> = {
 }
 
 export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
-  const navigate = useNavigate()
   const { language, cart } = useStore()
+  const navigate = useNavigate()
+  const pill = useRef<HTMLDivElement>(null)
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 })
+  useLayoutEffect(() => {
+    const measure = () => {
+      const selected = pill.current?.querySelector<HTMLElement>('[data-active="true"]')
+      setIndicator(selected ? { left: selected.offsetLeft, width: selected.offsetWidth } : { left: 0, width: 0 })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (pill.current) observer.observe(pill.current)
+    return () => observer.disconnect()
+  }, [activeTab, language])
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -53,19 +66,21 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
     <div className="loft-navigation fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
-        <div className="flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
+        <div ref={pill} className="relative flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
+          <span aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[220ms]" style={{ left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
+                data-active={isActive}
                 onPointerEnter={() => warmPage(TAB_PATHS[tab.id])}
               onPointerDown={() => warmPage(TAB_PATHS[tab.id])}
               onFocus={() => warmPage(TAB_PATHS[tab.id])}
               onClick={() => handleTabClick(tab.id)}
                 className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all ${
-                  isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
+                  ''
                 }`}
               >
                 <div className="relative">
