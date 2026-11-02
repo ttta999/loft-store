@@ -127,6 +127,7 @@ export default function HomePage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border hover:shadow-md transition-shadow cursor-pointer">
           <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
             <img
+              loading="lazy" decoding="async"
               src={product.images?.[0] || 'https://via.placeholder.com/500'}
               alt={language === 'ru' ? product.name_ru : product.name_uz}
               className="w-full h-full object-cover"
@@ -273,6 +274,7 @@ export default function HomePage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center gap-3">
           {telegramUser?.photoUrl ? (
             <img
+              decoding="async"
               src={telegramUser.photoUrl}
               alt="Avatar"
               className="w-12 h-12 rounded-full object-cover border border-[#E8E2D5] dark:border-dark-border flex-shrink-0"

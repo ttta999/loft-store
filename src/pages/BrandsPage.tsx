@@ -181,6 +181,7 @@ export default function BrandsPage() {
       >
         <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
           <img
+            loading="lazy" decoding="async"
             src={product.images?.[0] || 'https://via.placeholder.com/500'}
             alt={language === 'ru' ? product.name_ru : product.name_uz}
             className="w-full h-full object-cover"
@@ -240,7 +241,7 @@ export default function BrandsPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={handleBack} />
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         {!brandParam ? (
           <>
             <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">

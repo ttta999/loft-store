@@ -72,15 +72,23 @@ body {
 }
 :root [data-sonner-toaster].loft-toaster [data-sonner-toast] { border-radius: 16px; }
 
-/* Symmetric easing starts and ends gently; no page travel or zoom. */
-:root { --loft-motion-ease: cubic-bezier(0.4, 0, 0.2, 1); }
+/* Short directional slides, with fixed chrome kept outside the moving snapshots. */
+:root { --loft-motion-ease: cubic-bezier(0.22, 1, 0.36, 1); }
 ::view-transition { pointer-events: none; }
-::view-transition-group(root) { animation: none; }
+::view-transition-group(root) { animation: none; overflow: clip; }
 ::view-transition-image-pair(root) { isolation: isolate; }
-::view-transition-old(root) { animation: loft-route-out 460ms var(--loft-motion-ease) both; mix-blend-mode: plus-lighter; }
-::view-transition-new(root) { animation: loft-route-in 460ms var(--loft-motion-ease) both; mix-blend-mode: plus-lighter; }
-@keyframes loft-route-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes loft-route-out { from { opacity: 1; } to { opacity: 0; } }
+::view-transition-old(root), ::view-transition-new(root) {
+  animation: 280ms var(--loft-motion-ease) both;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { animation-name: loft-page-out; }
+::view-transition-new(root) { animation-name: loft-page-in; }
+:root[data-loft-direction="back"]::view-transition-old(root) { animation-name: loft-page-back-out; z-index: 2; }
+:root[data-loft-direction="back"]::view-transition-new(root) { animation-name: loft-page-back-in; }
+@keyframes loft-page-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes loft-page-out { from { transform: translateX(0); } to { transform: translateX(-22%); } }
+@keyframes loft-page-back-in { from { transform: translateX(-22%); } to { transform: translateX(0); } }
+@keyframes loft-page-back-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
 .loft-header { view-transition-name: loft-header; }
 .loft-navigation { view-transition-name: loft-navigation; }
 :root:has(.loft-modal) :is(.loft-header, .loft-navigation) { view-transition-name: none; }
@@ -90,12 +98,24 @@ body {
 :where(button, a[role="button"], input[type="submit"]) {
   -webkit-tap-highlight-color: transparent;
   transition-property: background-color, border-color, color, box-shadow, opacity, transform, scale, translate, rotate;
-  transition-duration: 240ms;
-  transition-timing-function: var(--loft-motion-ease);
+  transition-duration: 280ms;
+  transition-timing-function: cubic-bezier(0.22, 1.4, 0.36, 1);
 }
-:where(button, a[role="button"], input[type="submit"]):not(:disabled):not([aria-disabled="true"]):active { opacity: 0.82; }
-.loft-modal { animation: loft-overlay-in 380ms var(--loft-motion-ease); }
-@keyframes loft-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+:where(button, a[role="button"], input[type="submit"]):not(:disabled):not([aria-disabled="true"]):active {
+  scale: 0.95;
+  transition-duration: 100ms;
+  transition-timing-function: ease-out;
+}
+.loft-modal > :not(.loft-header) { animation: loft-panel-in 240ms var(--loft-motion-ease); }
+@keyframes loft-panel-in { from { translate: 0 12px; } to { translate: 0 0; } }
+.loft-detail { view-transition-name: loft-detail; }
+.loft-detail > :not(.loft-header) { animation: none; }
+/* Detail snapshots slide over the unchanged, opaque list in both directions. */
+:root[data-loft-detail-transition]::view-transition-old(root),
+:root[data-loft-detail-transition]::view-transition-new(root) { animation: none; }
+::view-transition-group(loft-detail) { animation: none; }
+::view-transition-old(loft-detail) { animation: loft-page-back-out 280ms var(--loft-motion-ease) both; mix-blend-mode: normal; }
+::view-transition-new(loft-detail) { animation: loft-page-in 280ms var(--loft-motion-ease) both; mix-blend-mode: normal; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }

@@ -45,7 +45,7 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
     assertCurrentSession()
     if (response.status === 401) { session = null; sessionUserId = null; dataCache.invalidate('private:') }
     if (!response.ok) throw new Error(data.error || 'Не удалось выполнить действие')
-    if (!read) {
+    if (!read && action !== 'subscribe') {
       dataCache.invalidate(`private:${user.id}:`)
       dataCache.invalidate('variant-sizes:')
       dataCache.invalidate('sizes:')

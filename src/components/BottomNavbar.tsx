@@ -1,3 +1,4 @@
+import { warmPage } from '../lib/pagePreload'
 import { useNavigate } from 'react-router-dom'
 import { Home, ShoppingCart, Globe, User } from 'lucide-react'
 import { useStore } from '../store/useStore'
@@ -6,7 +7,6 @@ type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
 
 interface BottomNavbarProps {
   activeTab: TabType
-  setActiveTab: (tab: TabType) => void
 }
 
 // ✅ Соответствие вкладка → URL (используется для навигации)
@@ -18,7 +18,7 @@ const TAB_PATHS: Record<TabType, string> = {
   profile: '/profile',
 }
 
-export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarProps) {
+export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
   const navigate = useNavigate()
   const { language, cart } = useStore()
 
@@ -27,7 +27,6 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
   // ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ: меняем и state, и URL
   const handleTabClick = (tab: TabType) => {
     if (tab === activeTab) return // не делаем лишних переходов
-    setActiveTab(tab)
     navigate(TAB_PATHS[tab])
   }
 
@@ -61,7 +60,10 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
             return (
               <button
                 key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
+                onPointerEnter={() => warmPage(TAB_PATHS[tab.id])}
+              onPointerDown={() => warmPage(TAB_PATHS[tab.id])}
+              onFocus={() => warmPage(TAB_PATHS[tab.id])}
+              onClick={() => handleTabClick(tab.id)}
                 className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all ${
                   isActive ? 'bg-[#E8E2D5] dark:bg-dark-accent' : ''
                 }`}
@@ -92,6 +94,9 @@ export default function BottomNavbar({ activeTab, setActiveTab }: BottomNavbarPr
 
         {/* ✅ СПРАВА — отдельная круглая кнопка Профиль */}
         <button
+          onPointerEnter={() => warmPage('/profile')}
+          onPointerDown={() => warmPage('/profile')}
+          onFocus={() => warmPage('/profile')}
           onClick={() => handleTabClick('profile')}
           className={`w-14 h-14 shrink-0 rounded-full border shadow-lg flex items-center justify-center transition-all ${
             activeTab === 'profile'

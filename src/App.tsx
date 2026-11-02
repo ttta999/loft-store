@@ -1,3 +1,4 @@
+import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
 import AnimatedRoutes from './components/AnimatedRoutes'
 import AppToaster from './components/AppToaster'
 import { useState, useEffect } from 'react'
@@ -5,18 +6,6 @@ import { BrowserRouter, Route, useLocation, useNavigate, Outlet } from 'react-ro
 import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
 import HomePage from './pages/HomePage'
-import SearchPage from './pages/SearchPage'
-import CartPage from './pages/CartPage'
-import ChinaPage from './pages/ChinaPage'
-import ProfilePage from './pages/ProfilePage'
-import ProductPage from './pages/ProductPage'
-import FavoritesPage from './pages/FavoritesPage'
-import CatalogPage from './pages/CatalogPage'
-import BrandsPage from './pages/BrandsPage'
-import CategoryPage from './pages/CategoryPage'
-import AllProductsPage from './pages/AllProductsPage'
-import PrivacyPage from './pages/PrivacyPage'
-import TermsPage from './pages/TermsPage'
 import {
   initTelegram,
   getUserData,
@@ -67,7 +56,8 @@ function TelegramBackButtonManager() {
 function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState<TabType>('home')
+  const path = location.pathname
+  const activeTab: TabType = path === '/search' ? 'search' : path === '/cart' ? 'cart' : path === '/china' ? 'china' : path === '/profile' ? 'profile' : 'home'
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
 
@@ -106,21 +96,6 @@ function AppLayout() {
     mediaQuery.addEventListener('change', handleChange)
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
-
-  // ✅ Синхронизируем activeTab с URL
-  useEffect(() => {
-    const path = location.pathname
-    let newTab: TabType | null = null
-    if (path === '/' || path === '/home') newTab = 'home'
-    else if (path === '/search') newTab = 'search'
-    else if (path === '/cart') newTab = 'cart'
-    else if (path === '/china') newTab = 'china'
-    else if (path === '/profile') newTab = 'profile'
-
-    if (newTab && newTab !== activeTab) {
-      setActiveTab(newTab)
-    }
-  }, [location.pathname, activeTab])
 
   // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
@@ -179,9 +154,9 @@ function AppLayout() {
       />
 
       {/* ✅ Outlet рендерит страницу БЕЗ размонтирования layout */}
-      <Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} />
+      <main data-loft-content><Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} /></main>
 
-      <BottomNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNavbar activeTab={activeTab} />
     </div>
   )
 }

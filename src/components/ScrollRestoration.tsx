@@ -36,6 +36,13 @@ export default function ScrollRestoration() {
   useLayoutEffect(() => {
     const prev = prevLocRef.current
     
+    const sameProfileList = prev.pathname === '/profile' && location.pathname === '/profile'
+      && new URLSearchParams(prev.search).get('section') === new URLSearchParams(location.search).get('section')
+    if (sameProfileList) {
+      prevLocRef.current = location
+      return
+    }
+
     // Если URL изменился
     if (prev.key !== location.key) {
       // СОХРАНЯЕМ позицию старой страницы до того, как сбросим её

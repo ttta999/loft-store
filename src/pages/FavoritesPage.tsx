@@ -38,7 +38,7 @@ export default function FavoritesPage() {
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <IslandHeader needsBack onBack={handleBack} />
 
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           {/* ✅ Шапка-карточка (как шапка заказа) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -84,7 +84,7 @@ export default function FavoritesPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack onBack={handleBack} />
 
-      <div className="p-4 pb-20">
+      <div data-loft-content className="p-4 pb-20">
         {/* ✅ Шапка-карточка: заголовок + счётчик + круглая иконка (стиль страницы заказа) */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -116,6 +116,7 @@ export default function FavoritesPage() {
                 {/* Миниатюра товара — клик ведёт на карточку */}
                 <Link to={`/product/${item.productId}`} className="flex-shrink-0">
                   <img
+                    loading="lazy" decoding="async"
                     src={item.image}
                     alt={item.name}
                     className="w-16 h-16 rounded-xl object-cover border border-[#E8E2D5] dark:border-dark-border"

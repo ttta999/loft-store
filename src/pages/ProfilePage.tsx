@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
@@ -58,7 +58,7 @@ const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
 }
 
 const useBodyScrollLock = (active: boolean) => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!active) return
     const original = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -238,7 +238,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   return (
-    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
@@ -654,7 +654,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   }
 
   return (
-    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       <div className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
@@ -922,16 +922,22 @@ export default function ProfilePage() {
 
   const [orders, setOrders] = useState<any[]>(() => peekStoreData('orders') || [])
   const [chinaRequests, setChinaRequests] = useState<any[]>(() => peekStoreData('requests') || [])
-  const [loading, setLoading] = useState(() => {
-    if (section === 'orders') return !peekStoreData('orders')
-    if (section === 'china') return !peekStoreData('requests')
-    return false
-  })
-  const [allProducts, setAllProducts] = useState<any[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(() => !peekStoreData('orders'))
+  const [requestsLoading, setRequestsLoading] = useState(() => !peekStoreData('requests'))
+  const [allProducts, setAllProducts] = useState<any[]>(() => useStore.getState().productsCache?.items || [])
 
   useEffect(() => {
+    if (section !== 'favorites') return
     getProducts().then(setAllProducts).catch(error => console.error('Ошибка загрузки товаров', error))
-  }, [])
+  }, [section])
+
+  // Warm private history while the customer chooses a profile section.
+  // storeApi keeps the existing verified-user scope, short TTL and request deduplication.
+  useEffect(() => {
+    if (section && section !== 'main') return
+    void storeApi('orders').then(({ data }) => { setOrders(data || []); setOrdersLoading(false) }).catch(() => {})
+    void storeApi('requests').then(({ data }) => { setChinaRequests(data || []); setRequestsLoading(false) }).catch(() => {})
+  }, [section])
 
   useEffect(() => {
     const sectionNow = searchParams.get('section')
@@ -1087,7 +1093,7 @@ export default function ProfilePage() {
 
   const loadOrders = async () => {
     const hadCache = !!peekStoreData('orders')
-    if (!hadCache) setLoading(true)
+    if (!hadCache) setOrdersLoading(true)
     try {
       const { data } = await storeApi('orders')
       if (data) {
@@ -1097,13 +1103,13 @@ export default function ProfilePage() {
       console.error('Ошибка при загрузке заказов')
       toast.error(err instanceof Error ? err.message : 'Не удалось загрузить заказы')
     } finally {
-      if (!hadCache) setLoading(false)
+      if (!hadCache) setOrdersLoading(false)
     }
   }
 
   const loadChinaRequests = async () => {
     const hadCache = !!peekStoreData('requests')
-    if (!hadCache) setLoading(true)
+    if (!hadCache) setRequestsLoading(true)
     try {
       const { data } = await storeApi('requests')
       if (data) {
@@ -1113,7 +1119,7 @@ export default function ProfilePage() {
       console.error('Ошибка при загрузке спецзаказов')
       toast.error(err instanceof Error ? err.message : 'Не удалось загрузить спецзаказы')
     } finally {
-      if (!hadCache) setLoading(false)
+      if (!hadCache) setRequestsLoading(false)
     }
   }
 
@@ -1144,10 +1150,7 @@ export default function ProfilePage() {
   const handleCancelChinaRequest = () => {
     // Кеш уже сброшен внутри модалки, просто закрываем и перезагружаем список
     navigate(-1)
-    // Небольшая задержка, чтобы navigate сработал, потом перезагружаем
-    setTimeout(() => {
-      loadChinaRequests()
-    }, 100)
+    void loadChinaRequests()
   }
 
   const handleAcceptSpecialOrder = (request: any) => {
@@ -1589,7 +1592,7 @@ export default function ProfilePage() {
             }
             icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
-          {loading ? (
+          {ordersLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
               <p className="text-[#8A8275] dark:text-gray-300">
@@ -1685,7 +1688,7 @@ export default function ProfilePage() {
             }
             icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
-          {loading ? (
+          {requestsLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
               <p className="text-[#8A8275] dark:text-gray-300">

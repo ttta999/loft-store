@@ -304,7 +304,7 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <IslandHeader needsBack onBack={handleBack} />
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
+        <div data-loft-content className="p-4 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-4"></div>
             <p className="text-[#8A8275] dark:text-gray-300">
@@ -320,7 +320,7 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <IslandHeader needsBack onBack={handleBack} />
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
+        <div data-loft-content className="p-4 flex items-center justify-center min-h-[60vh]">
           <p className="text-[#8A8275] dark:text-gray-300">
             {language === 'ru' ? 'Товар не найден' : 'Mahsulot topilmadi'}
           </p>
@@ -335,7 +335,7 @@ export default function ProductPage() {
 
       <IslandHeader needsBack onBack={handleBack} />
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           <div className="relative">
             <img

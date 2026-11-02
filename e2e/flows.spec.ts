@@ -212,7 +212,7 @@ test('скидочный режим из админки меняет цену в
   await expect(buyer.getByText(/960[,\s]000 сум/, { exact: true })).toBeVisible()
 })
 
-test('переходы не сдвигают страницы и уважают уменьшение движения', async ({ page }) => {
+test('страницы пролистываются без затухания и уважают уменьшение движения', async ({ page }) => {
   await page.goto(STORE)
   await page.evaluate(() => {
     const win = window as any; win.transitionCount = 0
@@ -222,8 +222,8 @@ test('переходы не сдвигают страницы и уважают 
   await page.getByRole('button', { name: 'Корзина', exact: true }).click()
   await expect(page).toHaveURL(STORE + '/cart')
   await expect.poll(() => page.evaluate(() => (window as any).transitionCount)).toBe(1)
-  const motion = await page.evaluate(() => { const style = getComputedStyle(document.documentElement, '::view-transition-new(root)'); return { transform: style.transform, duration: style.animationDuration } })
-  expect(motion.transform).toBe('none'); expect(motion.duration).toBe('0.46s')
+  const motion = await page.evaluate(() => { const style = getComputedStyle(document.documentElement, '::view-transition-new(root)'); return { name: style.animationName, duration: style.animationDuration } })
+  expect(motion.name).toBe('loft-page-in'); expect(motion.duration).toBe('0.28s')
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.getByRole('button', { name: 'Главная', exact: true }).click()
   await expect(page).toHaveURL(STORE + '/')

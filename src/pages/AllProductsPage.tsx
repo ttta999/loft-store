@@ -124,6 +124,7 @@ export default function AllProductsPage() {
       >
         <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
           <img
+            loading="lazy" decoding="async"
             src={product.images?.[0] || 'https://via.placeholder.com/500'}
             alt={language === 'ru' ? product.name_ru : product.name_uz}
             className="w-full h-full object-cover"
