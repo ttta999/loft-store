@@ -1,3 +1,4 @@
+import { motionDistance, motionEase, motionTiming } from '../lib/motion'
 import { motion, useReducedMotion } from 'framer-motion'
 import PlaneFlight from '../components/PlaneFlight'
 import { useState, useEffect, useRef } from 'react'
@@ -122,7 +123,7 @@ export default function ChinaPage() {
 
         <div data-loft-content className="p-4">
           {/* ✅ Шапка-карточка успеха */}
-          <motion.div initial={{ opacity: 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.26, delay: reduced ? 0 : 0.12, ease: [0.22, 1, 0.36, 1] }} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
+          <motion.div initial={{ opacity: 0, y: reduced ? 0 : motionDistance.success }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : motionTiming.success, delay: reduced ? 0 : motionTiming.successDelay, ease: motionEase }} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-6 border border-[#E8E2D5] dark:border-dark-border mb-3 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
             </div>

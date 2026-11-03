@@ -1,3 +1,4 @@
+import { motionDistance, motionEaseCSS, motionTiming } from '../lib/motion'
 import { preloadPage } from '../lib/pagePreload'
 import { clearProductNames, installProductIntent, prepareProductTransition } from '../lib/productTransition'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -32,7 +33,6 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     const modalOnly = samePath && !sectionChanged
     let transition: ViewTransition | undefined
     let animations: Animation[] = []
-    let frame = 0
     const interrupt = () => transition?.skipTransition()
     const stopListening = () => {
       window.removeEventListener('wheel', interrupt)
@@ -69,22 +69,19 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
         return
       }
       apply()
-      frame = requestAnimationFrame(() => {
-        if (generation.current !== current) return
-        // Never transform ancestors of fixed headers, navigation or dialogs.
-        const content = Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]'))
-          .filter(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal'))
-        animations = content.map(element => element.animate(
-          sectionChanged ? [{ opacity: 0, translate: `${backwards ? -16 : 16}px 0` }, { opacity: 1, translate: '0 0' }] : [{ opacity: 0 }, { opacity: 1 }],
-          { duration: sectionChanged ? 230 : 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }))
-      })
+      if (generation.current !== current) return
+      // Never transform ancestors of fixed headers, navigation or dialogs.
+      const content = Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]'))
+        .filter(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal'))
+      animations = content.map(element => element.animate(
+        sectionChanged ? [{ opacity: 0, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }] : [{ opacity: 0.65 }, { opacity: 1 }],
+        { duration: (sectionChanged ? motionTiming.section : motionTiming.page) * 1000, easing: motionEaseCSS }))
     })
     return () => {
       generation.current++
       transition?.skipTransition()
       stopListening()
       animations.forEach(animation => animation.cancel())
-      cancelAnimationFrame(frame)
       clearProductNames()
       delete document.documentElement.dataset.loftMotion
     }

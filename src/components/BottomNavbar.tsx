@@ -67,7 +67,7 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
         <div ref={pill} className="relative flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
-          <span aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[220ms]" style={{ left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
+          <span aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[250ms]" style={{ transitionTimingFunction: 'var(--loft-motion-ease)', left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id

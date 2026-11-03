@@ -1,3 +1,4 @@
+import { motionEase, motionTiming } from '../lib/motion'
 import ProductPhotoViewer from '../components/ProductPhotoViewer'
 import { getOpeningPhoto } from '../lib/productTransition'
 import { useDecodedImage } from '../lib/useDecodedImage'
@@ -23,6 +24,7 @@ export default function ProductPage() {
   const { id } = useParams()
   const reduced = useReducedMotion()
   const adding = useRef(false)
+  const cartFeedbackStarted = useRef(false)
   const addedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [cartState, setCartState] = useState<'idle' | 'checking' | 'added'>('idle')
   useEffect(() => () => clearTimeout(addedTimer.current), [])
@@ -78,6 +80,7 @@ export default function ProductPage() {
     const cachedSizes = getCachedSizes(id)
     setOpeningPhoto(getOpeningPhoto(id))
     clearTimeout(addedTimer.current)
+    cartFeedbackStarted.current = false
     setCartState('idle')
     setProduct(cachedProduct)
     setLoading(!cachedProduct)
@@ -196,6 +199,7 @@ export default function ProductPage() {
     }
 
     const sizeToAdd = product.size_type === 'one_size' ? 'One Size' : (selectedSize || '')
+    cartFeedbackStarted.current = true
     adding.current = true
     setCartState('checking')
     try {
@@ -557,7 +561,7 @@ export default function ProductPage() {
                 : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
             }`}
           >
-            <motion.span key={cartState} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.12 }} className="inline-flex items-center justify-center gap-2">            {cartState === 'checking' ? <LoaderCircle size={20} className="animate-spin" /> : cartState === 'added' ? <Check size={20} /> : <ShoppingCart size={20} />}
+            <motion.span key={cartState} initial={cartFeedbackStarted.current ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : motionTiming.feedback, ease: motionEase }} className="inline-flex items-center justify-center gap-2">            {cartState === 'checking' ? <LoaderCircle size={20} className="animate-spin" /> : cartState === 'added' ? <Check size={20} /> : <ShoppingCart size={20} />}
             {cartState === 'checking' ? (language === 'ru' ? 'Проверяем...' : 'Tekshirilmoqda...') : cartState === 'added' ? (language === 'ru' ? 'Добавлено' : 'Qo‘shildi') : sizesLoading
               ? (language === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
               : sizes.length === 0
@@ -576,7 +580,7 @@ export default function ProductPage() {
 
       <AnimatePresence onExitComplete={() => setViewerActive(false)}>{showFullScreen && (
         <ProductPhotoViewer key="photo-viewer" src={images[fullScreenImageIndex]} aspect={viewerAspect}>
-          <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
+          <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : motionTiming.feedback, ease: motionEase }}
             data-loft-dismiss
             onClick={closeFullScreen}
             className="absolute top-4 right-4 text-white z-50 bg-black/50 rounded-full p-2"
@@ -585,13 +589,13 @@ export default function ProductPage() {
           </motion.button>
           {images.length > 1 && (
             <>
-              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
+              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : motionTiming.feedback, ease: motionEase }}
                 onClick={fullScreenPrev}
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
               >
                 <ChevronLeft size={32} />
               </motion.button>
-              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.18 }}
+              <motion.button style={{ transitionProperty: 'scale, background-color, color' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : motionTiming.feedback, ease: motionEase }}
                 onClick={fullScreenNext}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full p-3 z-50"
               >

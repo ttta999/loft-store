@@ -1,3 +1,4 @@
+import { motionDistance, motionEase, motionExitEase, motionTiming } from '../lib/motion'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
@@ -240,9 +241,9 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.23, ease: [0.22, 1, 0.36, 1] }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1, transition: { duration: reduced ? 0 : motionTiming.detailClose } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      <motion.div initial={{ opacity: 0, x: reduced ? 0 : 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : 12 }} transition={{ duration: reduced ? 0 : 0.23, ease: [0.22, 1, 0.36, 1] }} className="flex-1 overflow-y-auto p-4 pb-32">
+      <motion.div initial={{ opacity: 0, x: reduced ? 0 : motionDistance.section }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : motionDistance.dismiss, transition: { duration: reduced ? 0 : motionTiming.detailClose, ease: motionExitEase } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -657,9 +658,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   }
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.23, ease: [0.22, 1, 0.36, 1] }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1, transition: { duration: reduced ? 0 : motionTiming.detailClose } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      <motion.div initial={{ opacity: 0, x: reduced ? 0 : 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : 12 }} transition={{ duration: reduced ? 0 : 0.23, ease: [0.22, 1, 0.36, 1] }} className="flex-1 overflow-y-auto p-4 pb-32">
+      <motion.div initial={{ opacity: 0, x: reduced ? 0 : motionDistance.section }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : motionDistance.dismiss, transition: { duration: reduced ? 0 : motionTiming.detailClose, ease: motionExitEase } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} className="flex-1 overflow-y-auto p-4 pb-32">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -1614,6 +1615,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={order.id}
+                    data-loft-pressable
                     onClick={() => openOrder(order.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
@@ -1714,6 +1716,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={request.id}
+                    data-loft-pressable
                     onClick={() => openChinaRequest(request.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >

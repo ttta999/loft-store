@@ -9,7 +9,6 @@ let openingPhoto: { id: string; src: string } | null = null
 export const getOpeningPhoto = (id?: string) => openingPhoto && openingPhoto.id === id ? openingPhoto.src : undefined
 const origins = new Map<string, Origin>()
 const photoName = 'loft-product-photo'
-export const motionEase = [0.22, 1, 0.36, 1] as const
 
 function visible(image: HTMLImageElement | null): image is HTMLImageElement {
   if (!image?.complete || !image.naturalWidth || !image.isConnected || getComputedStyle(image).visibility === 'hidden') return false
