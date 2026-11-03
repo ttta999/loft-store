@@ -3,7 +3,7 @@ import { cacheProduct } from './productCache'
 import { warmPage } from './pagePreload'
 
 type Page = { key: string; pathname: string; search: string }
-type Origin = { id: string; key: string; index: number; src: string }
+type Origin = { id: string; key: string; index: number; placement?: string; src: string }
 let intent: Origin | null = null
 let openingPhoto: { id: string; src: string } | null = null
 export const getOpeningPhoto = (id?: string) => openingPhoto && openingPhoto.id === id ? openingPhoto.src : undefined
@@ -16,6 +16,10 @@ function visible(image: HTMLImageElement | null): image is HTMLImageElement {
   return rect.width > 0 && rect.bottom > 0 && rect.top < innerHeight
 }
 function cards(id: string) { return Array.from(document.querySelectorAll<HTMLElement>('[data-product-card]')).filter(card => card.dataset.productCard === id) }
+function originCard(origin: Origin) {
+  const matches = cards(origin.id)
+  return origin.placement ? matches.find(card => card.dataset.productPlacement === origin.placement) : matches[origin.index]
+}
 function radius(image: HTMLImageElement) {
   const own = getComputedStyle(image).borderRadius
   return own !== '0px' ? own : '16px 16px 0px 0px'
@@ -28,6 +32,7 @@ function markContent() {
 }
 export function clearProductNames() {
   if (openingPhoto) { openingPhoto = null; window.dispatchEvent(new Event('loft:product-photo-end')) }
+  delete document.documentElement.dataset.loftPhotoCrossfade
   document.documentElement.style.removeProperty('--loft-photo-from-radius')
   document.documentElement.style.removeProperty('--loft-photo-to-radius')
   document.querySelectorAll('[data-loft-snapshot]').forEach(element => element.removeAttribute('data-loft-snapshot'))
@@ -44,7 +49,7 @@ export function installProductIntent(location: () => Page) {
     if (event.type !== 'click' || !visible(image)) return
     const product = useStore.getState().productsCache?.items.find(item => item.id === card.dataset.productCard)
     if (product) cacheProduct(product)
-    intent = { id: card.dataset.productCard!, key: location().key, index: cards(card.dataset.productCard!).indexOf(card), src: image.currentSrc || image.src }
+    intent = { id: card.dataset.productCard!, key: location().key, index: cards(card.dataset.productCard!).indexOf(card), placement: card.dataset.productPlacement, src: image.currentSrc || image.src }
   }
   document.addEventListener('click', capture, true)
   document.addEventListener('pointerover', capture, { passive: true })
@@ -57,8 +62,8 @@ export function prepareProductTransition(from: Page, to: Page) {
   const forward = !!openingId && !!origin && origin.id === openingId && origin.key === from.key
   const returning = !openingId && from.pathname.startsWith('/product/') && !!origin && origin.key === to.key
   if (!origin || (!forward && !returning)) return null
-  const source = forward ? cards(origin.id)[origin.index]?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
-  if (!visible(source) || (source.currentSrc || source.src) !== origin.src) return null
+  const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
+  if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) return null
   document.documentElement.style.setProperty('--loft-photo-from-radius', radius(source))
   markContent()
   mark(source)
@@ -71,11 +76,12 @@ export function prepareProductTransition(from: Page, to: Page) {
   return {
     async finish(valid: () => boolean) {
       markContent()
-      const target = forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : cards(origin.id)[origin.index]?.querySelector<HTMLImageElement>('img')
+      const target = forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : originCard(origin)?.querySelector<HTMLImageElement>('img')
       if (!target) return false
       // Decode the same cached photo before taking the destination snapshot.
       await Promise.race([target.decode().catch(() => {}), new Promise(resolve => setTimeout(resolve, 180))])
-      if (!valid() || !visible(target) || (target.currentSrc || target.src) !== origin.src) return false
+      if (!valid() || !visible(target) || (forward && (target.currentSrc || target.src) !== origin.src)) return false
+      if ((target.currentSrc || target.src) !== (source.currentSrc || source.src)) document.documentElement.dataset.loftPhotoCrossfade = 'true'
       document.documentElement.style.setProperty('--loft-photo-to-radius', radius(target))
       mark(target)
       return true

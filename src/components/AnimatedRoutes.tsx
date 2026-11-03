@@ -1,6 +1,7 @@
 import { motionDistance, motionEaseCSS, motionTiming } from '../lib/motion'
 import { preloadPage } from '../lib/pagePreload'
 import { clearProductNames, installProductIntent, prepareProductTransition } from '../lib/productTransition'
+import { clearProfileNames, prepareProfileTransition } from '../lib/profileTransition'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
@@ -30,7 +31,8 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     historyIndex.current = index
     const samePath = displayed.pathname === location.pathname
     const sectionChanged = new URLSearchParams(displayed.search).get('section') !== new URLSearchParams(location.search).get('section')
-    const modalOnly = samePath && !sectionChanged
+    const detailChanged = samePath && location.pathname === '/profile' && displayed.search !== location.search
+    const modalOnly = samePath && !sectionChanged && !detailChanged
     let transition: ViewTransition | undefined
     let animations: Animation[] = []
     const interrupt = () => transition?.skipTransition()
@@ -47,12 +49,14 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
       const photo = typeof document.startViewTransition === 'function' ? prepareProductTransition(displayed, location) : null
-      if (photo) {
-        document.documentElement.dataset.loftMotion = 'product'
+      const profile = !photo && typeof document.startViewTransition === 'function' ? prepareProfileTransition(displayed, location) : null
+      const shared = photo || profile
+      if (shared) {
+        document.documentElement.dataset.loftMotion = photo ? 'product' : 'profile'
         transition = document.startViewTransition(async () => {
           apply()
           if (generation.current !== current) return
-          const matched = await photo.finish(() => generation.current === current)
+          const matched = await shared.finish(() => generation.current === current)
           if (generation.current === current && !matched) document.documentElement.dataset.loftMotion = 'dissolve'
         })
         window.addEventListener('wheel', interrupt, { passive: true })
@@ -64,6 +68,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
           stopListening()
           if (generation.current !== current) return
           clearProductNames()
+          clearProfileNames()
           delete document.documentElement.dataset.loftMotion
         }).catch(() => {})
         return
@@ -73,8 +78,10 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       // Never transform ancestors of fixed headers, navigation or dialogs.
       const content = Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]'))
         .filter(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal'))
+      const detail = document.querySelector<HTMLElement>('[data-profile-detail-content]')
+      if (detail) content.splice(0, content.length, detail)
       animations = content.map(element => element.animate(
-        sectionChanged ? [{ opacity: 0, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }] : [{ opacity: 0.65 }, { opacity: 1 }],
+        sectionChanged || detailChanged ? [{ opacity: 0.6, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }] : [{ opacity: 0.96, translate: '0 6px' }, { opacity: 1, translate: '0 0' }],
         { duration: (sectionChanged ? motionTiming.section : motionTiming.page) * 1000, easing: motionEaseCSS }))
     })
     return () => {
@@ -83,6 +90,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       stopListening()
       animations.forEach(animation => animation.cancel())
       clearProductNames()
+      clearProfileNames()
       delete document.documentElement.dataset.loftMotion
     }
     // displayed is the last committed route, rather than an animation dependency.

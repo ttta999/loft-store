@@ -118,4 +118,17 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 
 .lucide-check { animation: loft-fade-in var(--loft-feedback-duration) ease-out; }
 
+/* Profile tiles and rows retain a spatial link to their destination card.
+   Only these surfaces/icons move; headers and navigation remain in the root. */
+:root[data-loft-motion="profile"] [data-profile-snapshot] { view-transition-name: loft-content; }
+::view-transition-group(loft-profile-surface), ::view-transition-group(loft-profile-icon) { animation-duration: var(--loft-photo-duration); animation-timing-function: var(--loft-photo-ease); z-index: 3; }
+::view-transition-group(loft-profile-icon) { z-index: 4; }
+::view-transition-image-pair(loft-profile-surface) { isolation: isolate; overflow: clip; border-radius: 16px; }
+::view-transition-old(loft-profile-surface) { animation: loft-fade-out 140ms ease-out both; }
+::view-transition-new(loft-profile-surface) { animation: loft-fade-in 200ms var(--loft-motion-ease) 60ms both; }
+::view-transition-old(loft-profile-icon) { display: none; }
+::view-transition-new(loft-profile-icon) { animation: none; }
+:root[data-loft-photo-crossfade]::view-transition-old(loft-product-photo) { display: block; animation: loft-fade-out 180ms ease-out both; }
+:root[data-loft-photo-crossfade]::view-transition-new(loft-product-photo) { animation: loft-fade-in 180ms ease-out both; }
+
 @keyframes loft-photo-radius { from { border-radius: var(--loft-photo-from-radius, 16px); } to { border-radius: var(--loft-photo-to-radius, 16px); } }

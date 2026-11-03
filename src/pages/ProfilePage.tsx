@@ -1,5 +1,3 @@
-import { motionDistance, motionEase, motionExitEase, motionTiming } from '../lib/motion'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
@@ -71,14 +69,14 @@ const useBodyScrollLock = (active: boolean) => {
 }
 
 // ✅ Шапка-карточка списка: заголовок + подпись + иконка справа (как шапка заказа)
-function ListHeaderCard({ title, subtitle, icon }: { title: string; subtitle: string; icon: React.ReactNode }) {
+function ListHeaderCard({ title, subtitle, icon, transitionKey }: { title: string; subtitle: string; icon: React.ReactNode; transitionKey: string }) {
   return (
-    <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+    <div data-profile-surface={transitionKey} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
       <div className="min-w-0">
         <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{title}</h2>
         <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{subtitle}</p>
       </div>
-      <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+      <div data-profile-icon className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
         {icon}
       </div>
     </div>
@@ -98,18 +96,19 @@ function EmptyStateCard({ icon, text }: { icon: React.ReactNode; text: string })
 }
 
 // ✅ Квадратная плитка меню профиля (сетка 2×2)
-function MenuTile({ icon, title, subtitle, onClick }: {
+function MenuTile({ icon, title, subtitle, onClick, transitionKey }: {
+  transitionKey: string
   icon: React.ReactNode
   title: string
   subtitle: string
   onClick: () => void
 }) {
   return (
-    <button
+    <button data-profile-link={transitionKey}
       onClick={onClick}
       className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4 flex flex-col items-start gap-3 text-left hover:shadow-md transition-shadow"
     >
-      <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+      <div data-profile-icon className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
         {icon}
       </div>
       <div className="min-w-0">
@@ -122,7 +121,6 @@ function MenuTile({ icon, title, subtitle, onClick }: {
 
 function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
   useBodyScrollLock(true)
-  const reduced = useReducedMotion()
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
@@ -241,10 +239,10 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1, transition: { duration: reduced ? 0 : motionTiming.detailClose } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      <motion.div initial={{ opacity: 0, x: reduced ? 0 : motionDistance.section }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : motionDistance.dismiss, transition: { duration: reduced ? 0 : motionTiming.detailClose, ease: motionExitEase } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} className="flex-1 overflow-y-auto p-4 pb-32">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
+      <div data-profile-detail-content className="flex-1 overflow-y-auto p-4 pb-32">
+        <div data-profile-surface={`order:${order.id}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
@@ -536,28 +534,33 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
             )}
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {showScreenshotModal && order.payment_screenshot_url && (
+      <AnimatePresence>{showScreenshotModal && order.payment_screenshot_url && (
         <ScreenshotViewer
+          key="receipt"
           url={order.payment_screenshot_url}
           language={language}
           onClose={() => setShowScreenshotModal(false)}
         />
-      )}
-    </motion.div>
+      )}</AnimatePresence>
+    </div>
   )
 }
 
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useBodyScrollLock(true)
+  const reduced = useReducedMotion()
   return (
-    <div
+    <motion.div role="dialog" aria-label="Просмотр чека" aria-modal="true"
+      initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: reduced ? 0 : motionTiming.viewerClose, ease: motionEase }}
       className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="relative max-w-4xl w-full flex items-center justify-center">
+      <motion.div initial={{ scale: reduced ? 1 : 0.985 }} animate={{ scale: 1 }} exit={{ scale: reduced ? 1 : 0.985 }} transition={{ duration: reduced ? 0 : motionTiming.viewerOpen, ease: motionEase }} className="relative max-w-4xl w-full flex items-center justify-center">
         <button
+          data-loft-dismiss
           onClick={onClose}
           className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
         >
@@ -571,8 +574,8 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
           style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -580,7 +583,6 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 // ✅ + кнопка отмены для статусов «На рассмотрении» и «Оценён»
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCancel, exchangeRate }: any) {
   useBodyScrollLock(true)
-  const reduced = useReducedMotion()
   const [cancelling, setCancelling] = useState(false)
 
   const formatDateTime = (dateStr: string) =>
@@ -658,10 +660,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   }
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 1, transition: { duration: reduced ? 0 : motionTiming.detailClose } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <div role="dialog" aria-modal="true" className="loft-modal loft-detail fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
-      <motion.div initial={{ opacity: 0, x: reduced ? 0 : motionDistance.section }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : motionDistance.dismiss, transition: { duration: reduced ? 0 : motionTiming.detailClose, ease: motionExitEase } }} transition={{ duration: reduced ? 0 : motionTiming.section, ease: motionEase }} className="flex-1 overflow-y-auto p-4 pb-32">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
+      <div data-profile-detail-content className="flex-1 overflow-y-auto p-4 pb-32">
+        <div data-profile-surface={`request:${request.id}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
@@ -889,8 +891,8 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
             </div>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }
 
@@ -1232,24 +1234,28 @@ export default function ProfilePage() {
                   ? `${favorites.length} ${getItemsLabel(favorites.length, language)}`
                   : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
               }
+              transitionKey="favorites"
               onClick={() => openSection('favorites')}
             />
             <MenuTile
               icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
               title={language === 'ru' ? 'Заказы' : 'Buyurtmalar'}
               subtitle={language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
+              transitionKey="orders"
               onClick={() => openSection('orders')}
             />
             <MenuTile
               icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
               title={language === 'ru' ? 'Спецзаказы' : 'Maxsus buyurtmalar'}
               subtitle={language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
+              transitionKey="china"
               onClick={() => openSection('china')}
             />
             <MenuTile
               icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
               title={language === 'ru' ? 'Настройки' : 'Sozlamalar'}
               subtitle={`${language.toUpperCase()} · ${currency}`}
+              transitionKey="settings"
               onClick={() => openSection('settings')}
             />
           </div>
@@ -1339,7 +1345,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
-          <ListHeaderCard
+          <ListHeaderCard transitionKey="settings"
             title={language === 'ru' ? 'Настройки' : 'Sozlamalar'}
             subtitle={language === 'ru' ? 'Язык, валюта, тема и документы' : 'Til, valyuta, mavzu va hujjatlar'}
             icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
@@ -1476,6 +1482,7 @@ export default function ProfilePage() {
           {/* ✅ Документы: единая карточка со строками-ссылками */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
             <button
+              data-profile-link="privacy"
               onClick={() => navigate('/privacy')}
               className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
@@ -1493,6 +1500,7 @@ export default function ProfilePage() {
               <ChevronRight size={20} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
             </button>
             <button
+              data-profile-link="terms"
               onClick={() => navigate('/terms')}
               className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
@@ -1520,7 +1528,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
-          <ListHeaderCard
+          <ListHeaderCard transitionKey="favorites"
             title={language === 'ru' ? 'Избранное' : 'Sevimlilar'}
             subtitle={
               favorites.length > 0
@@ -1587,7 +1595,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
-          <ListHeaderCard
+          <ListHeaderCard transitionKey="orders"
             title={language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
             subtitle={
               orders.length > 0
@@ -1616,6 +1624,7 @@ export default function ProfilePage() {
                   <div
                     key={order.id}
                     data-loft-pressable
+                    data-profile-link={`order:${order.id}`}
                     onClick={() => openOrder(order.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
@@ -1664,7 +1673,7 @@ export default function ProfilePage() {
               })}
             </div>
           )}
-          <AnimatePresence initial={false}>{selectedOrder && (
+          {selectedOrder && (
             <OrderDetailModal
               order={selectedOrder}
               onClose={() => navigate(-1)}
@@ -1673,7 +1682,7 @@ export default function ProfilePage() {
               onCancelOrder={handleCancelOrder}
               onScreenshotUploaded={() => handleScreenshotUploaded(selectedOrder)}
             />
-          )}</AnimatePresence>
+          )}
         </div>
       </div>
     )
@@ -1684,7 +1693,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
-          <ListHeaderCard
+          <ListHeaderCard transitionKey="china"
             title={language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
             subtitle={
               chinaRequests.length > 0
@@ -1717,6 +1726,7 @@ export default function ProfilePage() {
                   <div
                     key={request.id}
                     data-loft-pressable
+                    data-profile-link={`request:${request.id}`}
                     onClick={() => openChinaRequest(request.id)}
                     className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   >
@@ -1763,7 +1773,7 @@ export default function ProfilePage() {
               })}
             </div>
           )}
-          <AnimatePresence initial={false}>{selectedChinaRequest && (
+          {selectedChinaRequest && (
             <ChinaRequestDetailModal
               request={selectedChinaRequest}
               onClose={() => navigate(-1)}
@@ -1772,7 +1782,7 @@ export default function ProfilePage() {
               onAccept={handleAcceptSpecialOrder}
               onCancel={handleCancelChinaRequest}
             />
-          )}</AnimatePresence>
+          )}
         </div>
       </div>
     )
@@ -1780,3 +1790,5 @@ export default function ProfilePage() {
 
   return null
 }
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { motionEase, motionTiming } from '../lib/motion'

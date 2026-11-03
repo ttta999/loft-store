@@ -218,7 +218,7 @@ export default function PrivacyPage() {
 
       <div data-loft-content className="p-4">
         {/* ✅ Шапка-карточка документа */}
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+        <div data-profile-surface="privacy" className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{t.title}</h1>
             <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{t.subtitle}</p>
