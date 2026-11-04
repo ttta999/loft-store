@@ -12,21 +12,14 @@ function visible(element?: HTMLElement) {
   const rect = element.getBoundingClientRect()
   return rect.width > 0 && rect.height > 0 && rect.bottom > 72 && rect.top < innerHeight - 90
 }
-function markContent() {
-  document.querySelectorAll('[data-profile-snapshot]').forEach(element => element.removeAttribute('data-profile-snapshot'))
-  const content = document.querySelector<HTMLElement>('[data-profile-detail-content]') ||
-    Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]')).find(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal'))
-  content?.setAttribute('data-profile-snapshot', 'true')
-}
 function mark(element: HTMLElement) {
   element.style.viewTransitionName = surfaceName
   const icon = element.querySelector<HTMLElement>('[data-profile-icon]')
   if (icon) icon.style.viewTransitionName = iconName
-  markContent()
 }
-export function clearProfileNames() {
+export function clearProfileNames(keepMetrics = false) {
+  if (!keepMetrics) for (const name of ['source-width', 'source-height', 'target-width', 'target-height']) document.documentElement.style.removeProperty(`--loft-surface-${name}`)
   document.querySelectorAll<HTMLElement>('[style*="loft-profile-"]').forEach(element => element.style.removeProperty('view-transition-name'))
-  document.querySelectorAll('[data-profile-snapshot]').forEach(element => element.removeAttribute('data-profile-snapshot'))
 }
 
 /** Pair the selected tile/row with its destination card, never the fixed app chrome. */
@@ -51,6 +44,9 @@ export function prepareProfileTransition(from: Page, to: Page) {
   if (!origin) return null
   const source = find(returning ? 'data-profile-surface' : 'data-profile-link', origin.item)
   if (!source || !visible(source)) return null
+  const sourceRect = source.getBoundingClientRect()
+  document.documentElement.style.setProperty('--loft-surface-source-width', `${sourceRect.width}px`)
+  document.documentElement.style.setProperty('--loft-surface-source-height', `${sourceRect.height}px`)
   mark(source)
   if (!returning) {
     origins.set(to.key, origin)
@@ -62,7 +58,10 @@ export function prepareProfileTransition(from: Page, to: Page) {
       if (!valid() || !target || !visible(target)) return false
       // Detail dialogs keep their source list mounted behind them.
       // Remove its live name before naming the destination snapshot.
-      clearProfileNames()
+      clearProfileNames(true)
+      const targetRect = target.getBoundingClientRect()
+      document.documentElement.style.setProperty('--loft-surface-target-width', `${targetRect.width}px`)
+      document.documentElement.style.setProperty('--loft-surface-target-height', `${targetRect.height}px`)
       mark(target)
       return true
     },

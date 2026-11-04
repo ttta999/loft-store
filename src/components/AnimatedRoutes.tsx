@@ -2,16 +2,17 @@ import { motionDistance, motionEaseCSS, motionTiming } from '../lib/motion'
 import { preloadPage } from '../lib/pagePreload'
 import { clearProductNames, installProductIntent, prepareProductTransition } from '../lib/productTransition'
 import { clearProfileNames, prepareProfileTransition } from '../lib/profileTransition'
+import { captureTransitionChrome, clearTransitionChrome } from '../lib/transitionChrome'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
-import ScrollRestoration from './ScrollRestoration'
+import ScrollRestoration, { captureScrollPosition } from './ScrollRestoration'
 
 function RouteFrame() {
   return <><ScrollRestoration /><Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-label="Загрузка"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /></div>}><Outlet /></Suspense></>
 }
 
-/** Chrome stays in the live DOM. Only product photos use document snapshots. */
+/** Shared elements move; destination chrome has static, unmatched snapshots. */
 export default function AnimatedRoutes({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigationType = useNavigationType()
@@ -41,8 +42,15 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       window.removeEventListener('touchstart', interrupt)
       window.removeEventListener('pointerdown', interrupt)
     }
-    const apply = () => { if (generation.current === current) flushSync(() => setDisplayed(location)) }
+    let applied = false
+    const apply = () => {
+      if (generation.current !== current || applied) return
+      applied = true
+      captureScrollPosition(displayed.key)
+      flushSync(() => setDisplayed(location))
+    }
     if (modalOnly || reduced || location.pathname === '/login' || displayed.pathname === '/login') {
+      captureScrollPosition(displayed.key)
       setDisplayed(location)
       return
     }
@@ -57,6 +65,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
           apply()
           if (generation.current !== current) return
           const matched = await shared.finish(() => generation.current === current)
+          if (generation.current === current) captureTransitionChrome()
           if (generation.current === current && !matched) document.documentElement.dataset.loftMotion = 'dissolve'
         })
         window.addEventListener('wheel', interrupt, { passive: true })
@@ -69,7 +78,9 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
           if (generation.current !== current) return
           clearProductNames()
           clearProfileNames()
+          clearTransitionChrome()
           delete document.documentElement.dataset.loftMotion
+          window.dispatchEvent(new Event('loft:transition-end'))
         }).catch(() => {})
         return
       }
@@ -80,9 +91,16 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
         .filter(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal'))
       const detail = document.querySelector<HTMLElement>('[data-profile-detail-content]')
       if (detail) content.splice(0, content.length, detail)
-      animations = content.map(element => element.animate(
-        sectionChanged || detailChanged ? [{ opacity: 0.6, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }] : [{ opacity: 0.96, translate: '0 6px' }, { opacity: 1, translate: '0 0' }],
-        { duration: (sectionChanged ? motionTiming.section : motionTiming.page) * 1000, easing: motionEaseCSS }))
+      animations = content.map(element => {
+        const opacity = sectionChanged || detailChanged ? 0.6 : 0.96
+        // A transform changes the containing block of fixed descendants.
+        // Keep unknown fixed/sticky surfaces anchored even if a page omits a leaf marker.
+        const fixed = element.querySelector('.fixed, .sticky')
+        const frames = fixed ? [{ opacity }, { opacity: 1 }] : sectionChanged || detailChanged
+          ? [{ opacity, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }]
+          : [{ opacity, translate: '0 6px' }, { opacity: 1, translate: '0 0' }]
+        return element.animate(frames, { duration: motionTiming.page * 1000, easing: motionEaseCSS })
+      })
     })
     return () => {
       generation.current++
@@ -91,7 +109,9 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       animations.forEach(animation => animation.cancel())
       clearProductNames()
       clearProfileNames()
+      clearTransitionChrome()
       delete document.documentElement.dataset.loftMotion
+      window.dispatchEvent(new Event('loft:transition-end'))
     }
     // displayed is the last committed route, rather than an animation dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps

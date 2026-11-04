@@ -6,6 +6,14 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 }
 
 const STORAGE_KEY = 'loft-scroll-positions'
+const capturedPositions = new Map<string, number>()
+
+// Scroll events can arrive after a tap/route commit in iOS. Read the live
+// position before React replaces the outgoing page or the browser clamps it.
+export function captureScrollPosition(key: string) {
+  capturedPositions.set(key, window.scrollY)
+  while (capturedPositions.size > 100) capturedPositions.delete(capturedPositions.keys().next().value!)
+}
 
 const getSavedPositions = (): Record<string, number> => {
   try {
@@ -39,6 +47,7 @@ export default function ScrollRestoration() {
     const sameProfileList = prev.pathname === '/profile' && location.pathname === '/profile'
       && new URLSearchParams(prev.search).get('section') === new URLSearchParams(location.search).get('section')
     if (sameProfileList) {
+      capturedPositions.delete(prev.key)
       prevLocRef.current = location
       return
     }
@@ -47,7 +56,8 @@ export default function ScrollRestoration() {
     if (prev.key !== location.key) {
       // СОХРАНЯЕМ позицию старой страницы до того, как сбросим её
       const positions = getSavedPositions()
-      positions[prev.key] = scrollPosRef.current
+      positions[prev.key] = capturedPositions.get(prev.key) ?? scrollPosRef.current
+      capturedPositions.delete(prev.key)
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(positions))
 
       // ВОССТАНАВЛИВАЕМ или СБРАСЫВАЕМ для новой страницы

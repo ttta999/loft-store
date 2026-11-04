@@ -51,7 +51,7 @@ test('первый кадр страницы не исчезает полнос�
   await page.goto(STORE)
   await page.evaluate(() => {
     const observer = new MutationObserver(() => {
-      const content = document.querySelector('main[data-loft-content]')
+      const content = Array.from(document.querySelectorAll('[data-loft-content]')).find(element => !element.querySelector('[data-loft-content]') && element.textContent?.includes('Корзина пуста'))
       if (!content?.textContent?.includes('Корзина пуста')) return
       observer.disconnect()
       requestAnimationFrame(() => { (window as any).firstCartOpacity = Number.parseFloat(getComputedStyle(content).opacity) })

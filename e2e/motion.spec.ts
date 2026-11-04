@@ -76,7 +76,7 @@ test('возврат пролистывает назад, нажатие кно�
   await page.keyboard.up('Space')
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await expect(button).toHaveCSS('transition-duration', '1e-05s')
+  await expect.poll(() => button.evaluate(element => Number.parseFloat(getComputedStyle(element).transitionDuration))).toBe(0.00001)
 })
 
 test('админка: повторное открытие списка использует кеш; остальные страницы загружаются отдельными модулями', async ({ page, harness }) => {

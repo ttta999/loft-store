@@ -65,7 +65,6 @@ export function prepareProductTransition(from: Page, to: Page) {
   const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
   if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) return null
   document.documentElement.style.setProperty('--loft-photo-from-radius', radius(source))
-  markContent()
   mark(source)
   if (forward) {
     openingPhoto = { id: origin.id, src: origin.src }

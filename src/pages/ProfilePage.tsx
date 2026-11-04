@@ -44,6 +44,7 @@ import {
   uploadPaymentScreenshot,
 } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
+import IntrinsicImage from '../components/IntrinsicImage'
 
 const SOCIAL_LINKS = {
   telegram: 'https://t.me/Loft_mens_shop',
@@ -744,10 +745,9 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
             <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-2 px-1">
               {language === 'ru' ? 'Фото товара' : 'Mahsulot fotosurati'}
             </h3>
-            <img
+            <IntrinsicImage
               src={request.image_url}
               alt="Product"
-              className="w-full rounded-xl border border-[#E8E2D5] dark:border-dark-border"
             />
           </div>
         )}

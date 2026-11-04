@@ -37,3 +37,5 @@ bot-token.txt
 # Isolated browser test artifacts
 /playwright-report/
 /test-results/
+/playwright-report-webkit/
+/test-results-webkit/

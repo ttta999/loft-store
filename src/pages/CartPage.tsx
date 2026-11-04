@@ -117,7 +117,7 @@ export default function CartPage() {
   if (cart.length === 0 && !showCheckout) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <div className="p-4">
+        <div data-loft-content className="p-4">
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{language === 'ru' ? 'Корзина' : 'Savat'}</h1>
@@ -146,7 +146,7 @@ export default function CartPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-56">
       {/* ✅ Тосты в текущей теме */}
 
-      <div className="p-4">
+      <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{language === 'ru' ? 'Корзина' : 'Savat'}</h1>
