@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
@@ -22,6 +22,7 @@ const getItemsLabelRu = (count: number): string => {
 }
 
 const HomeProductCard = memo(function HomeProductCard({ product, placement }: { product: any; placement: string }) {
+  const navigate = useNavigate()
   const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites } = useStore(useShallow(state => ({ language: state.language, currency: state.currency, exchangeRate: state.exchangeRate, saleModeEnabled: state.saleModeEnabled, addToFavorites: state.addToFavorites, removeFromFavorites: state.removeFromFavorites })))
   const formatPrice = (usd: number) => currency === 'USD' ? `$${usd}` : `${(usd * exchangeRate).toLocaleString()} сум`
   const onSale = isProductOnSale(product, saleModeEnabled)
@@ -33,11 +34,19 @@ const HomeProductCard = memo(function HomeProductCard({ product, placement }: { 
   const favorite = useStore(state => state.favorites.some(item => item.productId === product.id))
 
   return (
-    <Link data-product-placement={`${placement}:${product.id}`} data-product-card={product.id} to={`/product/${product.id}`} className="block">
-      <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border hover:shadow-md transition-shadow cursor-pointer">
+    <div
+      data-product-placement={`${placement}:${product.id}`} data-product-card={product.id}
+      role="link" tabIndex={0}
+      onClick={() => navigate(`/product/${product.id}`)}
+      onKeyDown={event => {
+        if (event.key === 'Enter' && event.target === event.currentTarget) {
+          event.preventDefault()
+          event.currentTarget.click()
+        }
+      }}
+      className="self-start bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border hover:shadow-md transition-shadow cursor-pointer">
         <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
           <img
-            loading="lazy" decoding="async"
             src={product.images?.[0] || 'https://via.placeholder.com/500'}
             alt={language === 'ru' ? product.name_ru : product.name_uz}
             className="w-full h-full object-cover"
@@ -51,7 +60,6 @@ const HomeProductCard = memo(function HomeProductCard({ product, placement }: { 
 
           <button
             onClick={(e) => {
-              e.preventDefault()
               e.stopPropagation()
               if (favorite) {
                 removeFromFavorites(product.id)
@@ -97,8 +105,7 @@ const HomeProductCard = memo(function HomeProductCard({ product, placement }: { 
             {formatPrice(effectivePrice)}
           </span>
         </div>
-      </div>
-    </Link>
+    </div>
   )
 })
 
