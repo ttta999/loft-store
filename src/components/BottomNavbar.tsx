@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { warmPage } from '../lib/pagePreload'
 import { useNavigate } from 'react-router-dom'
 import { Home, ShoppingCart, Globe, User } from 'lucide-react'
@@ -20,7 +21,7 @@ const TAB_PATHS: Record<TabType, string> = {
 }
 
 export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
-  const { language, cart } = useStore()
+  const { language, cart } = useStore(useShallow(state => ({ language: state.language, cart: state.cart })))
   const navigate = useNavigate()
   const pill = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
@@ -67,13 +68,14 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
         <div ref={pill} className="relative flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
-          <span aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[250ms]" style={{ transitionTimingFunction: 'var(--loft-motion-ease)', left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
+          <span data-nav-indicator aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[250ms]" style={{ transitionTimingFunction: 'var(--loft-motion-ease)', left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
+                data-nav-tab={tab.id}
                 data-active={isActive}
                 onPointerEnter={() => warmPage(TAB_PATHS[tab.id])}
               onPointerDown={() => warmPage(TAB_PATHS[tab.id])}
@@ -109,6 +111,8 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
 
         {/* ✅ СПРАВА — отдельная круглая кнопка Профиль */}
         <button
+          aria-label={language === 'ru' ? 'Профиль' : 'Profil'}
+          data-nav-tab="profile"
           onPointerEnter={() => warmPage('/profile')}
           onPointerDown={() => warmPage('/profile')}
           onFocus={() => warmPage('/profile')}

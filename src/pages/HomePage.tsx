@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
 import {
@@ -20,8 +21,8 @@ const getItemsLabelRu = (count: number): string => {
   return 'товаров'
 }
 
-function HomeProductCard({ product, placement }: { product: any; placement: string }) {
-  const { language, currency, exchangeRate, saleModeEnabled, isFavorite, addToFavorites, removeFromFavorites } = useStore()
+const HomeProductCard = memo(function HomeProductCard({ product, placement }: { product: any; placement: string }) {
+  const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites } = useStore(useShallow(state => ({ language: state.language, currency: state.currency, exchangeRate: state.exchangeRate, saleModeEnabled: state.saleModeEnabled, addToFavorites: state.addToFavorites, removeFromFavorites: state.removeFromFavorites })))
   const formatPrice = (usd: number) => currency === 'USD' ? `$${usd}` : `${(usd * exchangeRate).toLocaleString()} сум`
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
@@ -29,7 +30,7 @@ function HomeProductCard({ product, placement }: { product: any; placement: stri
     ? Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)
     : 0
 
-  const favorite = isFavorite(product.id)
+  const favorite = useStore(state => state.favorites.some(item => item.productId === product.id))
 
   return (
     <Link data-product-placement={`${placement}:${product.id}`} data-product-card={product.id} to={`/product/${product.id}`} className="block">
@@ -99,7 +100,49 @@ function HomeProductCard({ product, placement }: { product: any; placement: stri
       </div>
     </Link>
   )
-}
+})
+
+  const SectionHeader = ({
+    icon,
+    title,
+    titleColor = 'text-[#1B2A4A] dark:text-white',
+    count,
+    moreLabel,
+    onMore,
+    surfaceKey,
+  }: {
+    icon: React.ReactNode
+    title: string
+    titleColor?: string
+    count?: number
+    moreLabel?: string
+    onMore?: () => void
+    surfaceKey?: string
+  }) => (
+    <div data-surface-link={surfaceKey} data-surface-to={surfaceKey ? "/all-products" : undefined} className="flex items-center justify-between mb-3 px-1">
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
+          {icon}
+        </div>
+        <h3 className={`font-bold ${titleColor}`}>{title}</h3>
+        {count !== undefined && count > 0 && (
+          <span className="text-xs text-[#8A8275] dark:text-gray-300">
+            ({count})
+          </span>
+        )}
+      </div>
+      {onMore && moreLabel && (
+        <button
+          onClick={onMore}
+          className="text-sm text-[#8A8275] dark:text-gray-300 hover:text-[#1B2A4A] dark:hover:text-[#C9A961] flex items-center gap-1 transition-colors"
+        >
+          {moreLabel}
+          <ArrowRight size={16} />
+        </button>
+      )}
+    </div>
+  )
+
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -114,11 +157,13 @@ export default function HomePage() {
     getPopularityAge,
     telegramUser,
     ensureCategories,
-  } = useStore()
+    categoriesCache,
+  } = useStore(useShallow(state => ({ language: state.language, saleModeEnabled: state.saleModeEnabled, productsCache: state.productsCache, setProductsCache: state.setProductsCache, getProductsCacheAge: state.getProductsCacheAge, popularityMap: state.popularityMap, getPopularityAge: state.getPopularityAge, telegramUser: state.telegramUser, ensureCategories: state.ensureCategories, categoriesCache: state.categoriesCache })))
 
-  const categoriesRaw = ensureCategories()
+  const categoriesRaw = categoriesCache?.items || null
+  useEffect(() => { ensureCategories() }, [ensureCategories])
   const categories = categoriesRaw || []
-  const visibleItems = filterVisibleProducts(productsCache?.items || [], categoriesRaw)
+  const visibleItems = useMemo(() => filterVisibleProducts(productsCache?.items || [], categoriesRaw), [productsCache, categoriesRaw])
 
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
@@ -160,70 +205,11 @@ export default function HomePage() {
   }
 
 
-  const getNewProducts = (limit: number = 6) => {
-    const items = visibleItems
-    return [...items]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, limit)
-  }
-
-  const getPopularProducts = (limit: number = 6) => {
-    const items = visibleItems
-    const pop = popularityMap || {}
-
-    return [...items]
-      .filter((p) => (pop[p.id] || 0) > 0)
-      .sort((a, b) => (pop[b.id] || 0) - (pop[a.id] || 0))
-      .slice(0, limit)
-  }
-
-  const getDiscountProducts = (limit: number = 6) => {
-    if (!saleModeEnabled) return []
-    const items = visibleItems
-    return items
-      .filter((p) => p.sale_price != null && Number(p.sale_price) > 0)
-      .slice(0, limit)
-  }
-
-
-  const SectionHeader = ({
-    icon,
-    title,
-    titleColor = 'text-[#1B2A4A] dark:text-white',
-    count,
-    moreLabel,
-    onMore,
-  }: {
-    icon: React.ReactNode
-    title: string
-    titleColor?: string
-    count?: number
-    moreLabel?: string
-    onMore?: () => void
-  }) => (
-    <div className="flex items-center justify-between mb-3 px-1">
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-          {icon}
-        </div>
-        <h3 className={`font-bold ${titleColor}`}>{title}</h3>
-        {count !== undefined && count > 0 && (
-          <span className="text-xs text-[#8A8275] dark:text-gray-300">
-            ({count})
-          </span>
-        )}
-      </div>
-      {onMore && moreLabel && (
-        <button
-          onClick={onMore}
-          className="text-sm text-[#8A8275] dark:text-gray-300 hover:text-[#1B2A4A] dark:hover:text-[#C9A961] flex items-center gap-1 transition-colors"
-        >
-          {moreLabel}
-          <ArrowRight size={16} />
-        </button>
-      )}
-    </div>
-  )
+  const { newProducts, popularProducts, discountProducts } = useMemo(() => ({
+    newProducts: [...visibleItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6),
+    popularProducts: visibleItems.filter(product => (popularityMap?.[product.id] || 0) > 0).sort((a, b) => (popularityMap?.[b.id] || 0) - (popularityMap?.[a.id] || 0)).slice(0, 6),
+    discountProducts: saleModeEnabled ? visibleItems.filter(product => product.sale_price != null && Number(product.sale_price) > 0).slice(0, 6) : [],
+  }), [visibleItems, popularityMap, saleModeEnabled])
 
   if (!productsCache) {
     return (
@@ -254,9 +240,6 @@ export default function HomePage() {
     )
   }
 
-  const newProducts = getNewProducts(6)
-  const popularProducts = getPopularProducts(6)
-  const discountProducts = getDiscountProducts(6)
 
   const userName = telegramUser
     ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
@@ -305,6 +288,7 @@ export default function HomePage() {
             categories.map((cat) => (
               <button
                 key={cat.id}
+                data-surface-link={`category:${cat.id}`} data-surface-to="/category"
                 onClick={() => handleCategoryClick(cat.id)}
                 className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
               >
@@ -326,6 +310,7 @@ export default function HomePage() {
             ))
           )}
           <button
+            data-surface-link="brands" data-surface-to="/brands"
             onClick={() => navigate('/brands')}
             className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
           >
@@ -352,6 +337,7 @@ export default function HomePage() {
               titleColor="text-[#9B3B3B] dark:text-red-400"
               count={discountProducts.length}
               moreLabel={language === 'ru' ? 'Все скидки' : 'Barcha chegirmalar'}
+              surfaceKey="products:sale"
               onMore={() => navigate('/all-products', { state: { sortBy: 'sale' } })}
             />
             <div className="grid grid-cols-2 gap-3">
@@ -369,6 +355,7 @@ export default function HomePage() {
               title={language === 'ru' ? 'Новые товары' : 'Yangi mahsulotlar'}
               count={newProducts.length}
               moreLabel={language === 'ru' ? 'Больше' : 'Ko\'proq'}
+              surfaceKey="products:newest"
               onMore={() => navigate('/all-products', { state: { sortBy: 'newest' } })}
             />
             <div className="grid grid-cols-2 gap-3">
@@ -386,6 +373,7 @@ export default function HomePage() {
               title={language === 'ru' ? 'Популярные' : 'Mashhurlar'}
               count={popularProducts.length}
               moreLabel={language === 'ru' ? 'Больше' : 'Ko\'proq'}
+              surfaceKey="products:popular"
               onMore={() => navigate('/all-products', { state: { sortBy: 'popular' } })}
             />
             <div className="grid grid-cols-2 gap-3">

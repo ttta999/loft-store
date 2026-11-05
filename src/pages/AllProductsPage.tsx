@@ -189,7 +189,7 @@ export default function AllProductsPage() {
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
         <div data-loft-content className="p-4">
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+          <div data-surface={`products:${location.state?.sortBy || "newest"}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
                 {headerConfig.title}
@@ -217,7 +217,7 @@ export default function AllProductsPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
       <div data-loft-content className="p-4">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+        <div data-surface={`products:${location.state?.sortBy || "newest"}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               {headerConfig.icon}

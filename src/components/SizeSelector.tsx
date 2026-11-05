@@ -1,6 +1,7 @@
-import { motionEase, motionExitEase, motionTiming } from '../lib/motion'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useScrollLock } from '../lib/useScrollLock'
+import SurfaceDialog from './SurfaceDialog'
+import { AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import { Ruler, Check, ChevronDown, X } from 'lucide-react'
 
 type SizeType = 'numeric' | 'alphabetical' | 'one_size'
@@ -32,17 +33,9 @@ export default function SizeSelector({
 }: SizeSelectorProps) {
   const [open, setOpen] = useState(false)
   const [locked, setLocked] = useState(false)
-  const reduced = useReducedMotion()
 
   // ✅ Блокируем скролл страницы, пока открыт sheet
-  useEffect(() => {
-    if (!locked) return
-    const original = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = original
-    }
-  }, [locked])
+  useScrollLock(locked)
 
   // ✅ Выбрал размер → отметился → sheet ЗАКРЫВАЕТСЯ сам
   const handleSizeClick = (size: string) => {
@@ -80,6 +73,7 @@ export default function SizeSelector({
     <div className="mb-4">
       {/* ✅ ЗАКРЫТАЯ СТРОКА — как строка на странице заказа */}
       <button
+        data-dialog-trigger="size"
         onClick={() => { setLocked(true); setOpen(true) }}
         className="w-full bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border flex items-center gap-3 p-3.5 text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
       >
@@ -103,7 +97,7 @@ export default function SizeSelector({
 
       {/* ✅ BOTTOM-SHEET в стиле страницы заказа */}
       <AnimatePresence onExitComplete={() => { if (!open) setLocked(false) }}>{open && (
-        <motion.div key="size-sheet" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: reduced ? 0 : motionTiming.sheetClose } }} transition={{ duration: reduced ? 0 : motionTiming.sheetOpen, ease: motionEase }} className="fixed inset-0 z-[90]">
+        <SurfaceDialog origin="size" key="size-sheet" className="fixed inset-0 z-[90]">
           {/* Затемнение — клик закрывает */}
           <div
             className="absolute inset-0 bg-black/50"
@@ -111,7 +105,7 @@ export default function SizeSelector({
           />
 
           {/* Панель: бежевый фон страницы, контент — карточками */}
-          <motion.div initial={{ y: reduced ? 0 : '100%' }} animate={{ y: 0 }} exit={{ y: reduced ? 0 : '100%', transition: { duration: reduced ? 0 : motionTiming.sheetClose, ease: motionExitEase } }} transition={{ duration: reduced ? 0 : motionTiming.sheetOpen, ease: motionEase }} className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
+          <div className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
             {/* Ручка */}
             <div className="flex-shrink-0 pt-2 pb-1 flex justify-center">
               <div className="w-10 h-1 rounded-full bg-[#E8E2D5] dark:bg-dark-border" />
@@ -185,8 +179,8 @@ export default function SizeSelector({
                 })}
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </SurfaceDialog>
       )}</AnimatePresence>
     </div>
   )

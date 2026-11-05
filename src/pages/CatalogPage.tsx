@@ -261,7 +261,7 @@ export default function CatalogPage() {
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
 
       <div data-loft-content className="p-4">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+        <div data-surface={`catalog:${categoryId}:${subcategoryId || "all"}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <CategoryIcon name={category?.icon || ''} size={24} className="text-[#1B2A4A] dark:text-white" />

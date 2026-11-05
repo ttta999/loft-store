@@ -1,3 +1,4 @@
+import { consumeSurfaceIntent, getSurfaceIntent } from './surfaceIntent'
 type Page = { key: string; pathname: string; search: string }
 type Origin = { key: string; item: string }
 const origins = new Map<string, Origin>()
@@ -7,10 +8,21 @@ const iconName = 'loft-profile-icon'
 function find(attribute: string, value: string) {
   return Array.from(document.querySelectorAll<HTMLElement>(`[${attribute}]`)).find(element => element.getAttribute(attribute) === value)
 }
+function surface(destination: boolean, value: string) {
+  return find(destination ? 'data-surface' : 'data-surface-link', value) || find(destination ? 'data-profile-surface' : 'data-profile-link', value)
+}
+export function hasSurfaceNavigation(from: Page, to: Page) {
+  return !!getSurfaceIntent(from, to) || origins.get(from.key)?.key === to.key
+}
+export function inheritSurfaceOrigin(from: Page, to: Page) {
+  const origin = origins.get(from.key)
+  if (origin && from.pathname === to.pathname) origins.set(to.key, origin)
+}
 function visible(element?: HTMLElement) {
   if (!element?.isConnected) return false
   const rect = element.getBoundingClientRect()
-  return rect.width > 0 && rect.height > 0 && rect.bottom > 72 && rect.top < innerHeight - 90
+  const top = element.closest('.loft-header') ? 0 : 72
+  return rect.width > 0 && rect.height > 0 && rect.bottom > top && rect.top < innerHeight - 90
 }
 function mark(element: HTMLElement) {
   element.style.viewTransitionName = surfaceName
@@ -27,7 +39,7 @@ export function prepareProfileTransition(from: Page, to: Page) {
   clearProfileNames()
   const previous = new URLSearchParams(from.search)
   const next = new URLSearchParams(to.search)
-  let item: string | undefined
+  let item: string | undefined = getSurfaceIntent(from, to)
   if (from.pathname === '/profile') {
     if (to.pathname === '/profile') {
       const section = next.get('section')
@@ -42,19 +54,21 @@ export function prepareProfileTransition(from: Page, to: Page) {
   const returning = !item && saved?.key === to.key
   const origin = item ? { key: from.key, item } : returning ? saved : undefined
   if (!origin) return null
-  const source = find(returning ? 'data-profile-surface' : 'data-profile-link', origin.item)
-  if (!source || !visible(source)) return null
-  const sourceRect = source.getBoundingClientRect()
+  // Opening starts at a link; returning starts at the destination card.
+  const start = returning ? surface(true, origin.item) : surface(false, origin.item)
+  if (!start || !visible(start)) return null
+  consumeSurfaceIntent()
+  const sourceRect = start.getBoundingClientRect()
   document.documentElement.style.setProperty('--loft-surface-source-width', `${sourceRect.width}px`)
   document.documentElement.style.setProperty('--loft-surface-source-height', `${sourceRect.height}px`)
-  mark(source)
+  mark(start)
   if (!returning) {
     origins.set(to.key, origin)
     while (origins.size > 60) origins.delete(origins.keys().next().value!)
   }
   return {
     async finish(valid: () => boolean) {
-      const target = find(returning ? 'data-profile-link' : 'data-profile-surface', origin.item)
+      const target = surface(!returning, origin.item)
       if (!valid() || !target || !visible(target)) return false
       // Detail dialogs keep their source list mounted behind them.
       // Remove its live name before naming the destination snapshot.

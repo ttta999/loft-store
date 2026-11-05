@@ -1,7 +1,10 @@
 import { motionDistance, motionEaseCSS, motionTiming } from '../lib/motion'
 import { preloadPage } from '../lib/pagePreload'
 import { clearProductNames, installProductIntent, prepareProductTransition } from '../lib/productTransition'
-import { clearProfileNames, prepareProfileTransition } from '../lib/profileTransition'
+import { clearProfileNames, hasSurfaceNavigation, inheritSurfaceOrigin, prepareProfileTransition } from '../lib/profileTransition'
+import { installSurfaceIntent } from '../lib/surfaceIntent'
+import { installDialogOrigins } from '../lib/dialogOrigin'
+import { prepareTabMotion, tabDirection } from '../lib/tabTransition'
 import { captureTransitionChrome, clearTransitionChrome } from '../lib/transitionChrome'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
@@ -22,6 +25,8 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
   const generation = useRef(0)
   const historyIndex = useRef(Number(history.state?.idx) || 0)
   useEffect(() => installProductIntent(() => latest.current), [])
+  useEffect(() => installSurfaceIntent(() => latest.current), [])
+  useEffect(() => installDialogOrigins(), [])
 
   useLayoutEffect(() => {
     if (displayed === location) return
@@ -31,12 +36,14 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     const backwards = navigationType === 'POP' && index < historyIndex.current
     historyIndex.current = index
     const samePath = displayed.pathname === location.pathname
+    if (navigationType === 'REPLACE') inheritSurfaceOrigin(displayed, location)
     const sectionChanged = new URLSearchParams(displayed.search).get('section') !== new URLSearchParams(location.search).get('section')
     const detailChanged = samePath && location.pathname === '/profile' && displayed.search !== location.search
-    const modalOnly = samePath && !sectionChanged && !detailChanged
+    const modalOnly = samePath && !sectionChanged && !detailChanged && !hasSurfaceNavigation(displayed, location)
     let transition: ViewTransition | undefined
     let animations: Animation[] = []
-    const interrupt = () => transition?.skipTransition()
+    let clearTabs: (() => void) | undefined
+    const interrupt = () => { transition?.skipTransition(); clearTabs?.() }
     const stopListening = () => {
       window.removeEventListener('wheel', interrupt)
       window.removeEventListener('touchstart', interrupt)
@@ -56,6 +63,18 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     }
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
+      const tabMotion = prepareTabMotion(displayed, location)
+      if (tabMotion) {
+        clearTabs = tabMotion.cleanup
+        apply()
+        if (generation.current !== current) { clearTabs(); return }
+        const finished = tabMotion.run()
+        window.addEventListener('wheel', interrupt, { passive: true })
+        window.addEventListener('touchstart', interrupt, { passive: true })
+        window.addEventListener('pointerdown', interrupt, { passive: true })
+        void finished.finally(stopListening)
+        return
+      }
       const photo = typeof document.startViewTransition === 'function' ? prepareProductTransition(displayed, location) : null
       const profile = !photo && typeof document.startViewTransition === 'function' ? prepareProfileTransition(displayed, location) : null
       const shared = photo || profile
@@ -92,13 +111,13 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       const detail = document.querySelector<HTMLElement>('[data-profile-detail-content]')
       if (detail) content.splice(0, content.length, detail)
       animations = content.map(element => {
-        const opacity = sectionChanged || detailChanged ? 0.6 : 0.96
+        const opacity = 1
         // A transform changes the containing block of fixed descendants.
         // Keep unknown fixed/sticky surfaces anchored even if a page omits a leaf marker.
         const fixed = element.querySelector('.fixed, .sticky')
-        const frames = fixed ? [{ opacity }, { opacity: 1 }] : sectionChanged || detailChanged
-          ? [{ opacity, translate: `${backwards ? -motionDistance.section : motionDistance.section}px 0` }, { opacity: 1, translate: '0 0' }]
-          : [{ opacity, translate: '0 6px' }, { opacity: 1, translate: '0 0' }]
+        const direction = tabDirection(displayed, location) || (backwards ? -1 : 1)
+        const distance = tabDirection(displayed, location) ? innerWidth : motionDistance.section
+        const frames = fixed ? [{ opacity: 0.9 }, { opacity }] : [{ opacity, translate: `${direction * distance}px 0` }, { opacity, translate: '0 0' }]
         return element.animate(frames, { duration: motionTiming.page * 1000, easing: motionEaseCSS })
       })
     })
@@ -110,6 +129,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       clearProductNames()
       clearProfileNames()
       clearTransitionChrome()
+      clearTabs?.()
       delete document.documentElement.dataset.loftMotion
       window.dispatchEvent(new Event('loft:transition-end'))
     }

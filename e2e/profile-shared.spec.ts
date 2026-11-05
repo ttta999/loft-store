@@ -4,12 +4,16 @@ async function track(page: import('@playwright/test').Page) {
   await page.evaluate(() => {
     const win = window as any
     win.transitions = []
+    window.addEventListener('loft:tabs-start', ((event: CustomEvent) => {
+      win.transitions.push({ mode: 'tabs', direction: String(event.detail.direction), enter: 'live-tab-slide' })
+      win.sharedTransition = { finished: event.detail.finished }
+    }) as EventListener)
     const original = document.startViewTransition.bind(document)
     document.startViewTransition = callback => {
       const record: any = {}; win.transitions.push(record)
       const transition = original(callback); win.sharedTransition = transition
       record.source = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => ({ name: element.style.viewTransitionName, placement: element.closest('[data-product-placement]')?.getAttribute('data-product-placement') }))
-      transition.ready.then(() => { record.mode = document.documentElement.dataset.loftMotion; record.names = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => element.style.viewTransitionName); record.targetPlacement = document.querySelector('[style*="loft-product-photo"]')?.closest('[data-product-placement]')?.getAttribute('data-product-placement') }).catch((error: Error) => { record.error = error.message })
+      transition.ready.then(() => { record.mode = document.documentElement.dataset.loftMotion; record.names = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => element.style.viewTransitionName); record.targetPlacement = document.querySelector('[style*="loft-product-photo"]')?.closest('[data-product-placement]')?.getAttribute('data-product-placement'); record.direction = document.documentElement.style.getPropertyValue('--loft-tab-direction'); record.enter = getComputedStyle(document.documentElement, '::view-transition-new(loft-tab-in)').animationName }).catch((error: Error) => { record.error = error.message })
       return transition
     }
   })
@@ -119,18 +123,18 @@ for (const document of ['privacy', 'terms']) {
   })
 }
 
-test('основные вкладки слегка перемещают содержимое без полного затухания', async ({ page }) => {
+test('основные вкладки пролистываются по порядку меню в обе стороны', async ({ page }) => {
   await page.goto(STORE)
-  await page.evaluate(() => {
-    const original = Element.prototype.animate
-    Element.prototype.animate = function (frames: any, options: any) {
-      if (this.matches('[data-loft-content]')) (window as any).tabFrames = frames
-      return original.call(this, frames, options)
-    }
-  })
+  await track(page)
   await page.getByRole('button', { name: 'Корзина', exact: true }).click()
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
-  expect(await page.evaluate(() => (window as any).tabFrames)).toEqual([{ opacity: 0.96, translate: '0 6px' }, { opacity: 1, translate: '0 0' }])
+  const forward = await finished(page, 'tabs')
+  expect(forward.direction).toBe('1')
+  expect(forward.enter).toBe('live-tab-slide')
+  await page.getByRole('button', { name: 'Главная', exact: true }).click()
+  await expect(page.getByText('Что ищете сегодня?', { exact: true })).toBeVisible()
+  const back = await finished(page, 'tabs')
+  expect(back.direction).toBe('-1')
 })
 
 test('чек открывается поверх заказа; Telegram Back закрывает сначала чек', async ({ page, harness }) => {

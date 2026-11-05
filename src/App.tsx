@@ -36,7 +36,7 @@ function TelegramBackButtonManager() {
 
     // ✅ На внутренних страницах показываем системную кнопку и вешаем history.pop()
     const handleBack = () => {
-      const dismiss = document.querySelector<HTMLButtonElement>('[data-loft-dismiss]')
+      const dismiss = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-loft-dismiss]')).at(-1)
       if (dismiss) { dismiss.click(); return }
       const idx = (window.history.state as any)?.idx
       if (typeof idx === 'number' && idx === 0) {
@@ -62,6 +62,13 @@ function AppLayout() {
   const activeTab: TabType = path === '/search' ? 'search' : path === '/cart' ? 'cart' : path === '/china' ? 'china' : path === '/profile' ? 'profile' : 'home'
   const [showBackButton, setShowBackButton] = useState(false)
   const [onBackClick, setOnBackClick] = useState<(() => void) | null>(null)
+  const [dialogCount, setDialogCount] = useState(0)
+  useEffect(() => {
+    const scan = () => setDialogCount(document.querySelectorAll('[data-surface-dialog]').length)
+    scan()
+    window.addEventListener('loft:dialog-change', scan)
+    return () => window.removeEventListener('loft:dialog-change', scan)
+  }, [])
 
   const setTelegramUser = useStore((state) => state.setTelegramUser)
 
@@ -84,7 +91,7 @@ function AppLayout() {
   // ✅ Системная кнопка «назад» Telegram на вкладках
   // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное / настройки)
   useEffect(() => {
-    const needsBackNow = activeTab === 'search' || (showBackButton && !!onBackClick)
+    const needsBackNow = dialogCount > 0 || activeTab === 'search' || (showBackButton && !!onBackClick)
 
     if (!needsBackNow) {
       hideTelegramBackButton()
@@ -92,7 +99,7 @@ function AppLayout() {
     }
 
     const handler = () => {
-      const dismiss = document.querySelector<HTMLButtonElement>('[data-loft-dismiss]')
+      const dismiss = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-loft-dismiss]')).at(-1)
       if (dismiss) { dismiss.click(); return }
       if (activeTab === 'search') navigate('/')
       else if (onBackClick) onBackClick()
@@ -100,7 +107,7 @@ function AppLayout() {
 
     const cleanup = setupTelegramBackButton(true, handler)
     return cleanup
-  }, [activeTab, showBackButton, onBackClick, navigate])
+  }, [activeTab, showBackButton, onBackClick, navigate, dialogCount])
 
   // ✅ Кнопка «назад» для островка-шапки
   const needsBack = activeTab === 'search' || (showBackButton && !!onBackClick)

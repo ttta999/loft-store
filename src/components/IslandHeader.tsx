@@ -35,6 +35,7 @@ export default function IslandHeader({
         {/* Отдельная круглая кнопка поиска — только на главной */}
         {showSearch && (
           <button
+            data-surface-link="search" data-surface-to="/search"
             onClick={onSearchClick}
             className="pointer-events-auto w-14 h-14 shrink-0 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border shadow-lg flex items-center justify-center text-[#1B2A4A] dark:text-white hover:text-[#C9A961] transition-colors"
           >

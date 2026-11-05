@@ -1,3 +1,6 @@
+import { useScrollLock } from '../lib/useScrollLock'
+import { AnimatePresence } from 'framer-motion'
+import SurfaceDialog from '../components/SurfaceDialog'
 import Collapse from '../components/Collapse'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -8,21 +11,14 @@ import { createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/s
 import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
-const useBodyScrollLock = (active: boolean) => {
-  useEffect(() => {
-    if (!active) return
-    const original = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = original }
-  }, [active])
-}
+
 
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
-  useBodyScrollLock(true)
+  useScrollLock(true)
   return (
-    <div className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <SurfaceDialog origin="cart-receipt" role="dialog" label="Просмотр чека" className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="relative max-w-4xl w-full flex items-center justify-center">
-        <button
+        <button data-loft-dismiss
           onClick={onClose}
           className="absolute -top-14 right-0 text-white hover:text-gray-300 flex items-center gap-2 text-lg font-medium z-10"
         >
@@ -37,7 +33,7 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-    </div>
+    </SurfaceDialog>
   )
 }
 
@@ -73,6 +69,7 @@ export default function CartPage() {
   // ✅ theme нужен, чтобы тосты подстраивались под тёмную тему
   const { cart, removeFromCart, addToCart, getTotalPrice, currency, exchangeRate, language, saleModeEnabled, ensureProducts } = useStore()
   const [showCheckout, setShowCheckout] = useState(false)
+  const [checkoutPresent, setCheckoutPresent] = useState(false)
   const [preparingCheckout, setPreparingCheckout] = useState(false)
 
   // ✅ Состояния для настроек доставки
@@ -86,6 +83,7 @@ export default function CartPage() {
       const settings = await useStore.getState().refreshCheckout()
       setDeliveryPriceUzs(settings.deliveryPriceUzs)
       setFreeDeliveryThresholdUzs(settings.freeDeliveryThresholdUzs)
+      setCheckoutPresent(true)
       setShowCheckout(true)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Не удалось обновить корзину')
@@ -114,7 +112,7 @@ export default function CartPage() {
 
   // ✅ FIX: пустое состояние НЕ показываем, пока открыта модалка оформления.
   // Иначе clearCart() после заказа размонтирует CheckoutModal вместе с экраном успеха.
-  if (cart.length === 0 && !showCheckout) {
+  if (cart.length === 0 && !checkoutPresent) {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
@@ -160,7 +158,7 @@ export default function CartPage() {
           <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
             {/* ✅ key учитывает цвет: один товар разных цветов = разные строки */}
             {cart.map((item) => (
-              <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex gap-3">
+              <div data-product-card={item.productId} data-product-placement={`cart:${item.productId}:${item.size}:${item.colorId || "none"}`} key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex gap-3">
                 <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })} />
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}>
                   <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
@@ -203,7 +201,7 @@ export default function CartPage() {
       </div>
 
       {/* ✅ Плавающая карточка: БЕЗ строки «Доставка» — только товары и итого */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
+      <div data-route-floating className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-4 pb-24 pt-2">
         <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3 space-y-2.5">
           <div className="px-1 space-y-1.5">
             <div className="flex justify-between items-center gap-2">
@@ -223,6 +221,7 @@ export default function CartPage() {
           </div>
 
           <button
+            data-dialog-trigger="checkout"
             onClick={openCheckout}
             disabled={preparingCheckout}
             className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
@@ -233,8 +232,8 @@ export default function CartPage() {
         </div>
       </div>
 
-      {showCheckout && (
-        <CheckoutModal
+      <AnimatePresence onExitComplete={() => { if (!showCheckout) setCheckoutPresent(false) }}>{showCheckout && (
+        <CheckoutModal key="checkout"
           onClose={() => setShowCheckout(false)}
           formatPrice={formatPrice}
           getTotalPrice={getTotalPrice}
@@ -242,13 +241,13 @@ export default function CartPage() {
           deliveryPriceUzs={deliveryPriceUzs}
           freeDeliveryThresholdUzs={freeDeliveryThresholdUzs}
         />
-      )}
+      )}</AnimatePresence>
     </div>
   )
 }
 
 function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs }: any) {
-  useBodyScrollLock(true)
+  useScrollLock(true)
   const navigate = useNavigate()
   const { cart, clearCart, currency, exchangeRate } = useStore()
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
@@ -440,7 +439,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   // ✅ ЭКРАН ОПЛАТЫ — банковская карта + карточка подтверждения
   if (showPaymentInfo) {
     return (
-      <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+      <SurfaceDialog origin="checkout" stage="payment" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={async () => {
           if (screenshotUploaded) { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }
           else { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }
@@ -547,6 +546,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               {/* ✅ Миниатюра скриншота вместо кнопки-глаза */}
               {screenshotUploaded && screenshotUrl && (
                 <button
+                  data-dialog-trigger="cart-receipt"
                   onClick={() => setShowScreenshotModal(true)}
                   title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                   className="w-10 h-10 rounded-xl overflow-hidden border border-[#E8E2D5] dark:border-dark-border flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -610,15 +610,15 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </div>
           </div>
         </div>
-        {showScreenshotModal && screenshotUrl && <ScreenshotViewer url={screenshotUrl} language={language} onClose={() => setShowScreenshotModal(false)} />}
-      </div>
+        <AnimatePresence>{showScreenshotModal && screenshotUrl && <ScreenshotViewer key="cart-receipt" url={screenshotUrl} language={language} onClose={() => setShowScreenshotModal(false)} />}</AnimatePresence>
+      </SurfaceDialog>
     )
   }
 
   // ✅ ЭКРАН УСПЕХА — в карточном стиле, как успех спецзаказа
   if (orderSuccess) {
     return (
-      <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+      <SurfaceDialog origin="checkout" stage="success" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={onClose} />
         {/* ✅ key: remount → скролл сверху */}
         <div key="success-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
@@ -684,12 +684,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             </button>
           </div>
         </div>
-      </div>
+      </SurfaceDialog>
     )
   }
 
   return (
-    <div className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
+    <SurfaceDialog origin="checkout" stage="form" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
       <IslandHeader needsBack={true} onBack={onClose} />
       {/* ✅ key: remount → скролл сверху */}
       <div key="form-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
@@ -829,6 +829,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           {submitting ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...') : paymentMethod === 'online_card' ? (language === 'ru' ? 'Перейти к оплате' : 'To\'lovga o\'tish') : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')}
         </button>
       </div>
-    </div>
+    </SurfaceDialog>
   )
 }

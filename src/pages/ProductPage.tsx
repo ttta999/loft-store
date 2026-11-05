@@ -1,9 +1,10 @@
+import { useScrollLock } from '../lib/useScrollLock'
 import { motionEase, motionTiming } from '../lib/motion'
 import ProductPhotoViewer from '../components/ProductPhotoViewer'
 import { getOpeningPhoto } from '../lib/productTransition'
 import { useDecodedImage } from '../lib/useDecodedImage'
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion'
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Check, LoaderCircle, Heart, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -66,12 +67,7 @@ export default function ProductPage() {
   const colorImages = selectedColor?.images?.filter(Boolean)
   const desiredPhoto = (colorImages?.length ? colorImages : product?.images)?.[currentImageIndex]
   const decodedPhoto = useDecodedImage(desiredPhoto)
-  useLayoutEffect(() => {
-    if (!viewerActive) return
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = overflow }
-  }, [viewerActive])
+  useScrollLock(viewerActive)
 
   useEffect(() => {
     if (!id) return

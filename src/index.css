@@ -75,7 +75,7 @@ body {
 /* Product imagery carries the expressive motion. Chrome is never snapshotted separately. */
 /* Feedback is immediate; larger movements start gently and settle without overshoot. */
 :root {
-  --loft-motion-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --loft-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --loft-photo-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --loft-press-duration: 80ms;
   --loft-release-duration: 180ms;
@@ -140,3 +140,6 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 :root[data-loft-photo-crossfade]::view-transition-new(loft-product-photo) { animation: loft-fade-in 180ms ease-out both; }
 
 @keyframes loft-photo-radius { from { border-radius: var(--loft-photo-from-radius, 16px); } to { border-radius: var(--loft-photo-to-radius, 16px); } }
+
+/* Keep horizontal tab travel inside the viewport without changing vertical scrolling. */
+:root[data-loft-tab-motion], :root[data-loft-tab-motion] body, :root[data-loft-tab-motion] #root { overflow-x: clip; }

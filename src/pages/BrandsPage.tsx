@@ -251,7 +251,7 @@ export default function BrandsPage() {
       <div data-loft-content className="p-4">
         {!brandParam ? (
           <>
-            <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+            <div data-surface="brands" className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
                   {language === 'ru' ? 'Бренды' : 'Brendlar'}
@@ -298,6 +298,7 @@ export default function BrandsPage() {
                 {brands.map((brand) => (
                   <button
                     key={brand.id}
+                    data-surface-link={`brand:${brand.id}`} data-surface-to="/brands"
                     onClick={() => handleBrandClick(brand)}
                     className="w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left"
                   >
@@ -327,7 +328,7 @@ export default function BrandsPage() {
           </>
         ) : (
           <>
-            <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+            <div data-surface={`brand:${selectedBrand?.id || brandParam}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 {/* ✅ Шапка бренда: Логотип или первая буква */}
                 <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0 overflow-hidden bg-white dark:bg-dark-card">

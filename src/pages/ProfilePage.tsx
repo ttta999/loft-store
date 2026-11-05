@@ -1,4 +1,6 @@
-import { useState, useEffect, useLayoutEffect } from 'react'
+import { useScrollLock } from '../lib/useScrollLock'
+import SurfaceDialog from '../components/SurfaceDialog'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
@@ -58,16 +60,7 @@ const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
   return 'UZS'
 }
 
-const useBodyScrollLock = (active: boolean) => {
-  useLayoutEffect(() => {
-    if (!active) return
-    const original = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = original
-    }
-  }, [active])
-}
+
 
 // ✅ Шапка-карточка списка: заголовок + подпись + иконка справа (как шапка заказа)
 function ListHeaderCard({ title, subtitle, icon, transitionKey }: { title: string; subtitle: string; icon: React.ReactNode; transitionKey: string }) {
@@ -121,7 +114,7 @@ function MenuTile({ icon, title, subtitle, onClick, transitionKey }: {
 }
 
 function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
-  useBodyScrollLock(true)
+  useScrollLock(true)
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
@@ -376,6 +369,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                 </div>
                 {order.payment_screenshot_url && (
                   <button
+                    data-dialog-trigger="receipt"
                     onClick={() => setShowScreenshotModal(true)}
                     className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white dark:bg-dark-accent border border-red-200 dark:border-red-500/30 text-xs font-medium text-red-700 dark:text-red-300"
                   >
@@ -425,7 +419,8 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                       </p>
                       {order.payment_screenshot_url && (
                         <button
-                          onClick={() => setShowScreenshotModal(true)}
+                          data-dialog-trigger="receipt"
+                    onClick={() => setShowScreenshotModal(true)}
                           title={language === 'ru' ? 'Посмотреть скриншот' : 'Screenshotni ko\'rish'}
                           className="w-9 h-9 rounded-lg bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center text-[#1B2A4A] dark:text-white hover:bg-[#E8E2D5] dark:hover:bg-dark-border transition-colors flex-shrink-0"
                         >
@@ -524,7 +519,8 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                   </div>
                   {order.payment_screenshot_url && (
                     <button
-                      onClick={() => setShowScreenshotModal(true)}
+                      data-dialog-trigger="receipt"
+                    onClick={() => setShowScreenshotModal(true)}
                       className="w-9 h-9 rounded-lg bg-white dark:bg-dark-accent border border-green-200 dark:border-green-500/30 flex items-center justify-center text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-dark-border transition-colors flex-shrink-0"
                     >
                       <Eye size={16} />
@@ -550,16 +546,13 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
 }
 
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
-  useBodyScrollLock(true)
-  const reduced = useReducedMotion()
+  useScrollLock(true)
   return (
-    <motion.div role="dialog" aria-label="Просмотр чека" aria-modal="true"
-      initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: reduced ? 0 : motionTiming.viewerClose, ease: motionEase }}
+    <SurfaceDialog origin="receipt" role="dialog" label="Просмотр чека"
       className="loft-modal fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <motion.div initial={{ scale: reduced ? 1 : 0.985 }} animate={{ scale: 1 }} exit={{ scale: reduced ? 1 : 0.985 }} transition={{ duration: reduced ? 0 : motionTiming.viewerOpen, ease: motionEase }} className="relative max-w-4xl w-full flex items-center justify-center">
+      <div className="relative max-w-4xl w-full flex items-center justify-center">
         <button
           data-loft-dismiss
           onClick={onClose}
@@ -575,15 +568,15 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
           style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         />
-      </motion.div>
-    </motion.div>
+      </div>
+    </SurfaceDialog>
   )
 }
 
 // ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа, название и ссылка раздельно
 // ✅ + кнопка отмены для статусов «На рассмотрении» и «Оценён»
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCancel, exchangeRate }: any) {
-  useBodyScrollLock(true)
+  useScrollLock(true)
   const [cancelling, setCancelling] = useState(false)
 
   const formatDateTime = (dateStr: string) =>
@@ -1790,5 +1783,4 @@ export default function ProfilePage() {
 
   return null
 }
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { motionEase, motionTiming } from '../lib/motion'
+import { AnimatePresence } from 'framer-motion'

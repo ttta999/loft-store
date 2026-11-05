@@ -73,7 +73,7 @@ export default function CategoryPage() {
 
       <div data-loft-content className="p-4">
         {/* ✅ Шапка-карточка категории */}
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+        <div data-surface={`category:${categoryId}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
               <CategoryIcon name={category.icon} size={24} className="text-[#1B2A4A] dark:text-white" />
@@ -101,6 +101,7 @@ export default function CategoryPage() {
           {category.subcategories.map((sub) => (
             <button
               key={sub.id}
+              data-surface-link={`catalog:${categoryId}:${sub.id}`} data-surface-to="/catalog"
               onClick={() => handleSubcategoryClick(sub.id)}
               className={`w-full flex items-center gap-3 p-3.5 hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors text-left ${
                 sub.id === 'all' ? 'bg-[#1B2A4A]/5 dark:bg-gold/10 hover:bg-[#1B2A4A]/10 dark:hover:bg-gold/20' : ''

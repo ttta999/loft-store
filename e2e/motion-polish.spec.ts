@@ -2,7 +2,8 @@ import { test, expect, STORE, productId } from './fixture'
 
 test('нажатие и отпускание кнопки меняют масштаб постепенно, без скачка', async ({ page }) => {
   await page.goto(STORE)
-  const button = page.getByRole('button', { name: 'Корзина', exact: true })
+  // Isolate press/release feedback from the separate page-travel checks.
+  const button = page.getByRole('button', { name: 'Главная', exact: true })
   await expect(button).toBeVisible()
   await button.evaluate(element => {
     const capture = (key: string, count: number) => {
@@ -28,6 +29,7 @@ test('нажатие и отпускание кнопки меняют масш�
   const release = await page.evaluate(() => (window as any).releaseSamples as number[])
   expect(release.some(scale => scale > 0.9801 && scale < 0.9999)).toBe(true)
   expect(release.at(-1)).toBeCloseTo(1, 3)
+  await page.getByRole('button', { name: 'Корзина', exact: true }).click()
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
 })
 
@@ -61,7 +63,6 @@ test('первый кадр страницы не исчезает полнос�
   await page.getByRole('button', { name: 'Корзина', exact: true }).click()
   await expect.poll(() => page.evaluate(() => (window as any).firstCartOpacity !== undefined)).toBe(true)
   const opacity = await page.evaluate(() => (window as any).firstCartOpacity)
-  expect(opacity).toBeGreaterThan(0)
-  expect(opacity).toBeLessThan(1)
+  expect(opacity).toBe(1)
   await expect(page.getByText('Корзина пуста', { exact: true })).toBeVisible()
 })

@@ -67,13 +67,11 @@ export default function SearchPage() {
     load()
   }, [])
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setSearchParams({ q: searchQuery }, { replace: true })
-    } else {
-      setSearchParams({}, { replace: true })
-    }
-  }, [searchQuery, setSearchParams])
+  const updateQuery = (query: string) => {
+    setSearchQuery(query)
+    setSearchParams(query.trim() ? { q: query } : {}, { replace: true })
+  }
+
 
   useEffect(() => {
     const q = searchParams.get('q') || ''
@@ -138,7 +136,7 @@ export default function SearchPage() {
   }
 
   const clearAll = () => {
-    setSearchQuery('')
+    updateQuery('')
     clearFilters()
   }
 
@@ -155,7 +153,7 @@ export default function SearchPage() {
     return (
       <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
         <div data-loft-content className="p-4">
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+          <div data-surface="search" className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
                 {language === 'ru' ? 'Поиск' : 'Qidiruv'}
@@ -182,7 +180,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <div data-loft-content className="p-4">
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
+        <div data-surface="search" className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
               {language === 'ru' ? 'Поиск' : 'Qidiruv'}
@@ -206,7 +204,7 @@ export default function SearchPage() {
               ref={setSearchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateQuery(e.target.value)}
               placeholder={language === 'ru' ? 'Поиск по названию...' : 'Nomi bo\'yicha qidirish...'}
               className="flex-1 bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
             />
