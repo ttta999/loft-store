@@ -30,6 +30,7 @@ function mark(element: HTMLElement) {
   if (icon) icon.style.viewTransitionName = iconName
 }
 export function clearProfileNames(keepMetrics = false) {
+  if (!keepMetrics) delete document.documentElement.dataset.loftSurfaceMotion
   if (!keepMetrics) for (const name of ['source-width', 'source-height', 'target-width', 'target-height']) document.documentElement.style.removeProperty(`--loft-surface-${name}`)
   document.querySelectorAll<HTMLElement>('[style*="loft-profile-"]').forEach(element => element.style.removeProperty('view-transition-name'))
 }
@@ -57,6 +58,8 @@ export function prepareProfileTransition(from: Page, to: Page) {
   // Opening starts at a link; returning starts at the destination card.
   const start = returning ? surface(true, origin.item) : surface(false, origin.item)
   if (!start || !visible(start)) return null
+  const continuous = /^(category:|catalog:|order:|request:)/.test(origin.item) || ['orders', 'china'].includes(origin.item)
+  if (continuous) document.documentElement.dataset.loftSurfaceMotion = 'continuous'
   consumeSurfaceIntent()
   const sourceRect = start.getBoundingClientRect()
   document.documentElement.style.setProperty('--loft-surface-source-width', `${sourceRect.width}px`)
@@ -77,6 +80,11 @@ export function prepareProfileTransition(from: Page, to: Page) {
       document.documentElement.style.setProperty('--loft-surface-target-width', `${targetRect.width}px`)
       document.documentElement.style.setProperty('--loft-surface-target-height', `${targetRect.height}px`)
       mark(target)
+      if (continuous) {
+        const content = document.querySelector<HTMLElement>('[data-profile-detail-content]') ||
+          Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]')).find(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal, .fixed, .sticky'))
+        content?.setAttribute('data-loft-snapshot', 'true')
+      }
       return true
     },
   }

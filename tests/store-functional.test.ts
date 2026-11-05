@@ -71,3 +71,13 @@ test('price changes and sold-out stock are conflicts, not successful orders',asy
   assert.equal(result.statusCode,409)
  },url=> {if(url.pathname.endsWith('/rpc/store_create_order'))return Response.json({message,code:'P0001'},{status:400});throw Error('Unexpected '+url.pathname)})
 })
+
+test('reservation limit explains how to resume checkout without changing orders or sending notifications',async()=> {
+ await mock(async calls=> {
+  const result=await call({action:'createOrder',requestKey:'11111111-1111-4111-8111-111111111111',order:{client_name:'Fixture buyer',client_phone:'+998901234567',delivery_method:'delivery',delivery_address:'Test address 15',payment_method:'online_card',order_currency:'UZS',total_price_usd:20,total_price_uzs:240000,items:[{productId:'fixture-product',quantity:1,size:'42'}]}})
+  assert.equal(result.statusCode,409)
+  assert.match(result.body.error,/лимит незавершённых заказов/)
+  assert.match(result.body.error,/Профиль → Заказы/)
+  assert.equal(calls.some(c=>c.url.pathname.endsWith('/rpc/store_cancel_order')||c.url.pathname.endsWith('/rpc/store_claim_notification')),false)
+ },url=> {if(url.pathname.endsWith('/rpc/store_create_order'))return Response.json({message:'Reservation limit',code:'P0001'},{status:400});throw Error('Unexpected '+url.pathname)})
+})

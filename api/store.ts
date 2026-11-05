@@ -39,6 +39,7 @@ async function presentOrder(order: StoredRecord) {
     items: await Promise.all((order.items || []).map(async (item) => item.isSpecialOrder ? { ...item, image: await signedUrl(item.image, 'china-requests') } : item)) }
 }
 function dbError(message?: string): never {
+  if (message?.includes('Reservation limit')) throw new HttpError(409, 'Достигнут лимит незавершённых заказов. Завершите оплату или отмените предыдущий заказ в разделе «Профиль → Заказы». Если чек уже загружен, дождитесь подтверждения магазина.')
   if (message?.includes('Price changed')) throw new HttpError(409, 'Цена или доставка изменилась. Обновите корзину и оформите заказ заново.')
   if (message?.includes('stock') || message?.includes('unavailable') || message?.includes('no rows')) throw new HttpError(409, 'Товар или спецзаказ больше недоступен. Обновите корзину.')
   throw new HttpError(400, 'Не удалось сохранить заказ. Проверьте данные и повторите попытку.')
