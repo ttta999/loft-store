@@ -14,9 +14,16 @@ export function sectionDirection(from: Page, to: Page, backwards: boolean) {
       return Math.sign(depth(b) - depth(a)) || (backwards ? -1 : 1)
     }
   }
-  const depth: Record<string, number> = { '/': 0, '/home': 0, '/category': 1, '/catalog': 2 }
+  if (from.pathname === '/brands' && to.pathname === '/brands') {
+    const a = new URLSearchParams(from.search).get('brand'), b = new URLSearchParams(to.search).get('brand')
+    if (a !== b) return Math.sign(Number(!!b) - Number(!!a)) || (backwards ? -1 : 1)
+  }
+  const depth: Record<string, number> = { '/': 0, '/home': 0, '/category': 1, '/catalog': 2, '/brands': 1, '/search': 1 }
+  const home = (path: string) => path === '/' || path === '/home'
   const categoryPair = [from.pathname, to.pathname].includes('/category')
-  return categoryPair && from.pathname in depth && to.pathname in depth ? Math.sign(depth[to.pathname] - depth[from.pathname]) : 0
+  const entryPair = (home(from.pathname) && ['/brands', '/search'].includes(to.pathname)) ||
+    (home(to.pathname) && ['/brands', '/search'].includes(from.pathname))
+  return (categoryPair || entryPair) && from.pathname in depth && to.pathname in depth ? Math.sign(depth[to.pathname] - depth[from.pathname]) : 0
 }
 function activeDialog() { return Array.from(document.querySelectorAll<HTMLElement>('.loft-modal, [data-surface-dialog]')).at(-1) }
 function content() {

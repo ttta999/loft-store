@@ -39,7 +39,8 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     if (navigationType === 'REPLACE') inheritSurfaceOrigin(displayed, location)
     const sectionChanged = new URLSearchParams(displayed.search).get('section') !== new URLSearchParams(location.search).get('section')
     const detailChanged = samePath && location.pathname === '/profile' && displayed.search !== location.search
-    const modalOnly = samePath && !sectionChanged && !detailChanged && !hasSurfaceNavigation(displayed, location)
+    const internalDirection = sectionDirection(displayed, location, backwards)
+    const modalOnly = samePath && !sectionChanged && !detailChanged && !internalDirection && !hasSurfaceNavigation(displayed, location)
     let transition: ViewTransition | undefined
     let animations: Animation[] = []
     let clearTabs: (() => void) | undefined
@@ -63,7 +64,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     }
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
-      const tabMotion = prepareTabMotion(displayed, location, sectionDirection(displayed, location, backwards))
+      const tabMotion = prepareTabMotion(displayed, location, internalDirection)
       if (tabMotion) {
         clearTabs = tabMotion.cleanup
         apply()
