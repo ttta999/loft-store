@@ -79,7 +79,9 @@ for (const section of ['orders', 'china', 'favorites', 'settings']) {
       await page.evaluate(() => { for (const animation of document.getAnimations()) if (animation.playState === 'paused') animation.play() })
     }
     const opening = await finished(page, 'profile')
-    expect(opening.names).toEqual(expect.arrayContaining(['loft-profile-surface', 'loft-profile-icon']))
+    expect(opening.names).toContain('loft-profile-surface')
+    if (section === 'orders' || section === 'china') expect(opening.names).not.toContain('loft-profile-icon')
+    else expect(opening.names).toContain('loft-profile-icon')
     expect(await page.locator('.loft-navigation').boundingBox()).toEqual(nav)
     await page.goBack()
     await expect(tile).toBeVisible()

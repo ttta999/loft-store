@@ -54,7 +54,9 @@ for (const entry of ['home', 'catalog', 'search', 'brands', 'favorites', 'profil
     if (entry === 'catalog') {
       await page.goto(STORE)
       await page.getByText('Обувь', { exact: true }).click()
-      await page.getByText('Все товары', { exact: true }).click()
+      // Ignore the aria-hidden decorative snapshot while the previous reveal
+      // is still running; interact with the real, accessible control.
+      await page.getByRole('button', { name: /^Все товары/ }).click()
     } else if (entry === 'favorites' || entry === 'profile-favorites') {
       await page.goto(`${STORE}/product/${productId}`)
       await page.getByRole('button', { name: 'В избранное', exact: true }).click()

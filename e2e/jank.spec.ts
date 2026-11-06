@@ -54,7 +54,7 @@ test('при возврате из длинных деталей нет раст
           navLayer: Number(style('loft-static-navigation').zIndex), contentLayer: Number(style('loft-profile-surface').zIndex),
           textWidth: Number.parseFloat(getComputedStyle(document.documentElement, '::view-transition-new(loft-profile-surface)').width),
           blend: getComputedStyle(document.documentElement, '::view-transition-new(loft-profile-surface)').mixBlendMode,
-          targetWidth: document.querySelector('[style*="loft-profile-surface"]')!.getBoundingClientRect().width })
+          targetWidth: Number.parseFloat(style('loft-profile-surface').width) })
       }).catch(() => {})
       return transition
     }
@@ -85,7 +85,7 @@ test('при возврате из длинных деталей нет раст
   expect(records).toHaveLength(6)
   for (const record of records) {
     expect(record.sourceNames).not.toContain('loft-content')
-    expect(record.sourceNames).not.toContain('loft-static-header')
+    expect(record.sourceNames).toContain('loft-static-header')
     expect(record.sourceNames).not.toContain('loft-static-navigation')
     expect(record.oldContent).toBe('none')
     expect(record.headerAnimation).toBe('none')

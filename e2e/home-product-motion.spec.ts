@@ -18,7 +18,7 @@ for (const placement of ['sale', 'new', 'popular']) {
       ;(window as any).productFrames = []
       document.startViewTransition = callback => {
         const source = document.querySelector<HTMLElement>('[style*="loft-product-photo"]')!
-        const frame: any = { y: scrollY, sourceTop: source.getBoundingClientRect().top, sourcePlacement: source.closest('[data-product-placement]')?.getAttribute('data-product-placement') }
+        const frame: any = { y: scrollY, sourceTop: source.getBoundingClientRect().top, sourcePlacement: source.closest('[data-product-placement]')?.getAttribute('data-product-placement'), sourceScale: getComputedStyle(source.closest('[data-product-card]') || source).scale, header: document.querySelector<HTMLElement>('.loft-header')?.style.viewTransitionName }
         ;(window as any).productFrames.push(frame)
         const transition = native(callback)
         ;(window as any).productTransition = transition
@@ -52,12 +52,15 @@ for (const placement of ['sale', 'new', 'popular']) {
     expect(opening.y).toBe(scroll)
     expect(Math.abs(opening.sourceTop - image.y)).toBeLessThan(2)
     expect(opening.sourcePlacement).toBe(`${placement}:${productId}`)
+    expect(opening.sourceScale).toBe('1')
+    expect(opening.header).toBe('loft-static-header')
     await page.goBack()
     await expect(card).toBeVisible()
     await page.evaluate(() => (window as any).productTransition.finished)
     const closing = await page.evaluate(() => (window as any).productFrames.at(-1))
     expect(closing.mode).toBe('product')
     expect(closing.error).toBeUndefined()
+    expect(closing.header).toBe('loft-static-header')
     expect(await page.evaluate(() => scrollY)).toBe(scroll)
     await expect(card).toBeInViewport()
   })

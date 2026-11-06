@@ -79,6 +79,9 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       const profile = !photo && typeof document.startViewTransition === 'function' ? prepareProfileTransition(displayed, location) : null
       const shared = photo || profile
       if (shared) {
+        // Pair the header on both sides: Safari can delay an unmatched new
+        // header layer. Its group has no geometry animation in either case.
+        captureTransitionChrome(true)
         document.documentElement.dataset.loftMotion = photo ? 'product' : 'profile'
         transition = document.startViewTransition(async () => {
           apply()

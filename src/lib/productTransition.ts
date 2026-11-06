@@ -1,6 +1,7 @@
 import { useStore } from '../store/useStore'
 import { cacheProduct } from './productCache'
 import { warmPage } from './pagePreload'
+import { clearSharedSources, markSharedElement } from './sharedElement'
 
 type Page = { key: string; pathname: string; search: string }
 type Origin = { id: string; key: string; index: number; placement?: string; src: string }
@@ -24,13 +25,14 @@ function radius(image: HTMLImageElement) {
   const own = getComputedStyle(image).borderRadius
   return own !== '0px' ? own : '16px 16px 0px 0px'
 }
-function mark(image: HTMLImageElement) { image.style.viewTransitionName = photoName }
+function mark(image: HTMLImageElement) { markSharedElement(image, photoName) }
 function markContent() {
   document.querySelectorAll('[data-loft-snapshot]').forEach(element => element.removeAttribute('data-loft-snapshot'))
   const content = Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]')).find(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation'))
   content?.setAttribute('data-loft-snapshot', 'true')
 }
 export function clearProductNames() {
+  clearSharedSources()
   if (openingPhoto) { openingPhoto = null; window.dispatchEvent(new Event('loft:product-photo-end')) }
   delete document.documentElement.dataset.loftPhotoCrossfade
   document.documentElement.style.removeProperty('--loft-photo-from-radius')
@@ -46,14 +48,16 @@ export function installProductIntent(location: () => Page) {
     if (!card) return
     warmPage('/product')
     const image = card.querySelector<HTMLImageElement>('img')
-    if (event.type !== 'click' || !visible(image)) return
     const product = useStore.getState().productsCache?.items.find(item => item.id === card.dataset.productCard)
     if (product) cacheProduct(product)
+    if (event.type !== 'click' || !visible(image)) return
     intent = { id: card.dataset.productCard!, key: location().key, index: cards(card.dataset.productCard!).indexOf(card), placement: card.dataset.productPlacement, src: image.currentSrc || image.src }
   }
   document.addEventListener('click', capture, true)
   document.addEventListener('pointerover', capture, { passive: true })
-  return () => { document.removeEventListener('click', capture, true); document.removeEventListener('pointerover', capture) }
+  document.addEventListener('pointerdown', capture, { passive: true })
+  document.addEventListener('focusin', capture)
+  return () => { document.removeEventListener('click', capture, true); document.removeEventListener('pointerover', capture); document.removeEventListener('pointerdown', capture); document.removeEventListener('focusin', capture) }
 }
 export function prepareProductTransition(from: Page, to: Page) {
   clearProductNames()

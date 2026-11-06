@@ -490,7 +490,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                     className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-[#E8E2D5] dark:hover:bg-dark-border transition-colors"
                   >
                     <MessageCircle size={16} />
-                    {language === 'ru' ? 'Менеджеру' : 'Menejerga'}
+                    {language === 'ru' ? 'Менеджер' : 'Menejer'}
                   </a>
                   <button
                     onClick={() => onCancelOrder(order)}

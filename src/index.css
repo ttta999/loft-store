@@ -136,10 +136,13 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 ::view-transition-new(loft-profile-surface) { width: var(--loft-surface-target-width); height: var(--loft-surface-target-height); animation: loft-fade-in 200ms var(--loft-motion-ease) 60ms both; }
 ::view-transition-old(loft-profile-icon) { display: none; }
 ::view-transition-new(loft-profile-icon) { animation: none; }
-/* Requested card openings follow the product's uninterrupted shared element.
-   Keep text at its final size while the surface bounds reveal it. */
+/* Requested sections use the same uniformly fitted snapshot as a product
+   photo, expanding from the selected card into the visible screen. */
 :root[data-loft-surface-motion="continuous"]::view-transition-old(loft-profile-surface) { display: none; }
 :root[data-loft-surface-motion="continuous"]::view-transition-new(loft-profile-surface) { animation: none; }
+:root[data-loft-surface-motion="continuous"]::view-transition-new(loft-profile-surface) { width: 100%; height: 100%; object-fit: cover; }
+[data-loft-shared-source] { scale: 1 !important; transition: none !important; }
+[data-loft-surface-hidden] { opacity: 0 !important; }
 :root[data-loft-photo-crossfade]::view-transition-old(loft-product-photo) { display: block; animation: loft-fade-out 180ms ease-out both; }
 :root[data-loft-photo-crossfade]::view-transition-new(loft-product-photo) { animation: loft-fade-in 180ms ease-out both; }
 

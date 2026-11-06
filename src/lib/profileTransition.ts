@@ -1,4 +1,5 @@
 import { consumeSurfaceIntent, getSurfaceIntent } from './surfaceIntent'
+import { captureSurfaceFrame, clearSurfaceFrames, clearSharedSources, markSharedElement } from './sharedElement'
 type Page = { key: string; pathname: string; search: string }
 type Origin = { key: string; item: string }
 const origins = new Map<string, Origin>()
@@ -25,11 +26,14 @@ function visible(element?: HTMLElement) {
   return rect.width > 0 && rect.height > 0 && rect.bottom > top && rect.top < innerHeight - 90
 }
 function mark(element: HTMLElement) {
-  element.style.viewTransitionName = surfaceName
+  markSharedElement(element, surfaceName)
+  if (document.documentElement.dataset.loftSurfaceMotion === 'continuous') return
   const icon = element.querySelector<HTMLElement>('[data-profile-icon]')
   if (icon) icon.style.viewTransitionName = iconName
 }
 export function clearProfileNames(keepMetrics = false) {
+  clearSharedSources()
+  if (!keepMetrics) clearSurfaceFrames()
   if (!keepMetrics) delete document.documentElement.dataset.loftSurfaceMotion
   if (!keepMetrics) for (const name of ['source-width', 'source-height', 'target-width', 'target-height']) document.documentElement.style.removeProperty(`--loft-surface-${name}`)
   document.querySelectorAll<HTMLElement>('[style*="loft-profile-"]').forEach(element => element.style.removeProperty('view-transition-name'))
@@ -61,10 +65,12 @@ export function prepareProfileTransition(from: Page, to: Page) {
   const continuous = /^(category:|catalog:|order:|request:)/.test(origin.item) || ['orders', 'china'].includes(origin.item)
   if (continuous) document.documentElement.dataset.loftSurfaceMotion = 'continuous'
   consumeSurfaceIntent()
-  const sourceRect = start.getBoundingClientRect()
+  const contentFor = (element: HTMLElement) => element.closest<HTMLElement>('[data-profile-detail-content], [data-loft-content]') || element
+  const source = continuous && returning ? captureSurfaceFrame(contentFor(start)) || start : start
+  const sourceRect = source.getBoundingClientRect()
   document.documentElement.style.setProperty('--loft-surface-source-width', `${sourceRect.width}px`)
   document.documentElement.style.setProperty('--loft-surface-source-height', `${sourceRect.height}px`)
-  mark(start)
+  mark(source)
   if (!returning) {
     origins.set(to.key, origin)
     while (origins.size > 60) origins.delete(origins.keys().next().value!)
@@ -76,15 +82,12 @@ export function prepareProfileTransition(from: Page, to: Page) {
       // Detail dialogs keep their source list mounted behind them.
       // Remove its live name before naming the destination snapshot.
       clearProfileNames(true)
-      const targetRect = target.getBoundingClientRect()
+      clearSurfaceFrames()
+      const destination = continuous && !returning ? captureSurfaceFrame(contentFor(target)) || target : target
+      const targetRect = destination.getBoundingClientRect()
       document.documentElement.style.setProperty('--loft-surface-target-width', `${targetRect.width}px`)
       document.documentElement.style.setProperty('--loft-surface-target-height', `${targetRect.height}px`)
-      mark(target)
-      if (continuous) {
-        const content = document.querySelector<HTMLElement>('[data-profile-detail-content]') ||
-          Array.from(document.querySelectorAll<HTMLElement>('[data-loft-content]')).find(element => !element.querySelector('[data-loft-content], .loft-header, .loft-navigation, .loft-modal, .fixed, .sticky'))
-        content?.setAttribute('data-loft-snapshot', 'true')
-      }
+      mark(destination)
       return true
     },
   }

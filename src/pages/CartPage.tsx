@@ -256,7 +256,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [phone, setPhone] = useState('+998')
   const [address, setAddress] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
-  const [orderId, setOrderId] = useState<number | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const requestKey = useRef(crypto.randomUUID())
   const [serverTotalUsd, setServerTotalUsd] = useState<number | null>(null)
@@ -420,13 +420,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
       setServerTotalUsd(Number(orderData.total_price_usd))
       setServerTotalUzs(Number(orderData.total_price_uzs))
       const newOrderId = orderData.id
+      setOrderId(String(newOrderId))
       if (paymentMethod === 'online_card') {
         setCurrentOrderId(newOrderId.toString())
         setShowPaymentInfo(true)
         setSubmitting(false)
         return
       }
-      setOrderId(newOrderId)
       setOrderSuccess(true)
       clearCart()
     } catch (error: any) {
@@ -596,7 +596,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           <div className="pointer-events-auto bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border shadow-lg p-3">
             <div className="grid grid-cols-2 gap-2">
               <a href={MANAGER_TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border">
-                <MessageCircle size={16} /> {language === 'ru' ? 'Менеджеру' : 'Menejerga'}
+                <MessageCircle size={16} /> {language === 'ru' ? 'Менеджер' : 'Menejer'}
               </a>
               {screenshotUploaded ? (
                 <button onClick={() => { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }} className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">

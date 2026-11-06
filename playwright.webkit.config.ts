@@ -3,7 +3,7 @@ import base from './playwright.config'
 
 export default defineConfig({
   ...base,
-  testMatch: ['jank.spec.ts', 'premium.spec.ts', 'motion.spec.ts', 'profile-shared.spec.ts', 'unified-motion.spec.ts', 'home-product-motion.spec.ts', 'surface-continuity.spec.ts'],
+  testMatch: ['jank.spec.ts', 'premium.spec.ts', 'motion.spec.ts', 'profile-shared.spec.ts', 'unified-motion.spec.ts', 'home-product-motion.spec.ts', 'surface-continuity.spec.ts', 'order-success.spec.ts'],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-webkit' }]],
   outputDir: 'test-results-webkit',
   use: { ...base.use, channel: undefined },
