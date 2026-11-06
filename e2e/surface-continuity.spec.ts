@@ -3,96 +3,138 @@ import type { Page } from '@playwright/test'
 
 async function track(page: Page) {
   await page.evaluate(() => {
+    const win = window as any
+    win.surfaceRecords = []
+    win.nativeSections = 0
     const native = document.startViewTransition.bind(document)
-    ;(window as any).surfaceRecords = []
-    document.startViewTransition = callback => {
-      const source = document.querySelector<HTMLElement>('[style*="loft-profile-surface"]')
-      const sourceFrame = source?.hasAttribute('data-loft-surface-frame') || false
-      const transition = native(callback)
-      ;(window as any).surfaceTransition = transition
-      transition.ready.then(() => {
-        const style = (part: string) => getComputedStyle(document.documentElement, `::view-transition-${part}(loft-profile-surface)`)
-        ;(window as any).surfaceRecords.push({ continuous: document.documentElement.dataset.loftSurfaceMotion,
-          old: style('old').animationName, entering: style('new').animationName, groupAnimation: style('group').animationName,
-          enterX: document.documentElement.style.getPropertyValue('--loft-section-enter-x'), exitX: document.documentElement.style.getPropertyValue('--loft-section-exit-x'),
-          duration: style('new').animationDuration, easing: style('new').animationTimingFunction,
-          sourceFrame, targetFrame: !!document.querySelector('[data-loft-surface-frame][style*="loft-profile-surface"]'),
-          targetHeight: document.querySelector('[data-loft-surface-frame]')?.getBoundingClientRect().height || 0,
-          fit: style('new').objectFit, snapshotHeight: Number.parseFloat(style('new').height), groupHeight: Number.parseFloat(style('group').height) })
-      }).catch(() => {})
-      return transition
-    }
+    document.startViewTransition = callback => { win.nativeSections++; return native(callback) }
+    window.addEventListener('loft:tabs-start', ((event: CustomEvent) => {
+      const { kind, direction, animations, finished } = event.detail
+      win.surfaceAnimations = animations
+      win.surfaceTransition = { ready: Promise.resolve(), finished }
+      win.surfaceRecords.push({ kind, direction, width: innerWidth,
+        frames: animations.map((animation: Animation) => (animation.effect as KeyframeEffect).getKeyframes().map(frame => frame.translate)),
+        timing: animations.map((animation: Animation) => animation.effect!.getTiming()),
+        copiesContainChrome: !!document.querySelector('[data-tab-outgoing] .loft-header, [data-tab-outgoing] .loft-navigation') })
+    }) as EventListener)
   })
 }
-async function finished(page: Page) {
+async function finished(page: Page, direction: number) {
   await page.evaluate(() => (window as any).surfaceTransition.finished)
   const record = await page.evaluate(() => (window as any).surfaceRecords.at(-1))
-  expect(record).toMatchObject({ continuous: 'slide', old: 'loft-section-out', entering: 'loft-section-in', groupAnimation: 'none', duration: '0.24s', easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fit: 'cover' })
-  expect(record.sourceFrame && record.targetFrame).toBe(true)
-  expect(record.enterX).toBe((await page.evaluate(() => (window as any).surfaceRecords.length)) <= 2 ? '20px' : '-20px')
-  expect(record.exitX).toBe(record.enterX === '20px' ? '-8px' : '8px')
-  if (record.targetFrame) expect(record.targetHeight).toBeGreaterThan(200)
-  expect(Math.abs(record.snapshotHeight - record.groupHeight)).toBeLessThan(1)
-  await expect(page.locator('[data-loft-surface-frame], [data-loft-surface-hidden]')).toHaveCount(0)
-  await expect(page.locator('html')).not.toHaveAttribute('data-loft-surface-motion')
+  expect(record.kind).toBe('section')
+  expect(record.direction).toBe(direction)
+  expect(record.copiesContainChrome).toBe(false)
+  expect(record.frames.length).toBeGreaterThanOrEqual(2)
+  expect(Number.parseFloat(record.frames[0][0])).toBe(direction * record.width)
+  expect(Number.parseFloat(record.frames[0][1])).toBe(0)
+  expect(Number.parseFloat(record.frames.at(-1)[0])).toBe(0)
+  expect(Number.parseFloat(record.frames.at(-1)[1])).toBe(-direction * record.width)
+  for (const timing of record.timing) expect(timing).toMatchObject({ duration: 340, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' })
+  expect(await page.evaluate(() => (window as any).nativeSections)).toBe(0)
+  await expect(page.locator('[data-tab-outgoing], [data-tab-incoming], [data-loft-chrome]')).toHaveCount(0)
+  await expect(page.locator('html')).not.toHaveAttribute('data-loft-tab-motion')
 }
-
-
 async function midpoint(page: Page, name: string) {
-  await page.evaluate(async () => {
-    await (window as any).surfaceTransition.ready
-    for (const animation of document.getAnimations()) if (animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity) { animation.pause(); animation.currentTime = 100 }
+  await page.evaluate(() => {
+    for (const animation of (window as any).surfaceAnimations) { animation.pause(); animation.currentTime = 170 }
   })
   const path = test.info().outputPath(name + '.png')
   await page.screenshot({ path })
   await test.info().attach(name, { path, contentType: 'image/png' })
-  await page.evaluate(() => { for (const animation of document.getAnimations()) if (animation.playState === 'paused') animation.play() })
+  await page.evaluate(() => { for (const animation of (window as any).surfaceAnimations) animation.play() })
 }
 
-test('категория и подкатегория: короткий сдвиг без увеличения текста и обратное закрытие', async ({ page, browserName }) => {
+test('категория и подкатегория пролистываются на ширину экрана, Back меняет направление', async ({ page }) => {
   await page.goto(STORE)
   await track(page)
   await page.locator('[data-surface-link="category:shoes"]').click()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
-  if (browserName === 'chromium') await midpoint(page, 'category-short-slide')
-  await finished(page)
+  await midpoint(page, 'category-page-slide')
+  await finished(page, 1)
   await page.locator('[data-surface-link="catalog:shoes:sneakers"]').click()
   await expect(page.locator('[data-surface="catalog:shoes:sneakers"]')).toBeVisible()
-  await finished(page)
+  await finished(page, 1)
   await page.goBack()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
-  await finished(page)
+  await finished(page, -1)
   await page.goBack()
   await expect(page.locator('[data-surface-link="category:shoes"]')).toBeVisible()
-  await finished(page)
+  await finished(page, -1)
 })
 for (const [section, prefix, id] of [['orders', 'order', 1001], ['china', 'request', 3001]] as const) {
-  test(`${section}: список и детали открываются коротким сдвигом, обе ступени возвращаются обратно`, async ({ page, browserName }) => {
+  test(`${section}: список и детали используют пролистывание страницы в обе стороны`, async ({ page }) => {
     await page.goto(`${STORE}/profile`)
     await track(page)
     await page.locator(`[data-profile-link="${section}"]`).click()
     await expect(page.locator(`[data-profile-surface="${section}"]`)).toBeVisible()
-    await finished(page)
+    await finished(page, 1)
     await page.locator(`[data-profile-link="${prefix}:${id}"]`).click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    if (browserName === 'chromium') await midpoint(page, section + '-short-slide')
-    await finished(page)
+    await midpoint(page, section + '-page-slide')
+    await finished(page, 1)
     await page.evaluate(() => (window as any).telegramBack())
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await finished(page)
+    await finished(page, -1)
     await page.goBack()
     await expect(page.locator(`[data-profile-link="${section}"]`)).toBeVisible()
-    await finished(page)
+    await finished(page, -1)
+  })
+}
+for (const theme of ['light', 'dark']) {
+  test(`профиль ${theme}: меню остаётся тем же живым элементом на каждом кадре всех разделов`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: theme as 'light' | 'dark' })
+    await page.goto(`${STORE}/profile`)
+    await expect(page.locator('[data-profile-link="orders"]')).toBeVisible()
+    await expect(page.locator('[data-nav-tab="profile"]')).toHaveCSS('background-color', theme === 'dark' ? 'rgb(34, 48, 74)' : 'rgb(232, 226, 213)')
+    await track(page)
+    await page.evaluate(() => {
+      const win = window as any
+      const nav = document.querySelector<HTMLElement>('.loft-navigation')!
+      const initial = nav.getBoundingClientRect()
+      const button = nav.querySelector<HTMLElement>('[data-nav-tab="profile"]')!
+      const background = getComputedStyle(button).backgroundColor
+      win.navFailures = []
+      win.navFrames = 0
+      const sample = () => {
+        const rect = nav.getBoundingClientRect(), style = getComputedStyle(nav)
+        win.navFrames++
+        if (!nav.isConnected || document.querySelectorAll('.loft-navigation').length !== 1 ||
+          Math.abs(rect.y - initial.y) > 0.5 || Math.abs(rect.width - initial.width) > 0.5 ||
+          style.translate !== 'none' || style.transform !== 'none' || style.opacity !== '1' || style.viewTransitionName !== 'none' ||
+          getComputedStyle(button).backgroundColor !== background) win.navFailures.length < 5 && win.navFailures.push({ rect: rect.toJSON(), initial: initial.toJSON(), name: style.viewTransitionName, background, actualBackground: getComputedStyle(button).backgroundColor, translate: style.translate, transform: style.transform })
+        win.navFrame = requestAnimationFrame(sample)
+      }
+      sample()
+    })
+    for (const section of ['orders', 'china', 'favorites', 'settings']) {
+      await page.locator(`[data-profile-link="${section}"]`).click()
+      await expect(page.locator(`[data-profile-surface="${section}"]`)).toBeVisible()
+      await finished(page, 1)
+      await page.goBack()
+      await expect(page.locator(`[data-profile-link="${section}"]`)).toBeVisible()
+      await finished(page, -1)
+    }
+    await page.evaluate(() => cancelAnimationFrame((window as any).navFrame))
+    expect(await page.evaluate(() => (window as any).navFrames)).toBeGreaterThan(20)
+    expect(await page.evaluate(() => (window as any).navFailures)).toEqual([])
   })
 }
 
-test('анимация настроек сохраняет прежнее поведение', async ({ page }) => {
+test('адрес профиля доступен с клавиатуры и ведёт в Навигатор на телефоне, в карту на компьютере', async ({ page, isMobile }) => {
   await page.goto(`${STORE}/profile`)
-  await track(page)
-  await page.locator('[data-profile-link="settings"]').click()
-  await expect(page.locator('[data-profile-surface="settings"]')).toBeVisible()
-  await page.evaluate(() => (window as any).surfaceTransition.finished)
-  const record = await page.evaluate(() => (window as any).surfaceRecords.at(-1))
-  expect(record.continuous).toBeUndefined()
-  expect(record.entering).toBe('loft-fade-in')
+  const address = page.getByRole('link', { name: /Адрес магазина ТЦ Mercato/ })
+  await expect(address).toBeVisible()
+  const href = await address.getAttribute('href')
+  if (isMobile) {
+    expect(href).toMatch(/^yandexnavi:\/\/map_search\?text=/)
+    expect(new URL(href!).searchParams.get('text')).toBe('Ташкент, Малая кольцевая дорога, 57, ТЦ Mercato')
+  } else {
+    expect(href).toBe('https://yandex.com/maps/org/mercato/220591012883/')
+    await expect(address).toHaveAttribute('target', '_blank')
+  }
+  await address.evaluate(element => element.addEventListener('click', event => { event.preventDefault(); (window as any).addressActivated = true }))
+  await address.focus()
+  await address.press('Enter')
+  expect(await page.evaluate(() => (window as any).addressActivated)).toBe(true)
 })

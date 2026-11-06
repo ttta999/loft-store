@@ -41,23 +41,15 @@ test('при возврате из длинных деталей нет раст
   await row.scrollIntoViewIfNeeded()
   const scroll = await page.evaluate(() => scrollY)
   await page.evaluate(() => {
-    const original = document.startViewTransition.bind(document)
     ;(window as any).snapshots = []
-    document.startViewTransition = callback => {
-      const sourceNames = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => element.style.viewTransitionName)
-      const transition = original(callback)
-      ;(window as any).lastTransition = transition
-      transition.ready.then(() => {
-        const style = (name: string) => getComputedStyle(document.documentElement, `::view-transition-group(${name})`)
-        ;(window as any).snapshots.push({ sourceNames, oldContent: getComputedStyle(document.documentElement, '::view-transition-old(loft-content)').display,
-          headerAnimation: style('loft-static-header').animationName, navAnimation: style('loft-static-navigation').animationName,
-          navLayer: Number(style('loft-static-navigation').zIndex), contentLayer: Number(style('loft-profile-surface').zIndex),
-          textWidth: Number.parseFloat(getComputedStyle(document.documentElement, '::view-transition-new(loft-profile-surface)').width),
-          blend: getComputedStyle(document.documentElement, '::view-transition-new(loft-profile-surface)').mixBlendMode,
-          targetWidth: Number.parseFloat(style('loft-profile-surface').width) })
-      }).catch(() => {})
-      return transition
-    }
+    window.addEventListener('loft:tabs-start', ((event: CustomEvent) => {
+      ;(window as any).lastTransition = { ready: Promise.resolve(), finished: event.detail.finished }
+      const nav = document.querySelector<HTMLElement>('.loft-navigation')!
+      const copy = document.querySelector<HTMLElement>('[data-tab-outgoing]')!
+      ;(window as any).snapshots.push({ kind: event.detail.kind, sourceScroll: copy.dataset.sourceScroll,
+        bottom: copy.getBoundingClientRect().bottom, navTop: nav.getBoundingClientRect().top,
+        copiedChrome: !!copy.querySelector('.loft-header, .loft-navigation'), nativeName: nav.style.viewTransitionName })
+    }) as EventListener)
   })
   for (let repeat = 0; repeat < 3; repeat++) {
     await row.click()
@@ -84,15 +76,10 @@ test('при возврате из длинных деталей нет раст
   const records = await page.evaluate(() => (window as any).snapshots as any[])
   expect(records).toHaveLength(6)
   for (const record of records) {
-    expect(record.sourceNames).not.toContain('loft-content')
-    expect(record.sourceNames).toContain('loft-static-header')
-    expect(record.sourceNames).not.toContain('loft-static-navigation')
-    expect(record.oldContent).toBe('none')
-    expect(record.headerAnimation).toBe('none')
-    expect(record.navAnimation).toBe('none')
-    expect(record.navLayer).toBeGreaterThan(record.contentLayer)
-    expect(Math.abs(record.textWidth - record.targetWidth)).toBeLessThan(1)
-    expect(record.blend).toBe('normal')
+    expect(record.kind).toBe('section')
+    expect(record.bottom).toBeLessThanOrEqual(record.navTop)
+    expect(record.copiedChrome).toBe(false)
+    expect(record.nativeName).toBe('')
   }
   await expect(page.locator('[data-loft-chrome]')).toHaveCount(0)
 })

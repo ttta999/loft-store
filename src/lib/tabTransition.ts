@@ -1,9 +1,22 @@
 import { motionEaseCSS, motionTiming } from './motion'
-type Page = { pathname: string }
+type Page = { pathname: string; search?: string }
 const order: Record<string, number> = { '/': 0, '/home': 0, '/cart': 1, '/china': 2, '/profile': 3 }
 export function tabDirection(from: Page, to: Page) {
   const a = order[from.pathname], b = order[to.pathname]
   return a !== undefined && b !== undefined && a !== b ? Math.sign(b - a) : 0
+}
+/** Internal pages use the same push as tabs, including profile query routes. */
+export function sectionDirection(from: Page, to: Page, backwards: boolean) {
+  if (from.pathname === '/profile' && to.pathname === '/profile') {
+    const a = new URLSearchParams(from.search), b = new URLSearchParams(to.search)
+    if (['section', 'order', 'request'].some(key => a.get(key) !== b.get(key))) {
+      const depth = (params: URLSearchParams) => params.get('order') || params.get('request') ? 2 : params.get('section') && params.get('section') !== 'main' ? 1 : 0
+      return Math.sign(depth(b) - depth(a)) || (backwards ? -1 : 1)
+    }
+  }
+  const depth: Record<string, number> = { '/': 0, '/home': 0, '/category': 1, '/catalog': 2 }
+  const categoryPair = [from.pathname, to.pathname].includes('/category')
+  return categoryPair && from.pathname in depth && to.pathname in depth ? Math.sign(depth[to.pathname] - depth[from.pathname]) : 0
 }
 function activeDialog() { return Array.from(document.querySelectorAll<HTMLElement>('.loft-modal, [data-surface-dialog]')).at(-1) }
 function content() {
@@ -22,8 +35,9 @@ function floating() {
 }
 /** Retain only a noninteractive copy of the outgoing viewport. Live destination
  * content slides independently; fixed chrome never enters a transformed parent. */
-export function prepareTabMotion(from: Page, to: Page) {
-  const direction = tabDirection(from, to)
+export function prepareTabMotion(from: Page, to: Page, internalDirection = 0) {
+  const direction = internalDirection || tabDirection(from, to)
+  const kind = internalDirection ? 'section' : 'tabs'
   const source = content()
   if (!direction || !source) return null
   const width = innerWidth
@@ -34,7 +48,10 @@ export function prepareTabMotion(from: Page, to: Page) {
   const snapshot = (element: HTMLElement | null | undefined, zIndex: number) => {
     if (!element) return
     const rect = element.getBoundingClientRect()
-    const top = Math.max(0, rect.top), bottom = Math.min(innerHeight, rect.bottom)
+    const header = internalDirection ? Array.from(document.querySelectorAll<HTMLElement>('.loft-header')).at(-1) : null
+    const navigation = internalDirection ? document.querySelector<HTMLElement>('.loft-navigation') : null
+    const top = Math.max(0, rect.top, header?.getBoundingClientRect().bottom || 0)
+    const bottom = Math.min(innerHeight, rect.bottom, navigation?.getBoundingClientRect().top || innerHeight)
     if (!rect.width || bottom <= top) return
     const viewport = document.createElement('div')
     viewport.dataset.tabOutgoing = 'true'
@@ -45,8 +62,7 @@ export function prepareTabMotion(from: Page, to: Page) {
     const clone = element.cloneNode(true) as HTMLElement
     for (const node of [clone, ...clone.querySelectorAll<HTMLElement>('*')]) {
       node.removeAttribute('id')
-      node.removeAttribute('data-loft-dismiss')
-      node.removeAttribute('data-surface-dialog')
+      for (const attribute of [...node.attributes]) if (attribute.name.startsWith('data-')) node.removeAttribute(attribute.name)
       node.style.removeProperty('view-transition-name')
     }
     Object.assign(clone.style, { position: 'absolute', top: `${rect.top - top}px`, left: '0px', right: 'auto', bottom: 'auto', width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transition: 'none' })
@@ -54,7 +70,7 @@ export function prepareTabMotion(from: Page, to: Page) {
     viewport.append(clone)
     copies.push(viewport)
   }
-  snapshot(source, 5)
+  snapshot(source, internalDirection ? 60 : 5)
   snapshot(floating(), 40)
   const cleanup = () => {
     if (cleaned) return
@@ -81,7 +97,7 @@ export function prepareTabMotion(from: Page, to: Page) {
         animations.push(copy.animate([{ translate: '0px 0' }, { translate: `${-direction * width}px 0` }], timing))
       }
       const finished = Promise.allSettled(animations.map(animation => animation.finished)).then(() => { cleanup() })
-      window.dispatchEvent(new CustomEvent('loft:tabs-start', { detail: { direction, animations, finished } }))
+      window.dispatchEvent(new CustomEvent('loft:tabs-start', { detail: { kind, direction, animations, finished } }))
       return finished
     },
   }

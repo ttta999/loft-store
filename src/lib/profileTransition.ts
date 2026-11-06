@@ -1,5 +1,5 @@
 import { consumeSurfaceIntent, getSurfaceIntent } from './surfaceIntent'
-import { captureSurfaceFrame, clearSurfaceFrames, clearSharedSources, markSharedElement } from './sharedElement'
+import { clearSharedSources, markSharedElement } from './sharedElement'
 type Page = { key: string; pathname: string; search: string }
 type Origin = { key: string; item: string }
 const origins = new Map<string, Origin>()
@@ -27,18 +27,11 @@ function visible(element?: HTMLElement) {
 }
 function mark(element: HTMLElement) {
   markSharedElement(element, surfaceName)
-  if (document.documentElement.dataset.loftSurfaceMotion === 'slide') return
   const icon = element.querySelector<HTMLElement>('[data-profile-icon]')
   if (icon) icon.style.viewTransitionName = iconName
 }
 export function clearProfileNames(keepMetrics = false) {
   clearSharedSources()
-  if (!keepMetrics) clearSurfaceFrames()
-  if (!keepMetrics) {
-    delete document.documentElement.dataset.loftSurfaceMotion
-    document.documentElement.style.removeProperty('--loft-section-enter-x')
-    document.documentElement.style.removeProperty('--loft-section-exit-x')
-  }
   if (!keepMetrics) for (const name of ['source-width', 'source-height', 'target-width', 'target-height']) document.documentElement.style.removeProperty(`--loft-surface-${name}`)
   document.querySelectorAll<HTMLElement>('[style*="loft-profile-"]').forEach(element => element.style.removeProperty('view-transition-name'))
 }
@@ -66,15 +59,8 @@ export function prepareProfileTransition(from: Page, to: Page) {
   // Opening starts at a link; returning starts at the destination card.
   const start = returning ? surface(true, origin.item) : surface(false, origin.item)
   if (!start || !visible(start)) return null
-  const sliding = /^(category:|catalog:|order:|request:)/.test(origin.item) || ['orders', 'china'].includes(origin.item)
-  if (sliding) {
-    document.documentElement.dataset.loftSurfaceMotion = 'slide'
-    document.documentElement.style.setProperty('--loft-section-enter-x', returning ? '-20px' : '20px')
-    document.documentElement.style.setProperty('--loft-section-exit-x', returning ? '8px' : '-8px')
-  }
   consumeSurfaceIntent()
-  const contentFor = (element: HTMLElement) => element.closest<HTMLElement>('[data-profile-detail-content], [data-loft-content]') || element
-  const source = sliding ? captureSurfaceFrame(contentFor(start)) || start : start
+  const source = start
   const sourceRect = source.getBoundingClientRect()
   document.documentElement.style.setProperty('--loft-surface-source-width', `${sourceRect.width}px`)
   document.documentElement.style.setProperty('--loft-surface-source-height', `${sourceRect.height}px`)
@@ -90,8 +76,7 @@ export function prepareProfileTransition(from: Page, to: Page) {
       // Detail dialogs keep their source list mounted behind them.
       // Remove its live name before naming the destination snapshot.
       clearProfileNames(true)
-      clearSurfaceFrames()
-      const destination = sliding ? captureSurfaceFrame(contentFor(target)) || target : target
+      const destination = target
       const targetRect = destination.getBoundingClientRect()
       document.documentElement.style.setProperty('--loft-surface-target-width', `${targetRect.width}px`)
       document.documentElement.style.setProperty('--loft-surface-target-height', `${targetRect.height}px`)

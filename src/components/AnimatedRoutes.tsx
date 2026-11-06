@@ -4,7 +4,7 @@ import { clearProductNames, installProductIntent, prepareProductTransition } fro
 import { clearProfileNames, hasSurfaceNavigation, inheritSurfaceOrigin, prepareProfileTransition } from '../lib/profileTransition'
 import { installSurfaceIntent } from '../lib/surfaceIntent'
 import { installDialogOrigins } from '../lib/dialogOrigin'
-import { prepareTabMotion, tabDirection } from '../lib/tabTransition'
+import { prepareTabMotion, sectionDirection, tabDirection } from '../lib/tabTransition'
 import { captureTransitionChrome, clearTransitionChrome } from '../lib/transitionChrome'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
@@ -63,7 +63,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     }
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
-      const tabMotion = prepareTabMotion(displayed, location)
+      const tabMotion = prepareTabMotion(displayed, location, sectionDirection(displayed, location, backwards))
       if (tabMotion) {
         clearTabs = tabMotion.cleanup
         apply()

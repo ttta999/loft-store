@@ -47,6 +47,7 @@ import {
 } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 import IntrinsicImage from '../components/IntrinsicImage'
+import { storeNavigationLink } from '../lib/storeLocation'
 
 const SOCIAL_LINKS = {
   telegram: 'https://t.me/Loft_mens_shop',
@@ -1255,7 +1256,7 @@ export default function ProfilePage() {
 
           {/* ✅ Магазин: единая карточка со строками-иконками */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
-            <div className="flex items-center gap-3 p-3.5">
+            <a {...storeNavigationLink()} className="flex items-center gap-3 p-3.5">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                 <MapPin size={16} className="text-[#1B2A4A] dark:text-white" />
               </div>
@@ -1267,7 +1268,7 @@ export default function ProfilePage() {
                   {language === 'ru' ? 'ТЦ Mercato, 2 этаж, магазин 34' : 'Mercato savdo markazi, 2-qavat, 34-do\'kon'}
                 </p>
               </div>
-            </div>
+            </a>
             <a href="tel:+998933788770" className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors">
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
                 <Phone size={16} className="text-[#1B2A4A] dark:text-white" />

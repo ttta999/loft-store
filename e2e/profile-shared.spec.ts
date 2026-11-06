@@ -5,8 +5,8 @@ async function track(page: import('@playwright/test').Page) {
     const win = window as any
     win.transitions = []
     window.addEventListener('loft:tabs-start', ((event: CustomEvent) => {
-      win.transitions.push({ mode: 'tabs', direction: String(event.detail.direction), enter: 'live-tab-slide' })
-      win.sharedTransition = { finished: event.detail.finished }
+      win.transitions.push({ mode: event.detail.kind || 'tabs', direction: String(event.detail.direction), enter: 'live-tab-slide', names: [], source: [] })
+      win.sharedTransition = { ready: Promise.resolve(), finished: event.detail.finished }
     }) as EventListener)
     const original = document.startViewTransition.bind(document)
     document.startViewTransition = callback => {
@@ -60,33 +60,17 @@ for (const section of ['orders', 'china', 'favorites', 'settings']) {
     await expect(tile).toBeVisible()
     await track(page)
     const nav = await page.locator('.loft-navigation').boundingBox()
-    const sourceWidth = (await tile.boundingBox())!.width
     await tile.click()
     await expect(page.locator(`[data-profile-surface="${section}"]`)).toBeVisible()
-    if (section === 'orders') {
-      await page.evaluate(async () => {
-        await (window as any).sharedTransition.ready
-        for (const animation of document.getAnimations()) {
-          if (animation.effect?.getTiming().iterations !== Infinity && animation.playState === 'running') {
-            animation.pause(); animation.currentTime = 170
-          }
-        }
-      })
-      const width = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement, '::view-transition-group(loft-profile-surface)').width))
-      expect(width).toBe(await page.evaluate(() => innerWidth))
-      expect(width).toBeGreaterThan(sourceWidth)
-      expect(await page.evaluate(() => getComputedStyle(document.documentElement, '::view-transition-group(loft-profile-surface)').animationName)).toBe('none')
-      await test.info().attach('Короткий сдвиг раздела без масштабирования текста: промежуточный кадр', { body: await page.screenshot(), contentType: 'image/png' })
-      await page.evaluate(() => { for (const animation of document.getAnimations()) if (animation.playState === 'paused') animation.play() })
-    }
-    const opening = await finished(page, 'profile')
-    expect(opening.names).toContain('loft-profile-surface')
-    if (section === 'orders' || section === 'china') expect(opening.names).not.toContain('loft-profile-icon')
-    else expect(opening.names).toContain('loft-profile-icon')
+    const opening = await finished(page, 'section')
+    expect(opening.enter).toBe('live-tab-slide')
+    expect(opening.direction).toBe('1')
+    expect(opening.names).toEqual([])
     expect(await page.locator('.loft-navigation').boundingBox()).toEqual(nav)
     await page.goBack()
     await expect(tile).toBeVisible()
-    await finished(page, 'profile')
+    const closing = await finished(page, 'section')
+    expect(closing.direction).toBe('-1')
     expect(await page.locator('.loft-navigation').boundingBox()).toEqual(nav)
     await expect(page.locator('[style*="loft-profile-"]')).toHaveCount(0)
   })
@@ -100,11 +84,11 @@ for (const [section, item, id] of [['orders', 'order', 1001], ['china', 'request
     await track(page)
     await row.click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    const opening = await finished(page, 'profile')
-    expect(opening.names.filter((name: string) => name === 'loft-profile-surface')).toHaveLength(1)
+    const opening = await finished(page, 'section')
+    expect(opening.names).toEqual([])
     await page.evaluate(() => (window as any).telegramBack())
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await finished(page, 'profile')
+    await finished(page, 'section')
     await expect(row).toBeInViewport()
   })
 }

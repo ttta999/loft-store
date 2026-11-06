@@ -7,7 +7,7 @@ async function track(page: Page) {
     ;(window as any).motionRecords = []
     window.addEventListener('loft:tabs-start', ((event: CustomEvent) => {
       const { direction, animations, finished } = event.detail
-      ;(window as any).motionRecords.push({ mode: 'tabs', direction: String(direction), names: ['live-tab-content'] })
+      ;(window as any).motionRecords.push({ mode: event.detail.kind || 'tabs', direction: String(direction), names: ['live-tab-content'] })
       ;(window as any).motionTransition = { ready: Promise.resolve(), finished }
       ;(window as any).tabAnimations = animations
     }) as EventListener)
@@ -45,16 +45,16 @@ test('категория и подкатегория раскрываются к
   await track(page)
   await page.locator('[data-surface-link="category:shoes"]').click()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
-  await done(page, 'profile')
+  await done(page, 'section')
   await page.locator('[data-surface-link="catalog:shoes:sneakers"]').click()
   await expect(page.locator('[data-surface="catalog:shoes:sneakers"]')).toBeVisible()
-  await done(page, 'profile')
+  await done(page, 'section')
   await page.goBack()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
-  await done(page, 'profile')
+  await done(page, 'section')
   await page.goBack()
   await expect(page.locator('[data-surface-link="category:shoes"]')).toBeVisible()
-  await done(page, 'profile')
+  await done(page, 'section')
 })
 
 test('бренды, включая смену параметра URL, раскрываются и закрываются одним способом', async ({ page }) => {
