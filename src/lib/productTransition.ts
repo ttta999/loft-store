@@ -81,8 +81,11 @@ export function prepareProductTransition(from: Page, to: Page) {
       markContent()
       const target = forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : originCard(origin)?.querySelector<HTMLImageElement>('img')
       if (!target) return false
-      // Decode the same cached photo before taking the destination snapshot.
-      await Promise.race([target.decode().catch(() => {}), new Promise(resolve => setTimeout(resolve, 180))])
+      // A complete cached image already has a paintable frame. Re-decoding it
+      // inside the native update callback freezes the outgoing screen on Safari.
+      if (!target.complete || !target.naturalWidth) {
+        await Promise.race([target.decode().catch(() => {}), new Promise(resolve => setTimeout(resolve, 180))])
+      }
       if (!valid() || !visible(target) || (forward && (target.currentSrc || target.src) !== origin.src)) return false
       if ((target.currentSrc || target.src) !== (source.currentSrc || source.src)) document.documentElement.dataset.loftPhotoCrossfade = 'true'
       document.documentElement.style.setProperty('--loft-photo-to-radius', radius(target))

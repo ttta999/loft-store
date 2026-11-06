@@ -13,8 +13,9 @@ async function track(page: Page) {
       transition.ready.then(() => {
         const style = (part: string) => getComputedStyle(document.documentElement, `::view-transition-${part}(loft-profile-surface)`)
         ;(window as any).surfaceRecords.push({ continuous: document.documentElement.dataset.loftSurfaceMotion,
-          old: style('old').display, entering: style('new').animationName,
-          duration: style('group').animationDuration, easing: style('group').animationTimingFunction,
+          old: style('old').animationName, entering: style('new').animationName, groupAnimation: style('group').animationName,
+          enterX: document.documentElement.style.getPropertyValue('--loft-section-enter-x'), exitX: document.documentElement.style.getPropertyValue('--loft-section-exit-x'),
+          duration: style('new').animationDuration, easing: style('new').animationTimingFunction,
           sourceFrame, targetFrame: !!document.querySelector('[data-loft-surface-frame][style*="loft-profile-surface"]'),
           targetHeight: document.querySelector('[data-loft-surface-frame]')?.getBoundingClientRect().height || 0,
           fit: style('new').objectFit, snapshotHeight: Number.parseFloat(style('new').height), groupHeight: Number.parseFloat(style('group').height) })
@@ -26,8 +27,10 @@ async function track(page: Page) {
 async function finished(page: Page) {
   await page.evaluate(() => (window as any).surfaceTransition.finished)
   const record = await page.evaluate(() => (window as any).surfaceRecords.at(-1))
-  expect(record).toMatchObject({ continuous: 'continuous', old: 'none', entering: 'none', duration: '0.34s', easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fit: 'cover' })
-  expect(record.sourceFrame || record.targetFrame).toBe(true)
+  expect(record).toMatchObject({ continuous: 'slide', old: 'loft-section-out', entering: 'loft-section-in', groupAnimation: 'none', duration: '0.24s', easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fit: 'cover' })
+  expect(record.sourceFrame && record.targetFrame).toBe(true)
+  expect(record.enterX).toBe((await page.evaluate(() => (window as any).surfaceRecords.length)) <= 2 ? '20px' : '-20px')
+  expect(record.exitX).toBe(record.enterX === '20px' ? '-8px' : '8px')
   if (record.targetFrame) expect(record.targetHeight).toBeGreaterThan(200)
   expect(Math.abs(record.snapshotHeight - record.groupHeight)).toBeLessThan(1)
   await expect(page.locator('[data-loft-surface-frame], [data-loft-surface-hidden]')).toHaveCount(0)
@@ -38,7 +41,7 @@ async function finished(page: Page) {
 async function midpoint(page: Page, name: string) {
   await page.evaluate(async () => {
     await (window as any).surfaceTransition.ready
-    for (const animation of document.getAnimations()) if (animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity) { animation.pause(); animation.currentTime = 170 }
+    for (const animation of document.getAnimations()) if (animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity) { animation.pause(); animation.currentTime = 100 }
   })
   const path = test.info().outputPath(name + '.png')
   await page.screenshot({ path })
@@ -46,12 +49,12 @@ async function midpoint(page: Page, name: string) {
   await page.evaluate(() => { for (const animation of document.getAnimations()) if (animation.playState === 'paused') animation.play() })
 }
 
-test('категория и подкатегория: непрерывное раскрытие и обратное закрытие без растворения', async ({ page, browserName }) => {
+test('категория и подкатегория: короткий сдвиг без увеличения текста и обратное закрытие', async ({ page, browserName }) => {
   await page.goto(STORE)
   await track(page)
   await page.locator('[data-surface-link="category:shoes"]').click()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
-  if (browserName === 'chromium') await midpoint(page, 'category-expands-into-screen')
+  if (browserName === 'chromium') await midpoint(page, 'category-short-slide')
   await finished(page)
   await page.locator('[data-surface-link="catalog:shoes:sneakers"]').click()
   await expect(page.locator('[data-surface="catalog:shoes:sneakers"]')).toBeVisible()
@@ -64,7 +67,7 @@ test('категория и подкатегория: непрерывное р�
   await finished(page)
 })
 for (const [section, prefix, id] of [['orders', 'order', 1001], ['china', 'request', 3001]] as const) {
-  test(`${section}: список и детали раскрываются как товар, обе ступени возвращаются обратно`, async ({ page, browserName }) => {
+  test(`${section}: список и детали открываются коротким сдвигом, обе ступени возвращаются обратно`, async ({ page, browserName }) => {
     await page.goto(`${STORE}/profile`)
     await track(page)
     await page.locator(`[data-profile-link="${section}"]`).click()
@@ -72,7 +75,7 @@ for (const [section, prefix, id] of [['orders', 'order', 1001], ['china', 'reque
     await finished(page)
     await page.locator(`[data-profile-link="${prefix}:${id}"]`).click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    if (browserName === 'chromium') await midpoint(page, section + '-expands-into-screen')
+    if (browserName === 'chromium') await midpoint(page, section + '-short-slide')
     await finished(page)
     await page.evaluate(() => (window as any).telegramBack())
     await expect(page.getByRole('dialog')).toHaveCount(0)

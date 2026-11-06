@@ -8,6 +8,7 @@ import {
   FolderOpen, Banknote, Flame, Tag,
 } from 'lucide-react'
 import CategoryIcon from '../components/CategoryIcon'
+import { warmPage } from '../lib/pagePreload'
 
 const CACHE_FRESH_MS = 5 * 60 * 1000
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
@@ -153,6 +154,17 @@ const HomeProductCard = memo(function HomeProductCard({ product, placement }: { 
 
 export default function HomePage() {
   const navigate = useNavigate()
+  // Prepare the product module after the first paint, before a first touch.
+  // Pointer prefetch alone is too late on phones (there is no hover).
+  useEffect(() => {
+    const warm = () => warmPage('/product')
+    if ('requestIdleCallback' in window) {
+      const task = window.requestIdleCallback(warm, { timeout: 200 })
+      return () => window.cancelIdleCallback(task)
+    }
+    const task = setTimeout(warm, 100)
+    return () => clearTimeout(task)
+  }, [])
 
   const {
     language,

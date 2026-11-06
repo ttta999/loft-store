@@ -75,3 +75,55 @@ test('клавиатура открывает товар, избранное н�
   await card.press('Enter')
   await expect(page.locator('[data-product-hero]')).toBeVisible()
 })
+
+
+test('первое касание: модуль товара готовится без hover, декодирование готового фото не задерживает снимок', async ({ page }) => {
+  let requested = false
+  let release!: () => void
+  const held = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/src/pages/ProductPage.tsx*', async route => {
+    requested = true
+    await held
+    await route.fallback()
+  })
+  await page.goto(STORE)
+  const card = page.locator(`[data-product-placement="new:${productId}"]`)
+  await expect(card).toBeVisible()
+  // No hover, focus or pointerdown has taken place: warm on the home idle frame.
+  await expect.poll(() => requested).toBe(true)
+  await card.scrollIntoViewIfNeeded()
+  await expect.poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
+  const scroll = await page.evaluate(() => scrollY)
+  const sourceTop = (await card.locator('img').boundingBox())!.y
+  await page.evaluate(() => {
+    const native = document.startViewTransition.bind(document)
+    const decode = HTMLImageElement.prototype.decode
+    ;(window as any).redundantDecodes = 0
+    HTMLImageElement.prototype.decode = function () {
+      if (this.hasAttribute('data-product-hero') && this.complete && this.naturalWidth) {
+        ;(window as any).redundantDecodes++
+        return new Promise(() => {}) // Safari may defer a redundant decode during capture.
+      }
+      return decode.call(this)
+    }
+    document.startViewTransition = callback => {
+      const image = document.querySelector<HTMLElement>('[style*="loft-product-photo"]')!
+      ;(window as any).coldSource = { y: scrollY, top: image.getBoundingClientRect().top }
+      const transition = native(callback)
+      ;(window as any).coldTransition = transition
+      return transition
+    }
+  })
+  // Immediate touch while the cold module request is still in flight.
+  await card.evaluate(element => (element as HTMLElement).click())
+  expect(await page.evaluate(() => scrollY)).toBe(scroll)
+  release()
+  await expect(page.locator('[data-product-hero]')).toBeVisible()
+  await page.evaluate(() => (window as any).coldTransition.finished)
+  expect(await page.evaluate(() => (window as any).redundantDecodes)).toBe(0)
+  expect(await page.evaluate(() => (window as any).coldSource)).toEqual({ y: scroll, top: sourceTop })
+  await page.goBack()
+  await expect(card).toBeVisible()
+  await page.evaluate(() => (window as any).coldTransition.finished)
+  expect(await page.evaluate(() => scrollY)).toBe(scroll)
+})

@@ -73,9 +73,10 @@ for (const section of ['orders', 'china', 'favorites', 'settings']) {
         }
       })
       const width = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement, '::view-transition-group(loft-profile-surface)').width))
+      expect(width).toBe(await page.evaluate(() => innerWidth))
       expect(width).toBeGreaterThan(sourceWidth)
-      expect(width).toBeLessThan((await page.locator('[data-profile-surface="orders"]').boundingBox())!.width)
-      await test.info().attach('Плитка превращается в заголовок: промежуточный кадр', { body: await page.screenshot(), contentType: 'image/png' })
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement, '::view-transition-group(loft-profile-surface)').animationName)).toBe('none')
+      await test.info().attach('Короткий сдвиг раздела без масштабирования текста: промежуточный кадр', { body: await page.screenshot(), contentType: 'image/png' })
       await page.evaluate(() => { for (const animation of document.getAnimations()) if (animation.playState === 'paused') animation.play() })
     }
     const opening = await finished(page, 'profile')
