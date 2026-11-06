@@ -116,6 +116,7 @@ export default function ProductPage() {
         .from('products')
         .select('*')
         .eq('id', id)
+        .eq('is_active', true)
         .single()
       if (activeId.current !== id) return
       if (error) {

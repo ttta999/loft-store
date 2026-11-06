@@ -1,3 +1,4 @@
+import { readAll } from './readAll'
 import { dataCache } from './resourceCache'
 import { createDataFetch } from './dataFetch'
 import { createClient } from '@supabase/supabase-js'
@@ -49,7 +50,7 @@ export const getProductSoldCount = async (productId: string): Promise<number> =>
 export const getProducts = async (force = false) => {
   if (force) dataCache.invalidate('http:')
   return dataCache.load('catalog:products', async () => {
-    const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false })
+    const { data, error } = await readAll(supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }))
     if (error) throw error
     cacheProducts(data || [])
     return data || []
@@ -59,7 +60,7 @@ export const getCachedBrands = (): any[] | null => dataCache.get('catalog:brands
 export const getBrands = async (force = false): Promise<any[]> => {
   if (force) dataCache.invalidate('http:')
   return dataCache.load('catalog:brands', async () => {
-    const { data, error } = await supabase.from('brands').select('*').eq('is_active', true).order('name')
+    const { data, error } = await readAll(supabase.from('brands').select('*').eq('is_active', true).order('name'))
     if (error) throw error
     return data || []
   }, 300_000, force)
@@ -90,11 +91,9 @@ export const invalidateColorsCache = (productId: string) => {
 // ✅ Размеры: по товару + (опционально) цвету
 export const getProductSizes = (productId: string, colorId?: string | null) =>
   dataCache.load(`variant-sizes:${productId}:${colorId || 'all'}`, async () => {
-    let query = supabase.from('product_variants').select('size_value, color_id').eq('product_id', productId).gt('stock', 0)
-    query = colorId ? query.eq('color_id', colorId) : query.is('color_id', null)
-    const { data, error } = await query
+    const { data, error } = await supabase.rpc('store_available_sizes', { p_product: productId, p_color: colorId || null })
     if (error) throw error
-    const rows = data || []
+    const rows: { size_value: string; color_id: string | null }[] = data || []
     cacheSizes(productId, rows.map(v => v.size_value), colorId)
     return rows
   }, 30_000)
@@ -106,33 +105,8 @@ export const checkProductStock = async (
   quantity: number,
   colorId?: string | null
 ): Promise<{ available: boolean; error?: string }> => {
-  let query = supabase
-    .from('product_variants')
-    .select('stock')
-    .eq('product_id', productId)
-    .eq('size_value', size)
-
-  if (colorId) {
-    query = query.eq('color_id', colorId)
-  } else {
-    query = query.is('color_id', null)
-  }
-
-  const { data: variant, error } = await query.single()
-
-  if (error || !variant) {
-    return { available: false, error: `К сожалению, этот вариант временно отсутствует` }
-  }
-
-  if ((variant.stock || 0) < quantity) {
-    if (variant.stock === 0) {
-      return { available: false, error: `Этот вариант закончился. Мы уже работаем над пополнением! 🙏` }
-    } else {
-      return { available: false, error: `Осталось только ${variant.stock} шт.` }
-    }
-  }
-
-  return { available: true }
+  const { data, error } = await supabase.rpc('store_product_available', { p_product: productId, p_size: size, p_quantity: quantity, p_color: colorId || null })
+  return !error && data === true ? { available: true } : { available: false, error: 'К сожалению, этот вариант временно отсутствует' }
 }
 
 // ========== КАТЕГОРИИ ==========

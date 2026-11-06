@@ -4,6 +4,7 @@ declare session_id uuid:=gen_random_uuid(); factor_id uuid:=gen_random_uuid();
   admin_id uuid:=gen_random_uuid();
 begin
   -- A fresh transaction-only user keeps this test independent of real enrolled factors.
+  insert into private.store_registration_invites values(encode(extensions.digest(admin_id::text||'@fixture.invalid','sha256'),'hex'),now()+interval '1 hour');
   insert into auth.users(id,aud,role,email,created_at,updated_at)
     values(admin_id,'authenticated','authenticated',admin_id::text||'@fixture.invalid',now(),now());
   insert into private.store_admins(user_id,mfa_required) values(admin_id,true);

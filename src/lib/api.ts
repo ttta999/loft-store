@@ -36,21 +36,30 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
   assertCurrentSession()
   const read = action === 'orders' || action === 'requests'
   const execute = async () => {
-    const response = await fetch('/api/store', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action, ...payload }),
-    })
-    assertCurrentSession()
-    const data = await response.json()
-    assertCurrentSession()
-    if (response.status === 401) { session = null; sessionUserId = null; dataCache.invalidate('private:') }
-    if (!response.ok) throw new Error(data.error || 'Не удалось выполнить действие')
-    if (!read && action !== 'subscribe') {
-      dataCache.invalidate(`private:${user.id}:`)
-      dataCache.invalidate('variant-sizes:')
-      dataCache.invalidate('sizes:')
+    const pages: any[] = []
+    let cursor: string | null = null
+    while (true) {
+      const response = await fetch('/api/store', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action, ...payload, ...(read && cursor ? { cursor } : {}) }),
+      })
+      assertCurrentSession()
+      const data = await response.json()
+      assertCurrentSession()
+      if (response.status === 401) { session = null; sessionUserId = null; dataCache.invalidate('private:') }
+      if (!response.ok) throw new Error(data.error || 'Не удалось выполнить действие')
+      if (!read && action !== 'subscribe') {
+        dataCache.invalidate(`private:${user.id}:`)
+        dataCache.invalidate('variant-sizes:')
+        dataCache.invalidate('sizes:')
+      }
+      if (!read) return data
+      pages.push(...(data.data || []))
+      if (!data.hasMore) return { data: pages }
+      const nextCursor = String(data.nextCursor || '')
+      if (!nextCursor || nextCursor === cursor) throw new Error('Не удалось загрузить историю целиком. Повторите попытку.')
+      cursor = nextCursor
     }
-    return data
   }
   const result = await (read ? dataCache.load(`private:${user.id}:${action}`, execute, 15_000) : execute())
   assertCurrentSession()

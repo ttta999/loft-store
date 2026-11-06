@@ -29,10 +29,11 @@ begin
   result:=public.store_create_order('900000201',payload,gen_random_uuid());
   receipt_id:=(result->>'id')::bigint;
   if not public.store_save_screenshot('900000201',receipt_id,'private:payment-screenshots/900000201/receipt.png') then raise exception 'TEST FAILED: valid receipt rejected'; end if;
-  if (select reservation_expires_at from public.orders where id=receipt_id) is not null then raise exception 'TEST FAILED: receipt did not pause expiry'; end if;
+  if (select reservation_expires_at from public.orders where id=receipt_id) is null then raise exception 'TEST FAILED: receipt removed review deadline'; end if;
   update public.orders set reservation_expires_at=clock_timestamp()-interval '1 minute' where id=receipt_id;
   perform private.store_expire_reservations('900000201');
-  if (select status from public.orders where id=receipt_id)<>'Ожидает оплаты' then raise exception 'TEST FAILED: receipt order expired'; end if;
+  if (select status from public.orders where id=receipt_id)<>'Отменён' then raise exception 'TEST FAILED: expired receipt holds inventory'; end if;
+  perform public.store_create_order('900000201',payload,gen_random_uuid());
   perform public.store_create_order('900000201',payload,gen_random_uuid());
   perform public.store_create_order('900000201',payload,gen_random_uuid());
   begin

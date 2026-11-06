@@ -13,7 +13,7 @@ test('магазин: каталог → карточка → размер → �
   await expect(page.getByText('Тестовые кроссовки', { exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByText('Тестовые кроссовки', { exact: true })).toBeVisible()
-  expect(harness.calls.some(c => c.path.includes('product_variants'))).toBeTruthy()
+  expect(harness.calls.some(c => c.path.includes('store_product_available'))).toBeTruthy()
 })
 
 test('админка: защищённые страницы, аналитика и фото топ-товара', async ({ page, harness }) => {

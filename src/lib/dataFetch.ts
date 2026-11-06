@@ -10,7 +10,7 @@ export function createDataFetch(onMutation: () => void) {
     if (!table) return fetch(input, liveInit)
     if (table === 'rpc') {
       const response = await fetch(input, liveInit)
-      const readOnly = ['get_product_popularity', 'store_is_admin', 'store_admin_auth_state'].includes(url.pathname.split('/').pop() || '')
+      const readOnly = ['get_product_popularity', 'store_is_admin', 'store_admin_auth_state', 'store_available_sizes', 'store_product_available', 'store_admin_variants'].includes(url.pathname.split('/').pop() || '')
       if (response.ok && !readOnly && method !== 'GET' && method !== 'HEAD') onMutation()
       return response
     }

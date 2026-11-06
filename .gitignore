@@ -39,3 +39,7 @@ bot-token.txt
 /test-results/
 /playwright-report-webkit/
 /test-results-webkit/
+
+# Generated Supabase CLI state
+/supabase/.temp/
+/supabase/.branches/

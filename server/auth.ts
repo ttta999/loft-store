@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac, createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 
 export class HttpError extends Error {
   status: number
@@ -31,7 +31,7 @@ function sessionKey(botToken: string) {
   return createHmac('sha256', botToken).update('loft-store/customer-session/v1').digest()
 }
 export function issueSession(user: TelegramUser, botToken: string, now = Date.now()) {
-  const body = Buffer.from(JSON.stringify({ user, exp: Math.floor(now / 1000) + 43200 })).toString('base64url')
+  const body = Buffer.from(JSON.stringify({ user, sid: randomUUID(), exp: Math.floor(now / 1000) + 43200 })).toString('base64url')
   return `${body}.${createHmac('sha256', sessionKey(botToken)).update(body).digest('hex')}`
 }
 export function verifySession(token: unknown, botToken: string, now = Date.now()): TelegramUser {
@@ -43,3 +43,5 @@ export function verifySession(token: unknown, botToken: string, now = Date.now()
   if (!Number.isFinite(session.exp) || session.exp <= now / 1000 || !Number.isSafeInteger(session.user?.id)) throw new HttpError(401, 'Откройте магазин заново через Telegram')
   return session.user
 }
+
+export const sessionHash = (token: string) => createHash('sha256').update(token).digest('hex')

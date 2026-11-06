@@ -1,6 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from './types.ts'
 import { createClient } from '@supabase/supabase-js'
-import { HttpError, verifySession } from './auth.ts'
+import { HttpError, verifySession, sessionHash } from './auth.ts'
 
 export function botToken() {
   const token = process.env.TELEGRAM_BOT_TOKEN
@@ -13,9 +13,14 @@ export function database() {
   if (!url || !key) throw new HttpError(503, 'Магазин временно недоступен')
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
 }
-export function userFromRequest(req: VercelRequest) {
+export async function userFromRequest(req: VercelRequest) {
   const auth = req.headers.authorization
-  return verifySession(typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : null, botToken())
+  const token = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : ''
+  const user = verifySession(token, botToken())
+  const { data, error } = await database().rpc('store_validate_session', { p_hash: sessionHash(token), p_user: String(user.id) })
+  if (error) throw new HttpError(503, 'Магазин временно недоступен')
+  if (data !== true) throw new HttpError(401, 'Откройте магазин заново через Telegram')
+  return user
 }
 export function start(req: VercelRequest, res: VercelResponse, method = 'POST') {
   res.setHeader('Cache-Control', 'no-store')

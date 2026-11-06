@@ -16,8 +16,11 @@ select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000
 do $$ declare n integer; begin
   if public.store_is_admin() then raise exception 'SECURITY TEST FAILED: outsider admin'; end if;
   if exists(select 1 from public.orders) or exists(select 1 from public.china_requests) or exists(select 1 from public.subscribers) then raise exception 'SECURITY TEST FAILED: outsider sees personal data'; end if;
-  update public.products set price_usd=price_usd;
-  get diagnostics n=row_count;
+  begin
+    update public.products set price_usd=price_usd;
+    get diagnostics n=row_count;
+  exception when insufficient_privilege then n:=0;
+  end;
   if n<>0 then raise exception 'SECURITY TEST FAILED: outsider changes products'; end if;
   begin perform public.store_admin_cancel_order(0); raise exception 'SECURITY TEST FAILED: outsider cancels'; exception when insufficient_privilege then null; end;
   begin perform public.store_admin_confirm_payment(0); raise exception 'SECURITY TEST FAILED: outsider confirms payment'; exception when insufficient_privilege then null; end;

@@ -1,9 +1,8 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import { randomUUID } from 'node:crypto'
 import { HttpError } from '../server/auth.ts'
 import { database, fail, limit, recordId, start, text, userFromRequest } from '../server/http.ts'
 import { decodeImage } from '../server/images.ts'
-import { dispatchNotification } from '../server/notifications.ts'
 import type { StoredRecord } from '../server/models.ts'
 
 function uuid(value: unknown) {
@@ -47,7 +46,7 @@ function dbError(message?: string): never {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     start(req, res)
-    const user = userFromRequest(req)
+    const user = await userFromRequest(req)
     const userId = String(user.id)
     const body = req.body || {}
     const db = database()
@@ -59,14 +58,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json({ success: true })
       }
       case 'orders': {
-        const { data, error } = await db.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+        let query = db.from('orders').select('*').eq('user_id', userId).order('id', { ascending: false }).limit(100)
+        if (body.cursor != null) query = query.lt('id', recordId(body.cursor))
+        const { data, error } = await query
         if (error) throw error
-        return res.json({ data: await Promise.all((data || []).map(presentOrder)) })
+        return res.json({ data: await Promise.all((data || []).map(presentOrder)), hasMore: data?.length === 100, nextCursor: data?.at(-1)?.id || null })
       }
       case 'requests': {
-        const { data, error } = await db.from('china_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+        let query = db.from('china_requests').select('*').eq('user_id', userId).order('id', { ascending: false }).limit(100)
+        if (body.cursor != null) query = query.lt('id', recordId(body.cursor))
+        const { data, error } = await query
         if (error) throw error
-        return res.json({ data: await Promise.all((data || []).map(async r => ({ ...r, image_url: await signedUrl(r.image_url, 'china-requests') }))) })
+        return res.json({ data: await Promise.all((data || []).map(async r => ({ ...r, image_url: await signedUrl(r.image_url, 'china-requests') }))), hasMore: data?.length === 100, nextCursor: data?.at(-1)?.id || null })
       }
       case 'createOrder': {
         await limit(userId, 'create-order', 10, 600)
@@ -86,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           special_order_id: order.special_order_id ? recordId(order.special_order_id) : null, expected_total_usd: order.total_price_usd, expected_total_uzs: order.total_price_uzs }
         const { data, error } = await db.rpc('store_create_order', { p_user: userId, p_payload: payload, p_key: uuid(body.requestKey) })
         if (error) dbError(error.message)
-        await dispatchNotification(userId, 'order', data)
+        await db.rpc('store_wake_worker')
         return res.json({ data: [await presentOrder(data)] })
       }
       case 'cancelOrder': {
@@ -104,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const payload = { product_name: text(request.product_name, 200, 1), link, size_color: text(request.size_color || '', 200), comment: text(request.comment || '', 2000), image_url: request.image_url || null }
         const { data, error } = await db.rpc('store_create_request', { p_user: userId, p_payload: payload, p_key: uuid(body.requestKey) })
         if (error) throw error
-        await dispatchNotification(userId, 'request', data)
+        await db.rpc('store_wake_worker')
         return res.json({ data })
       }
       case 'cancelRequest': {
@@ -125,8 +128,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (error || !data) throw new HttpError(403, 'Этот заказ недоступен для загрузки чека')
         }
         const path = `${userId}/${orderId ? orderId+'/' : ''}${randomUUID()}.${image.ext}`
+        const { data: reserved, error: quotaError } = await db.rpc('store_reserve_upload', { p_user: userId, p_bucket: bucket, p_path: path, p_bytes: image.bytes.length })
+        if (quotaError) throw new HttpError(503, 'Загрузка временно недоступна')
+        if (!reserved) throw new HttpError(429, 'Лимит загрузок исчерпан. Повторите позже.')
         const { error } = await db.storage.from(bucket).upload(path, image.bytes, { contentType: image.type, upsert: false, cacheControl: '0' })
-        if (error) throw error
+        if (error) { await db.rpc('store_finish_upload', { p_user: userId, p_path: path, p_success: false }); throw error }
+        const { error: finishError } = await db.rpc('store_finish_upload', { p_user: userId, p_path: path, p_success: true })
+        if (finishError) { await db.storage.from(bucket).remove([path]); throw new HttpError(503, 'Загрузка временно недоступна') }
         const storedPath = `private:${bucket}/${path}`
         if (orderId) {
           const { data, error: saveError } = await db.rpc('store_save_screenshot', { p_user: userId, p_order_id: orderId, p_path: storedPath })

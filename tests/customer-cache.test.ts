@@ -63,3 +63,29 @@ test('a delayed login from a previous Telegram account cannot overwrite the curr
     assert.equal(peekStoreData('orders')?.[0].user_id, 404)
   } finally { globalThis.fetch = originalFetch; Object.assign(globalThis, { window: originalWindow }); dataCache.clear() }
 })
+
+test('history follows stable ID cursors and never caches a partially loaded history', async () => {
+  const originalFetch = globalThis.fetch, originalWindow = globalThis.window
+  const cursors: unknown[] = []; let failSecondPage = false
+  Object.assign(globalThis, { window: { Telegram: { WebApp: { initData: 'pagination-fixture-user' } } } })
+  globalThis.fetch = async (input, init) => {
+    if (input === '/api/validateTelegram') return Response.json({ token: 'cursor-fixture', user: { id: 505 } })
+    const body = JSON.parse(String(init?.body))
+    if (body.action !== 'orders') return Response.json({ success: true })
+    cursors.push(body.cursor)
+    if (body.cursor && failSecondPage) return Response.json({ error: 'History temporarily unavailable' }, { status: 503 })
+    const before = Number(body.cursor || 202)
+    const data = Array.from({ length: Math.min(100, before - 1) }, (_, index) => ({ id: before - index - 1 }))
+    return Response.json({ data, hasMore: data.length === 100, nextCursor: data.at(-1)?.id })
+  }
+  try {
+    const result = await storeApi('orders')
+    assert.equal(result.data.length, 201)
+    assert.deepEqual(cursors, [undefined, '102', '2'])
+    assert.equal(new Set(result.data.map((order: { id: number }) => order.id)).size, 201)
+    await storeApi('cancelOrder', { orderId: '1' })
+    failSecondPage = true
+    await assert.rejects(storeApi('orders'), /History temporarily unavailable/)
+    assert.equal(peekStoreData('orders'), null)
+  } finally { globalThis.fetch = originalFetch; Object.assign(globalThis, { window: originalWindow }); dataCache.clear() }
+})

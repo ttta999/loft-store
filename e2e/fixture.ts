@@ -28,7 +28,7 @@ const jwt = (aal: string) => [Buffer.from('{"alg":"HS256","typ":"JWT"}').toStrin
 const user = () => ({ id: adminId, email: 'admin@example.test', role: 'authenticated', aud: 'authenticated', app_metadata: {}, user_metadata: {}, factors: [{ id: 'fixture-factor', factor_type: 'totp', status: 'verified', friendly_name: 'LOFT Admin' }] })
 const session = (aal: string) => ({ access_token: jwt(aal), token_type: 'bearer', refresh_token: 'fixture-refresh', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: user() })
 export type Harness = { db: Record<string, any[]>; calls: { method: string; path: string; body: any }[]; errors: string[]; blocked: string[]; failAction: string | null; failTable: string | null; setup: (page: Page) => Promise<void> }
-export async function install(context: BrowserContext): Promise<Harness> {
+export async function install(context: BrowserContext, supabaseHost = 'fixture.supabase.co'): Promise<Harness> {
   const h: Harness = { db: catalog(), calls: [], errors: [], blocked: [], failAction: null, failTable: null, setup: async page => { page.on('pageerror', error => h.errors.push(error.message)); page.on('console', msg => { if (msg.type() === 'error') console.log('BROWSER', msg.text()) }) } }
   context.on('page', page => { void h.setup(page) })
   await context.addInitScript(() => {
@@ -65,7 +65,7 @@ export async function install(context: BrowserContext): Promise<Harness> {
       }
       return json({ success: true })
     }
-    if (url.hostname === 'fixture.supabase.co') {
+    if (url.hostname === supabaseHost) {
       h.calls.push({ method, path: url.pathname, body })
       if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': '*', 'access-control-allow-headers': '*' } })
       if (url.pathname.includes('/auth/v1/token')) return json(session('aal1'))
@@ -81,8 +81,33 @@ export async function install(context: BrowserContext): Promise<Harness> {
           const auth = request.headers().authorization || ''
           return json(auth.includes(jwt('aal2').split('.')[1]) || Buffer.from(auth.split('.')[1] || '', 'base64url').toString().includes('"aal":"aal2"'))
         }
+        if (rpc === 'store_available_sizes') return json(h.db.product_variants.filter(v => v.product_id === body.p_product && (v.color_id || null) === (body.p_color || null) && v.stock > 0).map(v => ({ size_value: v.size_value, color_id: v.color_id })))
+        if (rpc === 'store_product_available') return json(h.db.product_variants.some(v => v.product_id === body.p_product && v.size_value === body.p_size && (v.color_id || null) === (body.p_color || null) && v.stock >= body.p_quantity))
+        if (rpc === 'store_admin_variants') return json(h.db.product_variants.slice(Number(url.searchParams.get('offset') || 0), Number(url.searchParams.get('offset') || 0) + Number(url.searchParams.get('limit') || 200)))
+        if (rpc === 'store_admin_save_product') {
+          let product = h.db.products.find(p => p.id === body.p_id)
+          if (!product) { product = { id: crypto.randomUUID(), is_active: true, created_at: now(), catalog_version: 0 }; h.db.products.push(product) }
+          Object.assign(product, body.p_product, { catalog_version: (product.catalog_version || 0) + 1 })
+          const colorIds = new Map<string, string>()
+          for (const color of body.p_colors) {
+            let saved = h.db.product_colors.find(c => c.product_id === product.id && c.id === color.key)
+            if (!saved) { saved = { id: crypto.randomUUID(), product_id: product.id }; h.db.product_colors.push(saved) }
+            Object.assign(saved, color); colorIds.set(color.key, saved.id)
+          }
+          for (const variant of body.p_variants) {
+            const color_id = colorIds.get(variant.color_key) || null
+            let saved = h.db.product_variants.find(v => v.product_id === product.id && v.size_value === variant.size_value && (v.color_id || null) === color_id)
+            if (!saved) { saved = { id: crypto.randomUUID(), product_id: product.id }; h.db.product_variants.push(saved) }
+            Object.assign(saved, variant, { color_id })
+          }
+          return json(product.id)
+        }
+        if (rpc === 'store_admin_product_visibility') { const p = h.db.products.find(p => p.id === body.p_id); if (p) p.is_active = body.p_active; return json(!!p) }
+        if (rpc === 'store_admin_delete_product') { h.db.products = h.db.products.filter(p => p.id !== body.p_id); return json(true) }
+        if (rpc === 'store_admin_order_status') { const o = h.db.orders.find(o => String(o.id) === String(body.p_id)); if (o) { o.status = body.p_status; if (body.p_courier) o.courier_link = body.p_courier; if (body.p_status === 'Выдан' && o.payment_method === 'upon_receipt') { o.payment_status = 'paid'; o.paid_at = now() } }; return json(o) }
+        if (rpc === 'store_admin_request_status') { const r = h.db.china_requests.find(r => String(r.id) === String(body.p_id)); if (r) Object.assign(r, body.p_extra, { status: body.p_status }); return json(r) }
         if (rpc === 'get_product_popularity') return json([{ product_id: productId, sold_count: 1 }])
-        if (rpc === 'store_admin_confirm_payment' || rpc === 'store_admin_cancel_order') { const order = h.db.orders.find(o => String(o.id) === String(body?.p_order_id)); if (order) { if (rpc.endsWith('confirm_payment')) { order.payment_status = 'paid'; order.paid_at = now() } else order.status = 'Отменён' }; return json(true) }
+        if (rpc === 'store_admin_confirm_payment' || rpc === 'store_admin_confirm_payment_with_notice' || rpc === 'store_admin_cancel_order') { const order = h.db.orders.find(o => String(o.id) === String(body?.p_order_id)); if (order) { if (rpc.includes('confirm_payment')) { order.payment_status = 'paid'; order.paid_at = now() } else order.status = 'Отменён' }; return json(true) }
         return json(true)
       }
       const table = url.pathname.split('/').pop()!
@@ -103,6 +128,7 @@ export async function install(context: BrowserContext): Promise<Harness> {
         for (const entry of entries) { const key = url.searchParams.get('on_conflict') || 'id'; const old = rows.find(r => entry[key] != null && r[key] === entry[key]); if (old) Object.assign(old, entry); else rows.push({ id: entry.id || `fixture-${rows.length + 1}`, created_at: now(), ...entry }) }
         h.db[table] = rows
       } else rows = rows.filter(matches)
+      if (method === 'GET' && url.searchParams.has('limit')) rows = rows.slice(Number(url.searchParams.get('offset') || 0), Number(url.searchParams.get('offset') || 0) + Number(url.searchParams.get('limit')))
       const headers = { 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` }
       if (method === 'HEAD') return route.fulfill({ status: 200, headers: { ...headers, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } })
       const columns = url.searchParams.get('select')
@@ -115,12 +141,12 @@ export async function install(context: BrowserContext): Promise<Harness> {
     h.blocked.push(url.origin + url.pathname)
     return route.abort('blockedbyclient')
   })
-  await context.addInitScript(({ seeded }) => {
+  await context.addInitScript(({ seeded, authKey }) => {
     if (location.port === '4174' && !sessionStorage.getItem('fixture-initialized')) {
       sessionStorage.setItem('fixture-initialized', '1')
-      if (seeded) localStorage.setItem('sb-fixture-auth-token', seeded)
+      if (seeded) localStorage.setItem(authKey, seeded)
     }
-  }, { seeded: JSON.stringify(session('aal2')) })
+  }, { seeded: JSON.stringify(session('aal2')), authKey: 'sb-'+supabaseHost.split('.')[0]+'-auth-token' })
   return h
 }
 export const test = base.extend<{ harness: Harness }>({ harness: [async ({ context }, use) => { const h = await install(context); await use(h); if (base.info().status !== base.info().expectedStatus) console.log('FIXTURE CALLS', h.calls.map(c => [c.method,c.path,c.body]), 'ERRORS',h.errors); expect(h.errors, 'Uncaught browser errors').toEqual([]); expect(h.blocked, 'Unmocked external network').toEqual([]) }, { auto: true }] })

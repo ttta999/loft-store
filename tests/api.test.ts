@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import handler from '../api/store.ts'
 import notifications from '../api/sendNotification.ts'
 import { issueSession } from '../server/auth.ts'
@@ -39,7 +39,7 @@ test('order history is scoped to the verified identity, ignoring supplied user_i
   const urls:string[]=[]
   globalThis.fetch=async(input)=> {
     const url=String(input);urls.push(url)
-    if(url.includes('/rpc/store_rate_limit')) return Response.json(true)
+    if((url.includes('/rpc/store_rate_limit') || url.includes('/rpc/store_validate_session'))) return Response.json(true)
     if(url.includes('/rest/v1/orders')) return Response.json([])
     throw new Error('Unexpected network call')
   }
@@ -56,12 +56,12 @@ test('checkout strips forged identity, payment status, item price and stock befo
   let rpc:Record<string,unknown>|undefined
   globalThis.fetch=async(input,init)=> {
     const url=String(input)
-    if(url.includes('/rpc/store_rate_limit')) return Response.json(true)
+    if((url.includes('/rpc/store_rate_limit') || url.includes('/rpc/store_validate_session'))) return Response.json(true)
     if(url.includes('/rpc/store_create_order')) {
       rpc=JSON.parse(String(init?.body))
       return Response.json({id:123,user_id:'900000001',items:[],payment_screenshot_url:null})
     }
-    if(url.includes('/rpc/store_claim_notification')) return Response.json(null)
+    if(url.includes('/rpc/store_claim_notification')||url.includes('/rpc/store_wake_worker')) return Response.json(null)
     throw new Error('Unexpected network call')
   }
   try {
@@ -89,7 +89,7 @@ test('UZS checkout requires the exact integer total reviewed by the buyer',async
   const original=globalThis.fetch
   let created=false
   globalThis.fetch=async(input)=> {
-    if(String(input).includes('/rpc/store_rate_limit')) return Response.json(true)
+    if((String(input).includes('/rpc/store_rate_limit') || String(input).includes('/rpc/store_validate_session'))) return Response.json(true)
     created=true
     throw new Error('Checkout should have been rejected before RPC')
   }

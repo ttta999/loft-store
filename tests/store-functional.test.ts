@@ -12,7 +12,7 @@ function response() { return { statusCode: 200, body: null as any, headers: {} a
 async function call(body:any, options:any = {}) { const res=response();await handler({ method:'POST',headers:{'content-type':'application/json', authorization:`Bearer ${token}`},body,...options } as any,res as any);return res }
 async function mock(run:(calls:any[])=>Promise<void>, resolve:(url:URL,init:RequestInit|undefined)=>Response) {
  const original=globalThis.fetch;const calls:any[]=[]
- globalThis.fetch=async(input,init)=> { const url=new URL(String(input)); assert.ok(['functional-fixture.supabase.co'].includes(url.hostname),'External network forbidden');calls.push({url,method:init?.method||'GET',body:init?.body});if(url.pathname.endsWith('/rpc/store_rate_limit'))return Response.json(true);return resolve(url,init) }
+ globalThis.fetch=async(input,init)=> { const url=new URL(String(input)); assert.ok(['functional-fixture.supabase.co'].includes(url.hostname),'External network forbidden');calls.push({url,method:init?.method||'GET',body:init?.body});if((url.pathname.endsWith('/rpc/store_rate_limit') || url.pathname.endsWith('/rpc/store_validate_session') || url.pathname.endsWith('/rpc/store_reserve_upload')))return Response.json(true);return resolve(url,init) }
  try { await run(calls) } finally { globalThis.fetch=original }
 }
 test('API request validation rejects wrong method/content-type and excessive body size before database access',async()=> {
@@ -28,7 +28,7 @@ test('special requests validate URL and image ownership, and strip forged manage
   assert.equal(result.statusCode,200)
   const payload=JSON.parse(String(calls.find(c=>c.url.pathname.endsWith('/rpc/store_create_request')).body))
   assert.equal(payload.p_user,'900000301');assert.equal(payload.p_payload.manager_price,undefined);assert.equal(payload.p_payload.status,undefined);assert.equal(payload.p_payload.user_id,undefined)
- },url=> { if(url.pathname.endsWith('/rpc/store_create_request'))return Response.json({id:3001});if(url.pathname.endsWith('/rpc/store_claim_notification'))return Response.json(null);throw Error('Unexpected '+url.pathname) })
+ },url=> { if(url.pathname.endsWith('/rpc/store_create_request'))return Response.json({id:3001});if(url.pathname.endsWith('/rpc/store_claim_notification')||url.pathname.endsWith('/rpc/store_wake_worker'))return Response.json(null);throw Error('Unexpected '+url.pathname) })
 })
 test('cancellation is ownership-scoped and refuses already converted special requests',async()=> {
  await mock(async calls=> {
@@ -55,7 +55,7 @@ test('a race during receipt upload removes the orphaned file instead of acceptin
   assert.ok(upload.url.pathname.includes('/900000301/1001/'))
   const cleanup=calls.find(c=>c.method==='DELETE'&&c.url.pathname.includes('/storage/'))
   assert.ok(cleanup,'orphaned file must be deleted')
- },(url,init)=> {if(url.pathname.endsWith('/orders'))return Response.json({id:1001});if(url.pathname.endsWith('/rpc/store_save_screenshot'))return Response.json(false);if(url.pathname.includes('/storage/'))return Response.json({Key:'fixture'});throw Error('Unexpected '+url.pathname)})
+ },(url,init)=> {if(url.pathname.endsWith('/orders'))return Response.json({id:1001});if(url.pathname.endsWith('/rpc/store_save_screenshot'))return Response.json(false);if(url.pathname.includes('/storage/'))return Response.json({Key:'fixture'});if(url.pathname.endsWith('/rpc/store_finish_upload'))return Response.json(null);throw Error('Unexpected '+url.pathname)})
 })
 test('customer history signs private receipt URLs and never fetches arbitrary external image URLs',async()=> {
  await mock(async calls=> {
