@@ -97,7 +97,6 @@ export default function ProductPage() {
     if (!id) return
     loadSizesForColor()
     setSelectedSize(null)
-    setCurrentImageIndex(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor?.id, id])
 
@@ -139,7 +138,7 @@ export default function ProductPage() {
       const colorsList = await getProductColors(id)
       if (activeId.current !== id) return
       setColors(colorsList)
-      if (colorsList.length > 0) setSelectedColor(colorsList[0])
+      if (colorsList.length > 0) { setCurrentImageIndex(0); setSelectedColor(colorsList[0]) }
     } catch (error) { console.error('Ошибка загрузки цветов:', error) }
   }
 
@@ -447,8 +446,8 @@ export default function ProductPage() {
               </div>
             )}
           </div>
-          {images.length > 1 && (
-            <div className="p-3 flex gap-2 overflow-x-auto">
+          {(images.length > 1 || product.images?.length > 1 || colors.some(color => (color.images?.filter(Boolean).length || 0) > 1)) && (
+            <div data-product-thumbnails className="h-[88px] p-3 flex gap-2 overflow-x-auto">
               {images.map((image: string, index: number) => (
                 <button
                   key={index}
@@ -519,7 +518,7 @@ export default function ProductPage() {
                   return (
                     <button
                       key={color.id}
-                      onClick={() => setSelectedColor(color)}
+                      onClick={() => { setCurrentImageIndex(0); setSelectedSize(null); setSelectedColor(color) }}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${
                         isSelected
                           ? 'border-[#1B2A4A] dark:border-gold bg-[#F5F1E8] dark:bg-dark-accent shadow-sm'

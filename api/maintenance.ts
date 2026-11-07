@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await Promise.all((events || []).map(async (event: { id: number; kind: string; order_id: number; user_id: string }) => {
       if (event.kind === 'custom') {
         const { data: claimed, error } = await db.rpc('store_claim_custom_notification', { p_id: event.id })
-        if (error || !claimed) return
+        if (error || !claimed?.id) return
         try {
           await send(process.env.TELEGRAM_BOT_TOKEN, claimed.user_id, claimed.payload.message)
           const { error } = await db.rpc('store_complete_notification', { p_event_id: claimed.id })

@@ -717,14 +717,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><UserIcon size={16} className="text-[#1B2A4A] dark:text-white" /></div>
             <div className="flex-1 min-w-0">
               <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">{language === 'ru' ? 'Имя' : 'Ism'}</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={language === 'ru' ? 'Ваше имя' : 'Sizning ismingiz'} className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={language === 'ru' ? 'Ваше имя' : 'Sizning ismingiz'} className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
             </div>
           </div>
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><Phone size={16} className="text-[#1B2A4A] dark:text-white" /></div>
             <div className="flex-1 min-w-0">
               <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-0.5">{language === 'ru' ? 'Телефон' : 'Telefon'}</label>
-              <input type="tel" value={phone} onChange={(e) => handlePhoneChange(e.target.value)} placeholder="+998 XX XXX XX XX" className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
+              <input type="tel" value={phone} onChange={(e) => handlePhoneChange(e.target.value)} placeholder="+998 XX XXX XX XX" className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
             </div>
           </div>
         </div>
@@ -756,7 +756,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><MapPin size={16} className="text-[#1B2A4A] dark:text-white" /></div>
               <div className="flex-1 min-w-0">
                 <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-1">{language === 'ru' ? 'Адрес доставки' : 'Yetkazib berish manzili'}</label>
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={language === 'ru' ? 'Улица, дом, квартира' : 'Ko\'cha, uy, kvartira'} rows={2} className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-[#F5F1E8] dark:bg-dark-accent text-sm text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
+                <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={language === 'ru' ? 'Улица, дом, квартира' : 'Ko\'cha, uy, kvartira'} rows={2} className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-[#F5F1E8] dark:bg-dark-accent text-base text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
                 <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language === 'ru' ? 'Пример: ул. Навои, дом 15, квартира 23' : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}</p>
               </div>
             </div></Collapse>

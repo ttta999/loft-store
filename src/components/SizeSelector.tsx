@@ -1,6 +1,6 @@
 import { useScrollLock } from '../lib/useScrollLock'
-import SurfaceDialog from './SurfaceDialog'
-import { AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState } from 'react'
 import { Ruler, Check, ChevronDown, X } from 'lucide-react'
 
@@ -31,6 +31,7 @@ export default function SizeSelector({
   onSelect,
   language = 'ru'
 }: SizeSelectorProps) {
+  const reduced = useReducedMotion()
   const [open, setOpen] = useState(false)
   const [locked, setLocked] = useState(false)
 
@@ -96,16 +97,21 @@ export default function SizeSelector({
       </button>
 
       {/* ✅ BOTTOM-SHEET в стиле страницы заказа */}
-      <AnimatePresence onExitComplete={() => { if (!open) setLocked(false) }}>{open && (
-        <SurfaceDialog origin="size" key="size-sheet" className="fixed inset-0 z-[90]">
+      {createPortal(<AnimatePresence onExitComplete={() => { if (!open) setLocked(false) }}>{open && (
+        <motion.div key="size-sheet" data-surface-dialog="size" role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[90]"
+          initial="closed" animate="open" exit="closed">
           {/* Затемнение — клик закрывает */}
-          <div
+          <motion.div
+            variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+            transition={{ duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 bg-black/50"
             onClick={() => setOpen(false)}
           />
 
           {/* Панель: бежевый фон страницы, контент — карточками */}
-          <div className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
+          <motion.div
+            variants={{ closed: { y: '100%', transition: { duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] } }, open: { y: 0, transition: { duration: reduced ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] } } }}
+            className="absolute bottom-0 left-0 right-0 bg-[#F5F1E8] dark:bg-dark-bg rounded-t-2xl shadow-2xl flex flex-col max-h-[75vh]">
             {/* Ручка */}
             <div className="flex-shrink-0 pt-2 pb-1 flex justify-center">
               <div className="w-10 h-1 rounded-full bg-[#E8E2D5] dark:bg-dark-border" />
@@ -179,9 +185,9 @@ export default function SizeSelector({
                 })}
               </div>
             </div>
-          </div>
-        </SurfaceDialog>
-      )}</AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}</AnimatePresence>, document.body)}
     </div>
   )
 }

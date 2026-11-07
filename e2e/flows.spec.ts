@@ -25,6 +25,7 @@ test('админка: защищённые страницы, аналитика 
   await page.goto(`${ADMIN}/analytics`)
   await expect(page.getByText('Тестовые кроссовки', { exact: true })).toBeVisible()
   const photo = page.getByRole('img', { name: 'Тестовые кроссовки', exact: true })
+  await photo.scrollIntoViewIfNeeded()
   await expect(photo).toBeVisible()
   await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
 })
