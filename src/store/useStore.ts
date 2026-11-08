@@ -1,3 +1,4 @@
+import { readDeliverySettings } from '../lib/delivery'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
@@ -73,7 +74,7 @@ interface AppState {
   getPopularityAge: () => number
   getProductSoldCount: (productId: string) => number
   updateExchangeRate: () => Promise<void>
-  refreshCheckout: () => Promise<{ deliveryPriceUzs: number; freeDeliveryThresholdUzs: number }>
+  refreshCheckout: () => Promise<{ deliveryPriceUsd: number; freeDeliveryThresholdUsd: number }>
   updateSaleMode: () => Promise<void>
   updatePopularity: (force?: boolean) => Promise<void>
   ensureProducts: (maxAgeMs?: number) => any[] | null
@@ -220,10 +221,7 @@ export const useStore = create<AppState>()(
           return { ...item, priceUsd: Number(getEffectivePriceUsd(product, sale)) }
         })
         set({ exchangeRate: rate, saleModeEnabled: sale, cart, productsCache: { items: products, updatedAt: Date.now() } })
-        return {
-          deliveryPriceUzs: Math.max(0, Number(settings.delivery_price?.price) || 0),
-          freeDeliveryThresholdUzs: Math.max(0, Number(settings.free_delivery_threshold?.amount) || 0),
-        }
+        return readDeliverySettings(settings.delivery_price, settings.free_delivery_threshold, rate)
       },
 
       updateSaleMode: async () => {

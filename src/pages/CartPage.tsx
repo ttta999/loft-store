@@ -1,3 +1,4 @@
+import { deliveryQuote, formatUsd } from '../lib/delivery'
 import { useScrollLock } from '../lib/useScrollLock'
 import { AnimatePresence } from 'framer-motion'
 import SurfaceDialog from '../components/SurfaceDialog'
@@ -79,8 +80,8 @@ export default function CartPage() {
   const [preparingCheckout, setPreparingCheckout] = useState(false)
 
   // ✅ Состояния для настроек доставки
-  const [deliveryPriceUzs, setDeliveryPriceUzs] = useState<number>(0)
-  const [freeDeliveryThresholdUzs, setFreeDeliveryThresholdUzs] = useState<number>(0)
+  const [deliveryPriceUsd, setDeliveryPriceUsd] = useState<number>(0)
+  const [freeDeliveryThresholdUsd, setFreeDeliveryThresholdUsd] = useState<number>(0)
 
   const openCheckout = async () => {
     if (preparingCheckout) return
@@ -91,8 +92,8 @@ export default function CartPage() {
     setPreparingCheckout(true)
     try {
       const settings = await useStore.getState().refreshCheckout()
-      setDeliveryPriceUzs(settings.deliveryPriceUzs)
-      setFreeDeliveryThresholdUzs(settings.freeDeliveryThresholdUzs)
+      setDeliveryPriceUsd(settings.deliveryPriceUsd)
+      setFreeDeliveryThresholdUsd(settings.freeDeliveryThresholdUsd)
       setCheckoutPresent(true)
       setShowCheckout(true)
     } catch (error) {
@@ -101,7 +102,7 @@ export default function CartPage() {
   }
 
   const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
+    if (currency === 'USD') return formatUsd(usd)
     return `${Math.round(usd * exchangeRate).toLocaleString()} сум`
   }
 
@@ -248,15 +249,15 @@ export default function CartPage() {
           formatPrice={formatPrice}
           getTotalPrice={getTotalPrice}
           language={language}
-          deliveryPriceUzs={deliveryPriceUzs}
-          freeDeliveryThresholdUzs={freeDeliveryThresholdUzs}
+          deliveryPriceUsd={deliveryPriceUsd}
+          freeDeliveryThresholdUsd={freeDeliveryThresholdUsd}
         />
       )}</AnimatePresence>
     </div>
   )
 }
 
-function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUzs, freeDeliveryThresholdUzs }: any) {
+function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, deliveryPriceUsd, freeDeliveryThresholdUsd }: any) {
   useScrollLock(true)
   const navigate = useNavigate()
   const { cart, clearCart, currency, exchangeRate } = useStore()
@@ -318,14 +319,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
 
   const productsUsd = getTotalPrice()
-  const productsTotalUzs = Math.round(productsUsd * exchangeRate)
-
-  // ✅ Доставка считается ТОЛЬКО при методе «Доставка» (при самовывозе всегда 0).
-  // ✅ Бесплатно, если сумма заказа достигла порога из настроек админки.
-  const isFreeDelivery = deliveryMethod === 'delivery' && freeDeliveryThresholdUzs > 0 && productsTotalUzs >= freeDeliveryThresholdUzs
-  const deliveryCostUsd = deliveryMethod === 'delivery' && !isFreeDelivery ? deliveryPriceUzs / exchangeRate : 0
-  const finalUsd = serverTotalUsd ?? productsUsd + deliveryCostUsd
-  const formattedTotal = serverTotalUzs !== null && currency === 'UZS' ? `${serverTotalUzs.toLocaleString()} сум` : formatPrice(finalUsd)
+  const quote = deliveryQuote(productsUsd, deliveryMethod === 'delivery', deliveryPriceUsd, freeDeliveryThresholdUsd, exchangeRate)
+  const isFreeDelivery = quote.free
+  const deliveryCostUsd = quote.deliveryUsd
+  const finalUsd = serverTotalUsd ?? quote.totalUsd
+  const finalUzs = serverTotalUzs ?? quote.totalUzs
+  const formattedTotal = currency === 'UZS' ? `${finalUzs.toLocaleString()} сум` : formatUsd(finalUsd)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
   const [paymentCards, setPaymentCards] = useState<PaymentCards | null>(null)
@@ -370,7 +369,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   // The backend determines ownership, prices, payment state and inventory.
   const createOrderInDb = async (): Promise<any> => {
-    const totalInSums = Math.round(finalUsd * exchangeRate)
+    const totalInSums = finalUzs
     const itemsWithPrices = cart.map(item => ({ ...item, priceUzs: Math.round(item.priceUsd * exchangeRate) }))
     const orderData = {
       client_name: name.trim(), client_phone: phone,
@@ -841,7 +840,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             {/* ✅ Строка «Доставка»: цена или «Бесплатно» (порог из настроек админки) */}
             <Collapse open={deliveryMethod === 'delivery'}><div className="flex justify-between items-center gap-2">
                 <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Доставка' : 'Yetkazib berish'}</span>
-                {isFreeDelivery || deliveryPriceUzs === 0 ? (
+                {isFreeDelivery || deliveryPriceUsd === 0 ? (
                   <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
                 ) : (
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>

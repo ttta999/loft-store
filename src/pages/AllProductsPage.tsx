@@ -1,10 +1,11 @@
+import ProductCard from '../components/ProductCard'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
 import { usePageState } from '../lib/usePageState'
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useStore, isProductOnSale, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
-import { Heart, Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
+import { useStore, getEffectivePriceUsd, filterVisibleProducts } from '../store/useStore'
+import { Tag, Layers, ListOrdered, SlidersHorizontal, Package, Sparkles, Flame, Search } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import CategoryIcon from '../components/CategoryIcon'
 
@@ -15,12 +16,7 @@ export default function AllProductsPage() {
   const location = useLocation()
   const {
     language,
-    currency,
-    exchangeRate,
     saleModeEnabled,
-    addToFavorites,
-    removeFromFavorites,
-    isFavorite,
     popularityMap,
     getPopularityAge,
     ensureProducts,
@@ -51,7 +47,7 @@ export default function AllProductsPage() {
   }, [])
 
   const applyFiltersAndSort = () => {
-    let filtered = [...products]
+    let filtered = location.state?.sortBy === 'sale' ? products.filter(product => saleModeEnabled && Number(product.sale_price) > 0) : [...products]
     if (selectedCategory !== 'all') {
       filtered = filtered.filter((p) => p.category === selectedCategory)
     }
@@ -77,12 +73,8 @@ export default function AllProductsPage() {
 
   const filteredProducts = applyFiltersAndSort()
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
-
   const headerConfig = (() => {
+    if (location.state?.sortBy === 'sale') return { title: language === 'ru' ? 'Скидки' : 'Chegirmalar', icon: <Tag size={18} className="text-[#1B2A4A] dark:text-white" /> }
     if (sortBy === 'newest') {
       return {
         title: language === 'ru' ? 'Новые товары' : 'Yangi mahsulotlar',
@@ -112,81 +104,9 @@ export default function AllProductsPage() {
     setSortBy('newest')
   }
 
-  const ProductCard = ({ product }: { product: any }) => {
-    const onSale = isProductOnSale(product, saleModeEnabled)
-    const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
-    const discountPercent = onSale
-      ? Math.round((1 - Number(product.sale_price) / Number(product.price_usd)) * 100)
-      : 0
-    const favorite = isFavorite(product.id)
-
-    return (
-      <div
-        data-product-card={product.id}
-        onClick={() => navigate(`/product/${product.id}`)}
-        className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:shadow-md transition-shadow"
-      >
-        <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
-          <img
-            loading="lazy" decoding="async"
-            src={product.images?.[0] || 'https://via.placeholder.com/500'}
-            alt={language === 'ru' ? product.name_ru : product.name_uz}
-            className="w-full h-full object-cover"
-          />
-          {onSale && (
-            <span className="absolute top-2 left-2 bg-[#9B3B3B] text-white text-xs font-bold px-2 py-1 rounded-full">
-              -{discountPercent}%
-            </span>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (favorite) {
-                removeFromFavorites(product.id)
-              } else {
-                addToFavorites({
-                  productId: product.id,
-                  name: language === 'ru' ? product.name_ru : product.name_uz,
-                  priceUsd: effectivePrice,
-                  image: product.images?.[0] || '',
-                })
-              }
-            }}
-            className="absolute top-2 right-2 bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
-          >
-            <Heart
-              size={18}
-              className={favorite ? 'fill-[#9B3B3B] text-[#9B3B3B]' : 'text-[#8A8275] dark:text-gray-300'}
-            />
-          </button>
-        </div>
-
-        <div className="p-3">
-          <p className="text-sm font-medium truncate text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? product.name_ru : product.name_uz}
-          </p>
-          {onSale && (
-            <p className="text-[#8A8275] dark:text-gray-500 text-xs line-through mt-1">
-              {formatPrice(product.price_usd)}
-            </p>
-          )}
-        </div>
-
-        <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40">
-          <span className="text-xs text-[#8A8275] dark:text-gray-300">
-            {language === 'ru' ? 'Цена' : 'Narx'}
-          </span>
-          <span className={`text-sm font-bold ${onSale ? 'text-[#9B3B3B] dark:text-red-400' : 'text-[#1B2A4A] dark:text-white'}`}>
-            {formatPrice(effectivePrice)}
-          </span>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+      <div style={{ overflowAnchor: 'none' }} className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
         <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
         <div data-loft-content className="p-4">
           <div data-surface={`products:${location.state?.sortBy || "newest"}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
@@ -214,7 +134,7 @@ export default function AllProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
+    <div style={{ overflowAnchor: 'none' }} className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <IslandHeader needsBack={true} onBack={() => navigate(-1)} />
       <div data-loft-content className="p-4">
         <div data-surface={`products:${location.state?.sortBy || "newest"}`} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
@@ -256,11 +176,11 @@ export default function AllProductsPage() {
                 <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
                   {language === 'ru' ? 'Фильтры и сортировка' : 'Filtrlar va saralash'}
                 </p>
-                {activeFiltersCount > 0 && (
+                <Collapse open={activeFiltersCount > 0}>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
                     {language === 'ru' ? 'Активных фильтров' : 'Faol filtrlar'}: {activeFiltersCount}
                   </p>
-                )}
+                </Collapse>
               </div>
             <ChevronDown size={16} style={{ rotate: showFilters ? "180deg" : "0deg", transition: "rotate 220ms ease-out" }} className="shrink-0 text-[#8A8275] dark:text-gray-300" /></button>
             {activeFiltersCount > 0 && (
@@ -276,7 +196,7 @@ export default function AllProductsPage() {
             )}
           </div>
 
-          <Collapse open={showFilters}><div className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
+          <Collapse open={showFilters}><div data-collection-filters className="border-t border-[#E8E2D5] dark:border-dark-border divide-y divide-[#E8E2D5] dark:divide-dark-border">
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -292,7 +212,7 @@ export default function AllProductsPage() {
                       setSelectedCategory('all')
                       setSelectedSubcategory('all')
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       selectedCategory === 'all'
                         ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                         : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
@@ -307,7 +227,7 @@ export default function AllProductsPage() {
                         setSelectedCategory(cat.id)
                         setSelectedSubcategory('all')
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         selectedCategory === cat.id
                           ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                           : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
@@ -320,7 +240,7 @@ export default function AllProductsPage() {
                 </div>
               </div>
 
-              {selectedCategory !== 'all' && (
+              <Collapse open={selectedCategory !== 'all'}>
                 <div className="p-3.5">
                   <div className="flex items-center gap-3 mb-2.5">
                     <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -333,7 +253,7 @@ export default function AllProductsPage() {
                   <div className="flex flex-wrap gap-1.5 ml-12">
                     <button
                       onClick={() => setSelectedSubcategory('all')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         selectedSubcategory === 'all'
                           ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                           : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
@@ -348,7 +268,7 @@ export default function AllProductsPage() {
                         <button
                           key={sub.id}
                           onClick={() => setSelectedSubcategory(sub.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                             selectedSubcategory === sub.id
                               ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                               : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
@@ -359,7 +279,7 @@ export default function AllProductsPage() {
                       ))}
                   </div>
                 </div>
-              )}
+              </Collapse>
 
               <div className="p-3.5">
                 <div className="flex items-center gap-3 mb-2.5">
@@ -380,7 +300,7 @@ export default function AllProductsPage() {
                     <button
                       key={s.key}
                       onClick={() => setSortBy(s.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         sortBy === s.key
                           ? 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A]'
                           : 'bg-[#F5F1E8] dark:bg-dark-accent text-[#8A8275] dark:text-gray-300 border border-[#E8E2D5] dark:border-dark-border'
@@ -419,7 +339,7 @@ export default function AllProductsPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} placement={`all-${location.state?.sortBy || "newest"}`} />
             ))}
           </div>
         )}

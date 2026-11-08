@@ -77,6 +77,12 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (url.pathname.includes('/storage/')) return json({ signedURL: '/fixture-product.svg' })
       if (url.pathname.includes('/rest/v1/rpc/')) {
         const rpc = url.pathname.split('/').pop()
+        if (rpc === 'store_admin_save_delivery') {
+          const rate = h.db.settings.find(s => s.key === 'exchange_rate')!.value.rate
+          h.db.settings.find(s => s.key === 'delivery_price')!.value = { price_usd: body.p_price_usd, price: Math.round(body.p_price_usd * rate) }
+          h.db.settings.find(s => s.key === 'free_delivery_threshold')!.value = { amount_usd: body.p_threshold_usd, amount: Math.round(body.p_threshold_usd * rate) }
+          return json(null)
+        }
         if (rpc === 'store_admin_auth_state') return json({ isAdmin: true, mfaRequired: true })
         if (rpc === 'store_is_admin') {
           const auth = request.headers().authorization || ''

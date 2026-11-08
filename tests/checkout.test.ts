@@ -26,7 +26,8 @@ test('reload applies the current rate despite a saved version; checkout refreshe
       export const fetchProductPopularity=async()=>({});
       export const getCategoriesTree=async()=>[];
     `)
-    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'")
+    await writeFile(join(root,'delivery.js'),ts.transpileModule(await readFile(join(repo,'src/lib/delivery.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
+    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'")
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}})
     await writeFile(join(root,'store.js'),compiled.outputText)
     const {useStore}=await import(pathToFileURL(join(root,'store.js')).href)
@@ -38,9 +39,9 @@ test('reload applies the current rate despite a saved version; checkout refreshe
     const delivery=await useStore.getState().refreshCheckout()
     assert.equal(useStore.getState().exchangeRate,11843.74)
     assert.equal(useStore.getState().cart[0].priceUsd,210)
-    assert.deepEqual(delivery,{deliveryPriceUzs:30000,freeDeliveryThresholdUzs:2500000})
+    assert.deepEqual(delivery,{deliveryPriceUsd:30000/11843.74,freeDeliveryThresholdUsd:2500000/11843.74})
     assert.equal(Math.round(useStore.getState().getTotalPrice()*useStore.getState().exchangeRate),2487185)
-    assert.ok(2487185<delivery.freeDeliveryThresholdUzs)
+    assert.ok(210<delivery.freeDeliveryThresholdUsd)
   } finally {
     if(originalStorage) Object.defineProperty(globalThis,'localStorage',originalStorage)
     else Reflect.deleteProperty(globalThis,'localStorage')
