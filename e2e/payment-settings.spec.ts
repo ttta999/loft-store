@@ -81,12 +81,14 @@ test('подтверждение оплаты содержит товары и �
   for (const value of ['Тестовые кроссовки', '42', 'Синий', '2', '+998901234567', '17']) expect(message).toContain(value)
 })
 
-test('уведомления плавно открываются, закрываются и переживают быстрый повторный клик', async ({ page }) => {
+test('уведомления плавно открываются, закрываются и переживают быстрый повторный клик', async ({ page, harness }) => {
+  harness.db.orders[0].special_order_id = 17
   await page.goto(ADMIN)
   const bell = page.getByTitle('Уведомления о новых заказах и спецзаказах', { exact: true })
   await bell.click()
   const menu = page.locator('[data-notification-menu]')
   await expect(menu).toHaveAttribute('aria-hidden', 'false')
+  await expect(menu.getByText('Спецзаказ №17', { exact: true })).toBeVisible()
   await expect.poll(() => menu.evaluate(e => Number(getComputedStyle(e).opacity))).toBe(1)
   await page.keyboard.press('Escape')
   await expect(menu).toHaveAttribute('aria-hidden', 'true')
