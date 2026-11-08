@@ -214,7 +214,7 @@ export default function ChinaPage() {
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
                 placeholder={language === 'ru' ? 'Например: Zegna Triple Stitch' : 'Masalan: Zegna Triple Stitch'}
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
+                className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function ChinaPage() {
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="https://..."
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 break-all"
+                className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 break-all"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export default function ChinaPage() {
                 value={sizeColor}
                 onChange={(e) => setSizeColor(e.target.value)}
                 placeholder={language === 'ru' ? '42 размер, синий цвет' : '42 o\'lcham, ko\'k rang'}
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
+                className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function ChinaPage() {
                 onChange={(e) => setComment(e.target.value)}
                 placeholder={language === 'ru' ? 'Дополнительная информация...' : 'Qo\'shimcha ma\'lumotlar...'}
                 rows={3}
-                className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 resize-none"
+                className="w-full bg-transparent text-base font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500 resize-none"
               />
             </div>
           </div>

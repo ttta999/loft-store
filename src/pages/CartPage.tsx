@@ -13,6 +13,12 @@ import IslandHeader from '../components/IslandHeader'
 
 
 
+function separateSpecialOrderNotice(language: string) {
+  return language === 'ru'
+    ? 'Спецзаказ оформляется отдельно от других товаров. Уберите остальные товары из корзины или оформите их отдельным заказом.'
+    : 'Maxsus buyurtma boshqa mahsulotlardan alohida rasmiylashtiriladi. Boshqa mahsulotlarni savatdan olib tashlang yoki alohida buyurtma qiling.'
+}
+
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useScrollLock(true)
   return (
@@ -78,6 +84,10 @@ export default function CartPage() {
 
   const openCheckout = async () => {
     if (preparingCheckout) return
+    if (cart.some(item => item.isSpecialOrder) && cart.length > 1) {
+      toast.info(separateSpecialOrderNotice(language))
+      return
+    }
     setPreparingCheckout(true)
     try {
       const settings = await useStore.getState().refreshCheckout()
@@ -388,6 +398,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
+  const finishOrder = () => {
+    // This action is available only after receipt upload or a completed cash checkout.
+    showPaymentInfoRef.current = false
+    clearCart()
+    navigate('/')
+  }
+
   const cancelUnpaidOrder = async () => {
     if (!currentOrderId) return true
     const success = await deleteUnpaidOrder(currentOrderId)
@@ -402,6 +419,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   const handleSubmit = async () => {
     if (submitting) return
+    if (isSpecialOrder && cart.length > 1) {
+      toast.info(separateSpecialOrderNotice(language))
+      return
+    }
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -599,7 +620,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 <MessageCircle size={16} /> {language === 'ru' ? 'Менеджер' : 'Menejer'}
               </a>
               {screenshotUploaded ? (
-                <button onClick={() => { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }} className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">
+                <button onClick={finishOrder} className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors">
                   <Check size={16} /> {language === 'ru' ? 'Готово' : 'Tayyor'}
                 </button>
               ) : (
@@ -669,11 +690,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           {/* ✅ Кнопки действий */}
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={onClose}
+              onClick={finishOrder}
               className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
             >
               <Check size={16} />
-              {language === 'ru' ? 'Отлично' : 'Ajoyib'}
+              {language === 'ru' ? 'Готово' : 'Tayyor'}
             </button>
             <button
               onClick={() => { onClose(); navigate('/profile?section=orders') }}

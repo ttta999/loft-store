@@ -83,6 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (!item || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) throw new HttpError(400, 'Некорректное количество товара')
           return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true }
         })
+        if ((order.special_order_id || items.some(item => item.isSpecialOrder)) && items.length > 1) {
+          throw new HttpError(409, 'Спецзаказ оформляется отдельно от других товаров. Уберите остальные товары из корзины или оформите их отдельным заказом.')
+        }
         const payload = { client_name: name, client_phone: phone, delivery_method: order.delivery_method,
           delivery_address: order.delivery_method === 'delivery' ? text(order.delivery_address, 500, 5) : null,
           payment_method: order.payment_method, order_currency: order.order_currency, items,
