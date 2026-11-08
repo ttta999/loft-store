@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
   Upload, Send, CheckCircle, X, Tag, Link2, Ruler, MessageCircle,
-  Image as ImageIcon, Clock, Globe, ChevronRight, Plus, Package,
+  Image as ImageIcon, Clock, Globe, ChevronRight, Check, Package,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { storeApi, uploadPrivateImage } from '../lib/api'
@@ -102,18 +102,6 @@ export default function ChinaPage() {
     }
   }
 
-  const handleReset = () => {
-    setProductName('')
-    setLink('')
-    setSizeColor('')
-    setComment('')
-    setImageFile(null)
-    setImagePreview(null)
-    setSubmitted(false)
-    requestKey.current = crypto.randomUUID()
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }
-
   // ✅ ЭКРАН УСПЕХА — в карточном стиле приложения
   if (submitted) {
     return (
@@ -174,11 +162,11 @@ export default function ChinaPage() {
           {/* ✅ Кнопки действий */}
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={handleReset}
+              onClick={() => navigate('/')}
               className="py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
             >
-              <Plus size={16} />
-              {language === 'ru' ? 'Новый спецзаказ' : 'Yangi maxsus buyurtma'}
+              <Check size={16} />
+              {language === 'ru' ? 'Готово' : 'Tayyor'}
             </button>
             <button
               onClick={() => navigate('/profile?section=china')}
