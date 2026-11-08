@@ -2,7 +2,7 @@ import { useScrollLock } from '../lib/useScrollLock'
 import { AnimatePresence } from 'framer-motion'
 import SurfaceDialog from '../components/SurfaceDialog'
 import Collapse from '../components/Collapse'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
@@ -284,6 +284,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const showPaymentInfoRef = useRef(false)
   const screenshotUploadedRef = useRef(false)
   const currentOrderIdRef = useRef<string | null>(null)
+  const completedOrderRef = useRef(false)
+  // Preserve the outgoing payment screen until navigation captures it.
+  useLayoutEffect(() => () => {
+    if (completedOrderRef.current) clearCart()
+  }, [clearCart])
 
   useEffect(() => {
     showPaymentInfoRef.current = showPaymentInfo
@@ -401,7 +406,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const finishOrder = () => {
     // This action is available only after receipt upload or a completed cash checkout.
     showPaymentInfoRef.current = false
-    clearCart()
+    completedOrderRef.current = true
     navigate('/')
   }
 

@@ -67,6 +67,7 @@ test('после загрузки чека Готово ведёт на глав
   await expect(page.getByText('Что ищете сегодня?', { exact: true })).toBeVisible()
   await expect(page.locator('[data-surface-dialog="checkout"]')).toHaveCount(0)
   expect(harness.calls.filter(call => call.body?.action === 'cancelOrder')).toHaveLength(0)
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)).toHaveLength(0)
   const order = harness.db.orders.find(order => order.id === 2001)!
   expect(order.payment_screenshot_url).toBeTruthy()
   expect(order.payment_status).toBe('pending')
