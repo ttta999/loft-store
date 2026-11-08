@@ -93,7 +93,7 @@ for (const entry of ['home', 'catalog', 'search', 'brands', 'favorites', 'profil
 
 test('самолётик и подтверждение появляются только после успешного ответа, ошибка сохраняет форму', async ({ page, harness }) => {
   await page.goto(`${STORE}/china`)
-  await page.getByPlaceholder('Например: Nike Air Force 1', { exact: true }).fill('Тест полёта')
+  await page.getByPlaceholder('Например: Zegna Triple Stitch', { exact: true }).fill('Тест полёта')
   harness.failAction = 'createRequest'
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Отправить заявку', exact: true })).toBeEnabled()

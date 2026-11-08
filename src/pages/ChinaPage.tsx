@@ -225,7 +225,7 @@ export default function ChinaPage() {
                 type="text"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                placeholder={language === 'ru' ? 'Например: Nike Air Force 1' : 'Masalan: Nike Air Force 1'}
+                placeholder={language === 'ru' ? 'Например: Zegna Triple Stitch' : 'Masalan: Zegna Triple Stitch'}
                 className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>
@@ -264,7 +264,7 @@ export default function ChinaPage() {
                 type="text"
                 value={sizeColor}
                 onChange={(e) => setSizeColor(e.target.value)}
-                placeholder={language === 'ru' ? '42 размер, белый цвет' : '42 o\'lcham, oq rang'}
+                placeholder={language === 'ru' ? '42 размер, синий цвет' : '42 o\'lcham, ko\'k rang'}
                 className="w-full bg-transparent text-sm font-medium text-[#1B2A4A] dark:text-white focus:outline-none placeholder:text-[#8A8275] dark:placeholder:text-gray-500"
               />
             </div>

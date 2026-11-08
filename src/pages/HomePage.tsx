@@ -184,6 +184,12 @@ export default function HomePage() {
   const categories = categoriesRaw || []
   const visibleItems = useMemo(() => filterVisibleProducts(productsCache?.items || [], categoriesRaw), [productsCache, categoriesRaw])
 
+  const categoryProductCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const product of visibleItems) counts.set(product.category, (counts.get(product.category) || 0) + 1)
+    return counts
+  }, [visibleItems])
+
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
 
@@ -319,9 +325,9 @@ export default function HomePage() {
                     {language === 'ru' ? cat.name_ru : cat.name_uz}
                   </p>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-                    {cat.subcategories.length - 1} {language === 'ru'
-                      ? getItemsLabelRu(cat.subcategories.length - 1)
-                      : 'ta pastki kategoriya'}
+                    {categoryProductCounts.get(cat.id) || 0} {language === 'ru'
+                      ? getItemsLabelRu(categoryProductCounts.get(cat.id) || 0)
+                      : 'ta mahsulot'}
                   </p>
                 </div>
                 <ArrowRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />

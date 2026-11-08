@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { ChevronRight, AlertCircle, Package, Lightbulb } from 'lucide-react'
+import { ChevronRight, AlertCircle, Package } from 'lucide-react'
 import IslandHeader from '../components/IslandHeader'
 import CategoryIcon from '../components/CategoryIcon'
 
@@ -135,18 +135,6 @@ export default function CategoryPage() {
               <ChevronRight size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
             </button>
           ))}
-        </div>
-
-        {/* ✅ Подсказка */}
-        <div className="flex items-center gap-3 p-4 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-2xl">
-          <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-            <Lightbulb size={18} className="text-[#1B2A4A] dark:text-white" />
-          </div>
-          <p className="text-xs text-[#8A8275] dark:text-gray-300 leading-relaxed">
-            {language === 'ru'
-              ? 'Нажмите «Все товары», чтобы увидеть всю категорию сразу'
-              : '"Barcha mahsulotlar" tugmasini bosing butun kategoriyani ko\'rish uchun'}
-          </p>
         </div>
       </div>
     </div>

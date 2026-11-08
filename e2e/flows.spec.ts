@@ -195,7 +195,7 @@ test('перевод: загрузка чека и подтверждение о
 
 test('создание спецзаказа в магазине отражается у менеджера', async ({ page, context, harness }) => {
   await page.goto(`${STORE}/china`)
-  await page.getByPlaceholder('Например: Nike Air Force 1', { exact: true }).fill('Новый спецзаказ из теста')
+  await page.getByPlaceholder('Например: Zegna Triple Stitch', { exact: true }).fill('Новый спецзаказ из теста')
   await page.getByPlaceholder('https://...', { exact: true }).fill('https://example.test/product')
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click()
   await expect.poll(() => harness.db.china_requests.some(r => r.product_name === 'Новый спецзаказ из теста')).toBe(true)
