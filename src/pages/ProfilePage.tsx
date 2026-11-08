@@ -1,6 +1,6 @@
 import { useScrollLock } from '../lib/useScrollLock'
 import SurfaceDialog from '../components/SurfaceDialog'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
@@ -42,7 +42,9 @@ import { toast } from 'sonner'
 import {
   cancelOrder,
   MANAGER_TELEGRAM_LINK,
-  PAYMENT_CARDS,
+  getPaymentCards,
+  formatCardNumber,
+  type PaymentCard,
   uploadPaymentScreenshot,
 } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
@@ -120,7 +122,21 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
   const [showScreenshotModal, setShowScreenshotModal] = useState(false)
   const orderCurrency = getOrderCurrency(order)
-  const payCard = PAYMENT_CARDS[orderCurrency]
+  const [payCard, setPayCard] = useState<PaymentCard | null>(null)
+  const [cardError, setCardError] = useState(false)
+  const [cardsLoading, setCardsLoading] = useState(false)
+  const cardRequest = useRef(0)
+  const loadPayCard = async () => {
+    const request = ++cardRequest.current
+    setCardsLoading(true); setCardError(false); setPayCard(null)
+    try { const cards = await getPaymentCards(true); if (cardRequest.current === request) setPayCard(cards[orderCurrency]) }
+    catch { if (cardRequest.current === request) setCardError(true) }
+    finally { if (cardRequest.current === request) setCardsLoading(false) }
+  }
+  useEffect(() => {
+    if (order.status === 'Ожидает оплаты') void loadPayCard()
+    return () => { cardRequest.current++ }
+  }, [order.id, order.status, orderCurrency])
 
   const formatOrderPrice = (o: any) => {
     const cur = getOrderCurrency(o)
@@ -208,6 +224,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   const handleCopyCard = async () => {
+    if (!payCard) { void loadPayCard(); return }
     try {
       await navigator.clipboard.writeText(payCard.number.replace(/\s/g, ''))
       toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
@@ -396,12 +413,13 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                         </span>
                       </p>
                       <p className="text-sm font-bold tracking-wider text-[#1B2A4A] dark:text-white break-all">
-                        {payCard.number}
+                        {payCard ? formatCardNumber(payCard.number) : cardError ? (language === 'ru' ? 'Реквизиты временно недоступны' : 'Rekvizitlar vaqtincha mavjud emas') : (language === 'ru' ? 'Загрузка реквизитов…' : 'Rekvizitlar yuklanmoqda…')}
                       </p>
-                      <p className="text-xs text-[#C9A961] font-medium mt-0.5">{payCard.holder}</p>
+                      <p className="text-xs text-[#C9A961] font-medium mt-0.5">{payCard?.holder}</p>
                     </div>
                     <button
                       onClick={handleCopyCard}
+                      disabled={cardsLoading}
                       title={language === 'ru' ? 'Скопировать номер карты' : 'Karta raqamini nusxalash'}
                       className="w-9 h-9 rounded-lg bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex items-center justify-center flex-shrink-0 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
                     >

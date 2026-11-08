@@ -8,7 +8,7 @@ import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
-import { MANAGER_TELEGRAM_LINK, PAYMENT_CARDS, uploadPaymentScreenshot } from '../lib/payments'
+import { MANAGER_TELEGRAM_LINK, getPaymentCards, formatCardNumber, type PaymentCards, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
 
@@ -328,7 +328,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const formattedTotal = serverTotalUzs !== null && currency === 'UZS' ? `${serverTotalUzs.toLocaleString()} сум` : formatPrice(finalUsd)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
-  const payCard = PAYMENT_CARDS[orderCurrency]
+  const [paymentCards, setPaymentCards] = useState<PaymentCards | null>(null)
+  const payCard = paymentCards?.[orderCurrency]
 
   useEffect(() => {
     if (isSpecialOrder) setPaymentMethod('online_card')
@@ -358,6 +359,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   }
 
   const handleCopyCard = async () => {
+    if (!payCard) return
     try {
       await navigator.clipboard.writeText(payCard.number.replace(/\s/g, ''))
       toast.success(language === 'ru' ? 'Номер карты скопирован!' : 'Karta raqami nusxalandi!')
@@ -403,12 +405,13 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }
 
-  const finishOrder = () => {
+  const leaveCompletedOrder = (destination: string) => {
     // This action is available only after receipt upload or a completed cash checkout.
     showPaymentInfoRef.current = false
     completedOrderRef.current = true
-    navigate('/')
+    navigate(destination)
   }
+  const finishOrder = () => leaveCompletedOrder('/')
 
   const cancelUnpaidOrder = async () => {
     if (!currentOrderId) return true
@@ -442,6 +445,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
     setSubmitting(true)
     try {
+      if (paymentMethod === 'online_card') setPaymentCards(await getPaymentCards(true))
       const orderData = await createOrderInDb()
       setServerTotalUsd(Number(orderData.total_price_usd))
       setServerTotalUzs(Number(orderData.total_price_uzs))
@@ -467,7 +471,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     return (
       <SurfaceDialog origin="checkout" stage="payment" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={async () => {
-          if (screenshotUploaded) { setShowPaymentInfo(false); setOrderSuccess(true); clearCart() }
+          if (screenshotUploaded) finishOrder()
           else { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }
         }} />
         {/* ✅ key: принудительный remount скролл-контейнера → экран открывается сверху */}
@@ -533,11 +537,11 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 </div>
                 <CreditCard size={16} className="text-white/40" />
               </div>
-              <p className="text-lg font-bold tracking-[0.14em] text-white mb-4 break-all leading-relaxed">{payCard.number}</p>
+              <p className="text-lg font-bold tracking-[0.14em] text-white mb-4 break-all leading-relaxed">{payCard ? formatCardNumber(payCard.number) : '—'}</p>
               <div className="flex items-end justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[9px] uppercase tracking-widest text-white/50 mb-0.5">{language === 'ru' ? 'Получатель' : 'Qabul qiluvchi'}</p>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#C9A961] truncate">{payCard.holder}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#C9A961] truncate">{payCard?.holder}</p>
                 </div>
                 <button
                   onClick={handleCopyCard}
@@ -645,7 +649,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   if (orderSuccess) {
     return (
       <SurfaceDialog origin="checkout" stage="success" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
-        <IslandHeader needsBack={true} onBack={onClose} />
+        <IslandHeader needsBack={true} onBack={finishOrder} />
         {/* ✅ key: remount → скролл сверху */}
         <div key="success-scroll" className="flex-1 overflow-y-auto p-4 pb-32">
           {/* ✅ Шапка-карточка успеха */}
@@ -678,7 +682,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               )}
             </div>
             <button
-              onClick={() => { onClose(); navigate('/profile?section=orders') }}
+              onClick={() => leaveCompletedOrder('/profile?section=orders')}
               className="flex items-center gap-3 p-3.5 w-full text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
             >
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -702,7 +706,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               {language === 'ru' ? 'Готово' : 'Tayyor'}
             </button>
             <button
-              onClick={() => { onClose(); navigate('/profile?section=orders') }}
+              onClick={() => leaveCompletedOrder('/profile?section=orders')}
               className="py-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border text-[#1B2A4A] dark:text-white font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#E8E2D5] dark:hover:bg-dark-border"
             >
               <Package size={16} />

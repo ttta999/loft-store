@@ -14,6 +14,7 @@ export function catalog() {
     product_variants: [{ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', product_id: productId, size_value: '42', color_id: null, stock: 5 }],
     product_colors: [],
     settings: [
+      { key: 'payment_cards', value: { UZS: { number: '5614382959503289', holder: 'Fixture UZS' }, USD: { number: '4023057010852969', holder: 'Fixture USD' } }, updated_at: now() },
       { key: 'exchange_rate', value: { rate: 12000, version: 1 }, updated_at: now() },
       { key: 'sale_mode_enabled', value: { enabled: false }, updated_at: now() },
       { key: 'delivery_price', value: { price: 30000 }, updated_at: now() },

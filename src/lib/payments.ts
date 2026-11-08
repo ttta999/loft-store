@@ -1,42 +1,19 @@
 import { storeApi, uploadPrivateImage } from './api'
 
-interface PaymentData {
-  orderId: string
-  amount: number
-  description: string
-}
-
-export const PAYMENT_DETAILS = {
-  cardNumber: '5354 6739 3850 3829',
-  cardHolder: 'Abrorbek Xusanov',
-}
-
-export const PAYMENT_CARDS: Record<'UZS' | 'USD', { number: string; holder: string }> = {
-  UZS: { number: '5614 3829 5950 3289', holder: 'Otabek Khusanov' },
-  USD: { number: '4023 0570 1085 2969', holder: 'Khusan Raximov' },
-}
+import { supabase } from './supabase'
+import { dataCache } from './resourceCache'
+import { parsePaymentCards } from './paymentCards'
+export { formatCardNumber } from './paymentCards'
+export type { PaymentCards, PaymentCard } from './paymentCards'
 
 export const MANAGER_TELEGRAM_LINK = 'https://t.me/loft_corneli'
-
-export const showPaymentDetails = (paymentData: PaymentData): string => {
-  const message = `
-💳 <b>Оплата заказа №${paymentData.orderId}</b>
-
-💰 <b>Сумма:</b> ${paymentData.amount.toLocaleString()} сум
-
-💳 <b>Карта для перевода:</b>
-${PAYMENT_DETAILS.cardNumber}
-👤 Получатель: ${PAYMENT_DETAILS.cardHolder}
-
-📸 <b>После оплаты:</b>
-1. Сделайте скриншот перевода
-2. Загрузите его в приложении
-3. Мы подтвердим заказ в течение 15 минут
-
-⏱ <b>Важно:</b> Заказ будет обработан только после подтверждения оплаты!
-  `.trim()
-
-  return message
+export function getPaymentCards(force = false) {
+  return dataCache.load('payment:cards', async () => {
+    // Payment recipients must bypass the general HTTP response cache.
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'payment_cards').abortSignal(new AbortController().signal).single()
+    if (error) throw new Error('Не удалось загрузить реквизиты оплаты. Попробуйте ещё раз.')
+    return parsePaymentCards(data?.value)
+  }, 60_000, force)
 }
 
 // The upload endpoint verifies ownership and attaches the receipt atomically.
