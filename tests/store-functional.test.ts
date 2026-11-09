@@ -81,3 +81,22 @@ test('reservation limit explains how to resume checkout without changing orders 
   assert.equal(calls.some(c=>c.url.pathname.endsWith('/rpc/store_cancel_order')||c.url.pathname.endsWith('/rpc/store_claim_notification')),false)
  },url=> {if(url.pathname.endsWith('/rpc/store_create_order'))return Response.json({message:'Reservation limit',code:'P0001'},{status:400});throw Error('Unexpected '+url.pathname)})
 })
+
+test('retry of an abandoned checkout is a conflict and never wakes the notification worker',async()=> {
+ await mock(async calls=> {
+  const result=await call({action:'createOrder',requestKey:'11111111-1111-4111-8111-111111111111',order:{client_name:'Fixture buyer',client_phone:'+998901234567',delivery_method:'pickup',payment_method:'online_card',order_currency:'USD',total_price_usd:20,items:[{productId:'fixture-product',quantity:1,size:'42'}]}})
+  assert.equal(result.statusCode,409)
+  assert.match(result.body.error,/отменено/)
+  assert.equal(calls.some(c=>c.url.pathname.endsWith('/rpc/store_wake_worker')),false)
+ },url=> {if(url.pathname.endsWith('/rpc/store_create_order')) return Response.json({id:1001,status:'Отменён',checkout_abandoned_at:new Date().toISOString()});throw Error('Unexpected '+url.pathname)})
+})
+
+test('successful receipt submission wakes notifications only after the receipt is attached',async()=> {
+ await mock(async calls=> {
+  const result=await call({action:'upload',bucket:'payment-screenshots',orderId:'1001',base64:png})
+  assert.equal(result.statusCode,200)
+  const attached=calls.findIndex(c=>c.url.pathname.endsWith('/rpc/store_save_screenshot'))
+  const wake=calls.findIndex(c=>c.url.pathname.endsWith('/rpc/store_wake_worker'))
+  assert.ok(attached>=0 && wake>attached)
+ },url=> {if(url.pathname.endsWith('/orders'))return Response.json({id:1001});if(url.pathname.endsWith('/rpc/store_save_screenshot'))return Response.json(true);if(url.pathname.endsWith('/rpc/store_wake_worker')||url.pathname.endsWith('/rpc/store_finish_upload'))return Response.json(null);if(url.pathname.includes('/object/sign/'))return Response.json({signedURL:'/object/sign/fixture'});if(url.pathname.includes('/storage/'))return Response.json({Key:'fixture'});throw Error('Unexpected '+url.pathname)})
+})

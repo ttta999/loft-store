@@ -49,13 +49,13 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (url.pathname === '/api/sendNotification') return json({ success: true })
       if (url.pathname === '/api/getExchangeRate') return json({ success: true, rate: 12000, source: 'fixture' })
       if (body?.action === h.failAction) return json({ error: 'Тестовая ошибка сервера' }, 409)
-      if (body?.action === 'orders') return json({ data: h.db.orders.map(o => ({ ...o, payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
+      if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at).map(o => ({ ...o, payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
       if (body?.action === 'requests') return json({ data: h.db.china_requests })
       if (body?.action === 'createOrder') {
         const data = { ...h.db.orders[0], ...body.order, id: 2001, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
         h.db.orders.push(data); return json({ data: [data] })
       }
-      if (body?.action === 'cancelOrder') { const order = h.db.orders.find(o => String(o.id) === String(body.orderId)); if (order) order.status = 'Отменён'; return json({ success: true }) }
+      if (body?.action === 'cancelOrder') { const order = h.db.orders.find(o => String(o.id) === String(body.orderId)); if (order) { order.status = 'Отменён'; if (body.unpaidOnly) order.checkout_abandoned_at = now() }; return json({ success: true }) }
       if (body?.action === 'createRequest') { const data = { ...body.request, id: 3002, user_id: '900000001', status: 'На рассмотрении', created_at: now() }; h.db.china_requests.push(data); return json({ data }) }
       if (body?.action === 'cancelRequest') { const item = h.db.china_requests.find(o => String(o.id) === String(body.requestId)); if (item) item.status = 'Отменён клиентом'; return json({ success: true }) }
       if (body?.action === 'upload') {
@@ -120,6 +120,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       const table = url.pathname.split('/').pop()!
       if (table === h.failTable) return json({ message: 'Fixture database unavailable', code: 'XX000' }, 503)
       let rows = h.db[table] || []
+      if (table === 'orders' && method === 'GET') rows = rows.filter(row => !row.checkout_abandoned_at)
       const matches = (row: any) => [...url.searchParams.entries()].every(([key, value]) => {
         if (value.startsWith('eq.')) return String(row[key]) === value.slice(3)
         if (value === 'is.null') return row[key] == null

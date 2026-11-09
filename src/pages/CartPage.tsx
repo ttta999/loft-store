@@ -298,7 +298,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   }, [showPaymentInfo, screenshotUploaded, currentOrderId])
 
   // ✅ FIX: если пользователь ушёл с экрана оплаты БЕЗ скриншота ЛЮБЫМ способом
-  // (навбар, роутинг, закрытие вкладки) — неоплаченный заказ ПОЛНОСТЬЮ удаляется из БД,
+  // (навбар, роутинг, закрытие вкладки) — незавершённое оформление скрывается из истории,
   // остатки возвращаются. Со скриншотом — заказ остаётся для подтверждения менеджером.
   useEffect(() => {
     return () => {
@@ -470,6 +470,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     return (
       <SurfaceDialog origin="checkout" stage="payment" role="dialog" className="loft-modal fixed inset-0 bg-[#F5F1E8] dark:bg-dark-bg z-50 flex flex-col">
         <IslandHeader needsBack={true} onBack={async () => {
+          if (uploadingScreenshot) return
           if (screenshotUploaded) finishOrder()
           else { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }
         }} />
@@ -632,7 +633,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                   <Check size={16} /> {language === 'ru' ? 'Готово' : 'Tayyor'}
                 </button>
               ) : (
-                <button onClick={async () => { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }} className="py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors">
+                <button disabled={uploadingScreenshot} onClick={async () => { if (await cancelUnpaidOrder()) setShowPaymentInfo(false) }} className="py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-700 dark:hover:bg-red-800 transition-colors">
                   <X size={16} /> {language === 'ru' ? 'Отменить' : 'Bekor qilish'}
                 </button>
               )}

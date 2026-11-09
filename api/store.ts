@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json({ success: true })
       }
       case 'orders': {
-        let query = db.from('orders').select('*').eq('user_id', userId).order('id', { ascending: false }).limit(100)
+        let query = db.from('orders').select('*').eq('user_id', userId).is('checkout_abandoned_at', null).order('id', { ascending: false }).limit(100)
         if (body.cursor != null) query = query.lt('id', recordId(body.cursor))
         const { data, error } = await query
         if (error) throw error
@@ -92,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           special_order_id: order.special_order_id ? recordId(order.special_order_id) : null, expected_total_usd: order.total_price_usd, expected_total_uzs: order.total_price_uzs }
         const { data, error } = await db.rpc('store_create_order', { p_user: userId, p_payload: payload, p_key: uuid(body.requestKey) })
         if (error) dbError(error.message)
+        if (!data || data.checkout_abandoned_at || data.status === 'Отменён') throw new HttpError(409, 'Это оформление уже отменено. Оформите заказ заново.')
         await db.rpc('store_wake_worker')
         return res.json({ data: [await presentOrder(data)] })
       }
@@ -142,6 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (orderId) {
           const { data, error: saveError } = await db.rpc('store_save_screenshot', { p_user: userId, p_order_id: orderId, p_path: storedPath })
           if (saveError || !data) { await db.storage.from(bucket).remove([path]); throw new HttpError(409, 'Заказ уже изменён. Обновите страницу.') }
+          await db.rpc('store_wake_worker')
         }
         return res.json({ path: storedPath, url: await signedUrl(storedPath, bucket) })
       }

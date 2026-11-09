@@ -49,6 +49,7 @@ test('order history is scoped to the verified identity, ignoring supplied user_i
     assert.equal(res.statusCode,200)
     const query=new URL(urls.find(url=>url.includes('/rest/v1/orders'))!)
     assert.equal(query.searchParams.get('user_id'),'eq.900000001')
+    assert.equal(query.searchParams.get('checkout_abandoned_at'),'is.null')
   } finally { globalThis.fetch=original }
 })
 test('checkout strips forged identity, payment status, item price and stock before calling transactional RPC',async()=> {

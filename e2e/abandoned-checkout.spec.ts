@@ -1,0 +1,33 @@
+import { test, expect, STORE, ADMIN, productId } from './fixture'
+
+for (const dismiss of ['button', 'header', 'telegram']) {
+  test(`отмена оформления (${dismiss}): корзина сохранена, истории клиента и админки без отменённой заготовки`, async ({ page, context, harness }) => {
+    await page.goto(`${STORE}/product/${productId}`)
+    await page.locator('[data-dialog-trigger="size"]').click()
+    await page.getByRole('button', { name: '42', exact: true }).click()
+    await page.getByRole('button', { name: 'В корзину', exact: true }).click()
+    await expect(page.getByText('Товар добавлен в корзину!', { exact: true })).toBeVisible()
+    await page.goto(STORE + '/cart')
+    await page.getByRole('button', { name: 'Оформить заказ', exact: true }).click()
+    await page.getByPlaceholder('Ваше имя', { exact: true }).fill('Покупатель')
+    await page.getByPlaceholder('+998 XX XXX XX XX', { exact: true }).fill('+998901234567')
+    await page.getByRole('button', { name: 'Перейти к оплате', exact: true }).click()
+    await expect(page.locator('input[type=file]')).toHaveCount(1)
+    if (dismiss === 'button') await page.getByRole('button', { name: 'Отменить', exact: true }).click()
+    else if (dismiss === 'header') await page.locator('[data-surface-dialog="checkout"] [data-loft-dismiss]').click()
+    else await page.evaluate(() => (window as any).telegramBack())
+    await expect.poll(() => harness.db.orders.find(o => o.id === 2001)?.checkout_abandoned_at).toBeTruthy()
+    const cancellation = harness.calls.filter(c => c.body?.action === 'cancelOrder')
+    expect(cancellation).toHaveLength(1)
+    expect(cancellation[0].body.unpaidOnly).toBe(true)
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)).toHaveLength(1)
+    await page.goto(STORE + '/profile?section=orders')
+    await expect(page.getByRole('heading', { name: 'История заказов', exact: true })).toBeVisible()
+    await expect(page.locator('[data-profile-link="order:2001"]')).toHaveCount(0)
+    await expect(page.locator('[data-profile-link="order:1001"]')).toBeVisible()
+    const manager = await context.newPage()
+    await manager.goto(ADMIN + '/orders')
+    await expect(manager.getByRole('button', { name: /Заказ №1001/ })).toBeVisible()
+    await expect(manager.getByRole('button', { name: /Заказ №2001/ })).toHaveCount(0)
+  })
+}
