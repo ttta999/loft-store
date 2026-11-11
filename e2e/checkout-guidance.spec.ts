@@ -25,18 +25,16 @@ test('спецзаказ: все текстовые поля имеют безо
   }
 })
 
-test('смешанная корзина открывает общее оформление и сохраняет связь с заявкой', async ({ page, harness }) => {
+test('спецзаказ не добавляется к обычной корзине, товары сохраняются', async ({ page, harness }) => {
   Object.assign(harness.db.china_requests[0], { status: 'Оценён', manager_price: 100 })
   await regularCart(page)
   await page.goto(STORE + '/profile?section=china')
   await page.locator('[data-profile-link="request:3001"]').click()
   await page.locator('.loft-detail').getByRole('button', { name: 'Добавить в корзину', exact: true }).click()
-  await page.getByRole('button', { name: /Корзина$/ }).click()
-  await page.getByRole('button', { name: 'Оформить заказ', exact: true }).click()
-  await expect(page.locator('[data-surface-dialog="checkout"]')).toBeVisible()
+  await expect(page.getByText('Спецзаказы нельзя объединять с обычными товарами. Сначала оформите текущую корзину или очистите её', {exact:true})).toBeVisible()
   const cart=await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)
-  expect(cart).toHaveLength(2)
-  expect(cart.find((item:any)=>item.isSpecialOrder).specialRequestId).toBe(3001)
+  expect(cart).toHaveLength(1)
+  expect(cart[0].isSpecialOrder).not.toBe(true)
   expect(harness.db.china_requests[0].status).toBe('Оценён')
 })
 

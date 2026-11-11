@@ -1,4 +1,4 @@
-import { specialOrderIds } from '../lib/specialOrders'
+import { specialOrderIds, specialStatusTone, specialStatusText } from '../lib/specialOrders'
 import { useScrollLock } from '../lib/useScrollLock'
 import SurfaceDialog from '../components/SurfaceDialog'
 import { useState, useEffect, useRef } from 'react'
@@ -171,6 +171,8 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
     })
 
   const getStatusText = (status: string, deliveryMethod: string) => {
+    const specialText = specialStatusText(status, language)
+    if (specialText) return specialText
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
         return {
@@ -214,6 +216,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
   }
 
   const getStatusColor = (status: string) => {
+    status = specialStatusTone(status)
     return {
       'Активный': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'В обработке': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
@@ -270,7 +273,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
           </div>
           {specialOrderIds(order).length > 0 && (
             <span className="inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
-              {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
+              {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'} №{specialOrderIds(order).join(', №')}
             </span>
           )}
         </div>
@@ -790,7 +793,12 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
           <h3 className="font-bold text-[#1B2A4A] dark:text-white mb-3">
             {language === 'ru' ? 'Статус заявки' : 'Ariza holati'}
           </h3>
-          {request.status === 'Оценён' && request.manager_price ? (
+          {request.status === 'Оценён' && request.reserved_order_id ? (
+            <div className="space-y-2.5">
+              <p className="text-sm text-[#8A8275] dark:text-gray-300">{language === 'ru' ? `Оплата спецзаказа — в заказе №${request.reserved_order_id}` : `Maxsus buyurtma to‘lovi — buyurtma №${request.reserved_order_id}`}</p>
+              <button onClick={() => navigate(`/profile?section=orders&order=${request.reserved_order_id}`)} className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold">{language === 'ru' ? 'Перейти к заказу' : 'Buyurtmaga o‘tish'}</button>
+            </div>
+          ) : request.status === 'Оценён' && request.manager_price ? (
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3.5">
                 <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center flex-shrink-0">
@@ -1031,6 +1039,8 @@ export default function ProfilePage() {
     })
 
   const getOrderStatusText = (status: string, deliveryMethod: string) => {
+    const specialText = specialStatusText(status, language)
+    if (specialText) return specialText
     if (language === 'uz') {
       if (deliveryMethod === 'pickup') {
         return {
@@ -1074,6 +1084,7 @@ export default function ProfilePage() {
   }
 
   const getOrderStatusColor = (status: string) => {
+    status = specialStatusTone(status)
     return {
       'Активный': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'В обработке': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
@@ -1188,7 +1199,10 @@ export default function ProfilePage() {
       isSpecialOrder: true,
       specialRequestId: request.id,
     }
-    addToCart(specialItem)
+    try { addToCart(specialItem) } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось добавить товар')
+      return
+    }
     toast.success(
       language === 'ru'
         ? 'Спецзаказ добавлен в корзину! Перейдите в корзину для оформления.'
@@ -1654,7 +1668,7 @@ export default function ProfilePage() {
                         <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{formatDateTime(order.created_at)}</p>
                         {specialOrderIds(order).length > 0 && (
                           <span className="inline-block mt-1.5 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
-                            {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
+                            {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'} №{specialOrderIds(order).join(', №')}
                           </span>
                         )}
                       </div>

@@ -28,7 +28,8 @@ test('reload applies the current rate despite a saved version; checkout refreshe
       export const getCategoriesTree=async()=>[];
     `)
     await writeFile(join(root,'delivery.js'),ts.transpileModule(await readFile(join(repo,'src/lib/delivery.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
-    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'").replace("from '../lib/api'","from './supabase.js'")
+    await writeFile(join(root,'specialCheckout.js'),ts.transpileModule(await readFile(join(repo,'src/lib/specialCheckout.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
+    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'").replace("from '../lib/api'","from './supabase.js'").replace("from '../lib/specialCheckout'","from './specialCheckout.js'")
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}})
     await writeFile(join(root,'store.js'),compiled.outputText)
     const {useStore}=await import(pathToFileURL(join(root,'store.js')).href)
@@ -43,6 +44,18 @@ test('reload applies the current rate despite a saved version; checkout refreshe
     assert.deepEqual(delivery,{deliveryPriceUsd:30000/11843.74,freeDeliveryThresholdUsd:2500000/11843.74})
     assert.equal(Math.round(useStore.getState().getTotalPrice()*useStore.getState().exchangeRate),2487185)
     assert.ok(210<delivery.freeDeliveryThresholdUsd)
+    const before = structuredClone(useStore.getState().cart)
+    assert.throws(() => useStore.getState().addToCart({productId:'special-1',specialRequestId:1,isSpecialOrder:true,quantity:1}), /нельзя объединять/)
+    assert.deepEqual(useStore.getState().cart,before)
+    useStore.setState({cart:[]})
+    useStore.getState().addToCart({productId:'special-1',specialRequestId:1,isSpecialOrder:true,quantity:1})
+    assert.throws(() => useStore.getState().addToCart({productId:'product-210',quantity:1}), /оформляются отдельно/)
+    assert.throws(() => useStore.getState().addToCart({productId:'special-2',specialRequestId:2,isSpecialOrder:true,quantity:1}), /Каждый спецзаказ/)
+    assert.equal(useStore.getState().cart.length,1)
+    const legacyMixed = [...before, ...useStore.getState().cart]
+    useStore.setState({cart:legacyMixed})
+    await assert.rejects(useStore.getState().refreshCheckout(), /оформляются отдельно/)
+    assert.deepEqual(useStore.getState().cart,legacyMixed)
   } finally {
     if(originalStorage) Object.defineProperty(globalThis,'localStorage',originalStorage)
     else Reflect.deleteProperty(globalThis,'localStorage')

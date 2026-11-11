@@ -52,7 +52,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at).map(o => ({ ...o, payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
       if (body?.action === 'requests') return json({ data: h.db.china_requests })
       if (body?.action === 'createOrder') {
-        const data = { ...h.db.orders[0], ...body.order, id: Math.max(2000,...h.db.orders.map(o=>Number(o.id)))+1, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
+        const data = { ...h.db.orders[0], ...body.order, special_fulfillment: body.order.items.some((i:any)=>i.isSpecialOrder), id: Math.max(2000,...h.db.orders.map(o=>Number(o.id)))+1, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
         h.db.orders.push(data)
         for (const item of data.items || []) if (item.isSpecialOrder) {
           const request = h.db.china_requests.find(r => String(r.id) === String(item.specialRequestId))
@@ -66,7 +66,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (body?.action === 'upload') {
         const path = `private:${body.bucket}/900000001/${body.orderId ? body.orderId + '/' : ''}fixture.png`
         const order = h.db.orders.find(o => String(o.id) === String(body.orderId))
-        if (order) { order.payment_screenshot_url = path; order.receipt_submitted_at = now(); for (const r of h.db.china_requests) if (r.reserved_order_id === order.id) Object.assign(r, { status: 'Оформлен', converted_to_order_id: String(order.id), reserved_order_id: null }) }
+        if (order) { order.payment_screenshot_url = path; order.receipt_submitted_at = now(); for (const r of h.db.china_requests) if (r.reserved_order_id === order.id && !order.special_fulfillment) Object.assign(r, { status: 'Оформлен', converted_to_order_id: String(order.id), reserved_order_id: null }) }
         return json({ path, url: image })
       }
       return json({ success: true })
@@ -119,7 +119,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
         if (rpc === 'store_admin_order_status') { const o = h.db.orders.find(o => String(o.id) === String(body.p_id)); if (o) { o.status = body.p_status; if (body.p_courier) o.courier_link = body.p_courier; if (body.p_status === 'Выдан' && o.payment_method === 'upon_receipt') { o.payment_status = 'paid'; o.paid_at = now() } }; return json(o) }
         if (rpc === 'store_admin_request_status') { const r = h.db.china_requests.find(r => String(r.id) === String(body.p_id)); if (r) Object.assign(r, body.p_extra, { status: body.p_status }); return json(r) }
         if (rpc === 'get_product_popularity') return json([{ product_id: productId, sold_count: 1 }])
-        if (rpc === 'store_admin_confirm_payment' || rpc === 'store_admin_confirm_payment_with_notice' || rpc === 'store_admin_cancel_order') { const order = h.db.orders.find(o => String(o.id) === String(body?.p_order_id)); if (order) { if (rpc.includes('confirm_payment')) { order.payment_status = 'paid'; order.paid_at = now() } else order.status = 'Отменён' }; return json(true) }
+        if (rpc === 'store_admin_confirm_payment' || rpc === 'store_admin_confirm_payment_with_notice' || rpc === 'store_admin_cancel_order') { const order = h.db.orders.find(o => String(o.id) === String(body?.p_order_id)); if (order) { if (rpc.includes('confirm_payment')) { order.payment_status = 'paid'; order.paid_at = now(); order.status = order.special_fulfillment ? 'Принят' : 'Активный'; for (const r of h.db.china_requests) if (r.reserved_order_id === order.id) Object.assign(r,{status:'Оформлен',converted_to_order_id:String(order.id),reserved_order_id:null}) } else order.status = 'Отменён' }; return json(true) }
         return json(true)
       }
       const table = url.pathname.split('/').pop()!

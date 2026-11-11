@@ -1,4 +1,5 @@
 import { storeApi } from '../lib/api'
+import { cartAdditionError, specialCheckoutError } from '../lib/specialCheckout'
 import { readDeliverySettings } from '../lib/delivery'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -206,6 +207,8 @@ export const useStore = create<AppState>()(
       },
 
       refreshCheckout: async () => {
+        const errorMessage = specialCheckoutError(get().cart)
+        if (errorMessage) throw new Error(errorMessage)
         const [{ data: rows, error }, products] = await Promise.all([
           supabase.from('settings').select('key, value').in('key', ['exchange_rate', 'sale_mode_enabled', 'delivery_price', 'free_delivery_threshold']),
           getProducts(true),
@@ -274,7 +277,9 @@ export const useStore = create<AppState>()(
       },
 
       // ✅ addToCart: уникальность = productId + size + colorId
-      addToCart: (item) =>
+      addToCart: (item) => {
+        const error = cartAdditionError(get().cart, item)
+        if (error) throw new Error(error)
         set((state) => {
           if (item.isSpecialOrder) return state.cart.some(i => i.isSpecialOrder && String(i.specialRequestId) === String(item.specialRequestId)) ? state : { cart: [...state.cart, { ...item, productId: `special-${item.specialRequestId}`, quantity: 1 }] }
           if (item.quantity < 0) {
@@ -306,7 +311,8 @@ export const useStore = create<AppState>()(
             }
           }
           return { cart: [...state.cart, item] }
-        }),
+        })
+      },
 
       // ✅ removeFromCart: с учётом цвета
       removeFromCart: (productId, size, colorId) =>

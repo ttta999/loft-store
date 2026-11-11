@@ -38,6 +38,8 @@ async function presentOrder(order: StoredRecord) {
     items: await Promise.all((order.items || []).map(async (item) => item.isSpecialOrder ? { ...item, image: await signedUrl(item.image, 'china-requests') } : item)) }
 }
 function dbError(message?: string): never {
+  if (message?.includes('Special checkout must')) throw new HttpError(409, 'Каждый спецзаказ оформляется отдельно, без других товаров.')
+  if (message?.includes('Special checkout requires')) throw new HttpError(409, 'Для спецзаказа необходима полная предоплата переводом.')
   if (message?.includes('Reservation limit')) throw new HttpError(409, 'Достигнут лимит незавершённых заказов. Завершите оплату или отмените предыдущий заказ в разделе «Профиль → Заказы». Если чек уже загружен, дождитесь подтверждения магазина.')
   if (message?.includes('Price changed')) throw new HttpError(409, 'Цена или доставка изменилась. Обновите корзину и оформите заказ заново.')
   if (message?.includes('stock') || message?.includes('unavailable') || message?.includes('no rows')) throw new HttpError(409, 'Товар или спецзаказ больше недоступен. Обновите корзину.')
@@ -83,6 +85,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (!item || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) throw new HttpError(400, 'Некорректное количество товара')
           return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true, specialRequestId: item.isSpecialOrder === true ? recordId(item.specialRequestId || order.special_order_id) : null }
         })
+        if (order.special_order_id || items.some((item: { isSpecialOrder: boolean }) => item.isSpecialOrder)) {
+          if (items.length !== 1 || !items[0].isSpecialOrder || items[0].quantity !== 1) throw new HttpError(409, 'Каждый спецзаказ оформляется отдельно, без других товаров.')
+          if (order.payment_method !== 'online_card') throw new HttpError(409, 'Для спецзаказа необходима полная предоплата переводом.')
+        }
         const payload = { client_name: name, client_phone: phone, delivery_method: order.delivery_method,
           delivery_address: order.delivery_method === 'delivery' ? text(order.delivery_address, 500, 5) : null,
           payment_method: order.payment_method, order_currency: order.order_currency, items,

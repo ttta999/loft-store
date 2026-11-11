@@ -107,7 +107,7 @@ test('UZS checkout requires the exact integer total reviewed by the buyer',async
   } finally { globalThis.fetch=original }
 })
 
-test('mixed checkout passes owned request identifiers to the transactional RPC and strips quoted prices',async()=> {
+test('single special checkout passes owned request identifiers to the transactional RPC and strips quoted prices',async()=> {
  const original=globalThis.fetch;const payloads:any[]=[]
  globalThis.fetch=async(input,init)=> {
   const url=String(input)
@@ -119,10 +119,29 @@ test('mixed checkout passes owned request identifiers to the transactional RPC a
  try {
   for(const legacy of [true,false]) {
    const res=response()
-   await handler(request({action:'createOrder',requestKey:'5bcde2b4-b415-45e0-b179-c38a99267d09',order:{client_name:'Test buyer',client_phone:'+998901234567',delivery_method:'pickup',payment_method:'online_card',order_currency:'USD',total_price_usd:120,...(legacy?{special_order_id:55}:{}),items:[{productId:'special-55',size:'42',quantity:1,isSpecialOrder:true,...(!legacy?{specialRequestId:55}:{}),priceUsd:1},{productId:'ordinary-product',size:'42',quantity:1}]}},`Bearer ${bearer}`),res as unknown as VercelResponse)
+   await handler(request({action:'createOrder',requestKey:'5bcde2b4-b415-45e0-b179-c38a99267d09',order:{client_name:'Test buyer',client_phone:'+998901234567',delivery_method:'pickup',payment_method:'online_card',order_currency:'USD',total_price_usd:120,...(legacy?{special_order_id:55}:{}),items:[{productId:'special-55',size:'42',quantity:1,isSpecialOrder:true,...(!legacy?{specialRequestId:55}:{}),priceUsd:1}]}},`Bearer ${bearer}`),res as unknown as VercelResponse)
    assert.equal(res.statusCode,200)
   }
   assert.equal(payloads.length,2)
-  for(const payload of payloads){assert.equal(payload.p_user,'900000001');assert.equal(payload.p_payload.items[0].specialRequestId,'55');assert.equal(payload.p_payload.items[0].priceUsd,undefined);assert.equal(payload.p_payload.items.length,2)}
+  for(const payload of payloads){assert.equal(payload.p_user,'900000001');assert.equal(payload.p_payload.items[0].specialRequestId,'55');assert.equal(payload.p_payload.items[0].priceUsd,undefined);assert.equal(payload.p_payload.items.length,1)}
+ }finally{globalThis.fetch=original}
+})
+
+test('API rejects mixed, multiple, quantity and pay-on-receipt special checkouts before creation',async()=>{
+ const original=globalThis.fetch;let created=0
+ globalThis.fetch=async(input)=>{
+  const url=String(input)
+  if(url.includes('/rpc/store_rate_limit')||url.includes('/rpc/store_validate_session'))return Response.json(true)
+  if(url.includes('/rpc/store_create_order'))created++
+  throw Error('Unexpected request')
+ }
+ try{
+  const special={productId:'special-55',size:'42',quantity:1,isSpecialOrder:true,specialRequestId:55}
+  for(const change of [{items:[special,{productId:'ordinary',size:'42',quantity:1}]},{items:[special,{...special,specialRequestId:56}]},{items:[{...special,quantity:2}]},{payment_method:'upon_receipt'}]){
+   const res=response()
+   await handler(request({action:'createOrder',requestKey:'5bcde2b4-b415-45e0-b179-c38a99267d09',order:{client_name:'Test buyer',client_phone:'+998901234567',delivery_method:'pickup',payment_method:'online_card',order_currency:'USD',total_price_usd:100,items:[special],...change}},`Bearer ${bearer}`),res as unknown as VercelResponse)
+   assert.equal(res.statusCode,409)
+  }
+  assert.equal(created,0)
  }finally{globalThis.fetch=original}
 })

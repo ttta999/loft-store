@@ -14,6 +14,7 @@ test('спецзаказ: Готово возвращает на главную,
 
 test('колокольчик показывает спецзаказ, сохраняет непрочитанное после возврата и ведёт в спецзаказы', async ({ page, harness }) => {
   harness.db.orders = []
+  await page.clock.install()
   await page.goto(ADMIN)
   const bell = page.getByTitle('Уведомления о новых заказах и спецзаказах')
   await expect(bell.locator('[data-notification-count]')).toHaveText('1')
@@ -28,7 +29,6 @@ test('колокольчик показывает спецзаказ, сохра
   await page.reload()
   await expect(bell.locator('[data-notification-count]')).toHaveCount(0)
   harness.db.china_requests.push({ ...harness.db.china_requests[0], id: 3002, created_at: new Date(Date.now() + 1000).toISOString() })
-  await page.clock.install()
   await page.clock.fastForward(31000)
   await expect(bell.locator('[data-notification-count]')).toHaveText('1')
   await bell.click()

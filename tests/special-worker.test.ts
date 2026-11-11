@@ -29,3 +29,29 @@ test('the existing worker sends each special snapshot once, with formatting and 
   assert.ok(messages[0].reply_markup.inline_keyboard[0][0].web_app.url.endsWith('section=orders&order=145'))
  }finally{globalThis.fetch=original}
 })
+
+test('fulfillment snapshots use the existing queue and never fall back to ordinary order text',async()=>{
+ const original=globalThis.fetch;const completed=new Set<number>();const messages:any[]=[]
+ const events=[{id:61,status:'Принят'},{id:62,status:'Передан курьеру'}]
+ globalThis.fetch=async(input,init)=>{
+  const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
+  if(url.hostname==='api.telegram.org'){messages.push(body);return Response.json({ok:true})}
+  const name=url.pathname.split('/').at(-1)
+  if(name==='store_worker_authorized')return Response.json(true)
+  if(name==='store_pending_notifications')return Response.json(events.map(e=>({id:e.id,kind:'custom',user_id:'900000301'})))
+  if(name==='store_claim_custom_notification')return Response.json(completed.has(body.p_id)?null:{id:body.p_id,user_id:'900000301',payload:{special_order:{id:147,status:events.find(e=>e.id===body.p_id)!.status,delivery_method:'delivery',courier_link:'https://example.com/track'}}})
+  if(name==='store_complete_notification'){completed.add(body.p_event_id);return Response.json(null)}
+  if(name==='store_orphan_files')return Response.json([])
+  throw Error('Unexpected request')
+ }
+ try{
+  for(let i=0;i<2;i++){
+   const res={setHeader(){},status(){return this},json(){return this}}
+   await handler({method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+'a'.repeat(64)},body:{}} as any,res as any)
+  }
+  assert.equal(messages.length,2)
+  assert.ok(messages.some(m=>m.text.includes('Полная оплата вашего спецзаказа подтверждена.')))
+  assert.ok(messages.some(m=>m.text.includes('https://example.com/track')))
+  assert.ok(messages.every(m=>m.parse_mode==='HTML' && m.reply_markup.inline_keyboard[0][0].web_app.url.endsWith('order=147')))
+ }finally{globalThis.fetch=original}
+})

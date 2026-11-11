@@ -1,4 +1,5 @@
 import { deliveryQuote, formatUsd } from '../lib/delivery'
+import { specialCheckoutError } from '../lib/specialCheckout'
 import { useScrollLock } from '../lib/useScrollLock'
 import { AnimatePresence } from 'framer-motion'
 import SurfaceDialog from '../components/SurfaceDialog'
@@ -189,7 +190,7 @@ export default function CartPage() {
                     <div className="flex items-center gap-1 bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-lg px-1.5 py-1">
                       <button aria-label={language === 'ru' ? 'Уменьшить количество' : 'Miqdorni kamaytirish'} onClick={() => item.quantity > 1 && addToCart({ ...item, quantity: -1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Minus size={14} /></button>
                       <span className="font-bold text-sm text-[#1B2A4A] dark:text-white w-5 text-center">{item.quantity}</span>
-                      <button aria-label={language === 'ru' ? 'Увеличить количество' : 'Miqdorni oshirish'} onClick={() => addToCart({ ...item, quantity: 1 })} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Plus size={14} /></button>
+                      <button aria-label={language === 'ru' ? 'Увеличить количество' : 'Miqdorni oshirish'} onClick={() => { try { addToCart({ ...item, quantity: 1 }) } catch (error) { toast.error(error instanceof Error ? error.message : 'Не удалось добавить товар') } }} className="p-0.5 text-[#8A8275] dark:text-gray-300"><Plus size={14} /></button>
                     </div>
                   ) : (
                     <span className="text-xs text-[#8A8275] dark:text-gray-300">1 {language === 'ru' ? 'шт.' : 'donа'}</span>
@@ -305,6 +306,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   }, [])
 
   const isSpecialOrder = cart.some((item: any) => item.isSpecialOrder)
+  useEffect(() => { if (isSpecialOrder) setPaymentMethod('online_card') }, [isSpecialOrder])
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
 
   const productsUsd = getTotalPrice()
@@ -410,6 +412,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   const handleSubmit = async () => {
     if (submitting) return
+    const specialError = specialCheckoutError(cart, paymentMethod)
+    if (specialError) { toast.error(specialError); return }
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -718,7 +722,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
         {isSpecialOrder && (
           <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl">
             <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">{language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}</p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{language === 'ru' ? 'Спецзаказы оформляются вместе с остальными товарами в обычном заказе' : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{language === 'ru' ? 'Для оформления спецзаказа необходима полная предоплата. После подтверждения платежа мы приступим к закупке товара у поставщика' : 'Maxsus buyurtma uchun to‘liq oldindan to‘lov zarur. To‘lov tasdiqlangach, mahsulot yetkazib beruvchidan buyurtma qilinadi'}</p>
           </div>
         )}
 
@@ -798,9 +802,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
               <label className="flex items-center gap-2 cursor-pointer mb-2">
                 <input type="radio" name="payment" checked={paymentMethod === 'online_card'} onChange={() => setPaymentMethod('online_card')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
-                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}</span>
+                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? (isSpecialOrder ? 'Оплата переводом — 100% предоплата' : 'Оплата переводом') : 'Pul o\'tkazish orqali to\'lash'}</span>
               </label>
-              {deliveryMethod === 'pickup' && (
+              {deliveryMethod === 'pickup' && !isSpecialOrder && (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="payment" checked={paymentMethod === 'upon_receipt'} onChange={() => setPaymentMethod('upon_receipt')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash'}</span>
