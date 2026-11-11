@@ -25,23 +25,19 @@ test('спецзаказ: все текстовые поля имеют безо
   }
 })
 
-test('смешанная корзина показывает уведомление об отдельном оформлении и сохраняет оба товара', async ({ page, harness }) => {
+test('смешанная корзина открывает общее оформление и сохраняет связь с заявкой', async ({ page, harness }) => {
   Object.assign(harness.db.china_requests[0], { status: 'Оценён', manager_price: 100 })
   await regularCart(page)
   await page.goto(STORE + '/profile?section=china')
   await page.locator('[data-profile-link="request:3001"]').click()
-  await page.locator('.loft-detail').getByRole('button', { name: /^Оплатить / }).click()
+  await page.locator('.loft-detail').getByRole('button', { name: 'Добавить в корзину', exact: true }).click()
   await page.getByRole('button', { name: /Корзина$/ }).click()
-  const before = await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)
-  expect(before).toHaveLength(2)
-  await page.getByRole('button', { name: 'Оформить заказ', exact: true }).click()
-  await expect(page.getByText(/Спецзаказ оформляется отдельно от других товаров/)).toBeVisible()
-  await expect(page.locator('[data-surface-dialog="checkout"]')).toHaveCount(0)
-  expect(harness.calls.filter(call => call.body?.action === 'createOrder')).toHaveLength(0)
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)).toEqual(before)
-  await page.getByRole('button', { name: 'Удалить из корзины', exact: true }).first().click()
   await page.getByRole('button', { name: 'Оформить заказ', exact: true }).click()
   await expect(page.locator('[data-surface-dialog="checkout"]')).toBeVisible()
+  const cart=await page.evaluate(() => JSON.parse(localStorage.getItem('loft-store')!).state.cart)
+  expect(cart).toHaveLength(2)
+  expect(cart.find((item:any)=>item.isSpecialOrder).specialRequestId).toBe(3001)
+  expect(harness.db.china_requests[0].status).toBe('Оценён')
 })
 
 test('после заказа при получении Готово сразу ведёт на главную', async ({ page, harness }) => {

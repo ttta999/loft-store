@@ -79,13 +79,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!/^\+998\d{9}$/.test(phone) || !['pickup','delivery'].includes(order.delivery_method) || !['online_card','upon_receipt'].includes(order.payment_method) || !['UZS','USD'].includes(order.order_currency)) throw new HttpError(400, 'Проверьте данные заказа')
         if (!Array.isArray(order.items) || order.items.length < 1 || order.items.length > 50 || !Number.isFinite(order.total_price_usd) || order.total_price_usd<0) throw new HttpError(400, 'Проверьте корзину')
         if (order.order_currency === 'UZS' && (!Number.isSafeInteger(order.total_price_uzs) || order.total_price_uzs < 0)) throw new HttpError(400, 'Проверьте корзину')
-        const items = order.items.map((item: { quantity: number; productId: unknown; size: unknown; colorId?: unknown; isSpecialOrder?: unknown }) => {
+        const items = order.items.map((item: { quantity: number; productId: unknown; size: unknown; colorId?: unknown; isSpecialOrder?: unknown; specialRequestId?: unknown }) => {
           if (!item || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) throw new HttpError(400, 'Некорректное количество товара')
-          return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true }
+          return { productId: text(item.productId, 100, 1), size: text(item.size, 100, 1), colorId: item.colorId ? text(item.colorId, 36, 36) : null, quantity: item.quantity, isSpecialOrder: item.isSpecialOrder === true, specialRequestId: item.isSpecialOrder === true ? recordId(item.specialRequestId || order.special_order_id) : null }
         })
-        if ((order.special_order_id || items.some((item: { isSpecialOrder: boolean }) => item.isSpecialOrder)) && items.length > 1) {
-          throw new HttpError(409, 'Спецзаказ оформляется отдельно от других товаров. Уберите остальные товары из корзины или оформите их отдельным заказом.')
-        }
         const payload = { client_name: name, client_phone: phone, delivery_method: order.delivery_method,
           delivery_address: order.delivery_method === 'delivery' ? text(order.delivery_address, 500, 5) : null,
           payment_method: order.payment_method, order_currency: order.order_currency, items,
@@ -115,9 +112,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json({ data })
       }
       case 'cancelRequest': {
-        const { data, error } = await db.from('china_requests').update({ status: 'Отменён клиентом' }).eq('id', recordId(body.requestId)).eq('user_id', userId).in('status', ['На рассмотрении','Оценён']).is('converted_to_order_id', null).select('id')
+        const { data, error } = await db.rpc('store_cancel_request', { p_user: userId, p_id: recordId(body.requestId) })
         if (error) throw error
-        if (!data?.length) throw new HttpError(409, 'Спецзаказ нельзя отменить')
+        if (!data) throw new HttpError(409, 'Спецзаказ нельзя отменить')
+        await db.rpc('store_wake_worker')
         return res.json({ success: true })
       }
       case 'upload': {

@@ -1,0 +1,73 @@
+-- Execute inside BEGIN ... ROLLBACK; no test recipient may be committed.
+do $$
+declare admin_id uuid:=gen_random_uuid(); session_id uuid:=gen_random_uuid();
+  pid uuid; cid uuid; vid uuid; oid bigint; sub_id text:='fixture-'||gen_random_uuid();
+  product jsonb; colors jsonb; variants jsonb; baseline jsonb; result jsonb; payload jsonb;
+  deadline timestamptz; blocked boolean; i integer;
+begin
+  insert into private.store_registration_invites values(encode(extensions.digest(admin_id::text||'@fixture.invalid','sha256'),'hex'),now()+interval '1 hour');
+  insert into auth.users(id,aud,role,email,created_at,updated_at) values(admin_id,'authenticated','authenticated',admin_id::text||'@fixture.invalid',now(),now());
+  insert into private.store_admins(user_id,mfa_required) values(admin_id,true);
+  insert into auth.sessions(id,user_id,created_at,updated_at,aal) values(session_id,admin_id,now(),now(),'aal2');
+  insert into auth.mfa_factors(id,user_id,friendly_name,factor_type,status,created_at,updated_at)
+    values(gen_random_uuid(),admin_id,'Transaction-only security fixture','totp','verified',now(),now());
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'session_id',session_id,'role','authenticated','aal','aal2')::text,true);
+end $$;
+do $$
+declare customer text:=(800000000000000+floor(random()*100000000000000))::bigint::text; pid uuid:=gen_random_uuid(); sub_id text:='special-test-'||gen_random_uuid();
+ r1 bigint; r2 bigint; r3 bigint; r4 bigint; r5 bigint; oid bigint; real_order bigint; receipt_order bigint; payload jsonb; result jsonb; key_id uuid:=gen_random_uuid(); blocked boolean; i integer;
+begin
+ insert into public.categories(id,name_ru,name_uz,is_active) values('shoes','Обувь','Shoes',true) on conflict(id) do update set is_active=true;
+ insert into public.subcategories(id,category_id,name_ru,name_uz,size_type,sizes,is_active) values(sub_id,'shoes','Fixture','Fixture','numeric','["42"]',true);
+ insert into public.products(id,name_ru,name_uz,category,subcategory,price_usd,images,size_type,is_active) values(pid,'Mixed fixture','Mixed fixture','shoes',sub_id,20,array[]::text[],'numeric',true);
+ insert into public.product_variants(product_id,size_value,stock) values(pid,'42',10);
+ update public.settings set value='{"rate":12000}' where key='exchange_rate'; update public.settings set value='{"enabled":false}' where key='sale_mode_enabled';
+ result:=public.store_create_request(customer,'{"product_name":"Special A","size_color":"42, синий"}',gen_random_uuid());r1:=(result->>'id')::bigint;
+ if result->>'status'<>'На оценке' then raise exception 'TEST FAILED: initial state'; end if;
+ perform public.store_admin_request_status(r1,'Оценён','{"manager_price":40,"manager_comment":"Комментарий"}');
+ perform public.store_admin_request_status(r1,'Оценён','{"manager_price":40,"manager_comment":"Комментарий"}');
+ if (select count(*) from private.store_outbox where event_key='special-status:'||r1||':Оценён')<>1 then raise exception 'TEST FAILED: quote duplicate'; end if;
+ result:=public.store_create_request(customer,'{"product_name":"Special B"}',gen_random_uuid());r2:=(result->>'id')::bigint;
+ perform public.store_admin_request_status(r2,'Оценён','{"manager_price":60}');
+ payload:=jsonb_build_object('client_name','Mixed fixture','client_phone','+998901234567','delivery_method','pickup','payment_method','online_card','order_currency','USD','expected_total_usd',120,'items',jsonb_build_array(jsonb_build_object('productId',pid,'size','42','quantity',1),jsonb_build_object('productId','fake-client-id','size','fake','quantity',1,'isSpecialOrder',true,'specialRequestId',r1,'priceUsd',1),jsonb_build_object('productId','special-'||r2,'size','42','quantity',1,'isSpecialOrder',true,'specialRequestId',r2)));
+ result:=public.store_create_order(customer,payload,key_id);oid:=(result->>'id')::bigint;
+ if jsonb_array_length(result->'items')<>3 or (result->>'total_price_usd')::numeric<>120 or (result#>>'{items,1,priceUsd}')::numeric not in (40,60) then raise exception 'TEST FAILED: mixed authoritative quote'; end if;
+ if exists(select 1 from public.china_requests where id in(r1,r2) and (status<>'Оценён' or converted_to_order_id is not null or reserved_order_id<>oid)) then raise exception 'TEST FAILED: premature finalization'; end if;
+ if (public.store_create_order(customer,payload,key_id)->>'id')::bigint<>oid then raise exception 'TEST FAILED: request retry'; end if;
+ blocked:=false; begin perform public.store_create_order(customer,payload,gen_random_uuid()); exception when others then blocked:=true; end;
+ if not blocked or (select stock from public.product_variants where product_id=pid)<>9 then raise exception 'TEST FAILED: duplicate reservation'; end if;
+ if not public.store_cancel_order(customer,oid,true) then raise exception 'TEST FAILED: mixed abandonment'; end if;
+ if exists(select 1 from public.china_requests where id in(r1,r2) and (status<>'Оценён' or converted_to_order_id is not null or reserved_order_id is not null)) or (select stock from public.product_variants where product_id=pid)<>10 then raise exception 'TEST FAILED: abandoned quote or stock'; end if;
+ if exists(select 1 from private.store_outbox e where e.payload#>>'{special_request,id}' in (r1::text,r2::text) and e.payload#>>'{special_request,status}'='Оформлен') then raise exception 'TEST FAILED: abandoned confirmation message'; end if;
+ result:=public.store_create_order(customer,payload||'{"payment_method":"upon_receipt"}',gen_random_uuid());real_order:=(result->>'id')::bigint;
+ if exists(select 1 from public.china_requests where id in(r1,r2) and (status<>'Оформлен' or converted_to_order_id<>real_order::text or reserved_order_id is not null)) then raise exception 'TEST FAILED: final links'; end if;
+ blocked:=false; begin perform public.store_create_order(customer,payload,gen_random_uuid()); exception when others then blocked:=true; end;
+ if not blocked or public.store_cancel_request(customer,r1) then raise exception 'TEST FAILED: completed request reused/cancelled'; end if;
+ perform public.store_admin_cancel_order(real_order);
+ if (select status from public.china_requests where id=r1)<>'Оформлен' then raise exception 'TEST FAILED: historical link reopened'; end if;
+ result:=public.store_create_request(customer,'{"product_name":"Cancel fixture"}',gen_random_uuid());r3:=(result->>'id')::bigint;
+ if public.store_cancel_request(customer||'1',r3) then raise exception 'TEST FAILED: wrong owner'; end if;
+ if not public.store_cancel_request(customer,r3) or not public.store_cancel_request(customer,r3) then raise exception 'TEST FAILED: client cancel'; end if;
+ if (select count(*) from private.store_outbox where event_key='special-status:'||r3||':Отменён')<>1 then raise exception 'TEST FAILED: cancel notification'; end if;
+ result:=public.store_create_request(customer,'{"product_name":"Reject fixture"}',gen_random_uuid());r4:=(result->>'id')::bigint;
+ perform public.store_admin_request_status(r4,'Отклонён','{"rejection_reason":"Нет размера"}');
+ if (select rejection_reason from public.china_requests where id=r4)<>'Нет размера' then raise exception 'TEST FAILED: rejection reason'; end if;
+ blocked:=false;begin perform public.store_admin_request_status(r4,'Оплачен','{}');exception when others then blocked:=true;end;
+ if not blocked then raise exception 'TEST FAILED: forbidden manual paid state'; end if;
+ blocked:=false;begin perform public.store_admin_request_status(r4,null,'{"rejection_reason":"test"}');exception when others then blocked:=true;end;
+ if not blocked then raise exception 'TEST FAILED: null state accepted'; end if;
+ result:=public.store_create_request(customer,'{"product_name":"Receipt fixture"}',gen_random_uuid());r5:=(result->>'id')::bigint;
+ perform public.store_admin_request_status(r5,'Оценён','{"manager_price":70}');
+ payload:=payload||jsonb_build_object('expected_total_usd',70,'items',jsonb_build_array(jsonb_build_object('productId','special-'||r5,'size','42','quantity',1,'isSpecialOrder',true,'specialRequestId',r5)));
+ result:=public.store_create_order(customer,payload,gen_random_uuid());receipt_order:=(result->>'id')::bigint;
+ if (select status from public.china_requests where id=r5)<>'Оценён' then raise exception 'TEST FAILED: card checkout not yet submitted'; end if;
+ if not public.store_save_screenshot(customer,receipt_order,'private:payment-screenshots/'||customer||'/fixture.png') then raise exception 'TEST FAILED: receipt'; end if;
+ if (select status from public.china_requests where id=r5)<>'Оформлен' then raise exception 'TEST FAILED: submitted card order'; end if;
+ perform public.store_save_screenshot(customer,receipt_order,'private:payment-screenshots/'||customer||'/again.png');
+ perform public.store_admin_confirm_payment(receipt_order);
+ if (select status from public.china_requests where id=r5)<>'Оформлен' or (select count(*) from private.store_outbox where event_key='special-status:'||r5||':Оформлен')<>1 then raise exception 'TEST FAILED: payment rewrote request/duplicate notice'; end if;
+ perform set_config('request.jwt.claims',((current_setting('request.jwt.claims')::jsonb)||'{"aal":"aal1"}')::text,true);
+ blocked:=false;begin perform public.store_admin_request_status(r3,'Оценён','{"manager_price":10}');exception when insufficient_privilege then blocked:=true;end;
+ if not blocked then raise exception 'TEST FAILED: MFA bypass'; end if;
+end $$;
+select 'special lifecycle: mixed cart, authoritative prices, reservations, cancellation, cash/receipt finalization, deduplication, ownership and MFA passed' as result;

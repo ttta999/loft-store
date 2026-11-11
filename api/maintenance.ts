@@ -1,3 +1,4 @@
+import { specialNotification } from '../server/specialNotifications.ts'
 import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import { database, fail, start } from '../server/http.ts'
 import { HttpError } from '../server/auth.ts'
@@ -20,7 +21,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: claimed, error } = await db.rpc('store_claim_custom_notification', { p_id: event.id })
         if (error || !claimed?.id) return
         try {
-          await send(process.env.TELEGRAM_BOT_TOKEN, claimed.user_id, claimed.payload.message)
+          const notice = claimed.payload?.special_request ? specialNotification(claimed.payload.special_request) : { message: claimed.payload.message, options: undefined }
+          await send(process.env.TELEGRAM_BOT_TOKEN, claimed.user_id, notice.message, notice.options)
           const { error } = await db.rpc('store_complete_notification', { p_event_id: claimed.id })
           if (error) throw error
         } catch { console.error('Queued notification delivery pending') }
@@ -30,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: record, error } = await db.from(kind === 'order' ? 'orders' : 'china_requests')
         .select('*').eq('id', event.order_id).eq('user_id', event.user_id).maybeSingle()
       if (error) return
-      if (!record || ['Отменён', 'Отменён клиентом', 'Отклонён'].includes(record.status)) {
+      if (!record || ['Отменён', 'Отклонён'].includes(record.status)) {
         await db.rpc('store_complete_notification', { p_event_id: event.id })
         return
       }

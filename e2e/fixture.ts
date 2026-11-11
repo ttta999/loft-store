@@ -21,7 +21,7 @@ export function catalog() {
       { key: 'free_delivery_threshold', value: { amount: 2500000 }, updated_at: now() },
     ],
     orders: [{ id: 1001, user_id: '900000001', client_name: 'Тестовый покупатель', client_phone: '+998901234567', delivery_method: 'pickup', delivery_address: null, payment_method: 'upon_receipt', order_currency: 'UZS', total_price_usd: 100, total_price_uzs: 1200000, status: 'Активный', payment_status: 'pending', paid_at: null, payment_screenshot_url: null, created_at: now(), items: [{ productId, name: 'Тестовые кроссовки', size: '42', quantity: 1, priceUsd: 100, image }] }],
-    china_requests: [{ id: 3001, user_id: '900000001', product_name: 'Тестовый спецзаказ', status: 'На рассмотрении', link: 'https://example.test/item', comment: 'Тест', image_url: null, created_at: now() }],
+    china_requests: [{ id: 3001, user_id: '900000001', product_name: 'Тестовый спецзаказ', status: 'На оценке', link: 'https://example.test/item', comment: 'Тест', image_url: null, created_at: now() }],
     category_change_logs: [], subscribers: [],
   } as Record<string, any[]>
 }
@@ -52,16 +52,21 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at).map(o => ({ ...o, payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
       if (body?.action === 'requests') return json({ data: h.db.china_requests })
       if (body?.action === 'createOrder') {
-        const data = { ...h.db.orders[0], ...body.order, id: 2001, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
-        h.db.orders.push(data); return json({ data: [data] })
+        const data = { ...h.db.orders[0], ...body.order, id: Math.max(2000,...h.db.orders.map(o=>Number(o.id)))+1, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
+        h.db.orders.push(data)
+        for (const item of data.items || []) if (item.isSpecialOrder) {
+          const request = h.db.china_requests.find(r => String(r.id) === String(item.specialRequestId))
+          if (request) Object.assign(request, data.payment_method === 'upon_receipt' ? { status: 'Оформлен', converted_to_order_id: String(data.id), reserved_order_id: null } : { reserved_order_id: data.id })
+        }
+        return json({ data: [data] })
       }
-      if (body?.action === 'cancelOrder') { const order = h.db.orders.find(o => String(o.id) === String(body.orderId)); if (order) { order.status = 'Отменён'; if (body.unpaidOnly) order.checkout_abandoned_at = now() }; return json({ success: true }) }
-      if (body?.action === 'createRequest') { const data = { ...body.request, id: 3002, user_id: '900000001', status: 'На рассмотрении', created_at: now() }; h.db.china_requests.push(data); return json({ data }) }
-      if (body?.action === 'cancelRequest') { const item = h.db.china_requests.find(o => String(o.id) === String(body.requestId)); if (item) item.status = 'Отменён клиентом'; return json({ success: true }) }
+      if (body?.action === 'cancelOrder') { const order = h.db.orders.find(o => String(o.id) === String(body.orderId)); if (order) { order.status = 'Отменён'; if (body.unpaidOnly) order.checkout_abandoned_at = now(); for (const r of h.db.china_requests) if (r.reserved_order_id === order.id) r.reserved_order_id = null }; return json({ success: true }) }
+      if (body?.action === 'createRequest') { const data = { ...body.request, id: 3002, user_id: '900000001', status: 'На оценке', created_at: now() }; h.db.china_requests.push(data); return json({ data }) }
+      if (body?.action === 'cancelRequest') { const item = h.db.china_requests.find(o => String(o.id) === String(body.requestId)); if (item) item.status = 'Отменён'; return json({ success: true }) }
       if (body?.action === 'upload') {
         const path = `private:${body.bucket}/900000001/${body.orderId ? body.orderId + '/' : ''}fixture.png`
         const order = h.db.orders.find(o => String(o.id) === String(body.orderId))
-        if (order) order.payment_screenshot_url = path
+        if (order) { order.payment_screenshot_url = path; order.receipt_submitted_at = now(); for (const r of h.db.china_requests) if (r.reserved_order_id === order.id) Object.assign(r, { status: 'Оформлен', converted_to_order_id: String(order.id), reserved_order_id: null }) }
         return json({ path, url: image })
       }
       return json({ success: true })

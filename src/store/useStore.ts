@@ -1,3 +1,4 @@
+import { storeApi } from '../lib/api'
 import { readDeliverySettings } from '../lib/delivery'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -214,8 +215,20 @@ export const useStore = create<AppState>()(
         const rate = Number(settings.exchange_rate?.rate)
         if (!Number.isFinite(rate) || rate <= 0) throw new Error('Не удалось получить курс магазина. Попробуйте ещё раз.')
         const sale = settings.sale_mode_enabled?.enabled === true
-        const cart = get().cart.map(item => {
-          if (item.isSpecialOrder) return item
+        const requests = get().cart.some(item => item.isSpecialOrder) ? (await storeApi('requests')).data : []
+        const seen = new Set<string>()
+        const cart = get().cart.filter(item => {
+          if (!item.isSpecialOrder) return true
+          const id = String(item.specialRequestId)
+          if (seen.has(id)) return false
+          seen.add(id); return true
+        }).map(item => {
+          if (item.isSpecialOrder) {
+            const request = requests.find((r: any) => String(r.id) === String(item.specialRequestId))
+            if (!request || request.status !== 'Оценён' || request.converted_to_order_id || !(Number(request.manager_price) > 0)) throw new Error('Спецзаказ больше недоступен для оформления. Проверьте заявку в профиле.')
+            if (request.reserved_order_id) throw new Error('Этот спецзаказ уже оформляется. Завершите оплату или отмените незавершённый заказ в профиле.')
+            return { ...item, productId: `special-${request.id}`, quantity: 1, priceUsd: Number(request.manager_price), name: request.product_name || `Спецзаказ №${request.id}`, image: request.image_url || item.image }
+          }
           const product = products.find(product => product.id === item.productId)
           if (!product) throw new Error('Товар больше недоступен. Удалите его из корзины.')
           return { ...item, priceUsd: Number(getEffectivePriceUsd(product, sale)) }
@@ -263,7 +276,7 @@ export const useStore = create<AppState>()(
       // ✅ addToCart: уникальность = productId + size + colorId
       addToCart: (item) =>
         set((state) => {
-          if (item.isSpecialOrder) return { cart: [...state.cart, item] }
+          if (item.isSpecialOrder) return state.cart.some(i => i.isSpecialOrder && String(i.specialRequestId) === String(item.specialRequestId)) ? state : { cart: [...state.cart, { ...item, productId: `special-${item.specialRequestId}`, quantity: 1 }] }
           if (item.quantity < 0) {
             return {
               cart: state.cart.map((i) =>

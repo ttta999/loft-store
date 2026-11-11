@@ -22,12 +22,13 @@ test('reload applies the current rate despite a saved version; checkout refreshe
     await writeFile(join(root,'supabase.js'),`
       const settings={exchange_rate:{rate:11843.74,version:1793100684955},sale_mode_enabled:{enabled:false},delivery_price:{price:30000},free_delivery_threshold:{amount:2500000}};
       export const supabase={from(){return {key:null,select(){return this},eq(k,v){this.key=v;return this},in(){return this},single(){return Promise.resolve({data:{value:settings[this.key]},error:null})},then(ok,bad){return Promise.resolve({data:Object.entries(settings).map(([key,value])=>({key,value})),error:null}).then(ok,bad)}}}};
+      export const storeApi=async()=>({data:[]});
       export const getProducts=async()=>[{id:'product-210',price_usd:210,is_active:true}];
       export const fetchProductPopularity=async()=>({});
       export const getCategoriesTree=async()=>[];
     `)
     await writeFile(join(root,'delivery.js'),ts.transpileModule(await readFile(join(repo,'src/lib/delivery.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
-    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'")
+    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'").replace("from '../lib/api'","from './supabase.js'")
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}})
     await writeFile(join(root,'store.js'),compiled.outputText)
     const {useStore}=await import(pathToFileURL(join(root,'store.js')).href)

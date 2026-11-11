@@ -33,11 +33,10 @@ test('special requests validate URL and image ownership, and strip forged manage
 test('cancellation is ownership-scoped and refuses already converted special requests',async()=> {
  await mock(async calls=> {
   assert.equal((await call({action:'cancelRequest',requestId:'3001',user_id:'victim'})).statusCode,409)
-  const query=calls.find(c=>c.url.pathname.endsWith('/china_requests')).url
-  assert.equal(query.searchParams.get('user_id'),'eq.900000301');assert.equal(query.searchParams.get('converted_to_order_id'),'is.null');assert.equal(query.searchParams.get('status'),'in.(На рассмотрении,Оценён)')
+  const requestCancel=JSON.parse(String(calls.find(c=>c.url.pathname.endsWith('/rpc/store_cancel_request')).body));assert.equal(requestCancel.p_user,'900000301');assert.equal(requestCancel.p_id,'3001')
   assert.equal((await call({action:'cancelOrder',orderId:'1001'})).statusCode,409)
   const cancel=JSON.parse(String(calls.find(c=>c.url.pathname.endsWith('/rpc/store_cancel_order')).body));assert.equal(cancel.p_user,'900000301');assert.equal(cancel.p_order_id,'1001')
- },url=> url.pathname.endsWith('/china_requests') ? Response.json([]) : url.pathname.endsWith('/rpc/store_cancel_order') ? Response.json(false) : (()=>{throw Error('Unexpected '+url.pathname)})())
+ },url=> (url.pathname.endsWith('/rpc/store_cancel_request') || url.pathname.endsWith('/rpc/store_cancel_order')) ? Response.json(false) : (()=>{throw Error('Unexpected '+url.pathname)})())
 })
 test('receipt upload requires an owned pending online order and does not write storage on rejection',async()=> {
  await mock(async calls=> {

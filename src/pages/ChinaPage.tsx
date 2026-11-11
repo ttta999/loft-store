@@ -82,7 +82,7 @@ export default function ChinaPage() {
         size_color: sizeColor || null,
         comment: comment || null,
         image_url: imageUrl,
-        status: 'На рассмотрении',
+        status: 'На оценке',
       }
       await storeApi('createRequest', { request: requestData, requestKey: requestKey.current })
       const icon = submitButton.current?.querySelector('svg')?.getBoundingClientRect()
@@ -136,7 +136,7 @@ export default function ChinaPage() {
                   {language === 'ru' ? 'Статус заявки' : 'Ariza holati'}
                 </p>
                 <p className="text-sm font-medium text-[#1B2A4A] dark:text-white">
-                  {language === 'ru' ? 'На рассмотрении' : 'Ko\'rib chiqilmoqda'}
+                  {language === 'ru' ? 'На оценке' : 'Ko\'rib chiqilmoqda'}
                 </p>
               </div>
             </div>

@@ -1,11 +1,13 @@
 import { database } from './http.ts'
 import type { StoredRecord } from './models.ts'
 
-export async function send(token: string | undefined, chatId: string | undefined, message: string) {
+export interface TelegramOptions { parse_mode?: 'HTML'; reply_markup?: { inline_keyboard: { text: string; web_app: { url: string } }[][] } }
+
+export async function send(token: string | undefined, chatId: string | undefined, message: string, options: TelegramOptions = {}) {
   if (!token || !chatId) throw new Error('Notification configuration missing')
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: message.slice(0,4000), link_preview_options: { is_disabled: true } }),
+    body: JSON.stringify({ chat_id: chatId, text: options.parse_mode ? message : message.slice(0,4000), ...options, link_preview_options: { is_disabled: true } }),
     signal: AbortSignal.timeout(8000),
   })
   const result = await response.json()

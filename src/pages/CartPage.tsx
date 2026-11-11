@@ -8,17 +8,11 @@ import { useNavigate } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Upload, Store, Truck, Phone, User as UserIcon, MapPin, Info, X, Copy, Check, CheckCircle, MessageCircle, Clock, Package, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import { createOrder, createOrderFromSpecial, deleteUnpaidOrder } from '../lib/supabase'
+import { createOrder, deleteUnpaidOrder } from '../lib/supabase'
 import { MANAGER_TELEGRAM_LINK, getPaymentCards, formatCardNumber, type PaymentCards, uploadPaymentScreenshot } from '../lib/payments'
 import IslandHeader from '../components/IslandHeader'
 
 
-
-function separateSpecialOrderNotice(language: string) {
-  return language === 'ru'
-    ? 'Спецзаказ оформляется отдельно от других товаров. Уберите остальные товары из корзины или оформите их отдельным заказом.'
-    : 'Maxsus buyurtma boshqa mahsulotlardan alohida rasmiylashtiriladi. Boshqa mahsulotlarni savatdan olib tashlang yoki alohida buyurtma qiling.'
-}
 
 function ScreenshotViewer({ url, language, onClose }: { url: string; language: string; onClose: () => void }) {
   useScrollLock(true)
@@ -85,10 +79,6 @@ export default function CartPage() {
 
   const openCheckout = async () => {
     if (preparingCheckout) return
-    if (cart.some(item => item.isSpecialOrder) && cart.length > 1) {
-      toast.info(separateSpecialOrderNotice(language))
-      return
-    }
     setPreparingCheckout(true)
     try {
       const settings = await useStore.getState().refreshCheckout()
@@ -170,8 +160,8 @@ export default function CartPage() {
             {/* ✅ key учитывает цвет: один товар разных цветов = разные строки */}
             {cart.map((item) => (
               <div data-product-card={item.productId} data-product-placement={`cart:${item.productId}:${item.size}:${item.colorId || "none"}`} key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex gap-3">
-                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })} />
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/product/${item.productId}`, { state: { fromCart: true } })}>
+                <img src={item.image || undefined} alt={item.name} className="w-16 h-16 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" onClick={() => navigate(item.isSpecialOrder ? `/profile?section=china&request=${item.specialRequestId}` : `/product/${item.productId}`, { state: { fromCart: true } })} />
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(item.isSpecialOrder ? `/profile?section=china&request=${item.specialRequestId}` : `/product/${item.productId}`, { state: { fromCart: true } })}>
                   <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
                   <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
                     {language === 'ru' ? 'Размер:' : 'O\'lcham:'} {item.size}
@@ -314,8 +304,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
     }
   }, [])
 
-  const specialItem = cart.find((i: any) => i.isSpecialOrder)
-  const isSpecialOrder = !!specialItem
+  const isSpecialOrder = cart.some((item: any) => item.isSpecialOrder)
   const totalQty = cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
 
   const productsUsd = getTotalPrice()
@@ -330,9 +319,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [paymentCards, setPaymentCards] = useState<PaymentCards | null>(null)
   const payCard = paymentCards?.[orderCurrency]
 
-  useEffect(() => {
-    if (isSpecialOrder) setPaymentMethod('online_card')
-  }, [isSpecialOrder])
 
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
     setDeliveryMethod(method)
@@ -379,9 +365,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
       status: paymentMethod === 'online_card' ? 'Ожидает оплаты' : 'Активный',
       payment_status: 'pending',
     }
-    const result: any = isSpecialOrder && specialItem.specialRequestId
-      ? await createOrderFromSpecial(specialItem.specialRequestId, orderData, requestKey.current)
-      : await createOrder(orderData, requestKey.current)
+    const result: any = await createOrder(orderData, requestKey.current)
 
     const data = Array.isArray(result.data) ? result.data[0] : result.data
     if (result.error || !data) throw new Error(result.error?.message || 'Ошибка создания заказа')
@@ -426,10 +410,6 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   const handleSubmit = async () => {
     if (submitting) return
-    if (isSpecialOrder && cart.length > 1) {
-      toast.info(separateSpecialOrderNotice(language))
-      return
-    }
     if (!name || name.trim().length < 3) {
       toast.error(language === 'ru' ? 'Имя должно содержать минимум 3 символа' : 'Ism kamida 3 ta belgidan iborat bo\'lishi kerak')
       return
@@ -499,7 +479,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
             <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
               {cart.map((item: any) => (
                 <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex items-center gap-3">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border flex-shrink-0" />
+                  <img src={item.image || undefined} alt={item.name} className="w-12 h-12 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-[#1B2A4A] dark:text-white truncate">{item.name}</p>
                     <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
@@ -738,7 +718,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
         {isSpecialOrder && (
           <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl">
             <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">{language === 'ru' ? 'Оформление спецзаказа' : 'Maxsus buyurtmani rasmiylashtirish'}</p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{language === 'ru' ? 'После оплаты менеджер приступит к заказу товара' : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{language === 'ru' ? 'Спецзаказы оформляются вместе с остальными товарами в обычном заказе' : 'To\'lovdan so\'ng menejer mahsulot buyurtma qiladi'}</p>
           </div>
         )}
 
@@ -799,7 +779,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               {/* ✅ Заголовок «Способ оплаты» + круглая кнопка «i» (только если есть подсказка) */}
               <div className="flex items-center justify-between gap-2 mb-2">
                 <p className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Способ оплаты' : 'To\'lov usuli'}</p>
-                {(deliveryMethod === 'delivery' || isSpecialOrder) && (
+                {deliveryMethod === 'delivery' && (
                   <InfoToggle
                     open={showPaymentNote}
                     onClick={() => setShowPaymentNote(v => !v)}
@@ -809,12 +789,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               </div>
 
               {/* ✅ Раскрываемая подсказка (по нажатию на «i») */}
-              <Collapse open={showPaymentNote && (deliveryMethod === 'delivery' || isSpecialOrder)}><div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
+              <Collapse open={showPaymentNote && deliveryMethod === 'delivery'}><div className="mb-2 flex items-start gap-2.5 p-3 bg-[#1B2A4A]/5 dark:bg-gold/10 border border-[#1B2A4A]/10 dark:border-gold/20 rounded-xl">
                   <Info size={14} className="text-[#1B2A4A] dark:text-gold mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-[#1B2A4A] dark:text-white leading-relaxed">
-                    {isSpecialOrder
-                      ? (language === 'ru' ? 'Спецзаказ — только полная предоплата переводом' : 'Maxsus buyurtma — faqat to\'liq oldindan to\'lov')
-                      : (language === 'ru' ? 'Доставка по адресу — только полная предоплата переводом на карту' : 'Manzilga yetkazib berish — faqat kartaga to\'liq oldindan to\'lov')}
+                    {language === 'ru' ? 'Доставка оплачивается переводом. После перевода загрузите скриншот чека.' : 'Yetkazib berish uchun o‘tkazma orqali to‘lang va chekni yuklang.'}
                   </p>
                 </div></Collapse>
 
@@ -822,7 +800,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 <input type="radio" name="payment" checked={paymentMethod === 'online_card'} onChange={() => setPaymentMethod('online_card')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
                 <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}</span>
               </label>
-              {deliveryMethod === 'pickup' && !isSpecialOrder && (
+              {deliveryMethod === 'pickup' && (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="payment" checked={paymentMethod === 'upon_receipt'} onChange={() => setPaymentMethod('upon_receipt')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
                   <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата при получении' : 'Olganda to\'lash'}</span>

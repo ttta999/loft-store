@@ -1,3 +1,4 @@
+import { specialOrderIds } from '../lib/specialOrders'
 import { useScrollLock } from '../lib/useScrollLock'
 import SurfaceDialog from '../components/SurfaceDialog'
 import { useState, useEffect, useRef } from 'react'
@@ -19,6 +20,7 @@ import {
   Store,
   Truck,
   CreditCard,
+  ShoppingCart,
   Eye,
   Copy,
   Trash2,
@@ -266,7 +268,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
               {getStatusText(order.status, order.delivery_method)}
             </span>
           </div>
-          {order.special_order_id && (
+          {specialOrderIds(order).length > 0 && (
             <span className="inline-block mt-2 px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
               {language === 'ru' ? 'Заказ из спецзаказа' : 'Maxsus buyurtmadan'}
             </span>
@@ -593,8 +595,9 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 }
 
 // ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа, название и ссылка раздельно
-// ✅ + кнопка отмены для статусов «На рассмотрении» и «Оценён»
+// ✅ + кнопка отмены для статусов «На оценке» и «Оценён»
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCancel, exchangeRate }: any) {
+  const navigate = useNavigate()
   useScrollLock(true)
   const [cancelling, setCancelling] = useState(false)
 
@@ -610,28 +613,28 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   const getStatusText = (status: string) => {
     if (language === 'uz') {
       return {
-        'На рассмотрении': "Qabul qilindi",
+        'На оценке': "Baholanmoqda",
         'Оценён': "Baholandi",
-        'Оплачен': "To'landi",
-        'Отменён клиентом': "Siz bekor qildingiz",
+        'Оформлен': "Rasmiylashtirildi",
+        'Отменён': "Siz bekor qildingiz",
         'Отклонён': "Rad etildi",
       }[status] || status
     }
     return {
-      'На рассмотрении': 'Принят',
+      'На оценке': 'На оценке',
       'Оценён': 'Оценён',
-      'Оплачен': 'Оплачен',
-      'Отменён клиентом': 'Отменён вами',
+      'Оформлен': 'Оформлен',
+      'Отменён': 'Отменён',
       'Отклонён': 'Отклонён',
     }[status] || status
   }
 
   const getStatusColor = (status: string) => {
     return {
-      'На рассмотрении': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
+      'На оценке': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'Оценён': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300',
-      'Оплачен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
-      'Отменён клиентом': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
+      'Оформлен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
+      'Отменён': 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300',
       'Отклонён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
     }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
@@ -644,7 +647,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
   const requestName =
     request.product_name || (request.link && !requestLink ? request.link : null)
 
-  // ✅ ОТМЕНА СПЕЦЗАКАЗА — переводим статус в «Отменён клиентом» через supabase
+  // ✅ ОТМЕНА СПЕЦЗАКАЗА — переводим статус в «Отменён» через сервер
   const handleCancelRequest = async () => {
     const confirmed = confirm(
       language === 'ru'
@@ -655,6 +658,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
     setCancelling(true)
     try {
       await storeApi('cancelRequest', { requestId: String(request.id) })
+      useStore.setState(state => ({ cart: state.cart.filter(item => !item.isSpecialOrder || String(item.specialRequestId) !== String(request.id)) }))
       toast.success(
         language === 'ru' ? 'Спецзаказ отменён' : 'Maxsus buyurtma bekor qilindi'
       )
@@ -798,7 +802,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                   </p>
                   <p className="text-xs text-purple-700 dark:text-purple-400">
                     {language === 'ru'
-                      ? 'Оплатите — и менеджер закажет товар'
+                      ? 'Добавьте товар в корзину и оформите обычный заказ'
                       : 'To\'lang — menejer mahsulotni buyurtma qiladi'}
                   </p>
                 </div>
@@ -807,10 +811,10 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                 onClick={() => onAccept(request)}
                 className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
               >
-                <CreditCard size={18} />
+                <ShoppingCart size={18} />
                 {language === 'ru'
-                  ? `Оплатить ${priceInSums.toLocaleString()} сум`
-                  : `To'lash ${priceInSums.toLocaleString()} so'm`}
+                  ? 'Добавить в корзину'
+                  : 'Savatga qo‘shish'}
               </button>
               {/* ✅ КНОПКА ОТМЕНЫ для статуса «Оценён» */}
               <button
@@ -824,24 +828,24 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                   : (language === 'ru' ? 'Отменить спецзаказ' : 'Maxsus buyurtmani bekor qilish')}
               </button>
             </div>
-          ) : request.status === 'На рассмотрении' ? (
+          ) : request.status === 'На оценке' ? (
             <div className="space-y-2.5">
-              <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-3.5">
-                <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                  <Clock size={18} className="text-yellow-700 dark:text-yellow-300" />
+              <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-3.5">
+                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Clock size={18} className="text-blue-700 dark:text-blue-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                     {language === 'ru' ? 'Заявка на рассмотрении' : 'Ariza ko\'rib chiqilmoqda'}
                   </p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
                     {language === 'ru'
                       ? 'Менеджер оценит стоимость и свяжется с вами'
                       : 'Menejer narxni baholaydi va siz bilan bog\'lanadi'}
                   </p>
                 </div>
               </div>
-              {/* ✅ КНОПКА ОТМЕНЫ для статуса «На рассмотрении» */}
+              {/* ✅ КНОПКА ОТМЕНЫ для статуса «На оценке» */}
               <button
                 onClick={handleCancelRequest}
                 disabled={cancelling}
@@ -853,32 +857,33 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                   : (language === 'ru' ? 'Отменить спецзаказ' : 'Maxsus buyurtmani bekor qilish')}
               </button>
             </div>
-          ) : request.status === 'Оплачен' ? (
+          ) : request.status === 'Оформлен' ? (
             <div className="flex items-center gap-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-3.5">
               <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
                 <Check size={18} className="text-green-700 dark:text-green-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                  {language === 'ru' ? 'Оплачено' : 'To\'langan'}
+                  {language === 'ru' ? 'Оформлен' : 'Rasmiylashtirildi'}
                 </p>
                 <p className="text-xs text-green-700 dark:text-green-400">
                   {language === 'ru'
-                    ? 'Менеджер уже заказал товар — следите за статусом'
+                    ? `Заказ №${request.converted_to_order_id || '—'}`
                     : 'Menejer mahsulotni buyurtma qildi — holatni kuzating'}
                 </p>
               </div>
+              {request.converted_to_order_id && <button onClick={() => navigate(`/profile?section=orders&order=${request.converted_to_order_id}`)} className="py-2 px-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] text-sm font-bold">{language === 'ru' ? 'Перейти к заказу' : 'Buyurtmaga o‘tish'}</button>}
             </div>
-          ) : request.status === 'Отменён клиентом' ? (
-            <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-3.5">
-              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                <X size={18} className="text-orange-700 dark:text-orange-300" />
+          ) : request.status === 'Отменён' ? (
+            <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-500/10 border border-gray-200 dark:border-gray-500/30 rounded-xl p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-500/20 flex items-center justify-center flex-shrink-0">
+                <X size={18} className="text-gray-700 dark:text-gray-300" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-300">
                   {language === 'ru' ? 'Отменён вами' : 'Siz bekor qildingiz'}
                 </p>
-                <p className="text-xs text-orange-700 dark:text-orange-400">
+                <p className="text-xs text-gray-700 dark:text-gray-400">
                   {language === 'ru'
                     ? 'Заявка отменена, действий не требуется'
                     : 'Ariza bekor qilindi, harakat talab qilinmaydi'}
@@ -896,7 +901,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                 </p>
                 <p className="text-xs text-red-700 dark:text-red-400">
                   {language === 'ru'
-                    ? 'Свяжитесь с менеджером, чтобы уточнить причину'
+                    ? `Причина: ${request.rejection_reason || request.manager_comment || 'Обратитесь к менеджеру'}`
                     : 'Sababini bilish uchun menejer bilan bog\'laning'}
                 </p>
               </div>
@@ -1083,28 +1088,28 @@ export default function ProfilePage() {
   const getChinaStatusText = (status: string) => {
     if (language === 'uz') {
       return {
-        'На рассмотрении': "Qabul qilindi",
+        'На оценке': "Baholanmoqda",
         'Оценён': "Baholandi",
-        'Оплачен': "To'landi",
-        'Отменён клиентом': "Siz bekor qildingiz",
+        'Оформлен': "Rasmiylashtirildi",
+        'Отменён': "Siz bekor qildingiz",
         'Отклонён': "Rad etildi",
       }[status] || status
     }
     return {
-      'На рассмотрении': 'Принят',
+      'На оценке': 'На оценке',
       'Оценён': 'Оценён',
-      'Оплачен': 'Оплачен',
-      'Отменён клиентом': 'Отменён вами',
+      'Оформлен': 'Оформлен',
+      'Отменён': 'Отменён',
       'Отклонён': 'Отклонён',
     }[status] || status
   }
 
   const getChinaStatusColor = (status: string) => {
     return {
-      'На рассмотрении': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300',
+      'На оценке': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300',
       'Оценён': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300',
-      'Оплачен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
-      'Отменён клиентом': 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
+      'Оформлен': 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300',
+      'Отменён': 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300',
       'Отклонён': 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
     }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
@@ -1172,9 +1177,10 @@ export default function ProfilePage() {
   }
 
   const handleAcceptSpecialOrder = (request: any) => {
+    if (useStore.getState().cart.some(item => item.isSpecialOrder && String(item.specialRequestId) === String(request.id))) { toast.info(language === 'ru' ? 'Этот товар уже в корзине' : 'Bu mahsulot savatda'); return }
     const specialItem = {
-      productId: `special-${request.id}-${Date.now()}`,
-      name: `Спецзаказ №${request.id}`,
+      productId: `special-${request.id}`,
+      name: request.product_name || `Спецзаказ №${request.id}`,
       size: request.size_color || '—',
       quantity: 1,
       priceUsd: request.manager_price,
@@ -1646,7 +1652,7 @@ export default function ProfilePage() {
                           {language === 'ru' ? `Заказ №${order.id}` : `Buyurtma №${order.id}`}
                         </h3>
                         <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{formatDateTime(order.created_at)}</p>
-                        {order.special_order_id && (
+                        {specialOrderIds(order).length > 0 && (
                           <span className="inline-block mt-1.5 px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 text-xs rounded-full">
                             {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
                           </span>
@@ -1660,14 +1666,14 @@ export default function ProfilePage() {
                       {items.slice(0, 3).map((item: any, idx: number) => (
                         <img
                           key={idx}
-                          src={item.image}
+                          src={item.image || undefined}
                           alt={item.name}
                           className="w-14 h-14 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border"
                         />
                       ))}
                       {items.length > 3 && (
                         <div className="relative w-14 h-14 rounded-xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden bg-[#F5F1E8] dark:bg-dark-accent flex-shrink-0">
-                          <img src={items[3].image} alt="more" className="w-full h-full object-cover blur-sm opacity-50" />
+                          <img src={items[3].image || undefined} alt="more" className="w-full h-full object-cover blur-sm opacity-50" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-[#8A8275] dark:text-gray-300 text-xs font-bold">+{items.length - 3}</span>
                           </div>
@@ -1731,7 +1737,7 @@ export default function ProfilePage() {
               {chinaRequests.map((request) => {
                 const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
                 // ✅ Отменён клиентом или отклонён менеджером
-                const isClosed = request.status === 'Отменён клиентом' || request.status === 'Отклонён'
+                const isClosed = request.status === 'Отменён' || request.status === 'Отклонён'
                 // ✅ Строку оценки показываем, если есть сумма ИЛИ заявка ещё жива
                 const showPriceRow = priceInSums > 0 || !isClosed
                 return (
