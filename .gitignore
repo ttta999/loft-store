@@ -43,3 +43,6 @@ bot-token.txt
 # Generated Supabase CLI state
 /supabase/.temp/
 /supabase/.branches/
+
+# Machine-specific Codex hook installed by Graphify
+/.codex/hooks.json

@@ -1,0 +1,7 @@
+# Share the graph and reports; keep caches and machine paths local.
+*
+!.gitignore
+!graph.json
+!graph.html
+!GRAPH_REPORT.md
+!.graphify_labels.json
