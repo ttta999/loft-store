@@ -23,7 +23,7 @@ export function ordinaryOrderNotification(o: OrderLike) {
     case 'Передан курьеру': {
       let tracking=''
       try{const url=new URL(o.courier_link);if(['http:','https:'].includes(url.protocol)&&url.hostname&&o.courier_link.length<=2000)tracking=`Отследить доставку: ${escapeHtml(o.courier_link)}`}catch{/* No invalid or empty tracking link. */}
-      return notice(id,[`🚚 <b>Заказ №${id} передан курьеру</b>`,'Ваш заказ передан службе доставки и направляется по указанному адресу.','Пожалуйста, оставайтесь на связи.',tracking])
+      return notice(id,[`🚚 <b>Заказ №${id} передан курьеру</b>`,'Ваш заказ передан курьеру для доставки по указанному адресу.','Пожалуйста, оставайтесь на связи.',tracking])
     }
     case 'Доставлен': return notice(id,[`✅ <b>Заказ №${id} доставлен</b>`,'Ваш заказ успешно доставлен!','Спасибо за покупку в LOFT Store. Надеемся, вам всё понравилось! ❤️'])
     default: throw new Error('Unknown ordinary order stage')

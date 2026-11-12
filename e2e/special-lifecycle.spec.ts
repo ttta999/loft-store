@@ -44,7 +44,7 @@ for(const delivery of ['pickup','delivery']) test(`отдельный спецз
  Object.assign(harness.db.china_requests[0],{status:'Оценён',manager_price:100})
  await special(page);await checkout(page)
  await expect(page.getByRole('radio',{name:'Оплата при получении',exact:true})).toHaveCount(0)
- await expect(page.getByRole('radio',{name:'Оплата переводом — 100% предоплата',exact:true})).toBeChecked()
+ await expect(page.getByRole('radio',{name:'Оплата переводом',exact:true})).toBeChecked()
  if(delivery==='delivery'){
    await page.getByRole('button',{name:'Доставка',exact:true}).click()
    await page.locator('[data-surface-dialog="checkout"] textarea').fill('Навои дом 15 квартира 23')
@@ -64,7 +64,7 @@ for(const delivery of ['pickup','delivery']) test(`отдельный спецз
  await manager.getByRole('button',{name:'Подтвердить',exact:true}).click()
  await expect.poll(()=>order.status).toBe('Принят')
  expect(harness.db.china_requests[0].status).toBe('Оформлен')
- const sequence=['Заказан у поставщика','В пути','Прибыл в страну','Собирается',...(delivery==='pickup'?['Готов к выдаче','Получен']:['Упакован','Передан курьеру','Доставлен'])]
+ const sequence=['Заказан у поставщика','В пути','Прибыл в страну','Собирается',...(delivery==='pickup'?['Готов к выдаче','Получен']:['Передан курьеру','Доставлен'])]
  for(const step of sequence){
    const action=manager.getByRole('button',{name:step,exact:true})
    await expect(action).toBeVisible()

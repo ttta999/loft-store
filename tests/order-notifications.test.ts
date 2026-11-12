@@ -38,3 +38,11 @@ test('cancellation and refund templates never disclose internal manager data',()
  assert.match(managerOrderNotification({...base,items:[{name:'<i>x</i>',size:'42',quantity:1}],client_name:'<script>'}).message,/&lt;script&gt;/)
  assert.match(managerOrderNotification({...base,items:[]}).message,/100 \$/)
 })
+test('ordinary delivery bypasses packed; pickup and both historical packed representations continue safely',()=>{
+ const delivery={...base,payment_status:'paid',paid_at:'now',delivery_method:'delivery',status:'В обработке'}
+ assert.deepEqual(nextOrdinaryStatuses(delivery),['Выдан'])
+ assert.deepEqual(nextOrdinaryStatuses({...delivery,delivery_method:'pickup'}),['Готов'])
+ assert.deepEqual(nextOrdinaryStatuses({...delivery,status:'Готов'}),['Выдан'])
+ assert.deepEqual(nextOrdinaryStatuses({...delivery,status:'Упакован'}),['Выдан'])
+ assert.deepEqual(nextOrdinaryStatuses({...delivery,payment_status:'pending'}),[])
+})

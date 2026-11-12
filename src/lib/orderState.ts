@@ -20,7 +20,7 @@ export const canManagerCancel = (o: OrderLike) => !['Отменён','Получ
 export const cancellationNeedsReview = (o: OrderLike) => (o.delivery_method==='delivery'&&['Выдан','Передан курьеру'].includes(o.status)) || (o.special_fulfillment&&['Заказан у поставщика','В пути','Прибыл в страну','Собирается','Готов к выдаче','Упакован','Передан курьеру'].includes(o.status))
 export function nextOrdinaryStatuses(o: OrderLike): string[] {
   if (o.special_fulfillment || o.status === 'Отменён' || o.stock_released || (o.payment_method === 'online_card' && (o.payment_status !== 'paid' || !o.paid_at))) return []
-  return ({'Активный':['В обработке'],'В обработке':['Готов'],'Готов':['Выдан'],'Выдан':o.delivery_method === 'delivery' ? ['Доставлен'] : []} as Record<string,string[]>)[o.status] || []
+  return ({'Активный':['В обработке'],'В обработке':o.delivery_method==='delivery'?['Выдан']:['Готов'],'Готов':['Выдан'],'Упакован':o.delivery_method==='delivery'?['Выдан']:[],'Выдан':o.delivery_method === 'delivery' ? ['Доставлен'] : []} as Record<string,string[]>)[o.status] || []
 }
 export function moneyAmount(o: OrderLike): { amount: number; currency: 'USD' | 'UZS' } | null {
   const currency = o.order_currency

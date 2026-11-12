@@ -81,3 +81,26 @@ test('ordinary/cancellation/refund snapshots retry independently and route only 
  assert.deepEqual([...done].sort(),[71,72,73,74])
  }finally{globalThis.fetch=original}
 })
+
+test('legacy queued quote resolves UZS from store settings; unavailable rate never sends USD',async()=>{
+ const original=globalThis.fetch;let rate:number|null=null,done=false;const messages:any[]=[]
+ globalThis.fetch=async(input,init)=>{
+  const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
+  if(url.hostname==='api.telegram.org'){messages.push(body);return Response.json({ok:true})}
+  const rpc=url.pathname.split('/').at(-1)
+  if(rpc==='store_worker_authorized')return Response.json(true)
+  if(rpc==='store_pending_notifications')return Response.json([{id:81,kind:'custom',user_id:'900000301'}])
+  if(rpc==='store_claim_custom_notification')return Response.json(done?null:{id:81,user_id:'900000301',payload:{special_request:{id:17,status:'Оценён',manager_price:270,currency:'USD'}}})
+  if(rpc==='store_complete_notification'){done=true;return Response.json(null)}
+  if(rpc==='store_orphan_files')return Response.json([])
+  if(rpc==='settings')return Response.json({value:{rate}})
+  throw Error('Unexpected network '+url.pathname)
+ }
+ try{
+  const request={method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+'a'.repeat(64)},body:{}} as any
+  const response={setHeader(){},status(){return this},json(){return this}}
+  await handler(request,response as any);assert.equal(messages.length,0);assert.equal(done,false)
+  rate=11963.85;await handler(request,response as any);await handler(request,response as any)
+  assert.equal(messages.length,1);assert.match(messages[0].text,/3 230 240 сум/);assert.doesNotMatch(messages[0].text,/270 USD/);assert.ok(done)
+ }finally{globalThis.fetch=original}
+})

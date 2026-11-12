@@ -89,7 +89,7 @@ begin
  if (result->>'total_price_uzs')::numeric<>624000 then raise exception 'TEST FAILED: currency/delivery total'; end if;
  perform public.store_save_screenshot(customer,did,'private:payment-screenshots/'||customer||'/delivery.png');
  perform public.store_admin_confirm_payment(did);
- foreach step in array array['Заказан у поставщика','В пути','Прибыл в страну','Собирается','Упакован'] loop perform public.store_admin_order_status(did,step); end loop;
+ foreach step in array array['Заказан у поставщика','В пути','Прибыл в страну','Собирается'] loop perform public.store_admin_order_status(did,step); end loop;
  blocked:=false;begin perform public.store_admin_order_status(did,'Получен');exception when others then blocked:=true;end;
  if not blocked then raise exception 'TEST FAILED: wrong delivery branch'; end if;
  blocked:=false;begin perform public.store_admin_order_status(did,'Передан курьеру','javascript:alert(1)');exception when others then blocked:=true;end;
@@ -98,7 +98,7 @@ begin
  if (select courier_link from public.orders where id=did) is null then raise exception 'TEST FAILED: courier link'; end if;
  perform public.store_admin_order_status(did,'Доставлен');
  if (select status from public.orders where id=did)<>'Доставлен' then raise exception 'TEST FAILED: delivery completion'; end if;
- if (select count(*) from private.store_outbox e where e.payload#>>'{special_order,id}'=did::text)<>9 then raise exception 'TEST FAILED: delivery notice chain'; end if;
+ if (select count(*) from private.store_outbox e where e.payload#>>'{special_order,id}'=did::text)<>8 then raise exception 'TEST FAILED: delivery notice chain'; end if;
  -- Paid cancellation remains a manual refund, never a completed automatic refund.
  result:=public.store_create_request(customer,'{"product_name":"Cancellation fixture"}',gen_random_uuid());r3:=(result->>'id')::bigint;
  perform public.store_admin_request_status(r3,'Оценён','{"manager_price":50}');

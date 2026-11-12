@@ -105,7 +105,7 @@ begin
  if public.store_admin_confirm_payment(lateid) then raise exception 'TEST FAILED: cancelled payment accepted'; end if;
  insert into public.orders(user_id,user_chat_id,client_name,client_phone,items,total_price_usd,total_price_uzs,order_currency,exchange_rate_at_order,delivery_method,payment_method,status,payment_status,paid_at)
  values(u,u,'Delivery','+998901234567','[]',100,1200000,'USD',12000,'delivery','online_card','Активный','paid',now()) returning id into deliveryid;
- perform public.store_admin_order_status(deliveryid,'В обработке');perform public.store_admin_order_status(deliveryid,'Готов');perform public.store_admin_order_status(deliveryid,'Выдан');
+ perform public.store_admin_order_status(deliveryid,'В обработке');perform public.store_admin_order_status(deliveryid,'Выдан');
  blocked:=false;begin perform public.store_admin_cancel_order_reason(deliveryid,'Courier agreed');exception when others then blocked:=true;end;
  if not blocked then raise exception 'TEST FAILED: courier manual review'; end if;
  perform public.store_admin_cancel_order_reason(deliveryid,'Courier agreed',true);

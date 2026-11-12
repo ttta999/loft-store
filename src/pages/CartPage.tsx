@@ -802,7 +802,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
               <label className="flex items-center gap-2 cursor-pointer mb-2">
                 <input type="radio" name="payment" checked={paymentMethod === 'online_card'} onChange={() => setPaymentMethod('online_card')} className="w-4 h-4 accent-[#1B2A4A] dark:accent-[#C9A961]" />
-                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? (isSpecialOrder ? 'Оплата переводом — 100% предоплата' : 'Оплата переводом') : 'Pul o\'tkazish orqali to\'lash'}</span>
+                <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'Оплата переводом' : 'Pul o\'tkazish orqali to\'lash'}</span>
               </label>
               {deliveryMethod === 'pickup' && !isSpecialOrder && (
                 <label className="flex items-center gap-2 cursor-pointer">

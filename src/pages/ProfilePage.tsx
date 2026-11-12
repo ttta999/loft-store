@@ -593,7 +593,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
     }[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
   }
 
-  const priceInSums = request.manager_price ? Math.round(request.manager_price * (exchangeRate || 12100)) : 0
+  const priceInSums = request.manager_price ? Math.round(request.manager_price * exchangeRate) : 0
 
   // ✅ Название и ссылка раздельно + фолбэк для старых заявок
   const requestLink =

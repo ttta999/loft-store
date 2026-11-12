@@ -24,6 +24,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (error || !claimed?.id) return
         try {
           const p = claimed.payload
+          // Legacy queued quotes predate the UZS snapshot. Resolve only quotes,
+          // never an issued order or refund, against the active store rate.
+          if(p?.special_request?.status==='Оценён' && p.special_request.amount_uzs==null && !(Number(p.special_request.exchange_rate)>0)) {
+            const {data:setting,error:rateError}=await db.from('settings').select('value').eq('key','exchange_rate').single()
+            const rate=Number(setting?.value?.rate)
+            if(rateError || !Number.isFinite(rate) || rate<=0)throw new Error('Store exchange rate unavailable')
+            p.special_request.exchange_rate=rate
+          }
           const manager = p?.recipient === 'manager'
           const notice = p?.ordinary_order ? ordinaryOrderNotification(p.ordinary_order) : p?.cancellation ? cancellationNotification(p.cancellation,manager) : p?.refund ? refundNotification(p.refund) : p?.special_order ? specialOrderNotification(p.special_order) : p?.special_request ? specialNotification(p.special_request) : { message: p.message, options: undefined }
           let chat = claimed.user_id

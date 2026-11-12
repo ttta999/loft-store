@@ -2,6 +2,8 @@ import type { TelegramOptions } from './notifications.ts'
 export interface SpecialSnapshot {
   id: string | number
   status: string
+  amount_uzs?: number
+  exchange_rate?: number
   manager_price?: number
   currency?: string
   manager_comment?: string | null
@@ -16,9 +18,9 @@ export function specialNotification(request: SpecialSnapshot): { message: string
   switch (request.status) {
     case 'На оценке': paragraphs = [`📋 <b>Спецзаказ №${id} принят</b>`, 'Мы получили вашу заявку и передали её менеджеру для расчёта стоимости.', 'Сообщим, когда предложение будет готово.']; break
     case 'Оценён': {
-      const price = Number(request.manager_price), currency = request.currency || 'USD'
-      if (!Number.isFinite(price) || price <= 0 || !['USD', 'UZS'].includes(currency)) throw new Error('Invalid special quote')
-      paragraphs = [`💎 <b>Спецзаказ №${id} оценён</b>`, `Стоимость: <b>${price.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${currency}</b>`, request.manager_comment?.trim() ? escape(request.manager_comment.trim()) : '', 'Менеджер завершил расчёт стоимости вашего товара.', 'Ознакомьтесь с предложением в приложении и решите, хотите ли вы оформить заказ.']; break
+      const price = request.amount_uzs != null ? Number(request.amount_uzs) : Number(request.exchange_rate)>0 ? Math.round(Number(request.manager_price)*Number(request.exchange_rate)) : NaN
+      if (!Number.isFinite(price) || price <= 0 || !Number.isInteger(price)) throw new Error('Invalid special quote')
+      paragraphs = [`💎 <b>Спецзаказ №${id} оценён</b>`, `Стоимость: <b>${price.toLocaleString('ru-RU', { maximumFractionDigits: 0 }).replace(/\u00a0/g,' ')} сум</b>`, request.manager_comment?.trim() ? escape(request.manager_comment.trim()) : '', 'Менеджер завершил расчёт стоимости вашего товара.', 'Ознакомьтесь с предложением в приложении и решите, хотите ли вы оформить заказ.']; break
     }
     case 'Оформлен':
       if (!/^[1-9][0-9]*$/.test(String(request.order_id))) throw new Error('Missing linked order')

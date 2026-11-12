@@ -1,25 +1,25 @@
 # Graph Report - LOFT 2  (2026-11-12)
 
 ## Corpus Check
-- 167 files · ~151,337 words
+- 170 files · ~154,192 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .css 4, .example 1, (none) 1)
 
 ## Summary
-- 908 nodes · 2215 edges · 53 communities (27 shown, 26 thin omitted)
+- 918 nodes · 2220 edges · 60 communities (30 shown, 30 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 16 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f9a3bee2`
+- Built from commit: `93cc9ae3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Сервер и уведомления
-- Корзина и оформление
+- ProfilePage.tsx
 - Навигация и состояние
-- ProductPage.tsx
+- ChinaPage.tsx
 - Анимации и прокрутка
 - Браузерные проверки
 - Маршруты и оболочка
@@ -46,55 +46,61 @@
 - Публикация и заголовки
 - public.store_create_order
 - store_payment_confirmation_guard
+- storeApi
+- CartPage.tsx
+- useScrollLock
+- special-fulfillment.test.ts
+- ResourceCache
+- sonner
 
 ## God Nodes (most connected - your core abstractions)
-1. `useStore` - 47 edges
+1. `useStore` - 48 edges
 2. `react` - 30 edges
-3. `private.store_outbox` - 25 edges
-4. `IslandHeader()` - 24 edges
+3. `private.store_outbox` - 26 edges
+4. `test` - 22 edges
 5. `public.store_create_order()` - 22 edges
 6. `HttpError` - 21 edges
-7. `react-router-dom` - 21 edges
-8. `test` - 21 edges
-9. `handler()` - 20 edges
-10. `AnimatedRoutes()` - 20 edges
+7. `IslandHeader()` - 21 edges
+8. `react-router-dom` - 21 edges
+9. `STORE` - 21 edges
+10. `handler()` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `private.store_queue_special_status()` --writes_to--> `private.store_outbox`  [EXTRACTED]
+  supabase/migrations/20261112172104_streamline_delivery_and_special_notices.sql → db/01_store_backend.sql
+- `public.store_create_request()` --writes_to--> `private.store_outbox`  [EXTRACTED]
+  supabase/migrations/20261106154106_security_architecture.sql → db/01_store_backend.sql
 - `public.store_pending_notifications()` --reads_from--> `private.store_outbox`  [EXTRACTED]
-  supabase/migrations/20261112120358_order_refunds.sql → db/01_store_backend.sql
-- `public.store_claim_custom_notification()` --reads_from--> `private.store_outbox`  [EXTRACTED]
-  supabase/migrations/20261112120358_order_refunds.sql → db/01_store_backend.sql
-- `private.store_cancel_order_internal()` --writes_to--> `private.store_outbox`  [EXTRACTED]
-  supabase/migrations/20261112120358_order_refunds.sql → db/01_store_backend.sql
-- `private.store_queue_order_notifications()` --writes_to--> `private.store_outbox`  [EXTRACTED]
-  supabase/migrations/20261112120358_order_refunds.sql → db/01_store_backend.sql
-- `public.store_claim_notification()` --writes_to--> `private.store_outbox`  [EXTRACTED]
-  supabase/migrations/20261112120358_order_refunds.sql → db/01_store_backend.sql
+  supabase/migrations/20261106154106_security_architecture.sql → db/01_store_backend.sql
+- `public.store_create_order()` --writes_to--> `private.store_outbox`  [EXTRACTED]
+  supabase/migrations/20261108184211_usd_delivery_settings.sql → db/01_store_backend.sql
+- `public.store_admin_request_status()` --writes_to--> `private.store_outbox`  [EXTRACTED]
+  supabase/migrations/20261111123055_special_request_lifecycle.sql → db/01_store_backend.sql
 
 ## Import Cycles
 - None detected.
 
-## Communities (53 total, 26 thin omitted)
+## Communities (60 total, 30 thin omitted)
 
 ### Community 0 - "Сервер и уведомления"
-Cohesion: 0.06
-Nodes (58): handler(), handler(), handler(), dbError(), handler(), presentOrder(), privatePath(), signedUrl() (+50 more)
+Cohesion: 0.05
+Nodes (69): handler(), handler(), handler(), dbError(), handler(), presentOrder(), privatePath(), signedUrl() (+61 more)
 
-### Community 1 - "Корзина и оформление"
-Cohesion: 0.06
-Nodes (47): IntrinsicImage(), RefundSummary(), invalidateStoreData(), peekStoreData(), storeApi(), createDataFetch(), canClientCancel(), formatMoney() (+39 more)
+### Community 1 - "ProfilePage.tsx"
+Cohesion: 0.15
+Nodes (18): IntrinsicImage(), invalidateStoreData(), ProfilePageResource, cancelOrder(), specialStatusTone(), STORE_MAP_URL, STORE_NAVIGATOR_URL, storeNavigationLink() (+10 more)
 
 ### Community 2 - "Навигация и состояние"
-Cohesion: 0.07
-Nodes (76): lucide-react, react, react-router-dom, zustand, BottomNavbarProps, TAB_PATHS, TabType, CategoryIcon() (+68 more)
+Cohesion: 0.06
+Nodes (80): lucide-react, react, react-router-dom, zustand, BottomNavbarProps, TAB_PATHS, TabType, CategoryIcon() (+72 more)
 
-### Community 3 - "ProductPage.tsx"
-Cohesion: 0.09
-Nodes (37): react-dom@^19.2.6, sonner@^2.0.7, framer-motion, react-dom, sonner, aspects, PlaneFlight(), ProductPhotoViewer() (+29 more)
+### Community 3 - "ChinaPage.tsx"
+Cohesion: 0.19
+Nodes (16): framer-motion, aspects, PlaneFlight(), SurfaceDialog(), dialogClip(), dialogOrigin(), lastDialogAction(), Origin (+8 more)
 
 ### Community 4 - "Анимации и прокрутка"
-Cohesion: 0.07
-Nodes (56): AnimatedRoutes(), RouteFrame(), capturedPositions, captureScrollPosition(), getSavedPositions(), ScrollRestoration(), SurfaceDialog(), dialogClip() (+48 more)
+Cohesion: 0.08
+Nodes (48): AnimatedRoutes(), RouteFrame(), capturedPositions, captureScrollPosition(), getSavedPositions(), ScrollRestoration(), installDialogOrigins(), motionEaseCSS (+40 more)
 
 ### Community 5 - "Браузерные проверки"
 Cohesion: 0.11
@@ -102,7 +108,7 @@ Nodes (17): checkout(), regularCart(), ADMIN, catalog(), Harness, install(), jwt
 
 ### Community 6 - "Маршруты и оболочка"
 Cohesion: 0.08
-Nodes (43): App(), AppLayout(), MAIN_TAB_PATHS, TabType, TelegramBackButtonManager(), ThemeManager(), AppToaster(), readTheme() (+35 more)
+Nodes (41): App(), AppLayout(), MAIN_TAB_PATHS, TabType, TelegramBackButtonManager(), ThemeManager(), AppToaster(), readTheme() (+33 more)
 
 ### Community 7 - "Доступ и безопасность"
 Cohesion: 0.07
@@ -140,10 +146,6 @@ Nodes (18): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, jsx
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, moduleResolution, noEmit (+9 more)
 
-### Community 16 - "Инструменты проверки кода"
-Cohesion: 0.16
-Nodes (5): typescript@~6.0.2, typescript, admin, env, admin
-
 ### Community 17 - "Интеграция Telegram"
 Cohesion: 0.12
 Nodes (3): Telegram, WebApp, Window
@@ -157,12 +159,12 @@ Cohesion: 0.18
 Nodes (6): china_user_request_key, orders_user_request_key, private.store_limits, public.store_create_order(), public.store_create_request(), public.store_save_screenshot()
 
 ### Community 20 - "Зависимости интерфейса"
-Cohesion: 0.17
-Nodes (12): dependencies, framer-motion@^12.40.0, lucide-react@^1.17.0, react@^19.2.6, react-icons@^5.7.0, react-router-dom@7.18.2, @supabase/supabase-js@2.108.0, @twa-dev/sdk@^8.0.2 (+4 more)
+Cohesion: 0.14
+Nodes (14): dependencies, framer-motion@^12.40.0, lucide-react@^1.17.0, react@^19.2.6, react-dom@^19.2.6, react-icons@^5.7.0, react-router-dom@7.18.2, @supabase/supabase-js@2.108.0 (+6 more)
 
 ### Community 21 - "Сборка и сервер"
-Cohesion: 0.18
-Nodes (8): vite@^8.0.12, @vitejs/plugin-react@^6.0.1, vite, @vitejs/plugin-react, admin, artifacts, root, servers
+Cohesion: 0.13
+Nodes (11): vite@^8.0.12, @vitejs/plugin-react@^6.0.1, vite, @vitejs/plugin-react, admin, env, admin, artifacts (+3 more)
 
 ### Community 22 - "Команды проекта"
 Cohesion: 0.22
@@ -177,30 +179,46 @@ Cohesion: 0.40
 Nodes (4): compilerOptions, rewriteRelativeImportExtensions, files, references
 
 ### Community 26 - "20261112120358_order_refunds.sql"
-Cohesion: 0.10
-Nodes (23): private.store_cancel_order_internal(), private.store_expire_reservations(), private.store_prepare_refund(), private.store_queue_cancellation(), private.store_queue_order_notifications(), private.store_queue_ordinary_order(), private.store_queue_special_order(), private.store_refund_audit (+15 more)
+Cohesion: 0.09
+Nodes (25): private.store_cancel_order_internal(), private.store_expire_reservations(), private.store_prepare_refund(), private.store_queue_cancellation(), private.store_queue_order_notifications(), private.store_queue_ordinary_order(), private.store_queue_special_order(), private.store_refund_audit (+17 more)
 
 ### Community 51 - "public.store_create_order"
 Cohesion: 0.27
 Nodes (4): public.store_create_order(), public.store_create_order(), public.store_create_order(), strict
 
+### Community 53 - "storeApi"
+Cohesion: 0.20
+Nodes (14): authenticate(), peekStoreData(), storeApi(), uploadPrivateImage(), createDataFetch(), formatCardNumber(), parsePaymentCards(), PaymentCard (+6 more)
+
+### Community 54 - "CartPage.tsx"
+Cohesion: 0.19
+Nodes (16): deliveryQuote(), formatUsd(), readDeliverySettings(), roundUsd(), CartPageResource, uploadPaymentScreenshot(), Line, specialCheckoutError() (+8 more)
+
+### Community 55 - "useScrollLock"
+Cohesion: 0.36
+Nodes (6): getSizesLabelRu(), SizeSelector(), SizeSelectorProps, SizeType, owners, useScrollLock()
+
+### Community 56 - "special-fulfillment.test.ts"
+Cohesion: 0.43
+Nodes (5): nextSpecialStatuses(), SPECIAL_DELIVERY, SPECIAL_PICKUP, specialOrderIds(), usesSpecialFulfillment()
+
 ## Knowledge Gaps
-- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `Навигация и состояние` to `Корзина и оформление`, `ProductPage.tsx`, `Анимации и прокрутка`, `Маршруты и оболочка`, `Зависимости и линтер`, `Иконки категорий`, `Зависимости интерфейса`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+- **Why does `react` connect `Навигация и состояние` to `ProfilePage.tsx`, `ChinaPage.tsx`, `Анимации и прокрутка`, `Маршруты и оболочка`, `Зависимости и линтер`, `Иконки категорий`, `Зависимости интерфейса`, `CartPage.tsx`, `useScrollLock`?**
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
 - **Should `Сервер и уведомления` be split into smaller, more focused modules?**
-  _Cohesion score 0.06246134817563389 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05217391304347826 - nodes in this community are weakly interconnected._
 - **Why does `@playwright/test` connect `Браузерные проверки` to `Зависимости и линтер`?**
   _High betweenness centrality (0.048) - this node is a cross-community bridge._
-- **Should `Корзина и оформление` be split into smaller, more focused modules?**
-  _Cohesion score 0.062111801242236024 - nodes in this community are weakly interconnected._
+- **Should `Навигация и состояние` be split into smaller, more focused modules?**
+  _Cohesion score 0.06453455168475157 - nodes in this community are weakly interconnected._
 - **Why does `@supabase/supabase-js` connect `Зависимости интерфейса` to `Сервер и уведомления`, `Зависимости и линтер`, `Навигация и состояние`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Should `Навигация и состояние` be split into smaller, more focused modules?**
-  _Cohesion score 0.06900904691773617 - nodes in this community are weakly interconnected._
-- **Should `ProductPage.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.08865248226950355 - nodes in this community are weakly interconnected._
+- **Should `Анимации и прокрутка` be split into smaller, more focused modules?**
+  _Cohesion score 0.08082706766917293 - nodes in this community are weakly interconnected._
+- **Should `Браузерные проверки` be split into smaller, more focused modules?**
+  _Cohesion score 0.11030478955007257 - nodes in this community are weakly interconnected._

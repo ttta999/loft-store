@@ -8,9 +8,10 @@ export function specialOrderIds(order: any): string[] {
 /** Preserve the processing rules for historical mixed orders. */
 export const usesSpecialFulfillment = (order: any): boolean => order.special_fulfillment === true
 export const SPECIAL_PICKUP = ['Ожидает оплаты','Принят','Заказан у поставщика','В пути','Прибыл в страну','Собирается','Готов к выдаче','Получен']
-export const SPECIAL_DELIVERY = ['Ожидает оплаты','Принят','Заказан у поставщика','В пути','Прибыл в страну','Собирается','Упакован','Передан курьеру','Доставлен']
+export const SPECIAL_DELIVERY = ['Ожидает оплаты','Принят','Заказан у поставщика','В пути','Прибыл в страну','Собирается','Передан курьеру','Доставлен']
 export function nextSpecialStatuses(order: any): string[] {
   if (!usesSpecialFulfillment(order) || order.status === 'Отменён') return []
+  if(order.delivery_method==='delivery'&&order.status==='Упакован')return order.payment_status==='paid'&&order.paid_at?['Передан курьеру','Отменён']:['Отменён']
   const sequence = order.delivery_method === 'pickup' ? SPECIAL_PICKUP : SPECIAL_DELIVERY
   const index = sequence.indexOf(order.status)
   if (index < 0 || index === sequence.length - 1) return []

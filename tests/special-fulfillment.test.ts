@@ -33,8 +33,16 @@ test('paid sequential fulfillment actions differ by delivery; historical orders 
  assert.deepEqual(nextSpecialStatuses(order),['Заказан у поставщика','Отменён'])
  assert.deepEqual(nextSpecialStatuses({...order,payment_status:'pending'}),['Отменён'])
  assert.deepEqual(nextSpecialStatuses({...order,status:'Собирается'}),['Готов к выдаче','Отменён'])
- assert.deepEqual(nextSpecialStatuses({...order,status:'Собирается',delivery_method:'delivery'}),['Упакован','Отменён'])
+ assert.deepEqual(nextSpecialStatuses({...order,status:'Собирается',delivery_method:'delivery'}),['Передан курьеру','Отменён'])
+ assert.deepEqual(nextSpecialStatuses({...order,status:'Упакован',delivery_method:'delivery'}),['Передан курьеру','Отменён'])
  assert.deepEqual(nextSpecialStatuses({...order,status:'Получен'}),[])
  assert.deepEqual(nextSpecialStatuses({...order,special_fulfillment:false}),[])
  assert.deepEqual(specialOrderIds({special_order_id:'17',items:[{specialRequestId:17},{isSpecialOrder:true,specialRequestId:18}]}),['17','18'])
+})
+test('special assembly text follows the saved delivery method',()=>{
+ const pickup=specialOrderNotification({id:147,status:'Собирается',delivery_method:'pickup'}).message
+ const delivery=specialOrderNotification({id:147,status:'Собирается',delivery_method:'delivery'}).message
+ assert.match(pickup,/к выдаче\./);assert.match(pickup,/готов к получению/)
+ assert.match(delivery,/к доставке\./);assert.match(delivery,/передан курьеру/)
+ assert.doesNotMatch(pickup+delivery,/выдаче или доставке/)
 })

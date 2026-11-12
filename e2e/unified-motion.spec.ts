@@ -77,7 +77,7 @@ test('бренды, включая смену параметра URL, раскр
 })
 
 for (const sort of ['sale', 'newest', 'popular']) {
-  test(`главная / ${sort}: весь раздел раскрывается из своего заголовка`, async ({ page, harness }) => {
+  test(`главная / ${sort}: раздел использует боковое открытие и обратный выход`, async ({ page, harness }) => {
     harness.db.settings.find(row => row.key === 'sale_mode_enabled')!.value.enabled = true
     await page.goto(STORE)
     const row = page.locator(`[data-surface-link="products:${sort}"]`)
@@ -85,10 +85,10 @@ for (const sort of ['sale', 'newest', 'popular']) {
     await track(page)
     await row.getByRole('button').click()
     await expect(page.locator(`[data-surface="products:${sort}"]`)).toBeVisible()
-    await done(page, 'profile')
+    await done(page, 'section')
     await page.goBack()
     await expect(row).toBeVisible()
-    await done(page, 'profile')
+    await done(page, 'section')
     await expect(row).toBeInViewport()
   })
 }
