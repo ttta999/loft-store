@@ -1,4 +1,6 @@
-import { specialOrderIds, specialStatusTone, specialStatusText } from '../lib/specialOrders'
+import { orderStatus, canClientCancel, formatOrderMoney, formatMoney } from '../lib/orderState'
+import RefundSummary from '../components/RefundSummary'
+import { specialOrderIds, specialStatusTone } from '../lib/specialOrders'
 import { useScrollLock } from '../lib/useScrollLock'
 import SurfaceDialog from '../components/SurfaceDialog'
 import { useState, useEffect, useRef } from 'react'
@@ -118,7 +120,7 @@ function MenuTile({ icon, title, subtitle, onClick, transitionKey }: {
   )
 }
 
-function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrder, onScreenshotUploaded }: any) {
+function OrderDetailModal({ order, onClose, language, onCancelOrder, onScreenshotUploaded }: any) {
   useScrollLock(true)
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
@@ -136,30 +138,13 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
     finally { if (cardRequest.current === request) setCardsLoading(false) }
   }
   useEffect(() => {
-    if (order.status === 'Ожидает оплаты') void loadPayCard()
+    if (order.status === 'Ожидает оплаты' && !order.receipt_submitted_at) void loadPayCard()
     return () => { cardRequest.current++ }
   }, [order.id, order.status, orderCurrency])
 
-  const formatOrderPrice = (o: any) => {
-    const cur = getOrderCurrency(o)
-    if (cur === 'USD') {
-      return `$${Number(o.total_price_usd || 0)}`
-    }
-    const uzs = o.total_price_uzs != null
-      ? Number(o.total_price_uzs)
-      : Math.round((o.total_price_usd || 0) * exchangeRate)
-    return `${uzs.toLocaleString()} сум`
-  }
+  const formatOrderPrice = (o: any) => formatOrderMoney(o)
 
-  const formatItemPrice = (item: any) => {
-    if (orderCurrency === 'USD') {
-      return `$${Number(item.priceUsd || 0)}`
-    }
-    const uzs = item.priceUzs != null
-      ? Number(item.priceUzs)
-      : Math.round((item.priceUsd || 0) * exchangeRate)
-    return `${uzs.toLocaleString()} сум`
-  }
+  const formatItemPrice = (item: any) => formatMoney(orderCurrency === 'USD' ? item.priceUsd : item.priceUzs ?? (Number(order.exchange_rate_at_order)>0 && item.priceUsd!=null ? Math.round(item.priceUsd*order.exchange_rate_at_order) : null),orderCurrency)
 
   const formatDateTime = (dateStr: string) =>
     new Date(dateStr).toLocaleString('ru-RU', {
@@ -169,51 +154,6 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
       hour: '2-digit',
       minute: '2-digit',
     })
-
-  const getStatusText = (status: string, deliveryMethod: string) => {
-    const specialText = specialStatusText(status, language)
-    if (specialText) return specialText
-    if (language === 'uz') {
-      if (deliveryMethod === 'pickup') {
-        return {
-          'Активный': "Qabul qilindi",
-          'В обработке': "Yig'ilmoqda",
-          'Готов': "Berishga tayyor",
-          'Выдан': "Olab bo'lindi",
-          'Отменён': "Bekor qilindi",
-          'Ожидает оплаты': "To'lovni kutmoqda",
-        }[status] || status
-      }
-      return {
-        'Активный': "Qabul qilindi",
-        'В обработке': "Yig'ilmoqda",
-        'Готов': "Qadoqlandi",
-        'Выдан': "Kuryerga topshirildi",
-        'Доставлен': "Yetkazib berildi",
-        'Отменён': "Bekor qilindi",
-        'Ожидает оплаты': "To'lovni kutmoqda",
-      }[status] || status
-    }
-    if (deliveryMethod === 'pickup') {
-      return {
-        'Активный': 'Принят',
-        'В обработке': 'Собирается',
-        'Готов': 'Готов к выдаче',
-        'Выдан': 'Получен',
-        'Отменён': 'Отменен',
-        'Ожидает оплаты': 'Ожидает оплаты',
-      }[status] || status
-    }
-    return {
-      'Активный': 'Принят',
-      'В обработке': 'Собирается',
-      'Готов': 'Упакован',
-      'Выдан': 'Передан курьеру',
-      'Доставлен': 'Доставлен',
-      'Отменён': 'Отменен',
-      'Ожидает оплаты': 'Ожидает оплаты',
-    }[status] || status
-  }
 
   const getStatusColor = (status: string) => {
     status = specialStatusTone(status)
@@ -268,7 +208,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
               <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">{formatDateTime(order.created_at)}</p>
             </div>
             <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(order.status)}`}>
-              {getStatusText(order.status, order.delivery_method)}
+              {orderStatus(order, language)}
             </span>
           </div>
           {specialOrderIds(order).length > 0 && (
@@ -385,7 +325,7 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                     </p>
                     <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
                       {language === 'ru'
-                        ? 'Оплата не требуется. Если средства списаны — свяжитесь с менеджером.'
+                        ? (order.refund ? 'Информация о возврате средств приведена ниже.' : 'Повторная оплата не требуется. Если вы переводили средства — свяжитесь с поддержкой.')
                         : "To'lov talab qilinmaydi. Mablag' yechilgan bo'lsa — menejerga yozing."}
                     </p>
                   </div>
@@ -400,6 +340,12 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
                     {language === 'ru' ? 'Посмотреть скриншот оплаты' : "To'lov screenshotini ko'rish"}
                   </button>
                 )}
+              </div>
+            ) : order.status === 'Ожидает оплаты' && order.receipt_submitted_at ? (
+              <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-4">
+                <p className="font-bold text-[#1B2A4A] dark:text-white">{language === 'ru' ? 'На обработке' : 'To‘lov tekshirilmoqda'}</p>
+                <p className="text-sm text-[#8A8275] dark:text-gray-300 mt-2">{language === 'ru' ? 'Подтверждение оплаты получено. Менеджер проверяет поступление средств. Повторный перевод не требуется.' : 'To‘lov tasdig‘i olindi. Menejer pul tushganini tekshirmoqda. Qayta o‘tkazma qilish kerak emas.'}</p>
+                {order.payment_screenshot_url && <button data-dialog-trigger="receipt" onClick={() => setShowScreenshotModal(true)} className="text-sm font-bold text-[#1B2A4A] dark:text-gold mt-3">{language === 'ru' ? 'Посмотреть скриншот оплаты' : 'To‘lov tasdig‘ini ko‘rish'}</button>}
               </div>
             ) : order.status === 'Ожидает оплаты' ? (
               <>
@@ -555,6 +501,11 @@ function OrderDetailModal({ order, onClose, language, exchangeRate, onCancelOrde
             )}
           </div>
         )}
+        {order.payment_method === 'upon_receipt' && <div className="p-4 mb-3 rounded-2xl border border-[#E8E2D5] dark:border-dark-border text-sm text-[#1B2A4A] dark:text-white">{language === 'ru' ? (order.paid_at ? 'Оплата при получении подтверждена' : order.status === 'Отменён' ? 'Оплата при получении · заказ отменён' : 'Оплата при получении · ещё не оплачено') : (order.paid_at ? 'Olish paytidagi to‘lov tasdiqlandi' : order.status === 'Отменён' ? 'Olish paytida to‘lov · buyurtma bekor qilindi' : 'Olish paytida to‘lov · hali to‘lanmagan')}</div>}
+        {order.cancellation_reason && <p className="text-sm text-[#8A8275] dark:text-gray-300 mb-3">{language === 'ru' ? 'Причина отмены' : 'Bekor qilish sababi'}: {order.cancellation_reason}</p>}
+        <RefundSummary refund={order.refund} language={language} support={MANAGER_TELEGRAM_LINK} />
+        {canClientCancel(order) && (order.status !== 'Ожидает оплаты' || order.receipt_submitted_at) && <button onClick={() => onCancelOrder(order)} className="w-full py-3 rounded-xl bg-[#9B3B3B] dark:bg-red-900 text-white font-bold mb-3">{language === 'ru' ? 'Отменить заказ' : 'Buyurtmani bekor qilish'}</button>}
+        {!canClientCancel(order) && !['Отменён','Выдан','Получен','Доставлен'].includes(order.status) && <a href={MANAGER_TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="block text-center text-sm font-bold text-[#1B2A4A] dark:text-gold py-3">{language === 'ru' ? 'Связаться с поддержкой' : 'Yordamga murojaat qilish'}</a>}
       </div>
 
       <AnimatePresence>{showScreenshotModal && order.payment_screenshot_url && (
@@ -1018,16 +969,7 @@ export default function ProfilePage() {
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
-  const formatOrderPrice = (order: any) => {
-    const cur = getOrderCurrency(order)
-    if (cur === 'USD') {
-      return `$${Number(order.total_price_usd || 0)}`
-    }
-    const uzs = order.total_price_uzs != null
-      ? Number(order.total_price_uzs)
-      : Math.round((order.total_price_usd || 0) * exchangeRate)
-    return `${uzs.toLocaleString()} сум`
-  }
+  const formatOrderPrice = (order: any) => formatOrderMoney(order,language)
 
   const formatDateTime = (dateStr: string) =>
     new Date(dateStr).toLocaleString('ru-RU', {
@@ -1037,51 +979,6 @@ export default function ProfilePage() {
       hour: '2-digit',
       minute: '2-digit',
     })
-
-  const getOrderStatusText = (status: string, deliveryMethod: string) => {
-    const specialText = specialStatusText(status, language)
-    if (specialText) return specialText
-    if (language === 'uz') {
-      if (deliveryMethod === 'pickup') {
-        return {
-          'Активный': "Qabul qilindi",
-          'В обработке': "Yig'ilmoqda",
-          'Готов': "Berishga tayyor",
-          'Выдан': "Olab bo'lindi",
-          'Отменён': "Bekor qilindi",
-          'Ожидает оплаты': "To'lovni kutmoqda",
-        }[status] || status
-      }
-      return {
-        'Активный': "Qabul qilindi",
-        'В обработке': "Yig'ilmoqda",
-        'Готов': "Qadoqlandi",
-        'Выдан': "Kuryerga topshirildi",
-        'Доставлен': "Yetkazib berildi",
-        'Отменён': "Bekor qilindi",
-        'Ожидает оплаты': "To'lovni kutmoqda",
-      }[status] || status
-    }
-    if (deliveryMethod === 'pickup') {
-      return {
-        'Активный': 'Принят',
-        'В обработке': 'Собирается',
-        'Готов': 'Готов к выдаче',
-        'Выдан': 'Получен',
-        'Отменён': 'Отменен',
-        'Ожидает оплаты': 'Ожидает оплаты',
-      }[status] || status
-    }
-    return {
-      'Активный': 'Принят',
-      'В обработке': 'Собирается',
-      'Готов': 'Упакован',
-      'Выдан': 'Передан курьеру',
-      'Доставлен': 'Доставлен',
-      'Отменён': 'Отменен',
-      'Ожидает оплаты': 'Ожидает оплаты',
-    }[status] || status
-  }
 
   const getOrderStatusColor = (status: string) => {
     status = specialStatusTone(status)
@@ -1160,7 +1057,7 @@ export default function ProfilePage() {
   const handleCancelOrder = async (order: any) => {
     const confirmed = confirm(
       language === 'ru'
-        ? `Вы уверены что хотите отменить заказ №${order.id}?`
+        ? `Вы уверены что хотите отменить заказ №${order.id}?${order.paid_at ? ' Возврат средств будет обработан менеджером после отмены.' : order.receipt_submitted_at ? ' Менеджер проверит поступление оплаты.' : ''}`
         : `${order.id}-buyurtmani bekor qilishga ishonchingiz komilmi?`
     )
     if (!confirmed) return
@@ -1673,7 +1570,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${getOrderStatusColor(order.status)}`}>
-                        {getOrderStatusText(order.status, order.delivery_method)}
+                        {orderStatus(order, language)}
                       </span>
                     </div>
                     <div className="px-4 pb-3 flex gap-2">

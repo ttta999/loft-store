@@ -49,7 +49,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (url.pathname === '/api/sendNotification') return json({ success: true })
       if (url.pathname === '/api/getExchangeRate') return json({ success: true, rate: 12000, source: 'fixture' })
       if (body?.action === h.failAction) return json({ error: 'Тестовая ошибка сервера' }, 409)
-      if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at).map(o => ({ ...o, payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
+      if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at && !(o.payment_method==='online_card'&&o.status==='Ожидает оплаты'&&!o.receipt_submitted_at&&!o.paid_at)).map(o => ({ ...o, refund:(h.db.refunds||[]).find(r=>r.order_id===o.id), payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
       if (body?.action === 'requests') return json({ data: h.db.china_requests })
       if (body?.action === 'createOrder') {
         const data = { ...h.db.orders[0], ...body.order, special_fulfillment: body.order.items.some((i:any)=>i.isSpecialOrder), id: Math.max(2000,...h.db.orders.map(o=>Number(o.id)))+1, created_at: now(), user_id: '900000001', status: body.order.payment_method === 'online_card' ? 'Ожидает оплаты' : 'Активный', payment_status: 'pending', items: body.order.items }
@@ -82,6 +82,22 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (url.pathname.includes('/storage/')) return json({ signedURL: '/fixture-product.svg' })
       if (url.pathname.includes('/rest/v1/rpc/')) {
         const rpc = url.pathname.split('/').pop()
+        if (rpc === 'store_admin_refunds') return json((h.db.refunds||[]).filter(r=>!body.p_before||r.id<body.p_before).sort((a,b)=>b.id-a.id).slice(0,100).map(r=>({...r,orders:h.db.orders.find(o=>o.id===r.order_id)})))
+        if (rpc === 'store_admin_refund_action') {
+          const r=(h.db.refunds||[]).find(r=>r.id===body.p_id);if(!r)return json({message:'Возврат недоступен'},400)
+          if(body.p_action==='claim'){if(r.assigned_to&&r.assigned_to!==adminId)return json({message:'Другой менеджер'},400);r.assigned_to=adminId}
+          else if(r.assigned_to!==adminId)return json({message:'Сначала возьмите возврат в работу'},400)
+          else if(body.p_action==='payment_received'){r.status='Ожидает возврата';r.amount=body.p_amount;r.currency=body.p_currency;r.manager_comment=body.p_comment}
+          else if(body.p_action==='no_payment'){r.status='Возврат не требуется';r.assigned_to=null}
+          else if(body.p_action==='proof')r.proof_url=body.p_proof
+          else if(body.p_action==='complete'){if(!r.proof_url)return json({message:'Загрузите квитанцию'},400);r.status='Возврат выполнен';r.completed_at=now()}
+          r.updated_at=now();return json(r)
+        }
+        if (rpc === 'store_admin_cancel_order_reason') {
+          const order=h.db.orders.find(o=>String(o.id)===String(body.p_order_id));if(!body.p_reason?.trim())return json({message:'Укажите причину'},400)
+          Object.assign(order,{status:'Отменён',cancelled_by:'store',cancellation_reason:body.p_reason});return json(order)
+        }
+        if (rpc === 'store_admin_refund_history') return json((h.db.refund_history||[]).filter(r=>r.refund_id===body.p_id))
         if (rpc === 'store_admin_save_delivery') {
           const rate = h.db.settings.find(s => s.key === 'exchange_rate')!.value.rate
           h.db.settings.find(s => s.key === 'delivery_price')!.value = { price_usd: body.p_price_usd, price: Math.round(body.p_price_usd * rate) }
@@ -125,7 +141,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       const table = url.pathname.split('/').pop()!
       if (table === h.failTable) return json({ message: 'Fixture database unavailable', code: 'XX000' }, 503)
       let rows = h.db[table] || []
-      if (table === 'orders' && method === 'GET') rows = rows.filter(row => !row.checkout_abandoned_at)
+      if (table === 'orders' && method === 'GET') rows = rows.filter(row => !row.checkout_abandoned_at && !(row.payment_method==='online_card'&&row.status==='Ожидает оплаты'&&!row.receipt_submitted_at&&!row.paid_at))
       const matches = (row: any) => [...url.searchParams.entries()].every(([key, value]) => {
         if (value.startsWith('eq.')) return String(row[key]) === value.slice(3)
         if (value === 'is.null') return row[key] == null

@@ -42,25 +42,28 @@ begin
   blocked:=false;
   begin perform public.store_admin_save_product(pid,product,'[]','[]',baseline); exception when others then blocked:=true; end;
   if not blocked then raise exception 'TEST FAILED: removed reserved colour'; end if;
-  perform public.store_admin_cancel_order(oid);
+  perform public.store_admin_cancel_order_reason(oid,'Security fixture cancellation');
   if (select stock from public.product_variants where id=vid)<>2 then raise exception 'TEST FAILED: stock not returned after edit'; end if;
   blocked:=false;
   begin perform public.store_admin_order_status(oid,'Активный'); exception when others then blocked:=true; end;
   if not blocked then raise exception 'TEST FAILED: cancelled order revived'; end if;
   result:=public.store_create_order('900000701',payload||'{"payment_method":"upon_receipt"}',gen_random_uuid());
+  perform public.store_admin_order_status((result->>'id')::bigint,'В обработке');
+  perform public.store_admin_order_status((result->>'id')::bigint,'Готов');
   result:=public.store_admin_order_status((result->>'id')::bigint,'Выдан',null,jsonb_build_object('key',gen_random_uuid(),'message','<b>Transaction-only fixture</b>'));
-  if not exists(select 1 from private.store_outbox e where e.user_id='900000701' and e.kind='custom' and e.payload->>'message'='Transaction-only fixture') then raise exception 'TEST FAILED: status notification not committed atomically'; end if;
+  if not exists(select 1 from private.store_outbox e where e.user_id='900000701' and e.kind='custom' and e.payload#>>'{ordinary_order,stage}'='Получен') then raise exception 'TEST FAILED: status notification not committed atomically'; end if;
   if result->>'payment_status'<>'paid' or result->>'paid_at' is null then raise exception 'TEST FAILED: receipt payment not recorded'; end if;
   if not exists(select 1 from private.store_payment_audit where order_id=(result->>'id')::bigint and current_state->>'payment_status'='paid') then raise exception 'TEST FAILED: receipt payment missing audit'; end if;
   result:=public.store_create_order('900000701',payload,gen_random_uuid());oid:=(result->>'id')::bigint;
   if not public.store_save_screenshot('900000701',oid,'private:payment-screenshots/900000701/fixture.png') then raise exception 'TEST FAILED: receipt rejected'; end if;
   select reservation_expires_at into deadline from public.orders where id=oid;
-  if deadline is null or deadline>now()+interval '24 hours 1 minute' then raise exception 'TEST FAILED: unbounded receipt reservation'; end if;
+  if deadline is not null then raise exception 'TEST FAILED: receipt retained as expiring draft'; end if;
   perform public.store_save_screenshot('900000701',oid,'private:payment-screenshots/900000701/replacement.png');
   if (select reservation_expires_at from public.orders where id=oid)<>deadline then raise exception 'TEST FAILED: receipt refresh extends reservation'; end if;
   update public.orders set reservation_expires_at=now()-interval '1 minute' where id=oid;
   perform private.store_expire_reservations('900000701');
-  if not exists(select 1 from public.orders where id=oid and status='Отменён' and stock_released) then raise exception 'TEST FAILED: fake receipt holds inventory forever'; end if;
+  if not exists(select 1 from public.orders where id=oid and status='Ожидает оплаты' and receipt_submitted_at is not null) then raise exception 'TEST FAILED: submitted receipt auto-expired'; end if;
+  perform public.store_admin_cancel_order_reason(oid,'Reviewed receipt manually');
   if (select sold_count from public.get_product_popularity() where product_id=pid::text)<>1 then raise exception 'TEST FAILED: unpaid popularity'; end if;
   perform public.store_register_session(repeat('a',64),'900000701');
   if not public.store_validate_session(repeat('a',64),'900000701') or public.store_validate_session(repeat('a',64),'900000702') then raise exception 'TEST FAILED: session ownership'; end if;
@@ -84,7 +87,7 @@ begin
   begin perform public.store_admin_save_product(null,product,colors,variants,null); exception when insufficient_privilege then blocked:=true; end;
   if not blocked then raise exception 'TEST FAILED: missing MFA accepted'; end if;
 end $$;
-select 'atomic catalogue, inventory identity, stale writes, status guards, receipt payment, bounded reservations, private stock, sessions, quotas, signup and MFA checks passed' as result;
+select 'atomic catalogue, inventory identity, stale writes, status guards, receipt payment, receipt review retention, private stock, sessions, quotas, signup and MFA checks passed' as result;
 
 set local role anon;
 do $$ begin

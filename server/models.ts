@@ -8,6 +8,7 @@ export interface StoredItem {
   isSpecialOrder?: boolean
 }
 export interface StoredRecord {
+  [key: string]: any
   id: string | number
   items?: StoredItem[]
   payment_screenshot_url?: string | null

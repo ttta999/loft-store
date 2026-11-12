@@ -190,7 +190,7 @@ test('перевод: загрузка чека и подтверждение о
   manager.once('dialog', dialog => dialog.accept())
   await manager.getByRole('button', { name: 'Подтвердить', exact: true }).click()
   await expect.poll(() => harness.db.orders.find(o => o.id === 2001)?.payment_status).toBe('paid')
-  await expect.poll(() => harness.calls.some(c => c.path === '/api/sendNotification' && c.body.chatId === '900000001')).toBe(true)
+  expect(harness.calls.filter(c => c.path === '/api/sendNotification')).toHaveLength(0)
 })
 
 test('создание спецзаказа в магазине отражается у менеджера', async ({ page, context, harness }) => {

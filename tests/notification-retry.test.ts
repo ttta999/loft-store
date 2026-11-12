@@ -6,7 +6,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY='fixture-only'
 process.env.TELEGRAM_BOT_TOKEN='client-fixture'
 process.env.TELEGRAM_MANAGER_BOT_TOKEN='manager-fixture'
 process.env.TELEGRAM_MANAGER_CHAT_ID='900000399'
-const record={id:7001,client_name:'Fixture',client_phone:'+998901234567',total_price_uzs:240000,delivery_method:'pickup',payment_method:'online_card',items:[]} as any
+const record={id:7001,status:'Активный',order_currency:'UZS',client_name:'Fixture',client_phone:'+998901234567',total_price_uzs:240000,delivery_method:'pickup',payment_method:'online_card',items:[]} as any
 
 test('an empty composite claim never authorizes sending to either recipient',async()=>{
  const original=globalThis.fetch;let telegramCalls=0

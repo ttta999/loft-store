@@ -20,7 +20,7 @@ test('a client delivery failure does not duplicate the manager notification on r
   throw Error('Unexpected network')
  }
  try{
-  const record={id:7001,client_name:'Persisted buyer',client_phone:'+998901234567',total_price_uzs:240000,delivery_method:'pickup',payment_method:'online_card',items:[{name:'Persisted product',size:'42',quantity:1}]} as any
+  const record={id:7001,status:'Активный',order_currency:'UZS',client_name:'Persisted buyer',client_phone:'+998901234567',total_price_uzs:240000,delivery_method:'pickup',payment_method:'online_card',items:[{name:'Persisted product',size:'42',quantity:1}]} as any
   await dispatchNotification('900000301','order',record)
   assert.deepEqual([...completed],[1])
   failClient=false

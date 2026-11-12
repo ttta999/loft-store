@@ -23,7 +23,14 @@ for (const exit of ['done', 'back', 'pickup'] as const) {
       if (exit === 'done') await page.getByRole('button', { name: 'Готово', exact: true }).click()
       else await page.evaluate(() => (window as any).telegramBack())
     }
-    await expect(page.getByText('Заказ оформлен!', { exact: true })).toBeVisible()
-    await expect(page.getByText('№2001', { exact: true })).toBeVisible()
+    if(exit==='pickup'){
+      await expect(page.getByText('Заказ оформлен!', { exact: true })).toBeVisible()
+      await expect(page.getByText('№2001', { exact: true })).toBeVisible()
+    }else{
+      await expect(page).toHaveURL(STORE+'/')
+      await page.goto(STORE+'/profile?section=orders&order=2001')
+      await expect(page.locator('.loft-detail').getByText('Заказ №2001',{exact:true})).toBeVisible()
+      await expect(page.locator('.loft-detail span').getByText('На обработке',{exact:true})).toBeVisible()
+    }
   })
 }

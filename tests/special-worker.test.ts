@@ -55,3 +55,29 @@ test('fulfillment snapshots use the existing queue and never fall back to ordina
   assert.ok(messages.every(m=>m.parse_mode==='HTML' && m.reply_markup.inline_keyboard[0][0].web_app.url.endsWith('order=147')))
  }finally{globalThis.fetch=original}
 })
+
+test('ordinary/cancellation/refund snapshots retry independently and route only persisted manager events',async()=>{
+ const original=globalThis.fetch;const done=new Set<number>();const messages:any[]=[];let failed=true
+ const events=[{id:71,payload:{ordinary_order:{id:41,stage:'На обработке',amount:100,currency:'USD',delivery_method:'pickup',payment_method:'online_card'}}},
+ {id:72,payload:{cancellation:{id:41,source:'client',refund_status:'Проверка платежа'}}},
+ {id:73,payload:{cancellation:{id:41,source:'client',refund_status:'Проверка платежа'},recipient:'manager'}},
+ {id:74,payload:{refund:{order_id:41,status:'Возврат выполнен',amount:100,currency:'USD'}}}]
+ process.env.TELEGRAM_MANAGER_BOT_TOKEN='manager-fixture';process.env.TELEGRAM_MANAGER_CHAT_ID='900000399'
+ globalThis.fetch=async(input,init)=>{
+  const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
+  if(url.hostname==='api.telegram.org'){messages.push(body);if(body.text.includes('оформлен')&&failed)return Response.json({ok:false});return Response.json({ok:true})}
+  const rpc=url.pathname.split('/').at(-1)
+  if(rpc==='store_worker_authorized')return Response.json(true)
+  if(rpc==='store_pending_notifications')return Response.json(events.map(e=>({id:e.id,kind:'custom',user_id:'900000301'})))
+  if(rpc==='store_claim_custom_notification')return Response.json(done.has(body.p_id)?null:{...events.find(e=>e.id===body.p_id),user_id:'900000301'})
+  if(rpc==='store_complete_notification'){done.add(body.p_event_id);return Response.json(null)}
+  if(rpc==='store_orphan_files')return Response.json([])
+  throw Error('Unexpected network')
+ }
+ try{for(let i=0;i<3;i++){const res={setHeader(){},status(){return this},json(){return this}};await handler({method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+'a'.repeat(64)},body:{}} as any,res as any);failed=false}
+ assert.equal(messages.filter(m=>m.chat_id==='900000399').length,1)
+ assert.equal(messages.filter(m=>m.text.includes('выполнен')).length,1)
+ assert.equal(messages.filter(m=>m.text.includes('оформлен')).length,2)
+ assert.deepEqual([...done].sort(),[71,72,73,74])
+ }finally{globalThis.fetch=original}
+})

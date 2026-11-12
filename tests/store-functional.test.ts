@@ -62,7 +62,7 @@ test('customer history signs private receipt URLs and never fetches arbitrary ex
   assert.equal(result.statusCode,200);assert.ok(result.body.data[0].payment_screenshot_url.includes('signed-fixture'))
   assert.equal(result.body.data[1].payment_screenshot_url,null)
   assert.equal(calls.filter(c=>c.url.pathname.includes('/storage/')).length,1)
- },url=> {if(url.pathname.endsWith('/orders'))return Response.json([{id:1,items:[],payment_screenshot_url:'private:payment-screenshots/900000301/receipt.png'},{id:2,items:[],payment_screenshot_url:'https://untrusted.example/secret'}]);if(url.pathname.includes('/storage/'))return Response.json({signedURL:'/object/sign/signed-fixture'});throw Error('Unexpected '+url.pathname)})
+ },url=> {if(url.pathname.endsWith('/refunds'))return Response.json([]);if(url.pathname.endsWith('/orders'))return Response.json([{id:1,items:[],payment_screenshot_url:'private:payment-screenshots/900000301/receipt.png'},{id:2,items:[],payment_screenshot_url:'https://untrusted.example/secret'}]);if(url.pathname.includes('/storage/'))return Response.json({signedURL:'/object/sign/signed-fixture'});throw Error('Unexpected '+url.pathname)})
 })
 test('price changes and sold-out stock are conflicts, not successful orders',async()=> {
  for(const message of ['Price changed','Not enough stock']) await mock(async()=> {
@@ -98,4 +98,20 @@ test('successful receipt submission wakes notifications only after the receipt i
   const wake=calls.findIndex(c=>c.url.pathname.endsWith('/rpc/store_wake_worker'))
   assert.ok(attached>=0 && wake>attached)
  },url=> {if(url.pathname.endsWith('/orders'))return Response.json({id:1001});if(url.pathname.endsWith('/rpc/store_save_screenshot'))return Response.json(true);if(url.pathname.endsWith('/rpc/store_wake_worker')||url.pathname.endsWith('/rpc/store_finish_upload'))return Response.json(null);if(url.pathname.includes('/object/sign/'))return Response.json({signedURL:'/object/sign/fixture'});if(url.pathname.includes('/storage/'))return Response.json({Key:'fixture'});throw Error('Unexpected '+url.pathname)})
+})
+test('refund history query is ownership scoped and exposes only confirmed safe customer fields',async()=>{
+ await mock(async calls=>{
+  const result=await call({action:'orders'});assert.equal(result.statusCode,200)
+  const r=result.body.data[0].refund
+  assert.deepEqual(r,{id:5,order_id:1,status:'Проверка платежа',amount:null,currency:null,completed_at:null})
+  const query=calls.find(c=>c.url.pathname.endsWith('/refunds')).url
+  assert.equal(query.searchParams.get('user_id'),'eq.900000301')
+  assert.equal(query.searchParams.get('order_id'),'in.(1)')
+  assert.equal(query.searchParams.get('select'),'id,order_id,status,amount,currency,completed_at')
+  assert.doesNotMatch(JSON.stringify(result.body),/bank-secret|manager-secret/)
+ },url=>{
+  if(url.pathname.endsWith('/orders'))return Response.json([{id:1,items:[]}])
+  if(url.pathname.endsWith('/refunds'))return Response.json([{id:5,order_id:1,status:'Проверка платежа',amount:999,currency:'USD',completed_at:null,manager_comment:'manager-secret',proof_url:'bank-secret',assigned_to:'admin'}])
+  throw Error('Unexpected '+url.pathname)
+ })
 })

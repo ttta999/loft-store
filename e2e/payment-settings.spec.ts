@@ -40,7 +40,7 @@ test('стрелка после загрузки чека сразу ведёт 
   expect(harness.db.orders.find(o => o.id === 2001)!.payment_screenshot_url).toBeTruthy()
 })
 
-test('реквизиты из настроек доходят до новой оплаты и повторного открытия заказа', async ({ page, context, harness }) => {
+test('реквизиты из настроек доходят до оплаты, после чека история не просит оплатить повторно', async ({ page, context, harness }) => {
   const manager = await context.newPage()
   await manager.goto(ADMIN + '/settings')
   await manager.getByLabel('Номер карты UZS', { exact: true }).fill('1111222233334444')
@@ -55,8 +55,12 @@ test('реквизиты из настроек доходят до новой о
   await manager.getByLabel('Номер карты UZS', { exact: true }).fill('2222333344445555')
   await manager.getByRole('button', { name: 'Сохранить реквизиты', exact: true }).click()
   await expect.poll(() => harness.db.settings.find(s => s.key === 'payment_cards')!.value.UZS.number).toBe('2222333344445555')
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jhKkAAAAASUVORK5CYII=','base64')
+  await page.locator('input[type=file]').setInputFiles({name:'receipt.png',mimeType:'image/png',buffer:png})
+  await expect(page.getByText('Скриншот загружен',{exact:true})).toBeVisible()
   await page.goto(STORE + '/profile?section=orders&order=2001')
-  await expect(page.getByText('2222 3333 4444 5555', { exact: true })).toBeVisible()
+  await expect(page.locator('.loft-detail span').getByText('На обработке',{exact:true})).toBeVisible()
+  await expect(page.getByText('2222 3333 4444 5555', { exact: true })).toHaveCount(0)
 })
 
 test('повреждённые реквизиты не создают неоплаченный заказ', async ({ page, harness }) => {
@@ -68,7 +72,7 @@ test('повреждённые реквизиты не создают неопл
 })
 
 test('подтверждение оплаты содержит товары и номер спецзаказа', async ({ page, harness }) => {
-  Object.assign(harness.db.orders[0], { payment_method: 'online_card', status: 'Ожидает оплаты', special_order_id: 17 })
+  Object.assign(harness.db.orders[0], { payment_method: 'online_card', status: 'Ожидает оплаты', receipt_submitted_at: new Date().toISOString(), payment_screenshot_url:'private:payment-screenshots/900000001/test.png', special_order_id: 17 })
   Object.assign(harness.db.orders[0].items[0], { colorName: 'Синий', quantity: 2 })
   await page.goto(ADMIN + '/orders')
   const pending = page.locator('div.p-3\\.5.flex').filter({ has: page.getByRole('button', { name: 'Подтвердить', exact: true }) })

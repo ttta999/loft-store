@@ -60,11 +60,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json({ success: true })
       }
       case 'orders': {
-        let query = db.from('orders').select('*').eq('user_id', userId).is('checkout_abandoned_at', null).order('id', { ascending: false }).limit(100)
+        let query = db.from('orders').select('*').eq('user_id', userId).is('checkout_abandoned_at', null)
+          .or('payment_method.neq.online_card,receipt_submitted_at.not.is.null,paid_at.not.is.null,status.neq.Ожидает оплаты').order('id', { ascending: false }).limit(100)
         if (body.cursor != null) query = query.lt('id', recordId(body.cursor))
         const { data, error } = await query
         if (error) throw error
-        return res.json({ data: await Promise.all((data || []).map(presentOrder)), hasMore: data?.length === 100, nextCursor: data?.at(-1)?.id || null })
+        const refundResult = data?.length ? await db.from('refunds').select('id,order_id,status,amount,currency,completed_at').eq('user_id', userId).in('order_id',data.map(o=>o.id)) : {data:[],error:null}
+        if (refundResult.error) throw refundResult.error
+        const refunds = new Map((refundResult.data || []).map(r=>[String(r.order_id),{id:r.id,order_id:r.order_id,status:r.status,amount:['Ожидает возврата','Возврат выполнен'].includes(r.status)?r.amount:null,currency:['Ожидает возврата','Возврат выполнен'].includes(r.status)?r.currency:null,completed_at:r.completed_at}]))
+        return res.json({ data: await Promise.all((data || []).map(async o => ({...await presentOrder(o),refund:refunds.get(String(o.id)) || null}))), hasMore: data?.length === 100, nextCursor: data?.at(-1)?.id || null })
       }
       case 'requests': {
         let query = db.from('china_requests').select('*').eq('user_id', userId).order('id', { ascending: false }).limit(100)

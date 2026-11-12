@@ -1,5 +1,6 @@
 import { specialNotification } from '../server/specialNotifications.ts'
 import { specialOrderNotification } from '../server/specialOrderNotifications.ts'
+import { ordinaryOrderNotification, cancellationNotification, refundNotification } from '../server/orderNotifications.ts'
 import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import { database, fail, start } from '../server/http.ts'
 import { HttpError } from '../server/auth.ts'
@@ -22,8 +23,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: claimed, error } = await db.rpc('store_claim_custom_notification', { p_id: event.id })
         if (error || !claimed?.id) return
         try {
-          const notice = claimed.payload?.special_order ? specialOrderNotification(claimed.payload.special_order) : claimed.payload?.special_request ? specialNotification(claimed.payload.special_request) : { message: claimed.payload.message, options: undefined }
-          await send(process.env.TELEGRAM_BOT_TOKEN, claimed.user_id, notice.message, notice.options)
+          const p = claimed.payload
+          const manager = p?.recipient === 'manager'
+          const notice = p?.ordinary_order ? ordinaryOrderNotification(p.ordinary_order) : p?.cancellation ? cancellationNotification(p.cancellation,manager) : p?.refund ? refundNotification(p.refund) : p?.special_order ? specialOrderNotification(p.special_order) : p?.special_request ? specialNotification(p.special_request) : { message: p.message, options: undefined }
+          let chat = claimed.user_id
+          if (manager) {
+            chat = process.env.TELEGRAM_MANAGER_CHAT_ID
+            if (!chat) { const result = await db.rpc('store_manager_chat'); if (result.error) throw result.error; chat = result.data }
+          }
+          await send(manager ? process.env.TELEGRAM_MANAGER_BOT_TOKEN : process.env.TELEGRAM_BOT_TOKEN, chat, notice.message, notice.options)
           const { error } = await db.rpc('store_complete_notification', { p_event_id: claimed.id })
           if (error) throw error
         } catch { console.error('Queued notification delivery pending') }

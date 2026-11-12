@@ -62,17 +62,13 @@ begin
  if not blocked then raise exception 'TEST FAILED: screenshot was treated as payment'; end if;
  update public.orders set reservation_expires_at=now()-interval '1 minute' where id=oid;
  perform private.store_expire_reservations(customer);
- if (select reserved_order_id from public.china_requests where id=r1) is not null or (select status from public.china_requests where id=r1)<>'Оценён' then raise exception 'TEST FAILED: unconfirmed receipt expired permanently'; end if;
- result:=public.store_create_order(customer,payload,gen_random_uuid());oid:=(result->>'id')::bigint;
- perform public.store_save_screenshot(customer,oid,'private:payment-screenshots/'||customer||'/retry.png');
+ if (select reserved_order_id from public.china_requests where id=r1) is distinct from oid or (select status from public.orders where id=oid)<>'Ожидает оплаты' then raise exception 'TEST FAILED: submitted receipt expired'; end if;
  if not public.store_admin_confirm_payment_with_notice(oid,null) then raise exception 'TEST FAILED: payment confirmation'; end if;
  if (select status from public.china_requests where id=r1)<>'Оформлен' or (select converted_to_order_id from public.china_requests where id=r1) is distinct from oid::text or (select status from public.orders where id=oid)<>'Принят' then raise exception 'TEST FAILED: accepted'; end if;
  if public.store_cancel_order(customer,oid,false) then raise exception 'TEST FAILED: customer automatically cancelled paid special'; end if;
  select id into waiting_event from private.store_outbox where event_key='special-order-status:'||oid||':Ожидает оплаты';
  select id into accepted_event from private.store_outbox where event_key='special-order-status:'||oid||':Принят';
- if public.store_claim_custom_notification(accepted_event) is not null then raise exception 'TEST FAILED: out-of-order notification claim'; end if;
- if public.store_claim_custom_notification(waiting_event) is null or public.store_claim_custom_notification(waiting_event) is not null then raise exception 'TEST FAILED: duplicate payment notice claim'; end if;
- perform public.store_complete_notification(waiting_event);
+ if public.store_claim_custom_notification(waiting_event) is not null then raise exception 'TEST FAILED: payment prompt sent after receipt'; end if;
  if public.store_claim_custom_notification(accepted_event) is null or public.store_claim_custom_notification(accepted_event) is not null then raise exception 'TEST FAILED: duplicate accepted notice claim'; end if;
  perform public.store_complete_notification(accepted_event);
  blocked:=false;begin perform public.store_admin_order_status(oid,'Получен');exception when others then blocked:=true;end;
@@ -111,7 +107,9 @@ begin
  perform public.store_save_screenshot(customer,did,'private:payment-screenshots/'||customer||'/cancel.png');
  perform public.store_admin_confirm_payment(did);
  perform public.store_admin_order_status(did,'Заказан у поставщика');
- perform public.store_admin_cancel_order(did);
+ blocked:=false;begin perform public.store_admin_cancel_order_reason(did,'Manual review');exception when others then blocked:=true;end;
+ if not blocked then raise exception 'TEST FAILED: procurement cancellation requires manager review'; end if;
+ perform public.store_admin_cancel_order_reason(did,'Supplier cancellation agreed manually',true);
  if (select payment_status from public.orders where id=did)<>'refund_pending' then raise exception 'TEST FAILED: refund state'; end if;
  -- Historical mixed orders are never reshaped and keep the previous status machine.
  insert into public.orders(user_id,client_name,client_phone,delivery_method,payment_method,total_price_usd,items,status,payment_status)

@@ -1,5 +1,6 @@
 import { database } from './http.ts'
 import type { StoredRecord } from './models.ts'
+import { managerOrderNotification, ordinaryOrderNotification } from './orderNotifications.ts'
 
 export interface TelegramOptions { parse_mode?: 'HTML'; reply_markup?: { inline_keyboard: { text: string; web_app: { url: string } }[][] } }
 
@@ -20,7 +21,7 @@ export async function dispatchNotification(userId: string, kind: 'order' | 'requ
   if (error) return
   if (event?.id) try {
     const message = kind === 'order'
-      ? `🛍 Новый заказ №${record.id}\n👤 ${record.client_name}\n📞 ${record.client_phone}\n💰 ${record.total_price_uzs} сум\n📦 ${(record.items || []).map((i) => `${i.name}, ${i.size}${i.colorName ? ', '+i.colorName : ''} × ${i.quantity}`).join('\n')}\n🚚 ${record.delivery_method === 'pickup' ? 'Самовывоз' : record.delivery_address}\n💳 ${record.payment_method === 'online_card' ? 'Переводом, ожидает оплаты' : 'При получении, ещё не оплачен'}`
+      ? managerOrderNotification(record).message
       : `🌍 Новый спецзаказ №${record.id}\n📦 ${record.product_name}\n🔗 ${record.link || 'Нет ссылки'}\n📏 ${record.size_color || 'Не указан'}\n💬 ${record.comment || 'Нет комментария'}`
     let managerChat = process.env.TELEGRAM_MANAGER_CHAT_ID
     if (!managerChat) {
@@ -28,7 +29,7 @@ export async function dispatchNotification(userId: string, kind: 'order' | 'requ
       if (error) throw error
       managerChat = data || undefined
     }
-    await send(process.env.TELEGRAM_MANAGER_BOT_TOKEN, managerChat, message)
+    await send(process.env.TELEGRAM_MANAGER_BOT_TOKEN, managerChat, message, kind === 'order' ? {parse_mode:'HTML'} : {})
     // A separate outbox row prevents re-sending the manager message if client delivery fails.
     const { error: completeError } = await db.rpc('store_complete_notification', { p_event_id: event.id })
     if (completeError) throw completeError
@@ -37,7 +38,8 @@ export async function dispatchNotification(userId: string, kind: 'order' | 'requ
     const { data: clientEvent } = await db.rpc('store_claim_notification', { p_user: userId, p_kind: 'order_client', p_id: record.id })
     if (!clientEvent?.id) return
     try {
-      await send(process.env.TELEGRAM_BOT_TOKEN, userId, `✅ Ваш заказ №${record.id} принят!\n💰 ${record.total_price_uzs} сум\n${record.payment_method === 'online_card' ? 'Ожидаем оплату переводом.' : 'Оплата при получении.'}\nСпасибо за заказ!`)
+      const notice = ordinaryOrderNotification(record)
+      await send(process.env.TELEGRAM_BOT_TOKEN, userId, notice.message, notice.options)
       const { error: completeError } = await db.rpc('store_complete_notification', { p_event_id: clientEvent.id })
       if (completeError) throw completeError
     } catch { console.error('Client notification delivery pending') }

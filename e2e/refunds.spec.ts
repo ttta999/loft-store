@@ -1,0 +1,51 @@
+import {test,expect,ADMIN,STORE} from './fixture'
+
+test('возврат: проверка оплаты, закрепление менеджера и обязательная квитанция',async({page,harness})=>{
+ const order=harness.db.orders[0];Object.assign(order,{status:'Отменён',payment_method:'online_card',receipt_submitted_at:new Date().toISOString(),payment_status:'payment_review',cancelled_by:'client'})
+ harness.db.refunds=[{id:1,order_id:order.id,user_id:order.user_id,status:'Проверка платежа',created_at:new Date().toISOString(),cancelled_by:'client'}]
+ page.on('dialog',d=>d.accept())
+ await page.goto(ADMIN)
+ await expect(page.getByRole('button',{name:/Возвраты/})).toContainText('Активных: 1')
+ await page.getByRole('button',{name:/Возвраты/}).click()
+ await page.getByRole('button',{name:/Возврат №1/}).click()
+ await expect(page.getByRole('button',{name:'Оплата поступила',exact:true})).toHaveCount(0)
+ await page.getByRole('button',{name:'Взять в работу',exact:true}).click()
+ await page.getByLabel('Фактически полученная сумма').fill('100')
+ await page.getByLabel('Валюта платежа').selectOption('USD')
+ await page.getByRole('button',{name:'Оплата поступила',exact:true}).click()
+ await expect(page.getByRole('button',{name:/Возврат №1/})).toContainText('Ожидает возврата')
+ await expect(page.getByRole('button',{name:'Подтвердить выполненный возврат',exact:true})).toBeDisabled()
+ await page.getByLabel('Квитанция обратного перевода', {exact:true}).setInputFiles({name:'proof.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 fixture')})
+ await expect.poll(()=>harness.db.refunds[0].proof_url).toContain('private:refund-proofs/1/')
+ await page.getByRole('checkbox').check()
+ await page.getByRole('button',{name:'Подтвердить выполненный возврат',exact:true}).click()
+ await expect(page.getByRole('dialog')).toBeVisible()
+ await page.getByRole('button',{name:'Перевод выполнен',exact:true}).click()
+ await expect(page.getByRole('button',{name:/Возврат №1/})).toContainText('Возврат выполнен')
+ expect(harness.db.orders[0].status).toBe('Отменён')
+ await page.goto(STORE+'/profile?section=orders&order='+order.id)
+ await expect(page.locator('.loft-detail').getByText('Отменён клиентом',{exact:true})).toBeVisible()
+ await expect(page.locator('.loft-detail').getByText('Возврат выполнен',{exact:true})).toBeVisible()
+ await expect(page.locator('.loft-detail').getByText('Сумма: 100 $',{exact:true})).toBeVisible()
+})
+
+test('админка показывает только следующий этап обычного заказа и требует причину отмены',async({page,harness})=>{
+ await page.goto(ADMIN+'/orders?order=1001')
+ await expect(page.getByRole('button',{name:'Собирается',exact:true})).toBeVisible()
+ await expect(page.getByRole('button',{name:'Получен',exact:true})).toHaveCount(0)
+ await page.getByRole('button',{name:'Отменить заказ',exact:true}).click()
+ await expect(page.locator('.loft-modal').getByRole('button',{name:/Отменить заказ/})).toBeDisabled()
+ await page.locator('.loft-modal textarea').fill('Нет товара на складе')
+ await page.locator('.loft-modal').getByRole('button',{name:/Отменить заказ/}).click()
+ await expect.poll(()=>harness.db.orders[0].cancelled_by).toBe('store')
+ await expect(page.locator('span').getByText('Отменён магазином',{exact:true})).toBeVisible()
+})
+
+test('проверка возврата не показывает клиенту неподтверждённую сумму и внутренние комментарии',async({page,harness})=>{
+ const o=harness.db.orders[0];Object.assign(o,{status:'Отменён',cancelled_by:'store',payment_method:'online_card',payment_status:'payment_review'})
+ harness.db.refunds=[{id:1,order_id:o.id,status:'Проверка платежа',amount:null,currency:null,manager_comment:'Служебная банковская информация'}]
+ await page.goto(STORE+'/profile?section=orders&order='+o.id)
+ await expect(page.locator('.loft-detail').getByText('Проверка платежа',{exact:true})).toBeVisible()
+ await expect(page.getByText('Служебная банковская информация')).toHaveCount(0)
+ await expect(page.locator('.loft-detail').getByText('Сумма к возврату',{exact:true})).toHaveCount(0)
+})
