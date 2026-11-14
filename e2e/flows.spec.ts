@@ -106,7 +106,7 @@ test('избранное сохраняется, поиск находит то�
 })
 
 test('тема сохраняется в магазине и в админке после перезагрузки', async ({ page }) => {
-  for (const url of [`${STORE}/profile?section=settings`, `${ADMIN}/settings`]) {
+  for (const url of [`${STORE}/profile?section=settings`, `${ADMIN}/settings?section=theme`]) {
     await page.goto(url)
     await page.getByRole('button', { name: 'Тёмная', exact: true }).click()
     await expect(page.locator('html')).toHaveClass(/dark/)
@@ -205,7 +205,7 @@ test('создание спецзаказа в магазине отражает
 })
 
 test('скидочный режим из админки меняет цену в магазине', async ({ page, context, harness }) => {
-  await page.goto(`${ADMIN}/settings`)
+  await page.goto(`${ADMIN}/settings?section=sale`)
   await page.getByRole('button', { name: 'Включить', exact: true }).click()
   await expect.poll(() => harness.db.settings.find(s => s.key === 'sale_mode_enabled')?.value.enabled).toBe(true)
   const buyer = await context.newPage()

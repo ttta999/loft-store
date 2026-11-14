@@ -52,6 +52,7 @@ for(const photo of [true,false])test(`админка: фотография сп�
  }
  await page.getByRole('button',{name:'Подтвердить',exact:true}).click();await expect.poll(()=>o.status).toBe('Принят')
  await page.getByRole('button',{name:/Заказ №1001/}).click()
+ if(photo)await page.getByText('Спецтовар с фото',{exact:true}).scrollIntoViewIfNeeded()
  await expect(preview).toHaveCount(photo?1:0)
  for(const status of ['Заказан у поставщика','В пути','Прибыл в страну','Собирается'])await page.getByRole('button',{name:status,exact:true}).click()
  await expect(page.getByRole('button',{name:'Упакован',exact:true})).toHaveCount(0)

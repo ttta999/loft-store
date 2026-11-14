@@ -1,4 +1,3 @@
-import { useSizeFilter } from '../components/SizeFilter'
 import { catalogMoney } from '../lib/money'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
@@ -108,7 +107,6 @@ function BrandProductCard({product,placement}:{product:any;placement:string}) {
 }
 
 export default function BrandsPage() {
-  const sizeFilter = useSizeFilter()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const brandParam = searchParams.get('brand')
@@ -200,7 +198,6 @@ export default function BrandsPage() {
   }
 
   const clearFilters = () => {
-    sizeFilter.clear()
     setSelectedCategory('')
     setMinPrice(0)
     setMaxPrice(100000000)
@@ -234,7 +231,7 @@ export default function BrandsPage() {
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    return filtered.filter(p=>sizeFilter.matches(p))
+    return filtered
   }
 
   const filteredProducts = getFilteredAndSortedProducts()
@@ -513,7 +510,7 @@ export default function BrandsPage() {
                       </button>
                     </div>
                   </div>
-                {sizeFilter.control}</div></Collapse>
+                </div></Collapse>
             </div>
 
             {loading ? (

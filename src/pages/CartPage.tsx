@@ -1,3 +1,5 @@
+import {User} from 'lucide-react'
+import {needsContactSave,normalizedText} from '../lib/contactPreferences'
 import { usePreferences } from '../lib/preferences'
 import { catalogMoney, displayMoney, allocateUzs } from '../lib/money'
 import { deliveryQuote } from '../lib/delivery'
@@ -258,12 +260,14 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [address, setAddress] = useState('')
   const preferences=usePreferences()
   const [saveDetails,setSaveDetails]=useState(false)
+  const offerSave=needsContactSave(preferences.data,name,phone,address,deliveryMethod==='delivery')
+  useEffect(()=>{if(!offerSave)setSaveDetails(false)},[offerSave])
   const methodTouched=useRef(false)
   useEffect(()=>{
     if(!preferences.data)return
     const p=preferences.data
     setName(value=>value||p.name);setPhone(value=>value==='+998'?p.phone||value:value)
-    if(!methodTouched.current)setDeliveryMethod(p.delivery_method)
+    if(!methodTouched.current&&(p.delivery_method==='pickup'||p.delivery_method==='delivery'))setDeliveryMethod(p.delivery_method)
     setAddress(value=>value||p.addresses.find(a=>a.is_default)?.address||'')
   },[preferences.data])
   const [orderSuccess, setOrderSuccess] = useState(false)
@@ -369,10 +373,10 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   // The backend determines ownership, prices, payment state and inventory.
   const createOrderInDb = async (): Promise<any> => {
-    if(saveDetails&&preferences.data){
+    if(saveDetails&&offerSave&&preferences.data){
       const old=preferences.data
       const addresses=[...old.addresses]
-      if(deliveryMethod==='delivery'&&!addresses.some(a=>a.address===address.trim())&&addresses.length<10)addresses.push({id:crypto.randomUUID(),label:language==='ru'?'Адрес доставки':'Yetkazib berish manzili',address:address.trim(),comment:'',is_default:addresses.length===0})
+      if(deliveryMethod==='delivery'&&!addresses.some(a=>normalizedText(a.address)===normalizedText(address))&&addresses.length<10)addresses.push({id:crypto.randomUUID(),label:language==='ru'?'Адрес доставки':'Yetkazib berish manzili',address:address.trim(),comment:'',is_default:addresses.length===0})
       try{await preferences.save({name:name.trim(),phone,delivery_method:deliveryMethod,addresses})}catch{toast.error(language==='ru'?'Не удалось сохранить личные данные. Заказ оформляется с введёнными данными.':'Shaxsiy ma’lumotlar saqlanmadi. Buyurtma kiritilgan ma’lumotlar bilan rasmiylashtiriladi.')}
     }
     const totalInSums = finalUzs
@@ -856,7 +860,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           </div>
         </div>
 
-        <label className="flex items-center gap-3 mb-4 text-sm text-[#1B2A4A] dark:text-white"><input type="checkbox" checked={saveDetails} disabled={!preferences.data} onChange={e=>setSaveDetails(e.target.checked)}/>{language==='ru'?'Сохранить контакты и адрес для следующих покупок':'Keyingi xaridlar uchun kontakt va manzilni saqlash'}</label>
+        {offerSave&&<button type="button" role="switch" aria-label={language==='ru'?'Сохранить данные':'Ma’lumotlarni saqlash'} aria-checked={saveDetails} onClick={()=>setSaveDetails(v=>!v)} className="w-full flex items-center gap-3 p-3.5 mb-4 rounded-2xl border border-[#E8E2D5] dark:border-dark-border bg-[#FBF9F4] dark:bg-dark-card text-left"><span className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center text-[#1B2A4A] dark:text-white"><User size={16}/></span><span className="flex-1 min-w-0"><span className="block text-sm font-medium text-[#1B2A4A] dark:text-white">{language==='ru'?'Сохранить данные':'Ma’lumotlarni saqlash'}</span><span className="block text-xs mt-0.5 text-[#8A8275] dark:text-gray-300">{language==='ru'?'Для следующих покупок':'Keyingi xaridlar uchun'}</span></span><span className={`w-11 h-6 p-0.5 flex items-center rounded-full transition-colors ${saveDetails?'bg-[#1B2A4A] dark:bg-gold':'bg-[#E8E2D5] dark:bg-dark-accent'}`}><span className={`w-5 h-5 rounded-full bg-white dark:bg-dark-card transition-transform duration-200 ${saveDetails?'translate-x-5':'translate-x-0'}`}/></span></button>}
           <button onClick={handleSubmit} disabled={submitting} className={`w-full py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${submitting ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed' : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'}`}>
           {submitting ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...') : paymentMethod === 'online_card' ? (language === 'ru' ? 'Перейти к оплате' : 'To\'lovga o\'tish') : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')}
         </button>

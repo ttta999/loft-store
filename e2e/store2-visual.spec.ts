@@ -7,7 +7,7 @@ for(const dark of [false,true])test(`Store 2.0 new screens fit viewport, themed 
   if(name==='campaigns')await page.getByRole('button',{name:'Новая рассылка'}).click()
   if(name==='size-charts')await page.getByRole('button',{name:'Добавить таблицу'}).click()
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
-  if(dark)await expect(page.getByRole('heading').last()).toHaveCSS('color','rgb(255, 255, 255)')
+  if(dark)await expect(page.getByRole('heading',{level:1}).first()).toHaveCSS('color','rgb(255, 255, 255)')
   await page.screenshot({path:info.outputPath(`${name}-${dark?'dark':'light'}.png`),fullPage:true})
  }
  expect(harness.errors).toEqual([])

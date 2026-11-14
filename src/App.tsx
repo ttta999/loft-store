@@ -1,3 +1,4 @@
+import LanguageSync from './components/LanguageSync'
 import LaunchTarget from './components/LaunchTarget'
 import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
 import AnimatedRoutes from './components/AnimatedRoutes'
@@ -151,11 +152,14 @@ function ThemeManager() {
   return null
 }
 
+function ProductRoute(){const location=useLocation();return <ProductPage key={location.key}/>}
+
 function App() {
   return (
     <BrowserRouter>
       <ThemeManager />
       <LaunchTarget />
+      <LanguageSync/>
       <AppToaster />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
@@ -173,7 +177,7 @@ function App() {
         </Route>
 
         {/* ✅ ВНУТРЕННИЕ СТРАНИЦЫ (со своим IslandHeader) */}
-        <Route path="/product/:id" element={<ProductPage />} />
+        <Route path="/product/:id" element={<ProductRoute />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/brands" element={<BrandsPage />} />

@@ -1,4 +1,3 @@
-import { useSizeFilter } from '../components/SizeFilter'
 import ProductCard from '../components/ProductCard'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
@@ -13,7 +12,6 @@ import CategoryIcon from '../components/CategoryIcon'
 const POPULARITY_FRESH_MS = 10 * 60 * 1000
 
 export default function AllProductsPage() {
-  const sizeFilter = useSizeFilter()
   const navigate = useNavigate()
   const location = useLocation()
   const {
@@ -70,7 +68,7 @@ export default function AllProductsPage() {
         (a, b) => getEffectivePriceUsd(b, saleModeEnabled) - getEffectivePriceUsd(a, saleModeEnabled)
       )
     }
-    return filtered.filter(p=>sizeFilter.matches(p))
+    return filtered
   }
 
   const filteredProducts = applyFiltersAndSort()
@@ -101,7 +99,6 @@ export default function AllProductsPage() {
     (sortBy !== 'newest' ? 1 : 0)
 
   const clearFilters = () => {
-    sizeFilter.clear()
     setSelectedCategory('all')
     setSelectedSubcategory('all')
     setSortBy('newest')
@@ -314,7 +311,7 @@ export default function AllProductsPage() {
                   ))}
                 </div>
               </div>
-            {sizeFilter.control}</div></Collapse>
+            </div></Collapse>
         </div>
 
         {filteredProducts.length === 0 ? (

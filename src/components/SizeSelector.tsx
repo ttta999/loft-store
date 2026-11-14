@@ -2,7 +2,7 @@ import { useScrollLock } from '../lib/useScrollLock'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState } from 'react'
-import { Ruler, Check, ChevronDown, X } from 'lucide-react'
+import { Ruler, Check, ChevronDown, X, Bell } from 'lucide-react'
 
 type SizeType = 'numeric' | 'alphabetical' | 'one_size'
 
@@ -11,7 +11,12 @@ interface SizeSelectorProps {
   availableSizes: string[]
   allSizes?: string[]
   selectedSize: string | null
-  onSelect: (size: string) => void
+  onSelect: (size: string) => void | boolean | Promise<void | boolean>
+  hintSize?: string
+  label?: string
+  profile?: boolean
+  onRemove?: () => Promise<void | boolean>
+  compact?: boolean
   language?: 'ru' | 'uz'
 }
 
@@ -31,27 +36,29 @@ export default function SizeSelector({
   allSizes=availableSizes,
   selectedSize,
   onSelect,
+  hintSize, label, profile=false, onRemove, compact=false,
   language = 'ru'
 }: SizeSelectorProps) {
   const reduced = useReducedMotion()
   const [open, setOpen] = useState(false)
   const [locked, setLocked] = useState(false)
+  const [busy,setBusy]=useState(false),[error,setError]=useState('')
 
   // ✅ Блокируем скролл страницы, пока открыт sheet
   useScrollLock(locked)
 
   // ✅ Выбрал размер → отметился → sheet ЗАКРЫВАЕТСЯ сам
-  const handleSizeClick = (size: string) => {
-    onSelect(size)
-    setOpen(false)
+  const handleSizeClick = async (size: string) => {
+    if(busy)return;setBusy(true);setError('')
+    try{if(await onSelect(size)!==false)setOpen(false)}catch(e){setError(e instanceof Error?e.message:(language==='ru'?'Не удалось сохранить':'Saqlanmadi'))}finally{setBusy(false)}
   }
 
   const title = language === 'ru' ? 'Выберите размер' : 'O\'lchamni tanlang'
 
   // ✅ ONE SIZE — статичная строка-карточка (открывать нечего)
-  if (sizeType === 'one_size') {
+  if (sizeType === 'one_size'&&!profile) {
     return (
-      <div className="mb-4">
+      <div className={compact?'':'mb-4'}>
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border">
           <div className="flex items-center gap-3 p-3.5">
             <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
@@ -59,7 +66,7 @@ export default function SizeSelector({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-[#8A8275] dark:text-gray-300">
-                {language === 'ru' ? 'Размер' : 'O\'lcham'}
+                {label||(language === 'ru' ? 'Размер' : 'O\'lcham')}
               </p>
               <p className="text-sm font-bold text-[#1B2A4A] dark:text-white">One Size</p>
             </div>
@@ -73,26 +80,26 @@ export default function SizeSelector({
   }
 
   return (
-    <div className="mb-4">
+    <div className={compact?'':'mb-4'}>
       {/* ✅ ЗАКРЫТАЯ СТРОКА — как строка на странице заказа */}
       <button
         data-dialog-trigger="size"
         onClick={() => { setLocked(true); setOpen(true) }}
-        className="w-full bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border flex items-center gap-3 p-3.5 text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors"
+        className={`${compact?'!rounded-none !border-0':''} w-full bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border flex items-center gap-3 p-3.5 text-left hover:bg-[#F5F1E8] dark:hover:bg-dark-accent transition-colors`}
       >
         <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
           <Ruler size={16} className="text-[#1B2A4A] dark:text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-[#8A8275] dark:text-gray-300">
-            {language === 'ru' ? 'Размер' : 'O\'lcham'}
+            {label||(language === 'ru' ? 'Размер' : 'O\'lcham')}
           </p>
           <p className={`text-sm truncate ${
             selectedSize
               ? 'font-bold text-[#1B2A4A] dark:text-white'
               : 'font-medium text-[#8A8275] dark:text-gray-400'
           }`}>
-            {selectedSize || title}
+            {selectedSize || (profile?(language==='ru'?'Не указан':'Ko‘rsatilmagan'):title)}
           </p>
         </div>
         <ChevronDown size={18} className="text-[#8A8275] dark:text-gray-300 flex-shrink-0" />
@@ -126,15 +133,15 @@ export default function SizeSelector({
                   {title}
                 </h3>
                 <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-                  {availableSizes.length} {
+                  {profile?allSizes.length:availableSizes.length} {
                     language === 'ru'
-                      ? getSizesLabelRu(availableSizes.length) + ' в наличии'
-                      : 'ta o\'lcham mavjud'
+                      ? getSizesLabelRu(availableSizes.length) + (profile?'':' в наличии')
+                      : profile?'ta o‘lcham':'ta o‘lcham mavjud'
                   }
                 </p>
               </div>
               <button
-                data-loft-dismiss onClick={() => setOpen(false)}
+                aria-label={language==='ru'?'Закрыть':'Yopish'} data-loft-dismiss onClick={() => setOpen(false)}
                 className="w-9 h-9 rounded-full bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center text-[#8A8275] dark:text-gray-300 flex-shrink-0"
               >
                 <X size={16} />
@@ -149,7 +156,7 @@ export default function SizeSelector({
                   return (
                     <button
                       key={size}
-                      onClick={() => handleSizeClick(size)}
+                      disabled={busy} onClick={() => void handleSizeClick(size)}
                       className={`w-full flex items-center gap-3 p-3.5 text-left transition-colors ${
                         isSelected
                           ? 'bg-[#F5F1E8] dark:bg-dark-accent'
@@ -174,7 +181,9 @@ export default function SizeSelector({
                           ? 'font-bold text-[#1B2A4A] dark:text-white'
                           : 'font-medium text-[#1B2A4A] dark:text-white'
                       }`}>
-                        {size}{!availableSizes.includes(size)&&<span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии — можно подписаться':'Mavjud emas — obuna bo‘lish mumkin'}</span>}
+                        <span className="inline-flex items-center gap-1">{size}{hintSize===size&&<Check size={12} className="text-[#1B2A4A] dark:text-gold"/>}</span>
+                        {hintSize===size&&<span className="block text-[10px] mt-0.5 text-[#1B2A4A] dark:text-gold">{language==='ru'?'Ваш размер':'Sizning o‘lchamingiz'}</span>}
+                        {!profile&&!availableSizes.includes(size)&&<><span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии':'Mavjud emas'}</span><span className="mt-1 inline-flex items-center gap-1 text-xs text-[#1B2A4A] dark:text-gold">{language==='ru'?'Уведомить о поступлении':'Kelganda xabar berish'}<Bell size={12}/></span></>}
                       </span>
 
                       {isSelected && (
@@ -186,6 +195,8 @@ export default function SizeSelector({
                   )
                 })}
               </div>
+              {error&&<p role="alert" className="text-sm text-red-700 dark:text-red-300 mt-3">{error}</p>}
+              {profile&&onRemove&&selectedSize&&<button type="button" disabled={busy} className="w-full py-3 mt-3 text-sm text-[#8A8275] dark:text-gray-300" onClick={async()=>{setBusy(true);setError('');try{if(await onRemove()!==false)setOpen(false)}catch(e){setError(e instanceof Error?e.message:'Не удалось удалить')}finally{setBusy(false)}}}>{language==='ru'?'Удалить сохранённый размер':'Saqlangan o‘lchamni o‘chirish'}</button>}
             </div>
           </motion.div>
         </motion.div>

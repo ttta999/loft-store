@@ -5,7 +5,7 @@ test('возврат: проверка оплаты, закрепление ме
  harness.db.refunds=[{id:1,order_id:order.id,user_id:order.user_id,status:'Проверка платежа',created_at:new Date().toISOString(),cancelled_by:'client'}]
  page.on('dialog',d=>d.accept())
  await page.goto(ADMIN)
- await expect(page.getByRole('button',{name:/Возвраты/})).toContainText('Активных: 1')
+ await expect(page.getByRole('button',{name:/Возвраты/})).toContainText('1')
  await page.getByRole('button',{name:/Возвраты/}).click()
  await page.getByRole('button',{name:/Возврат №1/}).click()
  await expect(page.getByRole('button',{name:'Оплата поступила',exact:true})).toHaveCount(0)

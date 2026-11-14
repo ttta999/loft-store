@@ -6,12 +6,10 @@ test('customer saves contacts and several addresses without changing historic or
  await expect.poll(()=>harness.db.preferences?.[0]?.addresses.length).toBe(1);expect(harness.db.preferences[0].name).toBe('Новый покупатель');expect(harness.db.orders[0]).toEqual(original)
  await page.reload();await expect(page.getByLabel('Имя',{exact:true})).toHaveValue('Новый покупатель');await expect(page.getByText('Навои дом 10 квартира 5',{exact:true})).toBeVisible()
 })
-test('my sizes filter checks subcategory/system and real variant availability',async({page,harness})=>{
+test('removed size filter does not hide products and saved size is only a product hint',async({page,harness})=>{
  harness.db.preferences=[{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[{category:'shoes',subcategory:'sneakers',system:'numeric',size:'42'}],version:1}]
- harness.db.products.push({...harness.db.products[0],id:'22222222-2222-4222-8222-222222222222',name_ru:'Без размера 42'})
- harness.db.product_variants.push({id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',product_id:harness.db.products[1].id,size_value:'42',color_id:null,stock:0})
- await page.goto(STORE+'/search');await page.getByRole('button',{name:/Фильтры/}).click();await page.getByRole('button',{name:'Мой размер',exact:true}).click()
- await expect(page.locator(`[data-product-card="${productId}"]`)).toBeVisible();await expect(page.locator('[data-product-card="22222222-2222-4222-8222-222222222222"]')).toHaveCount(0)
+ await page.goto(STORE+'/search');await page.getByRole('button',{name:/Фильтры/}).click();await expect(page.getByText('Доступный размер',{exact:true})).toHaveCount(0);await expect(page.getByText('Мой размер',{exact:true})).toHaveCount(0);await expect(page.locator(`[data-product-card="${productId}"]`)).toBeVisible()
+ await page.goto(STORE+'/product/'+productId);await page.getByRole('button',{name:/Размер.*Выберите/}).click();await expect(page.getByText('Ваш размер',{exact:true})).toBeVisible();await expect(page.getByText('Выбран',{exact:true})).toHaveCount(0)
 })
 test('product size chart prefers explicit product chart and closes in existing surface',async({page,harness})=>{
  harness.db.size_charts=[{id:'a',title_ru:'Общая таблица',title_uz:'Umumiy jadval',category_id:'shoes',subcategory_id:null,brand_id:null,product_id:null,columns_ru:['Размер','Стопа, см'],columns_uz:['O‘lcham','Oyoq, sm'],rows:[['42','27']],is_active:true},{id:'b',title_ru:'Таблица этого товара',title_uz:'Mahsulot jadvali',category_id:'shoes',subcategory_id:'sneakers',brand_id:null,product_id:productId,columns_ru:['Размер','Стопа, см'],columns_uz:['O‘lcham','Oyoq, sm'],rows:[['42','27,5']],is_active:true}]

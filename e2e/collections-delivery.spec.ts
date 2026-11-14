@@ -55,7 +55,7 @@ for (const section of ['newest', 'popular', 'sale']) {
 for (const currency of ['USD', 'UZS']) {
   test(`доставка в USD из админки: корректная цена и порог в ${currency}`, async ({ page, context, harness }) => {
     const manager = await context.newPage()
-    await manager.goto(ADMIN + '/settings')
+    await manager.goto(ADMIN + '/settings?section=payments')
     await manager.getByLabel('Цена доставки (USD)', { exact: true }).fill('2.52')
     await manager.getByLabel('Порог бесплатной доставки (USD)', { exact: true }).fill('200')
     await manager.getByRole('button', { name: 'Сохранить настройки доставки', exact: true }).click()
@@ -115,7 +115,7 @@ test('фильтры раскрываются и закрываются без �
 })
 
 test('админка не сохраняет дроби доллара меньше цента и не показывает успех при ошибке сервера', async ({ page, harness }) => {
-  await page.goto(ADMIN + '/settings')
+  await page.goto(ADMIN + '/settings?section=payments')
   const save = page.getByRole('button', { name: 'Сохранить настройки доставки', exact: true })
   await page.getByLabel('Цена доставки (USD)', { exact: true }).fill('2.521')
   await save.click()

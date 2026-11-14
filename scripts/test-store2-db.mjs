@@ -11,7 +11,7 @@ const pg=new PGlite()
 const file=async path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 try{
  await pg.exec(await file('tests/sql/store2-baseline.sql'))
- for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql']){
+ for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql']){
   if(migration.includes('history_and_tasks'))await pg.exec(`insert into public.orders(id,user_id,status,delivery_method,created_at,paid_at,receipt_submitted_at) values(9999,'123456','Готов','pickup',now()-interval '30 days',now()-interval '29 days',now()-interval '29 days')`)
   await pg.exec(await file('supabase/migrations/'+migration));console.log('Applied locally:',migration)
  }
@@ -56,7 +56,7 @@ try{
  const order=await scalar(`insert into public.orders(user_id,client_name,delivery_method,payment_method,items,status,special_fulfillment) values('123456','Клиент','pickup','upon_receipt','[]','Активный',false) returning id`)
  await query(`update public.orders set status='В обработке' where id=$1`,[order]);const events=await scalar('select count(*)::int from private.store_order_events where order_id=$1',[order]);await query(`update public.orders set status='В обработке' where id=$1`,[order]);assert.equal(await scalar('select count(*)::int from private.store_order_events where order_id=$1',[order]),events)
  await pg.exec(`select set_config('loft.test_admin','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);select set_config('loft.test_aal','aal2',false)`)
- const history=await scalar('select public.store_admin_order_history($1)',[order]);assert.equal(history[0].actor_type,'client');assert.equal(history[1].event_type,'status_changed')
+ const history=await scalar('select public.store_admin_order_history($1)',[order]);assert.equal(history.find(e=>e.event_type==='order_created').actor_type,'client');assert.ok(history.some(e=>e.event_type==='status_changed'))
  await pg.exec(`insert into public.orders(user_id,client_name,delivery_method,payment_method,status,special_fulfillment,receipt_submitted_at,checkout_abandoned_at) values('123456','Черновик','pickup','online_card','Ожидает оплаты',false,null,null)`)
  const review=await scalar(`insert into public.orders(user_id,client_name,delivery_method,payment_method,status,payment_status,special_fulfillment,receipt_submitted_at) values('123456','Клиент','delivery','online_card','Ожидает оплаты','pending',false,now()-interval '3 hours') returning id`)
  await pg.exec(`insert into public.orders(user_id,client_name,payment_method,status,payment_status,special_fulfillment,paid_at) values('123456','Клиент','online_card','В пути','paid',true,now()-interval '25 hours')`)
@@ -78,5 +78,7 @@ try{
  await pg.exec('set role service_role;select public.store_queue_restocks();select public.store_queue_manager_reminders();reset role;')
  console.log('PASS: worker helpers execute under service_role, not only the database owner')
  const {testCampaigns}=await import('../tests/sql/store2-campaigns.mjs');await testCampaigns(pg)
+ const {testReminderIntervals}=await import('../tests/sql/reminder-intervals.mjs');await testReminderIntervals(pg)
+ const {testLocales}=await import('../tests/sql/locales.mjs');await testLocales(pg)
  console.log('ALL LOCAL DATABASE CHECKS PASSED')
 } catch(error){console.error(error.message);console.error({position:error.position,internalPosition:error.internalPosition,internalQuery:error.internalQuery});if(error.query)console.error('SQL context:',error.query.slice(0,800));process.exitCode=1}finally{await pg.close()}

@@ -1,3 +1,4 @@
+import {productTelegramPhoto} from './telegramPhoto.ts'
 import {database} from './http.ts'
 import {HttpError} from './auth.ts'
 import {targetLink} from './links.ts'
@@ -18,9 +19,9 @@ export async function prepareProductShare(userId:string,productId:string,currenc
  const text=`<b>${escapeHtml(title)}</b>\n\n${language==='ru'?'Цена':'Narx'}: ${escapeHtml(displayMoney(currency==='USD'?price:price*rate,currency,language))}\n\n${language==='ru'?'LOFT Store — брендовая мужская одежда.':'LOFT Store — brend erkaklar kiyimi.'}`
  const link=await targetLink({type:'product',id:p.id})
  const markup={inline_keyboard:[[{text:language==='ru'?'Открыть товар':'Mahsulotni ochish',url:link}]]}
- let image:string|undefined
- try{const u=new URL(p.images?.[0]||''),root=new URL(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'');if(u.protocol==='https:'&&u.origin===root.origin&&u.pathname.startsWith('/storage/v1/object/public/product-images/'))image=u.href}catch{}
- const result=image?{type:'photo',id:p.id,photo_url:image,thumbnail_url:image,caption:text,parse_mode:'HTML',reply_markup:markup}:{type:'article',id:p.id,title,input_message_content:{message_text:text,parse_mode:'HTML'},reply_markup:markup}
+ let photo:any=null
+ try{if(p.images?.[0])photo=await productTelegramPhoto(db,p.id,p.images[0])}catch{/* A safe text card is preferable to a broken or unsupported image. */}
+ const result=photo?{type:'photo',id:photo.key,...Object.fromEntries(Object.entries(photo).filter(([k])=>k!=='key')),caption:text,parse_mode:'HTML',reply_markup:markup}:{type:'article',id:p.id,title,input_message_content:{message_text:text,parse_mode:'HTML'},reply_markup:markup}
  const response=await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/savePreparedInlineMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:Number(userId),result,allow_user_chats:true,allow_bot_chats:true,allow_group_chats:true,allow_channel_chats:true}),signal:AbortSignal.timeout(8000)})
  const prepared=await response.json();if(!response.ok||!prepared.ok||!prepared.result?.id)throw new Error('Sharing unavailable')
  return {id:prepared.result.id,url:link}

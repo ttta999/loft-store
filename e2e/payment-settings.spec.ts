@@ -42,7 +42,7 @@ test('стрелка после загрузки чека сразу ведёт 
 
 test('реквизиты из настроек доходят до оплаты, после чека история не просит оплатить повторно', async ({ page, context, harness }) => {
   const manager = await context.newPage()
-  await manager.goto(ADMIN + '/settings')
+  await manager.goto(ADMIN + '/settings?section=payments')
   await manager.getByLabel('Номер карты UZS', { exact: true }).fill('1111222233334444')
   await manager.getByLabel('Получатель UZS', { exact: true }).fill('Новый получатель')
   await manager.getByRole('button', { name: 'Сохранить реквизиты', exact: true }).click()
@@ -119,7 +119,7 @@ test('из подтверждения заказа можно перейти в 
 
 test('оплата в USD показывает долларовую карту, некорректные изменения в админке не сохраняются', async ({ page, context, harness }) => {
   const manager = await context.newPage()
-  await manager.goto(ADMIN + '/settings')
+  await manager.goto(ADMIN + '/settings?section=payments')
   await manager.getByLabel('Номер карты USD', { exact: true }).fill('3333444455556666')
   await manager.getByLabel('Получатель USD', { exact: true }).fill('Получатель USD')
   await manager.getByRole('button', { name: 'Сохранить реквизиты', exact: true }).click()

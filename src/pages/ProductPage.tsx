@@ -1,3 +1,5 @@
+import {usePageState} from '../lib/usePageState'
+import {usePreferences} from '../lib/preferences'
 import { RestockControl, useProductVariants } from '../components/RestockControl'
 import { shareConfig, shareProduct } from '../lib/sharing'
 import ProductRecommendations from '../components/ProductRecommendations'
@@ -27,6 +29,7 @@ import { getCachedProduct, getCachedSizes, cacheProduct } from '../lib/productCa
 import { sortSizeStrings } from '../lib/sortSizes'
 
 export default function ProductPage() {
+  const preferences=usePreferences()
   const { id } = useParams()
   const knownVariants=useProductVariants(id)
   const launchSelection=useRef('')
@@ -51,8 +54,8 @@ export default function ProductPage() {
     isFavorite,
   } = useStore()
 
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
-  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
+  const [selectedSize, setSelectedSize] = usePageState<string | null>('product:size',null)
+  const [selectedColor, setSelectedColor] = usePageState<ProductColor | null>('product:color',null)
   const [colors, setColors] = useState<ProductColor[]>([])
 
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
@@ -60,7 +63,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(() => !getCachedProduct(id))
   const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id))
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImageIndex, setCurrentImageIndex] = usePageState('product:image',0)
   const [showFullScreen, setShowFullScreen] = useState(false)
   const [viewerActive, setViewerActive] = useState(false)
   const [viewerAspect, setViewerAspect] = useState(1)
@@ -89,21 +92,20 @@ export default function ProductPage() {
     setLoading(!cachedProduct)
     setSizes(cachedSizes || [])
     setSizesLoading(!cachedSizes)
-    setSelectedSize(null)
     setColors([])
-    setSelectedColor(null)
-    setCurrentImageIndex(0)
     setShowFullScreen(false)
 
     loadProduct()
     loadColors()
   }, [id])
 
+  const previousColor=useRef(selectedColor?.id)
   // ✅ При смене цвета — перезагружаем размеры и сбрасываем выбор
   useEffect(() => {
     if (!id) return
     loadSizesForColor()
-    setSelectedSize(null)
+    if(previousColor.current!==selectedColor?.id)setSelectedSize(null)
+    previousColor.current=selectedColor?.id
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor?.id, id])
 
@@ -154,7 +156,7 @@ export default function ProductPage() {
       const colorsList = await getProductColors(id)
       if (activeId.current !== id) return
       setColors(colorsList)
-      if (colorsList.length > 0) { setCurrentImageIndex(0); setSelectedColor(colorsList[0]) }
+      if (colorsList.length > 0) { const restored=colorsList.find(c=>c.id===selectedColor?.id);if(restored)setSelectedColor(restored);else{setCurrentImageIndex(0);setSelectedColor(colorsList[0])} }
     } catch (error) { console.error('Ошибка загрузки цветов:', error) }
   }
 
@@ -540,6 +542,7 @@ export default function ProductPage() {
 
           <ProductSizeChart key={product.id} product={product} language={language}/>
           <SizeSelector
+            hintSize={preferences.data?.sizes.find(s=>s.category===product.category&&s.subcategory===product.subcategory&&s.system===product.size_type)?.size}
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
             allSizes={allSizes}

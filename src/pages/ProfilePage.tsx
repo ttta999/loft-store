@@ -1,3 +1,5 @@
+import {Bell} from 'lucide-react'
+import SavedSizes from '../components/SavedSizes'
 import MarketingConsent from '../components/MarketingConsent'
 import { RestockSubscriptions } from '../components/RestockControl'
 import CustomerPreferences from '../components/CustomerPreferences'
@@ -1121,7 +1123,8 @@ export default function ProfilePage() {
     : null
 
   if (section === 'restocks') return <RestockSubscriptions language={language}/>
-  if (section === 'personal' || section === 'sizes') return <CustomerPreferences key={section} section={section}/>
+  if (section === 'sizes') return <SavedSizes/>
+  if (section === 'personal') return <CustomerPreferences key={section} section={section}/>
 
   // ✅ ГЛАВНАЯ ПРОФИЛЯ — шапка + 4 квадрата + магазин + соцсети
   if (!section || section === 'main') {
@@ -1157,48 +1160,19 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ✅ МЕНЮ: 4 квадрата (2×2) — избранное, заказы, спецзаказы, настройки */}
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <MenuTile
-              icon={<Heart size={18} className="text-[#1B2A4A] dark:text-white" />}
-              title={language === 'ru' ? 'Избранное' : 'Sevimlilar'}
-              subtitle={
-                favorites.length > 0
-                  ? `${favorites.length} ${getItemsLabel(favorites.length, language)}`
-                  : (language === 'ru' ? 'Пока пусто' : 'Hali bo\'sh')
-              }
-              transitionKey="favorites"
-              onClick={() => openSection('favorites')}
-            />
-            <MenuTile
-              icon={<Package size={18} className="text-[#1B2A4A] dark:text-white" />}
-              title={language === 'ru' ? 'Заказы' : 'Buyurtmalar'}
-              subtitle={language === 'ru' ? 'История заказов' : 'Buyurtmalar tarixi'}
-              transitionKey="orders"
-              onClick={() => openSection('orders')}
-            />
-            <MenuTile
-              icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white" />}
-              title={language === 'ru' ? 'Спецзаказы' : 'Maxsus buyurtmalar'}
-              subtitle={language === 'ru' ? 'Мои спецзаказы' : 'Maxsus buyurtmalarim'}
-              transitionKey="china"
-              onClick={() => openSection('china')}
-            />
-            <MenuTile
-              icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
-              title={language === 'ru' ? 'Настройки' : 'Sozlamalar'}
-              subtitle={`${language.toUpperCase()} · ${currency}`}
-              transitionKey="settings"
-              onClick={() => openSection('settings')}
-            />
+            <MenuTile icon={<Package size={18} className="text-[#1B2A4A] dark:text-white"/>} title={language==='ru'?'Заказы':'Buyurtmalar'} subtitle={language==='ru'?'История заказов':'Buyurtmalar tarixi'} transitionKey="orders" onClick={()=>openSection('orders')}/>
+            <MenuTile icon={<Globe size={18} className="text-[#1B2A4A] dark:text-white"/>} title={language==='ru'?'Спецзаказы':'Maxsus buyurtmalar'} subtitle={language==='ru'?'Мои спецзаказы':'Maxsus buyurtmalarim'} transitionKey="china" onClick={()=>openSection('china')}/>
           </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <MenuTile icon={<User size={18}/>} title={language === 'ru' ? 'Личные данные' : 'Shaxsiy ma’lumotlar'} subtitle={language === 'ru' ? 'Контакты и адреса' : 'Kontaktlar va manzillar'} transitionKey="personal" onClick={()=>openSection('personal')}/>
-            <MenuTile icon={<Ruler size={18}/>} title={language === 'ru' ? 'Мои размеры' : 'Mening o‘lchamlarim'} subtitle={language === 'ru' ? 'Одежда и обувь' : 'Kiyim va poyabzal'} transitionKey="sizes" onClick={()=>openSection('sizes')}/>
+          <div className="mb-3 rounded-2xl overflow-hidden border border-[#E8E2D5] dark:border-dark-border bg-[#FBF9F4] dark:bg-dark-card divide-y divide-[#E8E2D5] dark:divide-dark-border">
+           {([
+            ['favorites',<Heart size={17}/>,language==='ru'?'Избранное':'Sevimlilar',favorites.length?String(favorites.length):''],
+            ['personal',<User size={17}/>,language==='ru'?'Личные данные':'Shaxsiy ma’lumotlar',''],
+            ['sizes',<Ruler size={17}/>,language==='ru'?'Мои размеры':'Mening o‘lchamlarim',''],
+            ['restocks',<Bell size={17}/>,language==='ru'?'Уведомления о поступлении':'Kelishi haqida xabarlar',''],
+            ['settings',<Settings size={17}/>,language==='ru'?'Настройки':'Sozlamalar',language.toUpperCase()+' · '+currency],
+           ] as const).map(([key,icon,title,value])=><button key={key} data-profile-link={key} onClick={()=>openSection(key)} className="w-full text-left flex items-center gap-3 p-3.5 bg-[#FBF9F4] dark:bg-dark-card"><span data-profile-icon className="w-9 h-9 shrink-0 rounded-full border border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8] dark:bg-dark-accent flex items-center justify-center text-[#1B2A4A] dark:text-white">{icon}</span><span className="flex-1 min-w-0 text-sm font-medium text-[#1B2A4A] dark:text-white">{title}</span>{value&&<span className="text-xs text-[#8A8275] dark:text-gray-300">{value}</span>}<ChevronRight size={16} className="shrink-0 text-[#8A8275] dark:text-gray-300"/></button>)}
           </div>
-
-          <div className="mb-3"><MenuTile icon={<Package size={18}/>} title={language==='ru'?'Уведомления о поступлении':'Kelishi haqida xabarlar'} subtitle={language==='ru'?'Мои подписки':'Mening obunalarim'} transitionKey="restocks" onClick={()=>openSection('restocks')}/></div>
           {/* ✅ Магазин: единая карточка со строками-иконками */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
             <a {...storeNavigationLink()} className="flex items-center gap-3 p-3.5">

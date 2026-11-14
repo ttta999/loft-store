@@ -69,6 +69,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if(error)throw new HttpError(409,'Не удалось изменить подписку. Проверьте наличие варианта товара.')
         return res.json({data})
       }
+      case 'language': {
+        if(!['ru','uz'].includes(body.language))throw new HttpError(400,'Выберите язык')
+        await limit(userId,'language',20)
+        const {data,error}=await db.rpc('store_customer_language',{p_user:userId,p_language:body.language});if(error)throw error
+        return res.json({data})
+      }
       case 'marketingConsent': {
         if(typeof body.enabled!=='boolean')throw new HttpError(400,'Проверьте настройку уведомлений')
         await limit(userId,'marketing-consent',10)

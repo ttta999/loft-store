@@ -1,0 +1,141 @@
+{
+  "protocol": {
+    "browser": "desktop Chrome",
+    "auth_latency_ms": 100,
+    "private_file_latency_ms": 400,
+    "orders": 30,
+    "repeats": 3,
+    "baseline_admin_commit": "c82d85a847949c4d31ef935c091f0d68e9e6b13e",
+    "environment": "isolated Vite dev servers and intercepted APIs; not production"
+  },
+  "cold": {
+    "before": [
+      {
+        "structureMs": 1649,
+        "usableMetadataMs": 1660,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 60
+      },
+      {
+        "structureMs": 1622,
+        "usableMetadataMs": 1630,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 60
+      },
+      {
+        "structureMs": 1621,
+        "usableMetadataMs": 1632,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 60
+      }
+    ],
+    "after": [
+      {
+        "structureMs": 1232,
+        "usableMetadataMs": 1245,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 0
+      },
+      {
+        "structureMs": 1242,
+        "usableMetadataMs": 1253,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 0
+      },
+      {
+        "structureMs": 1228,
+        "usableMetadataMs": 1241,
+        "orderRequests": 1,
+        "protectedSignRequestsBeforeList": 0
+      }
+    ]
+  },
+  "warm": {
+    "before": [
+      {
+        "path": "/orders",
+        "phase": "first",
+        "firstContentMs": 89,
+        "requests": []
+      },
+      {
+        "path": "/orders",
+        "phase": "repeat",
+        "firstContentMs": 43,
+        "requests": []
+      },
+      {
+        "path": "/china",
+        "phase": "first",
+        "firstContentMs": 40,
+        "requests": [
+          "/rest/v1/settings"
+        ]
+      },
+      {
+        "path": "/china",
+        "phase": "repeat",
+        "firstContentMs": 39,
+        "requests": []
+      },
+      {
+        "path": "/refunds",
+        "phase": "first",
+        "firstContentMs": 60,
+        "requests": [
+          "/auth/v1/user",
+          "/auth/v1/user"
+        ]
+      },
+      {
+        "path": "/refunds",
+        "phase": "repeat",
+        "firstContentMs": 39,
+        "requests": [
+          "/auth/v1/user",
+          "/auth/v1/user"
+        ]
+      }
+    ],
+    "after": [
+      {
+        "path": "/orders",
+        "phase": "first",
+        "firstContentMs": 82,
+        "requests": []
+      },
+      {
+        "path": "/orders",
+        "phase": "repeat",
+        "firstContentMs": 50,
+        "requests": []
+      },
+      {
+        "path": "/china",
+        "phase": "first",
+        "firstContentMs": 50,
+        "requests": [
+          "/rest/v1/settings"
+        ]
+      },
+      {
+        "path": "/china",
+        "phase": "repeat",
+        "firstContentMs": 84,
+        "requests": []
+      },
+      {
+        "path": "/refunds",
+        "phase": "first",
+        "firstContentMs": 48,
+        "requests": []
+      },
+      {
+        "path": "/refunds",
+        "phase": "repeat",
+        "firstContentMs": 46,
+        "requests": []
+      }
+    ]
+  }
+}

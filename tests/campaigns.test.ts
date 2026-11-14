@@ -27,3 +27,20 @@ test('campaign worker rejects public/customer credentials before claiming any jo
  const paths:string[]=[];globalThis.fetch=async(url)=>{const p=new URL(String(url)).pathname;paths.push(p);assert.ok(p.endsWith('/store_worker_authorized'));return Response.json(false)}
  try{for(const auth of [undefined,'Bearer customer-session','Bearer '+'0'.repeat(64)]){const res:any={code:200,setHeader(){},status(n:number){this.code=n;return this},json(){return this}};await worker({method:'POST',headers:{'content-type':'application/json',authorization:auth},body:{}} as any,res);assert.equal(res.code,401)}assert.equal(paths.length,1)}finally{globalThis.fetch=original}
 })
+test('one campaign selects one recipient language with primary fallback and preserves content',async()=>{
+ const {campaignVersion}=await import('../src/lib/campaignMessage.ts')
+ const bilingual={...content,content_language:'ru' as const,translations:{uz:{title:'Yangi <Zegna>',message:'Yangi to‘plam & chegirmalar',button_label:'Ochish'}}}
+ assert.equal(campaignVersion(bilingual,'uz').message,'Yangi to‘plam & chegirmalar')
+ assert.equal(campaignVersion(bilingual,'ru').message,content.message)
+ assert.equal(campaignVersion(bilingual,undefined).message,content.message)
+ assert.equal(campaignVersion({...bilingual,translations:{}},'uz').message,content.message)
+ assert.match(campaignMessage(campaignVersion(bilingual,'uz')).html,/&lt;Zegna&gt;/)
+ assert.equal(bilingual.message,content.message)
+})
+test('restock message uses saved recipient language, escaped translated product and actual variant link',async()=>{
+ const {restockNotification}=await import('../server/restockNotifications.ts')
+ const data={product_id:'11111111-1111-4111-8111-111111111111',variant_id:'22222222-2222-4222-8222-222222222222',name:'Товар',name_uz:'<Mahsulot>',size:'42',color:'Синий',color_uz:'Ko‘k',language:'uz'}
+ const r=restockNotification(data);assert.match(r.message,/Sizning o‘lchamingiz yana sotuvda/);assert.match(r.message,/&lt;Mahsulot&gt;/);assert.match(r.message,/Rang: Ko‘k/);assert.doesNotMatch(r.message,/Ваш размер/)
+ const fallback=restockNotification({...data,name_uz:null,color_uz:null});assert.match(fallback.message,/Товар/);assert.match(fallback.message,/Синий/)
+ assert.doesNotMatch(restockNotification({...data,color:null,color_uz:null}).message,/Rang:/)
+})

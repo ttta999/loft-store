@@ -1,7 +1,7 @@
 import type {SupabaseClient} from '@supabase/supabase-js'
-import {campaignMessage,type CampaignContent} from '../src/lib/campaignMessage.ts'
+import {campaignMessage,campaignVersion,type CampaignContent} from '../src/lib/campaignMessage.ts'
 import {targetLink,type StoreTarget} from './links.ts'
-export type CampaignJob={kind:'campaign'|'test';id:string;lease:string;user_id?:string;payload:CampaignContent}
+export type CampaignJob={kind:'campaign'|'test';id:string;lease:string;user_id?:string;language?:string;payload:CampaignContent}
 class PreparationError extends Error { permanent=true }
 export type DeliveryResult={outcome:'sent'|'failed'|'skipped'|'uncertain'|'retry';error?:string;retryAfter?:number;messageId?:number;blocked?:boolean}
 export async function prepareCampaignDelivery(db:SupabaseClient,job:CampaignJob){
@@ -12,7 +12,7 @@ export async function prepareCampaignDelivery(db:SupabaseClient,job:CampaignJob)
   if(!chat){const {data,error}=await db.rpc('store_manager_chat');if(error)throw new Error('Test recipient unavailable');chat=String(data||'')}
  }
  if(!/^-?[1-9][0-9]{0,15}$/.test(chat||''))throw new PreparationError('Recipient unavailable')
- const c=job.payload
+ const c=campaignVersion(job.payload,job.language)
  let text:ReturnType<typeof campaignMessage>
  try{text=campaignMessage(c)}catch{throw new PreparationError('Invalid message')}
  const url=await targetLink({type:c.target_type as StoreTarget['type'],id:c.target_id||undefined})
