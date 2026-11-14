@@ -48,7 +48,7 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
       assertCurrentSession()
       if (response.status === 401) { session = null; sessionUserId = null; dataCache.invalidate('private:') }
       if (!response.ok) throw new Error(data.error || 'Не удалось выполнить действие')
-      if (!read && action !== 'subscribe') {
+      if (!read && !['subscribe','preferences','restocks','prepareShare'].includes(action)) {
         dataCache.invalidate(`private:${user.id}:`)
         dataCache.invalidate('variant-sizes:')
         dataCache.invalidate('sizes:')
@@ -61,7 +61,7 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
       cursor = nextCursor
     }
   }
-  const result = await (read ? dataCache.load(`private:${user.id}:${action}`, execute, 15_000) : execute())
+  const result = await (read || ['preferences','restocks'].includes(action) ? dataCache.load(`private:${user.id}:${action}`, execute, 15_000) : execute())
   assertCurrentSession()
   return result
 }

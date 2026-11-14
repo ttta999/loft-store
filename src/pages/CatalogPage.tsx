@@ -1,3 +1,5 @@
+import { useSizeFilter } from '../components/SizeFilter'
+import { catalogMoney } from '../lib/money'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
 import { usePageState } from '../lib/usePageState'
@@ -20,6 +22,7 @@ import CategoryIcon from '../components/CategoryIcon'
 
 
 export default function CatalogPage() {
+  const sizeFilter = useSizeFilter()
   const navigate = useNavigate()
   const location = useLocation()
   const {
@@ -116,7 +119,7 @@ export default function CatalogPage() {
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    return filtered
+    return filtered.filter(p=>sizeFilter.matches(p))
   }
 
   const filteredProducts = applyFiltersAndSort()
@@ -128,6 +131,7 @@ export default function CatalogPage() {
   }
 
   const clearFilters = () => {
+    sizeFilter.clear()
     setSelectedBrands([])
     setMinPrice(0)
     setMaxPrice(100000000)
@@ -139,10 +143,7 @@ export default function CatalogPage() {
     (minPrice !== 0 || maxPrice !== 100000000 ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
   const getSubcategoryName = () => {
     if (!subcategoryId) {
@@ -443,7 +444,7 @@ export default function CatalogPage() {
                   </button>
                 </div>
               </div>
-            </div></Collapse>
+            {sizeFilter.control}</div></Collapse>
         </div>
 
         {filteredProducts.length === 0 ? (

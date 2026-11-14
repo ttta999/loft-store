@@ -1,3 +1,4 @@
+import { prepareProductShare } from '../server/productSharing.ts'
 import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import { randomUUID } from 'node:crypto'
 import { HttpError } from '../server/auth.ts'
@@ -54,6 +55,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = database()
     await limit(userId, 'requests', 90)
     switch (body.action) {
+      case 'prepareShare': {
+        await limit(userId,'prepare-share',10)
+        const id=uuid(body.productId)
+        if(!['USD','UZS'].includes(body.currency)||!['ru','uz'].includes(body.language))throw new HttpError(400,'Проверьте параметры товара')
+        return res.json(await prepareProductShare(userId,id,body.currency,body.language))
+      }
+      case 'restocks':
+      case 'subscribeRestock':
+      case 'cancelRestock': {
+        await limit(userId,'restock',20)
+        const {data,error}=await db.rpc('store_restock',{p_user:userId,p_action:body.action==='restocks'?'list':body.action==='subscribeRestock'?'subscribe':'cancel',p_variant:body.action==='subscribeRestock'?uuid(body.variantId):null,p_id:body.action==='cancelRestock'?uuid(body.id):null})
+        if(error)throw new HttpError(409,'Не удалось изменить подписку. Проверьте наличие варианта товара.')
+        return res.json({data})
+      }
+      case 'marketingConsent': {
+        if(typeof body.enabled!=='boolean')throw new HttpError(400,'Проверьте настройку уведомлений')
+        await limit(userId,'marketing-consent',10)
+        const {data,error}=await db.rpc('store_marketing_consent',{p_user:userId,p_enabled:body.enabled})
+        if(error)throw new HttpError(503,'Не удалось сохранить согласие')
+        return res.json({data})
+      }
+      case 'preferences':
+      case 'savePreferences': {
+        const saving=body.action==='savePreferences'
+        if(saving)await limit(userId,'preferences-write',20)
+        const patch=saving ? body.patch : null
+        if(saving&&(!patch||typeof patch!=='object'||Array.isArray(patch)||JSON.stringify(patch).length>20000||!Number.isSafeInteger(body.version)||body.version<0))throw new HttpError(400,'Проверьте личные данные')
+        const {data,error}=await db.rpc('store_customer_preferences',{p_user:userId,p_patch:patch,p_version:saving?body.version:null})
+        if(error){if(error.message?.includes('Profile changed'))throw new HttpError(409,'Данные изменились на другом устройстве. Откройте страницу повторно.');throw new HttpError(400,'Проверьте личные данные и адреса')}
+        return res.json({data})
+      }
       case 'subscribe': {
         const { error } = await db.from('subscribers').upsert({ chat_id: userId, user_id: userId, first_name: user.first_name, username: user.username || null, is_subscribed: true }, { onConflict: 'chat_id' })
         if (error) throw error

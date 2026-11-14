@@ -62,9 +62,11 @@ export function installProductIntent(location: () => Page) {
 export function prepareProductTransition(from: Page, to: Page) {
   clearProductNames()
   const openingId = to.pathname.match(/^\/product\/([^/]+)$/)?.[1]
-  const origin = openingId && intent?.id === openingId && intent.key === from.key ? intent : origins.get(from.key)
+  const saved = origins.get(from.key)
+  const reverse = from.pathname.startsWith('/product/') && saved?.key === to.key
+  const origin = reverse ? saved : openingId && intent?.id === openingId && intent.key === from.key ? intent : saved
   const forward = !!openingId && !!origin && origin.id === openingId && origin.key === from.key
-  const returning = !openingId && from.pathname.startsWith('/product/') && !!origin && origin.key === to.key
+  const returning = reverse && !!origin
   if (!origin || (!forward && !returning)) return null
   const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
   if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) return null

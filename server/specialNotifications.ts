@@ -1,3 +1,4 @@
+import { displayMoney } from '../src/lib/money.ts'
 import type { TelegramOptions } from './notifications.ts'
 export interface SpecialSnapshot {
   id: string | number
@@ -20,7 +21,7 @@ export function specialNotification(request: SpecialSnapshot): { message: string
     case 'Оценён': {
       const price = request.amount_uzs != null ? Number(request.amount_uzs) : Number(request.exchange_rate)>0 ? Math.round(Number(request.manager_price)*Number(request.exchange_rate)) : NaN
       if (!Number.isFinite(price) || price <= 0 || !Number.isInteger(price)) throw new Error('Invalid special quote')
-      paragraphs = [`💎 <b>Спецзаказ №${id} оценён</b>`, `Стоимость: <b>${price.toLocaleString('ru-RU', { maximumFractionDigits: 0 }).replace(/\u00a0/g,' ')} сум</b>`, request.manager_comment?.trim() ? escape(request.manager_comment.trim()) : '', 'Менеджер завершил расчёт стоимости вашего товара.', 'Ознакомьтесь с предложением в приложении и решите, хотите ли вы оформить заказ.']; break
+      paragraphs = [`💎 <b>Спецзаказ №${id} оценён</b>`, `Стоимость: <b>${displayMoney(price,'UZS')}</b>`, request.manager_comment?.trim() ? escape(request.manager_comment.trim()) : '', 'Менеджер завершил расчёт стоимости вашего товара.', 'Ознакомьтесь с предложением в приложении и решите, хотите ли вы оформить заказ.']; break
     }
     case 'Оформлен':
       if (!/^[1-9][0-9]*$/.test(String(request.order_id))) throw new Error('Missing linked order')

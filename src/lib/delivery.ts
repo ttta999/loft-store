@@ -1,5 +1,6 @@
-export const roundUsd = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100
-export const formatUsd = (amount: number) => `$${roundUsd(amount).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+import { displayMoney, roundUsd } from './money.ts'
+export { roundUsd } from './money.ts'
+export const formatUsd = (amount: number) => displayMoney(amount, 'USD')
 export function readDeliverySettings(price: any, threshold: any, rate: number) {
   const deliveryPriceUsd = price?.price_usd == null ? Number(price?.price || 0) / rate : Number(price.price_usd)
   const freeDeliveryThresholdUsd = threshold?.amount_usd == null ? Number(threshold?.amount || 0) / rate : Number(threshold.amount_usd)

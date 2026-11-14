@@ -1,3 +1,4 @@
+import { displayMoney } from '../src/lib/money.ts'
 import type { TelegramOptions } from './notifications.ts'
 export interface SpecialOrderSnapshot {
   id: number | string
@@ -28,7 +29,7 @@ export function specialOrderNotification(order: SpecialOrderSnapshot): { message
   if (order.status === 'Ожидает оплаты') {
     const amount = Number(order.amount)
     if (!Number.isFinite(amount) || amount <= 0 || !['USD','UZS'].includes(order.currency || '')) throw new Error('Invalid amount')
-    paragraphs = [`💳 <b>Заказ №${id} ожидает оплаты</b>`, 'Ваш спецзаказ успешно создан.', `Сумма к оплате: <b>${amount.toLocaleString('ru-RU',{maximumFractionDigits: order.currency === 'USD' ? 2 : 0})} ${order.currency === 'UZS' ? 'сум' : 'USD'}</b>`, 'Для продолжения оформления необходимо внести полную предоплату переводом и загрузить подтверждение платежа.']
+    paragraphs = [`💳 <b>Заказ №${id} ожидает оплаты</b>`, 'Ваш спецзаказ успешно создан.', `Сумма к оплате: <b>${displayMoney(amount,order.currency as 'USD'|'UZS','ru','code')}</b>`, 'Для продолжения оформления необходимо внести полную предоплату переводом и загрузить подтверждение платежа.']
   }
   if (!paragraphs) throw new Error('Unknown fulfillment status')
   if (order.status === 'Передан курьеру' && order.courier_link) {

@@ -1,3 +1,5 @@
+import { useSizeFilter } from '../components/SizeFilter'
+import { catalogMoney } from '../lib/money'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
 import { usePageState } from '../lib/usePageState'
@@ -15,6 +17,7 @@ interface Brand {
 
 
 export default function SearchPage() {
+  const sizeFilter = useSizeFilter()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
 
@@ -120,15 +123,13 @@ export default function SearchPage() {
         filtered.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    return filtered
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands, saleModeEnabled, exchangeRate])
+    return filtered.filter(p=>sizeFilter.matches(p))
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, products, brands, saleModeEnabled, exchangeRate, sizeFilter.selection, sizeFilter.variants, sizeFilter.mine])
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
   const clearFilters = () => {
+    sizeFilter.clear()
     setSelectedCategory('')
     setSelectedBrand('')
     setPriceRange([0, 100000000])
@@ -411,7 +412,7 @@ export default function SearchPage() {
                 </button>
               </div>
             </div>
-          </div></Collapse>
+          {sizeFilter.control}</div></Collapse>
 
         {filteredProducts.length === 0 ? (
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">

@@ -1,3 +1,4 @@
+import { getEffectivePriceUsd } from '../lib/pricing'
 import { storeApi } from '../lib/api'
 import { cartAdditionError, specialCheckoutError } from '../lib/specialCheckout'
 import { readDeliverySettings } from '../lib/delivery'
@@ -116,23 +117,7 @@ const fetchSaleModeFromDB = async (): Promise<boolean | null> => {
   }
 }
 
-const fetchExchangeRateFromAPI = async (): Promise<number> => {
-  try {
-    const response = await fetch('/api/getExchangeRate')
-    if (!response.ok) throw new Error(`API returned ${response.status}`)
-    const data = await response.json()
-    return data.rate
-  } catch (error) {
-    console.error('❌ Ошибка получения курса через API:', error)
-    return 12100
-  }
-}
-
-export const isProductOnSale = (product: any, saleModeEnabled: boolean): boolean =>
-  Boolean(saleModeEnabled && product && product.sale_price != null && Number(product.sale_price) > 0)
-
-export const getEffectivePriceUsd = (product: any, saleModeEnabled: boolean): number =>
-  isProductOnSale(product, saleModeEnabled) ? Number(product.sale_price) : (product?.price_usd || 0)
+export { isProductOnSale, getEffectivePriceUsd } from '../lib/pricing'
 // ✅ Фильтрация товаров: показываем только товары АКТИВНЫХ категорий и подкатегорий.
 // categories === null → категории ещё не загрузились → не фильтруем (чтобы не мигать пустотой).
 // categories === [] → все категории отключены → скрываем все товары.
@@ -155,7 +140,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       language: 'ru',
       currency: 'UZS',
-      exchangeRate: 12100,
+      exchangeRate: 0,
       saleModeEnabled: false,
       theme: 'system',
       cart: [],
@@ -192,12 +177,8 @@ export const useStore = create<AppState>()(
 
       updateExchangeRate: async () => {
         const dbData = await fetchExchangeRateFromDB()
-        if (!dbData) {
-          const fallbackRate = await fetchExchangeRateFromAPI()
-          set({ exchangeRate: fallbackRate })
-          localStorage.setItem('exchangeRateUpdatedAt', new Date().toISOString())
-          return
-        }
+        // Keep a verified in-memory rate on transient failure; never substitute a made-up/provider rate.
+        if (!dbData) return
         const { rate, version } = dbData
         // The saved version survives reloads; the in-memory rate does not.
         // Always hydrate the current rate, even when the version is unchanged.

@@ -1,3 +1,4 @@
+import { displayMoney } from './money.ts'
 export type OrderLike = { [key: string]: any }
 export const isOrderDraft = (o: OrderLike) => o.payment_method === 'online_card' && o.status === 'Ожидает оплаты' && !o.receipt_submitted_at && !o.paid_at
 export function hasSpecialItems(o: OrderLike): boolean {
@@ -32,7 +33,7 @@ export function moneyAmount(o: OrderLike): { amount: number; currency: 'USD' | '
 }
 export function formatMoney(amount: unknown, currency: unknown, lang = 'ru'): string {
   if (amount == null || !Number.isFinite(Number(amount)) || Number(amount) < 0 || !['USD','UZS'].includes(String(currency))) return lang === 'uz' ? 'Summa tekshirilishi kerak' : 'Сумма требует проверки'
-  return `${Number(amount).toLocaleString('ru-RU',{maximumFractionDigits:currency === 'USD' ? 2 : 0})} ${currency === 'USD' ? '$' : lang === 'uz' ? 'so‘m' : 'сум'}`
+  return displayMoney(Number(amount),currency as 'USD' | 'UZS',lang,'suffix')
 }
 export function formatOrderMoney(o: OrderLike, lang = 'ru'): string {
   const value = moneyAmount(o)

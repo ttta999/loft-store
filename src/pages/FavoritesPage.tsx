@@ -1,3 +1,4 @@
+import { catalogMoney } from '../lib/money'
 import { Link } from 'react-router-dom'
 import { useStore, isProductOnSale } from '../store/useStore'
 import { getProducts } from '../lib/supabase'
@@ -23,10 +24,7 @@ export default function FavoritesPage() {
     getProducts().then(setProducts)
   }, [])
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
   const handleBack = () => {
     window.history.back()

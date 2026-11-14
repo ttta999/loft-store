@@ -1,4 +1,6 @@
-import { deliveryQuote, formatUsd } from '../lib/delivery'
+import { usePreferences } from '../lib/preferences'
+import { catalogMoney, displayMoney, allocateUzs } from '../lib/money'
+import { deliveryQuote } from '../lib/delivery'
 import { specialCheckoutError } from '../lib/specialCheckout'
 import { useScrollLock } from '../lib/useScrollLock'
 import { AnimatePresence } from 'framer-motion'
@@ -92,10 +94,7 @@ export default function CartPage() {
     } finally { setPreparingCheckout(false) }
   }
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return formatUsd(usd)
-    return `${Math.round(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
   const productsUsd = getTotalPrice()
 
@@ -257,6 +256,16 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('+998')
   const [address, setAddress] = useState('')
+  const preferences=usePreferences()
+  const [saveDetails,setSaveDetails]=useState(false)
+  const methodTouched=useRef(false)
+  useEffect(()=>{
+    if(!preferences.data)return
+    const p=preferences.data
+    setName(value=>value||p.name);setPhone(value=>value==='+998'?p.phone||value:value)
+    if(!methodTouched.current)setDeliveryMethod(p.delivery_method)
+    setAddress(value=>value||p.addresses.find(a=>a.is_default)?.address||'')
+  },[preferences.data])
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -315,7 +324,9 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
   const deliveryCostUsd = quote.deliveryUsd
   const finalUsd = serverTotalUsd ?? quote.totalUsd
   const finalUzs = serverTotalUzs ?? quote.totalUzs
-  const formattedTotal = currency === 'UZS' ? `${finalUzs.toLocaleString()} сум` : formatUsd(finalUsd)
+  const lineUzs = exchangeRate > 0 ? allocateUzs([...cart.map(item => item.priceUsd * item.quantity), deliveryCostUsd], exchangeRate) : [...cart.map(() => NaN), NaN]
+  const productUzs = lineUzs.slice(0,-1).reduce((a,b)=>a+b,0)
+  const formattedTotal = displayMoney(currency === 'UZS' ? finalUzs : finalUsd, currency, language)
 
   const orderCurrency: 'UZS' | 'USD' = currency === 'USD' ? 'USD' : 'UZS'
   const [paymentCards, setPaymentCards] = useState<PaymentCards | null>(null)
@@ -323,6 +334,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
 
   const handleDeliveryChange = (method: 'pickup' | 'delivery') => {
+    methodTouched.current=true
     setDeliveryMethod(method)
     if (method === 'delivery') setPaymentMethod('online_card')
     setShowPaymentNote(false)
@@ -357,6 +369,12 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
 
   // The backend determines ownership, prices, payment state and inventory.
   const createOrderInDb = async (): Promise<any> => {
+    if(saveDetails&&preferences.data){
+      const old=preferences.data
+      const addresses=[...old.addresses]
+      if(deliveryMethod==='delivery'&&!addresses.some(a=>a.address===address.trim())&&addresses.length<10)addresses.push({id:crypto.randomUUID(),label:language==='ru'?'Адрес доставки':'Yetkazib berish manzili',address:address.trim(),comment:'',is_default:addresses.length===0})
+      try{await preferences.save({name:name.trim(),phone,delivery_method:deliveryMethod,addresses})}catch{toast.error(language==='ru'?'Не удалось сохранить личные данные. Заказ оформляется с введёнными данными.':'Shaxsiy ma’lumotlar saqlanmadi. Buyurtma kiritilgan ma’lumotlar bilan rasmiylashtiriladi.')}
+    }
     const totalInSums = finalUzs
     const itemsWithPrices = cart.map(item => ({ ...item, priceUzs: Math.round(item.priceUsd * exchangeRate) }))
     const orderData = {
@@ -481,7 +499,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           {/* ✅ Товары заказа: строки с фото (стиль корзины) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 overflow-hidden">
             <div className="divide-y divide-[#E8E2D5] dark:divide-dark-border">
-              {cart.map((item: any) => (
+              {cart.map((item: any, index: number) => (
                 <div key={`${item.productId}-${item.size}-${item.colorId || 'no-color'}`} className="p-3.5 flex items-center gap-3">
                   <img src={item.image || undefined} alt={item.name} className="w-12 h-12 object-cover rounded-xl border border-[#E8E2D5] dark:border-dark-border flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -498,7 +516,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                       {item.quantity} {language === 'ru' ? 'шт.' : 'donа'}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">{formatPrice(item.priceUsd * item.quantity)}</p>
+                  <p className="text-sm font-bold text-[#1B2A4A] dark:text-white whitespace-nowrap">{currency === 'UZS' ? displayMoney(lineUzs[index], currency, language) : formatPrice(item.priceUsd * item.quantity)}</p>
                 </div>
               ))}
             </div>
@@ -770,6 +788,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
               <div className="w-9 h-9 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0"><MapPin size={16} className="text-[#1B2A4A] dark:text-white" /></div>
               <div className="flex-1 min-w-0">
                 <label className="text-xs text-[#8A8275] dark:text-gray-300 block mb-1">{language === 'ru' ? 'Адрес доставки' : 'Yetkazib berish manzili'}</label>
+                {preferences.data?.addresses.length ? <select aria-label={language==='ru'?'Сохранённый адрес':'Saqlangan manzil'} className="w-full mb-2 p-3 text-base bg-[#F5F1E8] dark:bg-dark-accent rounded-xl border border-[#E8E2D5] dark:border-dark-border" value={preferences.data.addresses.find(a=>a.address===address)?.id||''} onChange={e=>{const saved=preferences.data?.addresses.find(a=>a.id===e.target.value);setAddress(saved?.address||'')}}><option value="">{language==='ru'?'Новый адрес':'Yangi manzil'}</option>{preferences.data.addresses.map(a=><option key={a.id} value={a.id}>{a.label}: {a.address}</option>)}</select> : null}
                 <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={language === 'ru' ? 'Улица, дом, квартира' : 'Ko\'cha, uy, kvartira'} rows={2} className="w-full p-2 border border-[#E8E2D5] dark:border-dark-border rounded-xl focus:outline-none focus:border-[#1B2A4A] dark:focus:border-gold bg-[#F5F1E8] dark:bg-dark-accent text-base text-[#1B2A4A] dark:text-white placeholder:text-[#8A8275] dark:placeholder:text-gray-500" />
                 <p className="text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language === 'ru' ? 'Пример: ул. Навои, дом 15, квартира 23' : 'Misol: Navoiy ko\'chasi, 15-uy, 23-kvartira'}</p>
               </div>
@@ -817,7 +836,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           <div className="px-4 py-3 border-t border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8]/60 dark:bg-dark-accent/40 space-y-1.5">
             <div className="flex justify-between items-center gap-2">
               <span className="text-xs text-[#8A8275] dark:text-gray-300">{language === 'ru' ? 'Товары' : 'Mahsulotlar'}</span>
-              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(productsUsd)}</span>
+              <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{currency === 'UZS' ? displayMoney(productUzs, currency, language) : formatPrice(productsUsd)}</span>
             </div>
 
             {/* ✅ Строка «Доставка»: цена или «Бесплатно» (порог из настроек админки) */}
@@ -826,7 +845,7 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
                 {isFreeDelivery || deliveryPriceUsd === 0 ? (
                   <span className="text-sm font-bold text-green-700 dark:text-green-400">{language === 'ru' ? 'Бесплатно' : 'Bepul'}</span>
                 ) : (
-                  <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{formatPrice(deliveryCostUsd)}</span>
+                  <span className="text-sm font-medium text-[#1B2A4A] dark:text-white">{currency === 'UZS' ? displayMoney(lineUzs[lineUzs.length-1], currency, language) : formatPrice(deliveryCostUsd)}</span>
                 )}
               </div></Collapse>
 
@@ -837,7 +856,8 @@ function CheckoutModal({ onClose, formatPrice, getTotalPrice, language, delivery
           </div>
         </div>
 
-        <button onClick={handleSubmit} disabled={submitting} className={`w-full py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${submitting ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed' : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'}`}>
+        <label className="flex items-center gap-3 mb-4 text-sm text-[#1B2A4A] dark:text-white"><input type="checkbox" checked={saveDetails} disabled={!preferences.data} onChange={e=>setSaveDetails(e.target.checked)}/>{language==='ru'?'Сохранить контакты и адрес для следующих покупок':'Keyingi xaridlar uchun kontakt va manzilni saqlash'}</label>
+          <button onClick={handleSubmit} disabled={submitting} className={`w-full py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${submitting ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed' : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'}`}>
           {submitting ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...') : paymentMethod === 'online_card' ? (language === 'ru' ? 'Перейти к оплате' : 'To\'lovga o\'tish') : (language === 'ru' ? 'Подтвердить заказ' : 'Buyurtmani tasdiqlash')}
         </button>
       </div>

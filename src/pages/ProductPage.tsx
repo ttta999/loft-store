@@ -1,3 +1,8 @@
+import { RestockControl, useProductVariants } from '../components/RestockControl'
+import { shareConfig, shareProduct } from '../lib/sharing'
+import ProductRecommendations from '../components/ProductRecommendations'
+import ProductSizeChart from '../components/ProductSizeChart'
+import { catalogMoney } from '../lib/money'
 import { useScrollLock } from '../lib/useScrollLock'
 import { motionEase, motionTiming } from '../lib/motion'
 import ProductPhotoViewer from '../components/ProductPhotoViewer'
@@ -23,6 +28,8 @@ import { sortSizeStrings } from '../lib/sortSizes'
 
 export default function ProductPage() {
   const { id } = useParams()
+  const knownVariants=useProductVariants(id)
+  const launchSelection=useRef('')
   const reduced = useReducedMotion()
   const adding = useRef(false)
   const cartFeedbackStarted = useRef(false)
@@ -100,6 +107,15 @@ export default function ProductPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor?.id, id])
 
+  useEffect(()=>{
+    const variantId=new URLSearchParams(location.search).get('variant'),key=`${id}:${variantId}`
+    if(!variantId||launchSelection.current===key)return
+    const v=knownVariants.find(v=>v.id===variantId&&v.available)
+    if(!v)return
+    if(v.color_id&&selectedColor?.id!==v.color_id){const color=colors.find(c=>c.id===v.color_id);if(color)setSelectedColor(color);return}
+    if(!sizesLoading&&sizes.includes(v.size_value)){setSelectedSize(v.size_value);launchSelection.current=key}
+  },[knownVariants,colors,sizes,sizesLoading,selectedColor?.id,id])
+
   const loadProduct = async () => {
     const cached = getCachedProduct(id)
 
@@ -160,6 +176,8 @@ export default function ProductPage() {
     else navigate('/', { replace: true })
   }
 
+  const chosenVariant = knownVariants.find(v=>v.color_id===(selectedColor?.id||null)&&v.size_value===(product?.size_type==='one_size'?'One Size':selectedSize))
+  const allSizes=sortSizeStrings([...new Set([...sizes,...knownVariants.filter(v=>v.color_id===(selectedColor?.id||null)).map(v=>v.size_value)])])
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
@@ -260,28 +278,10 @@ export default function ProductPage() {
     }
   }
 
+  useEffect(()=>{void shareConfig().catch(()=>{})},[])
   const handleShare = async () => {
-    if (!product) return
-    const shareUrl = window.location.href
-    const shareTitle = language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')
-    const shareText = `${shareTitle} — ${formatPrice(effectivePrice)}`
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
-      } catch (err) {
-        console.log('Поделиться отменено:', err)
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl)
-        toast.success(
-          language === 'ru' ? 'Ссылка скопирована!' : 'Havola nusxalandi!',
-          { duration: 2000 }
-        )
-      } catch (err) {
-        console.error('Ошибка копирования:', err)
-      }
-    }
+    if(!product)return
+    try{const result=await shareProduct(product,language==='ru'?product.name_ru:product.name_uz||product.name_ru,formatPrice(effectivePrice),currency,language);if(result==='copied')toast.success(language==='ru'?'Ссылка скопирована!':'Havola nusxalandi!')}catch{toast.error(language==='ru'?'Не удалось поделиться товаром':'Mahsulotni ulashib bo‘lmadi')}
   }
 
   const goToPreviousImage = () => {
@@ -313,10 +313,7 @@ export default function ProductPage() {
     setFullScreenImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
   // ✅ Галерея: если выбран цвет и у него есть фото — используем их; иначе общие фото товара
   const getImages = (): string[] => {
@@ -425,6 +422,7 @@ export default function ProductPage() {
                 />
               </button>
               <button
+                aria-label={language==='ru'?'Поделиться товаром':'Mahsulotni ulashish'}
                 onClick={handleShare}
                 className="bg-white/90 dark:bg-dark-accent/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:scale-[1.02] transition-transform border border-transparent dark:border-dark-border"
               >
@@ -540,15 +538,17 @@ export default function ProductPage() {
             </div>
           )}
 
+          <ProductSizeChart key={product.id} product={product} language={language}/>
           <SizeSelector
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
+            allSizes={allSizes}
             selectedSize={selectedSize}
             onSelect={setSelectedSize}
             language={language}
           />
 
-          <button
+          {chosenVariant&&!chosenVariant.available?<RestockControl key={chosenVariant.id} variant={chosenVariant} product={product} color={language==='ru'?selectedColor?.name_ru:selectedColor?.name_uz||selectedColor?.name_ru} language={language}/>:<button
             onClick={handleAddToCart}
             disabled={sizesLoading || sizes.length === 0 || cartState === 'checking'}
             className={`w-full min-h-[60px] py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors mt-4 ${
@@ -563,7 +563,7 @@ export default function ProductPage() {
               : sizes.length === 0
                 ? (language === 'ru' ? 'Нет в наличии' : 'Mavjud emas')
                 : (language === 'ru' ? 'В корзину' : 'Savatga')}</motion.span>
-          </button>
+          </button>}
           {!sizesLoading && sizes.length === 0 && (
             <p className="text-center text-sm text-[#8A8275] dark:text-gray-400 mt-2">
               {language === 'ru'
@@ -573,6 +573,8 @@ export default function ProductPage() {
           )}
         </div>
       </div>
+
+      <ProductRecommendations key={product.id} product={product}/>
 
       <AnimatePresence onExitComplete={() => setViewerActive(false)}>{showFullScreen && (
         <ProductPhotoViewer key="photo-viewer" src={images[fullScreenImageIndex]} aspect={viewerAspect}>

@@ -43,10 +43,11 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
     const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data), headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range', ...headers } })
     if (url.pathname.endsWith('/fixture-product.svg')) return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#c9a961"/></svg>' })
     if (url.hostname === 'telegram.org') return route.fulfill({ contentType: 'application/javascript', body: '' })
-    if (['127.0.0.1'].includes(url.hostname) && ['/api/store', '/api/validateTelegram', '/api/sendNotification', '/api/getExchangeRate'].includes(url.pathname)) {
+    if (['127.0.0.1'].includes(url.hostname) && ['/api/store', '/api/publicConfig', '/api/validateTelegram', '/api/sendNotification', '/api/getExchangeRate'].includes(url.pathname)) {
       h.calls.push({ method, path: url.pathname, body })
       if (url.pathname === '/api/validateTelegram') return json({ token: 'fixture-customer-session', user: { id: 900000001, first_name: 'Тестовый покупатель' } })
       if (url.pathname === '/api/sendNotification') return json({ success: true })
+      if(url.pathname==='/api/publicConfig')return json({miniAppBase:'https://t.me/FixtureStoreBot'})
       if (url.pathname === '/api/getExchangeRate') return json({ success: true, rate: 12000, source: 'fixture' })
       if (body?.action === h.failAction) return json({ error: 'Тестовая ошибка сервера' }, 409)
       if (body?.action === 'orders') return json({ data: h.db.orders.filter(o => !o.checkout_abandoned_at && !(o.payment_method==='online_card'&&o.status==='Ожидает оплаты'&&!o.receipt_submitted_at&&!o.paid_at)).map(o => ({ ...o, refund:(h.db.refunds||[]).find(r=>r.order_id===o.id), payment_screenshot_url: o.payment_screenshot_url ? image : null })) })
@@ -63,6 +64,13 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (body?.action === 'cancelOrder') { const order = h.db.orders.find(o => String(o.id) === String(body.orderId)); if (order) { order.status = 'Отменён'; if (body.unpaidOnly) order.checkout_abandoned_at = now(); for (const r of h.db.china_requests) if (r.reserved_order_id === order.id) r.reserved_order_id = null }; return json({ success: true }) }
       if (body?.action === 'createRequest') { const data = { ...body.request, id: 3002, user_id: '900000001', status: 'На оценке', created_at: now() }; h.db.china_requests.push(data); return json({ data }) }
       if (body?.action === 'cancelRequest') { const item = h.db.china_requests.find(o => String(o.id) === String(body.requestId)); if (item) item.status = 'Отменён'; return json({ success: true }) }
+      if(body?.action==='prepareShare')return json({id:'fixture-prepared-message',url:'https://t.me/FixtureStoreBot?startapp=fixture'})
+      if(body?.action==='restocks')return json({data:h.db.restocks||[]})
+      if(body?.action==='subscribeRestock'){const v=h.db.product_variants.find(v=>v.id===body.variantId);if(!v||v.stock>0)return json({error:'Вариант недоступен для подписки'},409);if(!h.db.restocks)h.db.restocks=[];if(!h.db.restocks.some(s=>s.variant_id===v.id))h.db.restocks.push({id:crypto.randomUUID(),variant_id:v.id,product_id:v.product_id,size:v.size_value,name_ru:h.db.products.find(p=>p.id===v.product_id)?.name_ru});return json({data:h.db.restocks})}
+      if(body?.action==='cancelRestock'){h.db.restocks=(h.db.restocks||[]).filter(s=>s.id!==body.id);return json({data:h.db.restocks})}
+      if(body?.action==='marketingConsent'){const old=h.db.preferences?.[0]||{name:'',phone:'',addresses:[],sizes:[],version:0};const data={...old,marketing_enabled:body.enabled,version:old.version+1};h.db.preferences=[data];return json({data})}
+      if(body?.action==='preferences')return json({data:h.db.preferences?.[0]||{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0}})
+      if(body?.action==='savePreferences'){const old=h.db.preferences?.[0]||{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0};if(old.version!==body.version)return json({error:'Данные изменились'},409);const data={...old,...body.patch,version:old.version+1};h.db.preferences=[data];return json({data})}
       if (body?.action === 'upload') {
         const path = `private:${body.bucket}/900000001/${body.orderId ? body.orderId + '/' : ''}fixture.png`
         const order = h.db.orders.find(o => String(o.id) === String(body.orderId))
@@ -82,6 +90,23 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if (url.pathname.includes('/storage/')) return json({ signedURL: '/fixture-product.svg' })
       if (url.pathname.includes('/rest/v1/rpc/')) {
         const rpc = url.pathname.split('/').pop()
+        if(rpc==='store_admin_order_history')return json((h.db.order_events||[]).filter(e=>e.order_id===body.p_id))
+        if(rpc==='store_admin_campaign_tests')return json((h.db.campaign_tests||[]).filter(t=>t.campaign_id===body.p_id))
+        if(rpc==='store_admin_campaign_audience')return json({matched:2,available:1,version:h.db.campaigns?.find(c=>c.id===body.p_id)?.version||1})
+        if(rpc==='store_admin_campaign_action'){
+          if(!h.db.campaigns)h.db.campaigns=[]
+          let c=h.db.campaigns.find(c=>c.id===body.p_id)
+          if(body.p_action==='save'){if(c){Object.assign(c,body.p_value,{version:c.version+1})}else{c={...body.p_value,id:crypto.randomUUID(),version:1,status:'draft',created_at:now(),recipient_count:0,sent_count:0,failed_count:0,skipped_count:0,uncertain_count:0};h.db.campaigns.push(c)}}
+          if(body.p_action==='copy'&&c){c={...c,id:crypto.randomUUID(),name:c.name+' — копия',status:'draft',version:1,recipient_count:0,sent_count:0,failed_count:0,skipped_count:0,uncertain_count:0};h.db.campaigns.push(c)}
+          if(body.p_action==='test'){if(!h.db.campaign_tests)h.db.campaign_tests=[];const t={id:crypto.randomUUID(),campaign_id:c.id,status:'sent',created_at:now(),sent_at:now()};h.db.campaign_tests.push(t);return json(t)}
+          if(body.p_action==='start'||body.p_action==='schedule')Object.assign(c,{status:body.p_action==='start'?'sending':'scheduled',recipient_count:2,version:c.version+1,scheduled_at:body.p_when?new Date(body.p_when+'+05:00').toISOString():null})
+          if(body.p_action==='cancel')Object.assign(c,{status:'cancelled',version:c.version+1})
+          return json(c)
+        }
+        if(rpc==='store_admin_tasks'){const review=h.db.orders.filter(o=>!o.checkout_abandoned_at&&o.receipt_submitted_at&&o.payment_status==='pending'&&o.status!=='Отменён');return json({counts:{payment_review:review.length,special_assessment:h.db.china_requests.filter(r=>r.status==='На оценке').length,supplier_purchase:h.db.orders.filter(o=>o.special_fulfillment&&o.status==='Принят'&&o.paid_at).length,assembly:h.db.orders.filter(o=>!o.special_fulfillment&&['Активный','В обработке'].includes(o.status)).length,refund:(h.db.refunds||[]).filter(r=>['Проверка платежа','Ожидает возврата'].includes(r.status)).length},tasks:[],timezone:'Asia/Tashkent'})}
+        if(rpc==='store_admin_reminder_settings'){if(!h.db.reminders)h.db.reminders=[{version:1,value:{timezone:'Asia/Tashkent',work_start:'10:00',work_end:'20:00',repeat_hours:24,rules:Object.fromEntries(['payment_review','special_assessment','supplier_purchase','assembly','pickup_ready','refund'].map(key=>[key,{hours:key==='payment_review'?2:key==='pickup_ready'?72:24,enabled:false,telegram:false}]))}}];if(body?.p_value)h.db.reminders[0]={value:body.p_value,version:h.db.reminders[0].version+1};return json(h.db.reminders[0])}
+        if(rpc==='store_catalog_variants')return json(h.db.product_variants.map(v=>({id:v.id,product_id:v.product_id,size_value:v.size_value,color_id:v.color_id,available:v.stock>0})))
+        if(rpc==='store_admin_size_chart'){if(!h.db.size_charts)h.db.size_charts=[];let c=h.db.size_charts.find(c=>c.id===body.p_id);if(body.p_value){if(c)Object.assign(c,body.p_value);else{c={...body.p_value,id:'99999999-9999-4999-8999-999999999999',is_active:true};h.db.size_charts.push(c)}}else if(c)c.is_active=false;return json(c?.id)}
         if (rpc === 'store_admin_refunds') return json((h.db.refunds||[]).filter(r=>!body.p_before||r.id<body.p_before).sort((a,b)=>b.id-a.id).slice(0,100).map(r=>({...r,orders:h.db.orders.find(o=>o.id===r.order_id)})))
         if (rpc === 'store_admin_refund_action') {
           const r=(h.db.refunds||[]).find(r=>r.id===body.p_id);if(!r)return json({message:'Возврат недоступен'},400)
@@ -112,7 +137,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
         if (rpc === 'store_available_sizes') return json(h.db.product_variants.filter(v => v.product_id === body.p_product && (v.color_id || null) === (body.p_color || null) && v.stock > 0).map(v => ({ size_value: v.size_value, color_id: v.color_id })))
         if (rpc === 'store_product_available') return json(h.db.product_variants.some(v => v.product_id === body.p_product && v.size_value === body.p_size && (v.color_id || null) === (body.p_color || null) && v.stock >= body.p_quantity))
         if (rpc === 'store_admin_variants') return json(h.db.product_variants.slice(Number(url.searchParams.get('offset') || 0), Number(url.searchParams.get('offset') || 0) + Number(url.searchParams.get('limit') || 200)))
-        if (rpc === 'store_admin_save_product') {
+        if (rpc === 'store_admin_save_product' || rpc === 'store_admin_save_product_recommendations') {
           let product = h.db.products.find(p => p.id === body.p_id)
           if (!product) { product = { id: crypto.randomUUID(), is_active: true, created_at: now(), catalog_version: 0 }; h.db.products.push(product) }
           Object.assign(product, body.p_product, { catalog_version: (product.catalog_version || 0) + 1 })
@@ -128,6 +153,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
             if (!saved) { saved = { id: crypto.randomUUID(), product_id: product.id }; h.db.product_variants.push(saved) }
             Object.assign(saved, variant, { color_id })
           }
+          if(body.p_recommendations){h.db.product_recommendations=(h.db.product_recommendations||[]).filter(r=>r.product_id!==product.id);for(const kind of ['similar','outfit'])body.p_recommendations[kind].forEach((target_id:string,position:number)=>h.db.product_recommendations.push({product_id:product.id,target_id,kind,position}))}
           return json(product.id)
         }
         if (rpc === 'store_admin_product_visibility') { const p = h.db.products.find(p => p.id === body.p_id); if (p) p.is_active = body.p_active; return json(!!p) }

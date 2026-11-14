@@ -45,5 +45,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/campaignWorker.ts": {
+      "maxDuration": 60
+    }
+  }
 }

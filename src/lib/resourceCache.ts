@@ -19,6 +19,7 @@ export class ResourceCache {
     while (this.entries.size > this.maxEntries) this.entries.delete(this.entries.keys().next().value!)
   }
   async load<T>(key: string, loader: () => Promise<T>, ttl = 300_000, force = false): Promise<T> {
+    if (force && this.pending.has(key)) return this.pending.get(key) as Promise<T>
     if (force) this.invalidate(key)
     const cached = this.get<T>(key)
     if (cached !== null) return cached

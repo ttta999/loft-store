@@ -9,6 +9,7 @@ type SizeType = 'numeric' | 'alphabetical' | 'one_size'
 interface SizeSelectorProps {
   sizeType: SizeType
   availableSizes: string[]
+  allSizes?: string[]
   selectedSize: string | null
   onSelect: (size: string) => void
   language?: 'ru' | 'uz'
@@ -27,6 +28,7 @@ const getSizesLabelRu = (count: number): string => {
 export default function SizeSelector({
   sizeType,
   availableSizes,
+  allSizes=availableSizes,
   selectedSize,
   onSelect,
   language = 'ru'
@@ -142,7 +144,7 @@ export default function SizeSelector({
             {/* ✅ Карточка со строками размеров (как карточка «Телефон/Получение/Оплата») */}
             <div className="flex-1 overflow-y-auto px-4 pb-6">
               <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
-                {availableSizes.map((size) => {
+                {allSizes.map((size) => {
                   const isSelected = selectedSize === size
                   return (
                     <button
@@ -172,7 +174,7 @@ export default function SizeSelector({
                           ? 'font-bold text-[#1B2A4A] dark:text-white'
                           : 'font-medium text-[#1B2A4A] dark:text-white'
                       }`}>
-                        {size}
+                        {size}{!availableSizes.includes(size)&&<span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии — можно подписаться':'Mavjud emas — obuna bo‘lish mumkin'}</span>}
                       </span>
 
                       {isSelected && (

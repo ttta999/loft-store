@@ -14,8 +14,8 @@ test('compiled Vercel ESM handlers resolve server imports and start successfully
     assert.equal(config.compilerOptions.rewriteRelativeImportExtensions,true)
     await writeFile(join(root,'package.json'),'{"type":"module"}')
     await symlink(join(repo,'node_modules'),join(root,'node_modules'),'dir')
-    for(const dir of ['api','server']) {
-      await mkdir(join(root,dir))
+    for(const dir of ['api','server','src/lib']) {
+      await mkdir(join(root,dir),{recursive:true})
       for(const name of await readdir(join(repo,dir))) {
         if(!name.endsWith('.ts')) continue
         const source=await readFile(join(repo,dir,name),'utf8')

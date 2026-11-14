@@ -1,3 +1,7 @@
+import MarketingConsent from '../components/MarketingConsent'
+import { RestockSubscriptions } from '../components/RestockControl'
+import CustomerPreferences from '../components/CustomerPreferences'
+import { catalogMoney, displayMoney } from '../lib/money'
 import { orderStatus, canClientCancel, formatOrderMoney, formatMoney } from '../lib/orderState'
 import RefundSummary from '../components/RefundSummary'
 import { specialOrderIds, specialStatusTone } from '../lib/specialOrders'
@@ -729,7 +733,7 @@ function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCance
                 {language === 'ru' ? 'Итого:' : 'Jami:'}
               </span>
               <span className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-                {priceInSums.toLocaleString()} сум
+                {displayMoney(priceInSums, 'UZS', language)}
               </span>
             </div>
             {request.manager_comment && (
@@ -898,7 +902,7 @@ export default function ProfilePage() {
     setTheme,
   } = useStore()
 
-  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | 'settings' | null
+  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | 'settings' | 'personal' | 'sizes' | 'restocks' | null
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
@@ -960,12 +964,9 @@ export default function ProfilePage() {
     return 'товаров'
   }
 
-  const formatPrice = (usd: number) => {
-    if (currency === 'USD') return `$${usd}`
-    return `${(usd * exchangeRate).toLocaleString()} сум`
-  }
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
-  const openSection = (name: 'favorites' | 'orders' | 'china' | 'settings') => navigate(`/profile?section=${name}`)
+  const openSection = (name: 'favorites' | 'orders' | 'china' | 'settings' | 'personal' | 'sizes' | 'restocks') => navigate(`/profile?section=${name}`)
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
@@ -1119,6 +1120,9 @@ export default function ProfilePage() {
     ? chinaRequests.find((r) => String(r.id) === String(requestIdParam))
     : null
 
+  if (section === 'restocks') return <RestockSubscriptions language={language}/>
+  if (section === 'personal' || section === 'sizes') return <CustomerPreferences key={section} section={section}/>
+
   // ✅ ГЛАВНАЯ ПРОФИЛЯ — шапка + 4 квадрата + магазин + соцсети
   if (!section || section === 'main') {
     return (
@@ -1189,6 +1193,12 @@ export default function ProfilePage() {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <MenuTile icon={<User size={18}/>} title={language === 'ru' ? 'Личные данные' : 'Shaxsiy ma’lumotlar'} subtitle={language === 'ru' ? 'Контакты и адреса' : 'Kontaktlar va manzillar'} transitionKey="personal" onClick={()=>openSection('personal')}/>
+            <MenuTile icon={<Ruler size={18}/>} title={language === 'ru' ? 'Мои размеры' : 'Mening o‘lchamlarim'} subtitle={language === 'ru' ? 'Одежда и обувь' : 'Kiyim va poyabzal'} transitionKey="sizes" onClick={()=>openSection('sizes')}/>
+          </div>
+
+          <div className="mb-3"><MenuTile icon={<Package size={18}/>} title={language==='ru'?'Уведомления о поступлении':'Kelishi haqida xabarlar'} subtitle={language==='ru'?'Мои подписки':'Mening obunalarim'} transitionKey="restocks" onClick={()=>openSection('restocks')}/></div>
           {/* ✅ Магазин: единая карточка со строками-иконками */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
             <a {...storeNavigationLink()} className="flex items-center gap-3 p-3.5">
@@ -1279,6 +1289,8 @@ export default function ProfilePage() {
             subtitle={language === 'ru' ? 'Язык, валюта, тема и документы' : 'Til, valyuta, mavzu va hujjatlar'}
             icon={<Settings size={18} className="text-[#1B2A4A] dark:text-white" />}
           />
+
+          <MarketingConsent language={language}/>
 
           {/* ✅ Предпочтения: единая карточка со строками и переключателями */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">
@@ -1688,7 +1700,7 @@ export default function ProfilePage() {
                         </span>
                         {priceInSums > 0 ? (
                           <span className="text-base font-bold text-[#1B2A4A] dark:text-white">
-                            {priceInSums.toLocaleString()} сум
+                            {displayMoney(priceInSums, 'UZS', language)}
                           </span>
                         ) : (
                           <span className="text-xs text-[#8A8275] dark:text-gray-300">

@@ -27,16 +27,18 @@ test('reload applies the current rate despite a saved version; checkout refreshe
       export const fetchProductPopularity=async()=>({});
       export const getCategoriesTree=async()=>[];
     `)
+    await writeFile(join(root,'pricing.ts'),await readFile(join(repo,'src/lib/pricing.ts'),'utf8'))
+    await writeFile(join(root,'money.ts'),await readFile(join(repo,'src/lib/money.ts'),'utf8'))
     await writeFile(join(root,'delivery.js'),ts.transpileModule(await readFile(join(repo,'src/lib/delivery.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
     await writeFile(join(root,'specialCheckout.js'),ts.transpileModule(await readFile(join(repo,'src/lib/specialCheckout.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}}).outputText)
-    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'").replace("from '../lib/api'","from './supabase.js'").replace("from '../lib/specialCheckout'","from './specialCheckout.js'")
+    const source=(await readFile(join(repo,'src/store/useStore.ts'),'utf8')).replaceAll("from '../lib/pricing'","from './pricing.ts'").replace("from '../lib/supabase'","from './supabase.js'").replace("from '../lib/delivery'","from './delivery.js'").replace("from '../lib/api'","from './supabase.js'").replace("from '../lib/specialCheckout'","from './specialCheckout.js'")
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2023}})
     await writeFile(join(root,'store.js'),compiled.outputText)
     const {useStore}=await import(pathToFileURL(join(root,'store.js')).href)
-    assert.equal(useStore.getState().exchangeRate,12100)
+    assert.equal(useStore.getState().exchangeRate,0)
     await useStore.getState().updateExchangeRate()
     assert.equal(useStore.getState().exchangeRate,11843.74)
-    // Repeat an actual app restart: the version survives, the state starts at 12100.
+    // Repeat an actual app restart: the version survives, the state starts without an invented rate.
     useStore.setState({exchangeRate:12100,cart:[{productId:'product-210',name:'Product',priceUsd:200,size:'42',quantity:1,image:''}]})
     const delivery=await useStore.getState().refreshCheckout()
     assert.equal(useStore.getState().exchangeRate,11843.74)

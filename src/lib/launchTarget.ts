@@ -1,0 +1,5 @@
+export function productParameter(id:string,variant?:string){const bytes=new TextEncoder().encode(JSON.stringify({type:'product',id,...(variant?{variant}:{})}));return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+export function decodeLaunch(value:string):{type:string;id?:string;variant?:string}|null{
+ if(!/^[a-zA-Z0-9_-]{1,512}$/.test(value))return null
+ try{const raw=atob(value.replace(/-/g,'+').replace(/_/g,'/')),target=JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));if(!['product','brand','category','new','sale','home'].includes(target.type))return null;if(['product','brand'].includes(target.type)&&!/^[a-f0-9-]{36}$/i.test(target.id||''))return null;if(target.type==='category'&&(typeof target.id!=='string'||target.id.length>100||!target.id.length))return null;if(target.variant&&!/^[a-f0-9-]{36}$/i.test(target.variant))return null;return {type:target.type,id:target.id,variant:target.variant}}catch{return null}
+}

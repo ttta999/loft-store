@@ -1,3 +1,4 @@
+import LaunchTarget from './components/LaunchTarget'
 import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
 import AnimatedRoutes from './components/AnimatedRoutes'
 import AppToaster from './components/AppToaster'
@@ -154,6 +155,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeManager />
+      <LaunchTarget />
       <AppToaster />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}

@@ -58,9 +58,9 @@ test('оценка $100 в админке и приложении пересчи
   await expect(page.getByText(/1 210 000/)).toHaveCount(0)
   const client = await context.newPage()
   await client.goto(STORE + '/profile?section=china')
-  await expect(client.getByText('1,191,062 сум', { exact: true })).toBeVisible()
+  await expect(client.getByText('1 191 062 сум', { exact: true })).toBeVisible()
   await client.locator('[data-profile-link="request:3001"]').click()
-  await expect(client.locator('.loft-detail').getByText('1,191,062 сум', { exact: true })).toBeVisible()
+  await expect(client.locator('.loft-detail').getByText('1 191 062 сум', { exact: true })).toBeVisible()
 })
 
 

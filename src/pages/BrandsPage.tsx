@@ -1,3 +1,5 @@
+import { useSizeFilter } from '../components/SizeFilter'
+import { catalogMoney } from '../lib/money'
 import { ChevronDown } from 'lucide-react'
 import Collapse from '../components/Collapse'
 import { usePageState } from '../lib/usePageState'
@@ -31,7 +33,7 @@ interface Brand {
 function BrandProductCard({product,placement}:{product:any;placement:string}) {
   const navigate=useNavigate()
   const {language,currency,exchangeRate,saleModeEnabled,addToFavorites,removeFromFavorites,isFavorite}=useStore()
-  const formatPrice=(usd:number)=>currency==='USD'?`$${usd}`:`${(usd*exchangeRate).toLocaleString()} сум`
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
     const onSale = isProductOnSale(product, saleModeEnabled)
     const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
     const discountPercent = onSale
@@ -106,6 +108,7 @@ function BrandProductCard({product,placement}:{product:any;placement:string}) {
 }
 
 export default function BrandsPage() {
+  const sizeFilter = useSizeFilter()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const brandParam = searchParams.get('brand')
@@ -197,6 +200,7 @@ export default function BrandsPage() {
   }
 
   const clearFilters = () => {
+    sizeFilter.clear()
     setSelectedCategory('')
     setMinPrice(0)
     setMaxPrice(100000000)
@@ -230,7 +234,7 @@ export default function BrandsPage() {
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         break
     }
-    return filtered
+    return filtered.filter(p=>sizeFilter.matches(p))
   }
 
   const filteredProducts = getFilteredAndSortedProducts()
@@ -509,7 +513,7 @@ export default function BrandsPage() {
                       </button>
                     </div>
                   </div>
-                </div></Collapse>
+                {sizeFilter.control}</div></Collapse>
             </div>
 
             {loading ? (

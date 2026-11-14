@@ -1,3 +1,4 @@
+import { catalogMoney } from '../lib/money'
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
@@ -7,7 +8,7 @@ import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useSto
 const ProductCard = memo(function ProductCard({ product, placement }: { product: any; placement: string }) {
   const navigate = useNavigate()
   const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites } = useStore(useShallow(state => ({ language: state.language, currency: state.currency, exchangeRate: state.exchangeRate, saleModeEnabled: state.saleModeEnabled, addToFavorites: state.addToFavorites, removeFromFavorites: state.removeFromFavorites })))
-  const formatPrice = (usd: number) => currency === 'USD' ? `$${usd}` : `${(usd * exchangeRate).toLocaleString()} сум`
+  const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
