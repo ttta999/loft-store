@@ -1,3 +1,5 @@
+import {formatLocalDateTime} from '../lib/dateTime'
+import {useLocalTimeZone} from '../lib/useLocalTimeZone'
 import {Bell} from 'lucide-react'
 import SavedSizes from '../components/SavedSizes'
 import MarketingConsent from '../components/MarketingConsent'
@@ -127,6 +129,7 @@ function MenuTile({ icon, title, subtitle, onClick, transitionKey }: {
 }
 
 function OrderDetailModal({ order, onClose, language, onCancelOrder, onScreenshotUploaded }: any) {
+  useLocalTimeZone()
   useScrollLock(true)
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
@@ -153,7 +156,7 @@ function OrderDetailModal({ order, onClose, language, onCancelOrder, onScreensho
   const formatItemPrice = (item: any) => formatMoney(orderCurrency === 'USD' ? item.priceUsd : item.priceUzs ?? (Number(order.exchange_rate_at_order)>0 && item.priceUsd!=null ? Math.round(item.priceUsd*order.exchange_rate_at_order) : null),orderCurrency)
 
   const formatDateTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleString('ru-RU', {
+    formatLocalDateTime(dateStr,language, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -557,12 +560,13 @@ function ScreenshotViewer({ url, language, onClose }: { url: string; language: s
 // ✅ ДЕТАЛИ СПЕЦЗАКАЗА — дизайн как у обычного заказа, название и ссылка раздельно
 // ✅ + кнопка отмены для статусов «На оценке» и «Оценён»
 function ChinaRequestDetailModal({ request, onClose, language, onAccept, onCancel, exchangeRate }: any) {
+  useLocalTimeZone()
   const navigate = useNavigate()
   useScrollLock(true)
   const [cancelling, setCancelling] = useState(false)
 
   const formatDateTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleString('ru-RU', {
+    formatLocalDateTime(dateStr,language, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -886,6 +890,7 @@ interface OutletContextType {
 }
 
 export default function ProfilePage() {
+  useLocalTimeZone()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const telegramUser = useStore((state) => state.telegramUser)
@@ -975,7 +980,7 @@ export default function ProfilePage() {
   const formatOrderPrice = (order: any) => formatOrderMoney(order,language)
 
   const formatDateTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleString('ru-RU', {
+    formatLocalDateTime(dateStr,language, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

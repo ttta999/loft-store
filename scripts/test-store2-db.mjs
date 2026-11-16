@@ -11,8 +11,9 @@ const pg=new PGlite()
 const file=async path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 try{
  await pg.exec(await file('tests/sql/store2-baseline.sql'))
- for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql']){
+ for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql']){
   if(migration.includes('history_and_tasks'))await pg.exec(`insert into public.orders(id,user_id,status,delivery_method,created_at,paid_at,receipt_submitted_at) values(9999,'123456','Готов','pickup',now()-interval '30 days',now()-interval '29 days',now()-interval '29 days')`)
+  if(migration.includes('local_device_time')){await pg.exec(`insert into auth.users(id) values('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');insert into public.campaigns(name,title,message,button_label,target_type,audience_type,status,scheduled_at,created_by) values('Existing scheduled','Saved','Saved','Open','home','all','scheduled','2099-01-15T15:00:00Z','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')`)}
   await pg.exec(await file('supabase/migrations/'+migration));console.log('Applied locally:',migration)
  }
  const query=async(sql,args=[]) => (await pg.query(sql,args)).rows
@@ -25,6 +26,7 @@ try{
  await assert.rejects(()=>query(`select public.store_customer_preferences('123456','{"name":"Другой клиент"}',0)`),/Profile changed/)
  assert.equal((await scalar(`select public.store_customer_preferences('654321')`)).name,'')
  await assert.rejects(()=>query(`select public.store_customer_preferences('123456',$1::jsonb,$2)`,[JSON.stringify({sizes:[{category:'shoes',subcategory:'sneakers',system:'alphabetical',size:'42'}]}),profile.version]),/Invalid size/)
+ assert.equal(await scalar("select scheduled_at='2099-01-15T15:00:00Z'::timestamptz from public.campaigns where name='Existing scheduled'"),true)
  console.log('PASS: profile permissions, isolation, optimistic versions and size validation')
  await assert.rejects(()=>query(`select public.store_admin_size_chart(null,'{}')`),/permission denied|insufficient_privilege/)
  assert.equal(await scalar(`select has_column_privilege('anon','public.size_charts','updated_by','select')`),false)
@@ -80,5 +82,6 @@ try{
  const {testCampaigns}=await import('../tests/sql/store2-campaigns.mjs');await testCampaigns(pg)
  const {testReminderIntervals}=await import('../tests/sql/reminder-intervals.mjs');await testReminderIntervals(pg)
  const {testLocales}=await import('../tests/sql/locales.mjs');await testLocales(pg)
+ await (await import('../tests/sql/local-time.mjs')).testLocalTime(pg)
  console.log('ALL LOCAL DATABASE CHECKS PASSED')
 } catch(error){console.error(error.message);console.error({position:error.position,internalPosition:error.internalPosition,internalQuery:error.internalQuery});if(error.query)console.error('SQL context:',error.query.slice(0,800));process.exitCode=1}finally{await pg.close()}

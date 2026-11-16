@@ -5,7 +5,7 @@ export async function testReminderIntervals(pg){
  const times=(await pg.query(`select to_char((now() at time zone 'Asia/Tashkent')-interval '1 hour','HH24:MI') start,to_char((now() at time zone 'Asia/Tashkent')+interval '1 hour','HH24:MI') finish`)).rows[0]
  const patch=async value=>{const r=await scalar('select public.store_admin_reminder_settings($1,$2)',[JSON.stringify(value),config.version]);config=r;return r}
  await assert.rejects(()=>patch({repeat_hours:0}),/Интервал повторения/)
- await assert.rejects(()=>patch({timezone:'Invalid/Zone'}),/действительный часовой пояс/)
+ await assert.rejects(()=>patch({timezone:'Invalid/Zone'}),/по времени Узбекистана/)
  await assert.rejects(()=>patch({work_start:'10:00',work_end:'10:00'}),/не должно совпадать/)
  await assert.rejects(()=>patch({repeat_hours:1.5}),/корректное количество часов/)
  await patch({work_start:times.start,work_end:times.finish,rules:Object.fromEntries(Object.keys(config.value.rules).map(k=>[k,{hours:2,enabled:k==='payment_review',telegram:k==='payment_review'}]))})

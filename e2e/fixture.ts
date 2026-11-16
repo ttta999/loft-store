@@ -100,7 +100,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
           if(body.p_action==='save'){if(c){Object.assign(c,body.p_value,{version:c.version+1})}else{c={...body.p_value,id:crypto.randomUUID(),version:1,status:'draft',created_at:now(),recipient_count:0,sent_count:0,failed_count:0,skipped_count:0,uncertain_count:0};h.db.campaigns.push(c)}}
           if(body.p_action==='copy'&&c){c={...c,id:crypto.randomUUID(),name:c.name+' — копия',status:'draft',version:1,recipient_count:0,sent_count:0,failed_count:0,skipped_count:0,uncertain_count:0};h.db.campaigns.push(c)}
           if(body.p_action==='test'){if(!h.db.campaign_tests)h.db.campaign_tests=[];const t={id:crypto.randomUUID(),campaign_id:c.id,language:body.p_value?.test_language||c.content_language||'ru',status:'sent',created_at:now(),sent_at:now()};h.db.campaign_tests.push(t);return json(t)}
-          if(body.p_action==='start'||body.p_action==='schedule')Object.assign(c,{status:body.p_action==='start'?'sending':'scheduled',recipient_count:2,version:c.version+1,scheduled_at:body.p_when?new Date(body.p_when+'+05:00').toISOString():null})
+          if(body.p_action==='start'||body.p_action==='schedule')Object.assign(c,{status:body.p_action==='start'?'sending':'scheduled',recipient_count:2,version:c.version+1,scheduled_at:body.p_when?new Date(body.p_when.endsWith('Z')?body.p_when:body.p_when+'+05:00').toISOString():null})
           if(body.p_action==='cancel')Object.assign(c,{status:'cancelled',version:c.version+1})
           return json(c)
         }
