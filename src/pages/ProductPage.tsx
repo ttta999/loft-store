@@ -540,7 +540,6 @@ export default function ProductPage() {
             </div>
           )}
 
-          <ProductSizeChart key={product.id} product={product} language={language}/>
           <SizeSelector
             hintSize={preferences.data?.sizes.find(s=>s.category===product.category&&s.subcategory===product.subcategory&&s.system===product.size_type)?.size}
             sizeType={product.size_type || 'numeric'}
@@ -550,6 +549,8 @@ export default function ProductPage() {
             onSelect={setSelectedSize}
             language={language}
           />
+
+          <ProductSizeChart key={product.id} product={product} language={language}/>
 
           {chosenVariant&&!chosenVariant.available?<RestockControl key={chosenVariant.id} variant={chosenVariant} product={product} color={language==='ru'?selectedColor?.name_ru:selectedColor?.name_uz||selectedColor?.name_ru} language={language}/>:<button
             onClick={handleAddToCart}

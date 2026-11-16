@@ -6,10 +6,10 @@ export class ResourceCache {
   private maxEntries: number
   private now: () => number
   constructor(maxEntries = 256, now = () => Date.now()) { this.maxEntries = maxEntries; this.now = now }
-  get<T>(key: string): T | null {
+  get<T>(key: string, staleFor = 0): T | null {
     const entry = this.entries.get(key)
     if (!entry) return null
-    if (entry.expiresAt <= this.now()) { this.entries.delete(key); return null }
+    if (entry.expiresAt + Math.min(Math.max(staleFor, 0), 60_000) <= this.now()) return null
     return entry.value as T
   }
   set<T>(key: string, value: T, ttl = 300_000) {

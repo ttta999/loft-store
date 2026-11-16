@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { storeApi, peekStoreData } from '../src/lib/api.ts'
+import { storeApi, peekStoreData, peekStoreResponse } from '../src/lib/api.ts'
 import { dataCache } from '../src/lib/resourceCache.ts'
 
 test('customer history is memory-only, deduplicated, invalidated after writes and isolated across Telegram sessions', async () => {
@@ -88,4 +88,29 @@ test('history follows stable ID cursors and never caches a partially loaded hist
     await assert.rejects(storeApi('orders'), /History temporarily unavailable/)
     assert.equal(peekStoreData('orders'), null)
   } finally { globalThis.fetch = originalFetch; Object.assign(globalThis, { window: originalWindow }); dataCache.clear() }
+})
+
+
+test('preferences and restocks prefill only the verified current session and update after successful writes',async()=>{
+ const originalFetch=globalThis.fetch,originalWindow=globalThis.window
+ const telegram={WebApp:{initData:'preferences-first',initDataUnsafe:{user:{id:999}}}}
+ Object.assign(globalThis,{window:{Telegram:telegram}})
+ let identity=606,name='First',rows=[{id:'sub'}]
+ globalThis.fetch=async(input,init)=>{
+  if(input==='/api/validateTelegram')return Response.json({token:'test',user:{id:identity}})
+  const action=JSON.parse(String(init?.body)).action
+  if(action==='savePreferences')name='Updated'
+  if(action==='cancelRestock')rows=[]
+  return Response.json({data:action==='restocks'||action==='cancelRestock'?rows:{name}})
+ }
+ try{
+  await storeApi('preferences');await storeApi('restocks')
+  assert.equal(peekStoreResponse<{name:string}>('preferences')?.data.name,'First')
+  assert.deepEqual(peekStoreResponse('restocks')?.data,[{id:'sub'}])
+  await storeApi('savePreferences');assert.equal(peekStoreResponse<{name:string}>('preferences')?.data.name,'Updated')
+  await storeApi('cancelRestock');assert.deepEqual(peekStoreResponse('restocks')?.data,[])
+  identity=707;telegram.WebApp.initData='preferences-second'
+  assert.equal(peekStoreResponse('preferences'),null);assert.equal(peekStoreResponse('restocks'),null)
+  name='Second';await storeApi('preferences');assert.equal(peekStoreResponse<{name:string}>('preferences')?.data.name,'Second')
+ }finally{globalThis.fetch=originalFetch;Object.assign(globalThis,{window:originalWindow});dataCache.clear()}
 })

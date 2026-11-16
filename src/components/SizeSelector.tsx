@@ -181,11 +181,11 @@ export default function SizeSelector({
                           ? 'font-bold text-[#1B2A4A] dark:text-white'
                           : 'font-medium text-[#1B2A4A] dark:text-white'
                       }`}>
-                        <span className="inline-flex items-center gap-1">{size}{hintSize===size&&<Check size={12} className="text-[#1B2A4A] dark:text-gold"/>}</span>
-                        {hintSize===size&&<span className="block text-[10px] mt-0.5 text-[#1B2A4A] dark:text-gold">{language==='ru'?'Ваш размер':'Sizning o‘lchamingiz'}</span>}
+                        <span>{size}</span>
                         {!profile&&!availableSizes.includes(size)&&<><span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии':'Mavjud emas'}</span><span className="mt-1 inline-flex items-center gap-1 text-xs text-[#1B2A4A] dark:text-gold">{language==='ru'?'Уведомить о поступлении':'Kelganda xabar berish'}<Bell size={12}/></span></>}
                       </span>
 
+                      {hintSize===size&&<span data-size-hint className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-[#F5F1E8] text-[#1B2A4A] dark:bg-gold/15 dark:text-gold whitespace-nowrap shrink-0"><Check size={12}/>{language==='ru'?'Ваш размер':'Sizning o‘lchamingiz'}</span>}
                       {isSelected && (
                         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] whitespace-nowrap flex-shrink-0">
                           {language === 'ru' ? 'Выбран' : 'Tanlandi'}

@@ -13,4 +13,5 @@ function subscribe(listener:()=>void){
  return()=>{listeners.delete(listener);if(!listeners.size)stop?.()}
 }
 /** One shared listener/timer; no geolocation, network lookup, persisted timezone or permission. */
-export const useLocalTimeZone=()=>useSyncExternalStore(subscribe,getDeviceTimeZone,()=> 'UTC')
+const snapshot=()=>{const now=new Date();return `${getDeviceTimeZone()}|${now.getFullYear()}-${now.getMonth()}-${now.getDate()}|${now.getTimezoneOffset()}`}
+export const useLocalTimeZone=()=>useSyncExternalStore(subscribe,snapshot,()=> 'UTC|0').split('|')[0]

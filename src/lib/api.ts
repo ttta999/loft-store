@@ -53,6 +53,8 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
         dataCache.invalidate('variant-sizes:')
         dataCache.invalidate('sizes:')
       }
+      if (action === 'savePreferences') {dataCache.set(`private:${user.id}:preferences`,data,15_000);dataCache.invalidate('catalog:recommendations:')}
+      if (action === 'subscribeRestock' || action === 'cancelRestock') dataCache.set(`private:${user.id}:restocks`,data,15_000)
       if (!read) return data
       pages.push(...(data.data || []))
       if (!data.hasMore) return { data: pages }
@@ -65,9 +67,13 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
   assertCurrentSession()
   return result
 }
+export function peekStoreResponse<T = any>(action: 'orders' | 'requests' | 'preferences' | 'restocks'): {data:T} | null {
+  if (!sessionUserId || window.Telegram?.WebApp.initData !== sessionInitData) return null
+  return dataCache.get<{data:T}>(`private:${sessionUserId}:${action}`,60_000)
+}
 export function peekStoreData(action: 'orders' | 'requests'): any[] | null {
   if (!sessionUserId || window.Telegram?.WebApp.initData !== sessionInitData) return null
-  return dataCache.get<{ data: any[] }>(`private:${sessionUserId}:${action}`)?.data || null
+  return peekStoreResponse<any[]>(action)?.data || null
 }
 export function invalidateStoreData() { dataCache.invalidate('private:') }
 export async function uploadPrivateImage(bucket: 'payment-screenshots' | 'china-requests', file: File, orderId?: string) {
