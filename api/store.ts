@@ -69,6 +69,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if(error)throw new HttpError(409,'Не удалось изменить подписку. Проверьте наличие варианта товара.')
         return res.json({data})
       }
+      case 'completeOnboarding': {
+        await limit(userId,'onboarding',20)
+        const {data,error}=await db.rpc('store_complete_onboarding',{p_user:userId});if(error)throw new HttpError(400,'Сначала выберите язык / Avval tilni tanlang')
+        return res.json({data})
+      }
       case 'language': {
         if(!['ru','uz'].includes(body.language))throw new HttpError(400,'Выберите язык')
         await limit(userId,'language',20)

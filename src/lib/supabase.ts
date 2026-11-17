@@ -77,6 +77,7 @@ export interface ProductColor {
   sort_order: number
 }
 
+export const getCachedProductColors = (id?:string):ProductColor[] => id ? dataCache.get<ProductColor[]>(`colors:${id}`,60_000)||[] : []
 export const getProductColors = (productId: string): Promise<ProductColor[]> =>
   dataCache.load(`colors:${productId}`, async () => {
     const { data, error } = await supabase.from('product_colors').select('*').eq('product_id', productId).order('sort_order', { ascending: true })

@@ -1,4 +1,4 @@
-import {personalSizeHint} from '../lib/sizeCharts'
+import {productSizeSuggestion} from '../lib/sizeConversion'
 import {useProductSizeChart} from '../lib/productSizeChart'
 import {usePageState} from '../lib/usePageState'
 import {usePreferences} from '../lib/preferences'
@@ -24,7 +24,7 @@ import {
   supabase,
   getProductSizes,
   checkProductStock,
-  getProductColors,
+  getCachedProductColors, getProductColors,
   type ProductColor,
 } from '../lib/supabase'
 import { getCachedProduct, getCachedSizes, cacheProduct } from '../lib/productCache'
@@ -58,13 +58,13 @@ export default function ProductPage() {
 
   const [selectedSize, setSelectedSize] = usePageState<string | null>('product:size',null)
   const [selectedColor, setSelectedColor] = usePageState<ProductColor | null>('product:color',null)
-  const [colors, setColors] = useState<ProductColor[]>([])
+  const [colors, setColors] = useState<ProductColor[]>(()=>getCachedProductColors(id))
 
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
   const chartResource=useProductSizeChart(product || {id})
-  const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id) || [])
+  const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id,selectedColor?.id) || [])
   const [loading, setLoading] = useState(() => !getCachedProduct(id))
-  const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id))
+  const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id,selectedColor?.id))
 
   const [currentImageIndex, setCurrentImageIndex] = usePageState('product:image',0)
   const [showFullScreen, setShowFullScreen] = useState(false)
@@ -86,7 +86,7 @@ export default function ProductPage() {
     if (!id) return
 
     const cachedProduct = getCachedProduct(id)
-    const cachedSizes = getCachedSizes(id)
+    const cachedSizes = getCachedSizes(id,selectedColor?.id)
     setOpeningPhoto(getOpeningPhoto(id))
     clearTimeout(addedTimer.current)
     cartFeedbackStarted.current = false
@@ -95,11 +95,13 @@ export default function ProductPage() {
     setLoading(!cachedProduct)
     setSizes(cachedSizes || [])
     setSizesLoading(!cachedSizes)
-    setColors([])
+    setColors(getCachedProductColors(id))
     setShowFullScreen(false)
 
     loadProduct()
     loadColors()
+    // Route initialization only; the separate color effect owns subsequent color changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const previousColor=useRef(selectedColor?.id)
@@ -544,7 +546,7 @@ export default function ProductPage() {
           )}
 
           <SizeSelector
-            hintSize={personalSizeHint(chartResource.chart,product,preferences.data?.sizes||[],allSizes)}
+            sizeSuggestion={chartResource.result&&!chartResource.error?productSizeSuggestion(chartResource.chart,product,preferences.data?.sizes||[],allSizes):undefined}
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
             allSizes={allSizes}

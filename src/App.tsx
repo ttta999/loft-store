@@ -1,3 +1,4 @@
+import Onboarding from './components/Onboarding'
 import LanguageSync from './components/LanguageSync'
 import LaunchTarget from './components/LaunchTarget'
 import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
@@ -160,6 +161,7 @@ function App() {
       <ThemeManager />
       <LaunchTarget />
       <LanguageSync/>
+      <Onboarding/>
       <AppToaster />
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}

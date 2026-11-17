@@ -15,6 +15,7 @@ test('a client delivery failure does not duplicate the manager notification on r
    return Response.json({ok:!(body.chat_id==='900000301'&&failClient)})
   }
   assert.equal(url.hostname,'notification-fixture.supabase.co')
+  if(url.pathname.endsWith('/rpc/store_customer_language'))return Response.json('ru')
   if(url.pathname.endsWith('/rpc/store_claim_notification')){const id=body.p_kind==='order'?1:2;return Response.json(completed.has(id)?null:{id})}
   if(url.pathname.endsWith('/rpc/store_complete_notification')){completed.add(body.p_event_id);return Response.json(true)}
   throw Error('Unexpected network')

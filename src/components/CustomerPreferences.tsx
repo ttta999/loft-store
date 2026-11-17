@@ -10,8 +10,8 @@ const input='w-full p-3 rounded-xl bg-[#F5F1E8] dark:bg-dark-accent border borde
 const button='px-4 py-3 rounded-xl font-bold bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] flex items-center justify-center gap-2 disabled:opacity-50'
 export default function CustomerPreferences({section}:{section:'personal'|'sizes'}){
  const {language,ensureCategories}=useStore(),ru=language==='ru',categories=ensureCategories()||[]
- const {data,error,loading,save}=usePreferences()
- const [name,setName]=useState(''),[phone,setPhone]=useState(''),[method,setMethod]=useState<'pickup'|'delivery'>('pickup'),[addresses,setAddresses]=useState<SavedAddress[]>([]),[sizes,setSizes]=useState<SavedSize[]>([]),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false)
+ const {data,error,loading,retry,save}=usePreferences()
+ const [name,setName]=useState(data?.name||''),[phone,setPhone]=useState(data?.phone||''),[method,setMethod]=useState<'pickup'|'delivery'>(data?.delivery_method||'pickup'),[addresses,setAddresses]=useState<SavedAddress[]>(data?.addresses||[]),[sizes,setSizes]=useState<SavedSize[]>(data?.sizes||[]),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false)
  const [editing,setEditing]=useState<SavedAddress|null>(null),[subId,setSubId]=useState(''),[size,setSize]=useState('')
  useEffect(()=>{if(data&&!dirty){setName(data.name);setPhone(data.phone);setMethod(data.delivery_method);setAddresses(data.addresses);setSizes(data.sizes)}},[data,dirty])
  const subs=categories.flatMap(c=>c.subcategories.filter(s=>s.id!=='all'&&s.sizes.length).map(s=>({...s,category:c})))
@@ -20,8 +20,8 @@ export default function CustomerPreferences({section}:{section:'personal'|'sizes
  const addAddress=()=>{if(!editing)return;if(!editing.label.trim()||editing.address.trim().length<5){toast.error(ru?'Укажите название и полный адрес':'Nom va to‘liq manzilni kiriting');return}setAddresses(old=>[...old.filter(a=>a.id!==editing.id).map(a=>editing.is_default?{...a,is_default:false}:a),{...editing,label:editing.label.trim(),address:editing.address.trim()}]);setEditing(null);setDirty(true)}
  return <div data-loft-content className="p-4 pb-24 text-[#1B2A4A] dark:text-white">
   <ListHeaderCard title={section==='personal'?(ru?'Личные данные':'Shaxsiy ma’lumotlar'):(ru?'Мои размеры':'Mening o‘lchamlarim')} subtitle={section==='personal'?(ru?'Ваши контакты и адреса доставки':'Kontaktlaringiz va yetkazib berish manzillari'):(ru?'Сохраните размеры для удобного выбора товаров':'Mahsulotlarni qulay tanlash uchun o‘lchamlaringizni saqlang')} icon={section==='personal'?<User size={20}/>:<Ruler size={20}/>}/>
-  {loading&&<p role="status" className={card}>{ru?'Загрузка...':'Yuklanmoqda...'}</p>}
-  {error&&<p role="alert" className={card}>{error}</p>}
+  {loading&&!data&&<div role="status" aria-label={ru?'Загрузка личных данных':'Shaxsiy ma’lumotlar yuklanmoqda'} className={`${card} space-y-4 animate-pulse`}>{[1,2,3].map(v=><div key={v} className="h-16 rounded-xl bg-[#E8E2D5] dark:bg-dark-accent"/>)}</div>}
+  {error&&<div role="alert" className={card}><p>{error}</p><button className="underline min-h-11" onClick={retry}>{ru?'Повторить':'Qayta urinish'}</button></div>}
   {data&&<>{section==='personal'?<>
    <div className={`${card} space-y-3`}>
     <label className="block text-sm">{ru?'Имя':'Ism'}<input autoComplete="name" className={`${input} mt-1`} value={name} maxLength={120} onChange={e=>{setName(e.target.value);setDirty(true)}}/></label>

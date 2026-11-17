@@ -1,3 +1,4 @@
+import {prefetchPersonalPages} from '../lib/api'
 import {ListHeaderCard,EmptyStateCard} from '../components/ProfileCards'
 import {formatLocalDateTime} from '../lib/dateTime'
 import {useLocalTimeZone} from '../lib/useLocalTimeZone'
@@ -1102,9 +1103,10 @@ export default function ProfilePage() {
     ? chinaRequests.find((r) => String(r.id) === String(requestIdParam))
     : null
 
+  useEffect(()=>{if(!section||section==='main')void prefetchPersonalPages()},[section])
   if (section === 'restocks') return <RestockSubscriptions language={language}/>
   if (section === 'sizes') return <SavedSizes/>
-  if (section === 'personal') return <CustomerPreferences key={section} section={section}/>
+  if (section === 'personal') return <CustomerPreferences key={`${section}:${window.Telegram?.WebApp.initData||''}`} section={section}/>
 
   // ✅ ГЛАВНАЯ ПРОФИЛЯ — шапка + 4 квадрата + магазин + соцсети
   if (!section || section === 'main') {
@@ -1245,6 +1247,7 @@ export default function ProfilePage() {
           />
 
           <MarketingConsent language={language}/>
+          <button type="button" onClick={()=>window.dispatchEvent(new Event('loft:open-tutorial'))} className="w-full text-left mb-3 p-4 rounded-2xl bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border font-medium">{language==='ru'?'Как пользоваться приложением':'Ilovadan qanday foydalanish kerak'}</button>
 
           {/* ✅ Предпочтения: единая карточка со строками и переключателями */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">

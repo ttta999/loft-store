@@ -24,6 +24,7 @@ test('concurrent checkout and worker retries send each order notification only o
  globalThis.fetch=async(input,init)=>{
   const url=new URL(String(input)),body=JSON.parse(String(init?.body))
   if(url.hostname==='api.telegram.org'){sends++;await new Promise(resolve=>setTimeout(resolve,5));return Response.json({ok:true})}
+  if(url.pathname.endsWith('/rpc/store_customer_language'))return Response.json('ru')
   if(url.pathname.endsWith('/rpc/store_claim_notification')){
    const id=body.p_kind==='order'?1:2
    if(claimed.has(id)||completed.has(id))return Response.json({id:null})

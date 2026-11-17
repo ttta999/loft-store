@@ -1,3 +1,4 @@
+import {customerLanguage} from './customerLanguage.ts'
 import { database } from './http.ts'
 import type { StoredRecord } from './models.ts'
 import { managerOrderNotification, ordinaryOrderNotification } from './orderNotifications.ts'
@@ -38,7 +39,7 @@ export async function dispatchNotification(userId: string, kind: 'order' | 'requ
     const { data: clientEvent } = await db.rpc('store_claim_notification', { p_user: userId, p_kind: 'order_client', p_id: record.id })
     if (!clientEvent?.id) return
     try {
-      const notice = ordinaryOrderNotification(record)
+      const notice = ordinaryOrderNotification(record,await customerLanguage(db,userId))
       await send(process.env.TELEGRAM_BOT_TOKEN, userId, notice.message, notice.options)
       const { error: completeError } = await db.rpc('store_complete_notification', { p_event_id: clientEvent.id })
       if (completeError) throw completeError

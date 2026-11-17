@@ -1,3 +1,4 @@
+import {customerLanguage} from '../server/customerLanguage.ts'
 import {managerReminder} from '../server/managerReminders.ts'
 import {restockNotification} from '../server/restockNotifications.ts'
 import { specialNotification } from '../server/specialNotifications.ts'
@@ -50,9 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if(rateError || !Number.isFinite(rate) || rate<=0)throw new Error('Store exchange rate unavailable')
             p.special_request.exchange_rate=rate
           }
-          if(p?.restock){const {data:language,error}=await db.rpc('store_customer_language',{p_user:claimed.user_id});if(error)throw error;p.restock.language=language||'ru'}
           const manager = !!p?.manager_reminder || p?.recipient === 'manager'
-          const notice = p?.manager_reminder ? managerReminder(p.manager_reminder) : p?.restock ? restockNotification(p.restock) : p?.ordinary_order ? ordinaryOrderNotification(p.ordinary_order) : p?.cancellation ? cancellationNotification(p.cancellation,manager) : p?.refund ? refundNotification(p.refund) : p?.special_order ? specialOrderNotification(p.special_order) : p?.special_request ? specialNotification(p.special_request) : { message: p.message, options: undefined }
+          const language=manager?'ru':await customerLanguage(db,claimed.user_id)
+          if(p?.restock)p.restock.language=language
+          const notice = p?.manager_reminder ? managerReminder(p.manager_reminder) : p?.restock ? restockNotification(p.restock) : p?.ordinary_order ? ordinaryOrderNotification(p.ordinary_order,language) : p?.cancellation ? cancellationNotification(p.cancellation,manager,language) : p?.refund ? refundNotification(p.refund,language) : p?.special_order ? specialOrderNotification(p.special_order,language) : p?.special_request ? specialNotification(p.special_request,language) : { message: p.message, options: undefined }
           let chat = claimed.user_id
           if (manager) {
             chat = process.env.TELEGRAM_MANAGER_CHAT_ID

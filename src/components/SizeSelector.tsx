@@ -1,7 +1,7 @@
 import { useScrollLock } from '../lib/useScrollLock'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useState } from 'react'
+import { useState,useLayoutEffect,useRef } from 'react'
 import { Ruler, Check, ChevronDown, X, Bell } from 'lucide-react'
 
 type SizeType = 'numeric' | 'alphabetical' | 'one_size'
@@ -13,6 +13,7 @@ interface SizeSelectorProps {
   selectedSize: string | null
   onSelect: (size: string) => void | boolean | Promise<void | boolean>
   hintSize?: string
+  sizeSuggestion?: {confidence:string;candidates:string[];sources:string[]}
   label?: string
   profile?: boolean
   onRemove?: () => Promise<void | boolean>
@@ -36,11 +37,13 @@ export default function SizeSelector({
   allSizes=availableSizes,
   selectedSize,
   onSelect,
-  hintSize, label, profile=false, onRemove, compact=false,
+  hintSize, sizeSuggestion, label, profile=false, onRemove, compact=false,
   language = 'ru'
 }: SizeSelectorProps) {
+  const sheetRoot=useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
   const [open, setOpen] = useState(false)
+  useLayoutEffect(()=>{if(sheetRoot.current)sheetRoot.current.dataset.closingSheet=String(!open)},[open])
   const [locked, setLocked] = useState(false)
   const [busy,setBusy]=useState(false),[error,setError]=useState('')
 
@@ -107,7 +110,7 @@ export default function SizeSelector({
 
       {/* ✅ BOTTOM-SHEET в стиле страницы заказа */}
       {createPortal(<AnimatePresence onExitComplete={() => { if (!open) setLocked(false) }}>{open && (
-        <motion.div key="size-sheet" data-surface-dialog="size" role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[90]"
+        <motion.div ref={sheetRoot} key="size-sheet" data-surface-dialog="size" role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[90]"
           initial="closed" animate="open" exit="closed">
           {/* Затемнение — клик закрывает */}
           <motion.div
@@ -185,7 +188,7 @@ export default function SizeSelector({
                         {!profile&&!availableSizes.includes(size)&&<><span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии':'Mavjud emas'}</span><span className="mt-1 inline-flex items-center gap-1 text-xs text-[#1B2A4A] dark:text-gold">{language==='ru'?'Уведомить о поступлении':'Kelganda xabar berish'}<Bell size={12}/></span></>}
                       </span>
 
-                      {hintSize===size&&<span data-size-hint className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-[#F5F1E8] text-[#1B2A4A] dark:bg-gold/15 dark:text-gold whitespace-nowrap shrink-0"><Check size={12}/>{language==='ru'?'Ваш размер':'Sizning o‘lchamingiz'}</span>}
+                      {(hintSize===size||sizeSuggestion?.candidates.includes(size))&&<span data-size-hint className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-[#F5F1E8] text-[#1B2A4A] dark:bg-gold/15 dark:text-gold whitespace-nowrap shrink-0">{sizeSuggestion&&sizeSuggestion.confidence!=='exact'?<span>≈</span>:<Check size={12}/>}{sizeSuggestion&&sizeSuggestion.confidence!=='exact'?(language==='ru'?'Ваш размер':'O‘lchamingiz'):(language==='ru'?'Ваш размер':'Sizning o‘lchamingiz')}</span>}
                       {isSelected && (
                         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] whitespace-nowrap flex-shrink-0">
                           {language === 'ru' ? 'Выбран' : 'Tanlandi'}
@@ -195,6 +198,7 @@ export default function SizeSelector({
                   )
                 })}
               </div>
+              {sizeSuggestion&&sizeSuggestion.confidence!=='exact'&&sizeSuggestion.candidates.length>0&&<p data-size-hint-explanation className="text-xs leading-relaxed text-[#8A8275] dark:text-gray-300 mt-3">{language==='ru'?'Размер определён ориентировочно. Посадка может отличаться в зависимости от бренда и модели. Сверьте систему размеров и параметры производителя.':'O‘lcham taxminiy aniqlangan. Brend va modelga qarab mos kelishi farq qilishi mumkin. Ishlab chiqaruvchining o‘lcham tizimi va parametrlarini tekshiring.'}</p>}
               {error&&<p role="alert" className="text-sm text-red-700 dark:text-red-300 mt-3">{error}</p>}
               {profile&&onRemove&&selectedSize&&<button type="button" disabled={busy} className="w-full py-3 mt-3 text-sm text-[#8A8275] dark:text-gray-300" onClick={async()=>{setBusy(true);setError('');try{if(await onRemove()!==false)setOpen(false)}catch(e){setError(e instanceof Error?e.message:'Не удалось удалить')}finally{setBusy(false)}}}>{language==='ru'?'Удалить сохранённый размер':'Saqlangan o‘lchamni o‘chirish'}</button>}
             </div>

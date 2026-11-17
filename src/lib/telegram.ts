@@ -51,17 +51,18 @@ export const setupTelegramBackButton = (
   const back = getWebApp()?.BackButton
   if (!back) return () => {}
 
+  const guardedBack=()=>{if(document.querySelector('[data-onboarding]')){document.querySelector<HTMLButtonElement>('[data-onboarding-back]')?.click();return}onBack()}
   if (shouldShow) {
     back.show()
-    back.onClick(onBack)
+    back.onClick(guardedBack)
   } else {
     back.hide()
-    back.offClick(onBack)
+    back.offClick(guardedBack)
   }
 
   // cleanup
   return () => {
-    back.offClick(onBack)
+    back.offClick(guardedBack)
     back.hide()
   }
 }

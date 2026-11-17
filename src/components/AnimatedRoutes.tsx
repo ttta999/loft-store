@@ -64,6 +64,9 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     }
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
+      // A quick Back can overlap the final 200ms of a dismissed size sheet.
+      // Exclude only exiting overlays from the route snapshot; an open sheet still owns Back.
+      document.querySelectorAll<HTMLElement>('[data-closing-sheet="true"]').forEach(sheet=>{sheet.style.visibility='hidden';sheet.removeAttribute('data-surface-dialog')})
       const tabMotion = prepareTabMotion(displayed, location, internalDirection)
       if (tabMotion) {
         clearTabs = tabMotion.cleanup

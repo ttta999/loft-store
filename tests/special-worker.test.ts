@@ -11,6 +11,7 @@ test('the existing worker sends each special snapshot once, with formatting and 
   if(url.hostname==='api.telegram.org'){messages.push(JSON.parse(String(init?.body)));return Response.json({ok:true})}
   assert.equal(url.hostname,'special-worker.supabase.co')
   const name=url.pathname.split('/').at(-1)
+  if(name==='store_customer_language')return Response.json('ru')
   if(name==='store_worker_authorized')return Response.json(true)
   if(name==='store_pending_notifications')return Response.json([{id:51,kind:'custom',user_id:'900000301'}])
   if(name==='store_claim_custom_notification')return Response.json(sent?null:{id:51,user_id:'900000301',payload:{special_request:{id:17,status:'Оформлен',order_id:145}}})
@@ -37,6 +38,7 @@ test('fulfillment snapshots use the existing queue and never fall back to ordina
   const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
   if(url.hostname==='api.telegram.org'){messages.push(body);return Response.json({ok:true})}
   const name=url.pathname.split('/').at(-1)
+  if(name==='store_customer_language')return Response.json('ru')
   if(name==='store_worker_authorized')return Response.json(true)
   if(name==='store_pending_notifications')return Response.json(events.map(e=>({id:e.id,kind:'custom',user_id:'900000301'})))
   if(name==='store_claim_custom_notification')return Response.json(completed.has(body.p_id)?null:{id:body.p_id,user_id:'900000301',payload:{special_order:{id:147,status:events.find(e=>e.id===body.p_id)!.status,delivery_method:'delivery',courier_link:'https://example.com/track'}}})
@@ -67,6 +69,7 @@ test('ordinary/cancellation/refund snapshots retry independently and route only 
   const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
   if(url.hostname==='api.telegram.org'){messages.push(body);if(body.text.includes('оформлен')&&failed)return Response.json({ok:false});return Response.json({ok:true})}
   const rpc=url.pathname.split('/').at(-1)
+  if(rpc==='store_customer_language')return Response.json('ru')
   if(rpc==='store_worker_authorized')return Response.json(true)
   if(rpc==='store_pending_notifications')return Response.json(events.map(e=>({id:e.id,kind:'custom',user_id:'900000301'})))
   if(rpc==='store_claim_custom_notification')return Response.json(done.has(body.p_id)?null:{...events.find(e=>e.id===body.p_id),user_id:'900000301'})
@@ -88,6 +91,7 @@ test('legacy queued quote resolves UZS from store settings; unavailable rate nev
   const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}'))
   if(url.hostname==='api.telegram.org'){messages.push(body);return Response.json({ok:true})}
   const rpc=url.pathname.split('/').at(-1)
+  if(rpc==='store_customer_language')return Response.json('ru')
   if(rpc==='store_worker_authorized')return Response.json(true)
   if(rpc==='store_pending_notifications')return Response.json([{id:81,kind:'custom',user_id:'900000301'}])
   if(rpc==='store_claim_custom_notification')return Response.json(done?null:{id:81,user_id:'900000301',payload:{special_request:{id:17,status:'Оценён',manager_price:270,currency:'USD'}}})
@@ -102,5 +106,25 @@ test('legacy queued quote resolves UZS from store settings; unavailable rate nev
   await handler(request,response as any);assert.equal(messages.length,0);assert.equal(done,false)
   rate=11963.85;await handler(request,response as any);await handler(request,response as any)
   assert.equal(messages.length,1);assert.match(messages[0].text,/3 230 240 сум/);assert.doesNotMatch(messages[0].text,/270 USD/);assert.ok(done)
+ }finally{globalThis.fetch=original}
+})
+
+test('an unsent event uses the latest language and changing it afterwards does not resend the event',async()=>{
+ const original=globalThis.fetch;let language='uz',completed=false;const messages:{text:string;reply_markup:{inline_keyboard:{text:string}[][]}}[]=[]
+ globalThis.fetch=async(input,init)=>{
+  const url=new URL(String(input)),body=JSON.parse(String(init?.body||'{}')),rpc=url.pathname.split('/').at(-1)
+  if(url.hostname==='api.telegram.org'){messages.push(body);return Response.json({ok:true})}
+  if(rpc==='store_worker_authorized')return Response.json(true)
+  if(rpc==='store_customer_language')return Response.json(language)
+  if(rpc==='store_pending_notifications')return Response.json([{id:501,kind:'custom',user_id:'900000301'}])
+  if(rpc==='store_claim_custom_notification')return Response.json(completed?null:{id:501,user_id:'900000301',payload:{ordinary_order:{id:335,stage:'Передан курьеру',delivery_method:'delivery'}}})
+  if(rpc==='store_complete_notification'){completed=true;return Response.json(null)}
+  if(rpc==='store_orphan_files')return Response.json([])
+  throw Error('Unexpected fixture network')
+ }
+ try{
+  const run=()=>handler({method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+'a'.repeat(64)},body:{}},{setHeader(){},status(){return this},json(){return this}})
+  await run();language='ru';await run();assert.equal(messages.length,1)
+  assert.ok(messages[0].text.includes('№335 buyurtma kuryerga topshirildi'));assert.equal(messages[0].reply_markup.inline_keyboard[0][0].text,'Buyurtmaga o‘tish')
  }finally{globalThis.fetch=original}
 })

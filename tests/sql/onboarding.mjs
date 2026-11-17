@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict'
+import {universalOptions} from '../../src/lib/sizeConversion.ts'
+export default async function({scalar,query}){
+ assert.equal(await scalar("select public.store_customer_language('777777')"),'ru')
+ await query("select public.store_customer_telegram_language('777777','uz')")
+ let prefs=await scalar("select public.store_customer_preferences('777777')")
+ assert.equal(prefs.language,'uz');assert.equal(prefs.language_source,null);assert.equal(prefs.onboarding_completed_at,null)
+ await assert.rejects(()=>query("select public.store_complete_onboarding('777777')"),/Choose language/)
+ await query("select public.store_customer_language('777777','ru')")
+ await query("select public.store_customer_telegram_language('777777','uz')")
+ assert.equal(await scalar("select public.store_customer_language('777777')"),'ru')
+ const first=await scalar("select public.store_complete_onboarding('777777')")
+ const repeat=await scalar("select public.store_complete_onboarding('777777')")
+ assert.equal(first.onboarding_completed_at,repeat.onboarding_completed_at)
+ assert.equal((await scalar("select public.store_customer_preferences('888889')")).onboarding_completed_at,null)
+ for(const signature of ['store_complete_onboarding(text)','store_customer_telegram_language(text,text)','store_customer_preferences(text,jsonb,bigint)','store_universal_size_preference(text,text,text,text)'])for(const role of ['anon','authenticated'])assert.equal(await scalar(`select has_function_privilege($1,$2,'execute')`,[role,'public.'+signature]),false)
+ assert.equal(await scalar("select public.store_universal_size_preference('clothes','trousers','alphabetical','M')"),true)
+ assert.equal(await scalar("select public.store_universal_size_preference('shoes','sneakers','alphabetical','M')"),false)
+ assert.equal(await scalar("select public.store_universal_size_preference('accessories','caps','EU','48')"),false)
+ assert.equal(await scalar("select public.store_universal_size_preference('clothes','jeans','US','32R')"),false)
+ const existing=await scalar("select public.store_customer_preferences('889999')");assert.equal(existing.language_source,'explicit');assert.equal(existing.language,'uz');assert.equal(existing.name,'Existing customer');assert.equal(existing.version,4)
+ const choices=[['shoes','sneakers'],...['trousers','outerwear','sweaters','tshirts','hoodies','sweatshirts','jackets'].map(sub=>['clothes',sub])].flatMap(([category,subcategory])=>Object.entries(universalOptions(category,subcategory)).flatMap(([system,sizes])=>sizes.map(size=>({category,subcategory,system,size}))))
+ assert.equal(await scalar("select bool_and(public.store_universal_size_preference(x->>'category',x->>'subcategory',x->>'system',x->>'size')) from jsonb_array_elements($1::jsonb) x",[JSON.stringify(choices)]),true)
+ console.log('PASS: explicit language overrides Telegram, server onboarding idempotence, account isolation and RPC grants; bounded preference-only size scope')
+}

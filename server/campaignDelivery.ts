@@ -1,3 +1,4 @@
+import {customerLanguage} from './customerLanguage.ts'
 import type {SupabaseClient} from '@supabase/supabase-js'
 import {campaignMessage,campaignVersion,type CampaignContent} from '../src/lib/campaignMessage.ts'
 import {targetLink,type StoreTarget} from './links.ts'
@@ -12,7 +13,7 @@ export async function prepareCampaignDelivery(db:SupabaseClient,job:CampaignJob)
   if(!chat){const {data,error}=await db.rpc('store_manager_chat');if(error)throw new Error('Test recipient unavailable');chat=String(data||'')}
  }
  if(!/^-?[1-9][0-9]{0,15}$/.test(chat||''))throw new PreparationError('Recipient unavailable')
- const c=campaignVersion(job.payload,job.language)
+ const c=campaignVersion(job.payload,job.kind==='campaign'?await customerLanguage(db,String(chat)):job.language)
  let text:ReturnType<typeof campaignMessage>
  try{text=campaignMessage(c)}catch{throw new PreparationError('Invalid message')}
  const url=await targetLink({type:c.target_type as StoreTarget['type'],id:c.target_id||undefined})

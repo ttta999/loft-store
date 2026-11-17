@@ -1,3 +1,4 @@
+import {useFloatingAction} from '../lib/useFloatingAction'
 import {ListHeaderCard} from '../components/ProfileCards'
 import { motionDistance, motionEase, motionTiming } from '../lib/motion'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -25,6 +26,7 @@ export default function ChinaPage() {
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [flight, setFlight] = useState<{ x: number; y: number } | null>(null)
+  const floating = useFloatingAction()
   const submitButton = useRef<HTMLButtonElement>(null)
   const reduced = useReducedMotion()
   const requestKey = useRef(crypto.randomUUID())
@@ -186,7 +188,7 @@ export default function ChinaPage() {
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       {/* ✅ Тосты в текущей теме */}
 
-      <div data-loft-content className="p-4">
+      <div data-loft-content className="p-4" style={{paddingBottom:floating.bottom+96}}>
         {/* ✅ Шапка-карточка в стиле страницы заказа */}
         <ListHeaderCard title={language==='ru'?'Спецзаказ':'Maxsus buyurtma'} icon={<Globe size={20}/>}/>
 
@@ -311,11 +313,12 @@ export default function ChinaPage() {
         </div>
 
         {/* ✅ Кнопка отправки */}
-        <button
+        </div>
+        <div data-route-floating className="fixed left-0 right-0 z-40 px-4 pointer-events-none" style={{bottom:`max(${floating.bottom}px, env(safe-area-inset-bottom))`,visibility:floating.keyboard?'hidden':'visible'}}><button
           ref={submitButton}
           onClick={handleSubmit}
           disabled={submitting}
-          className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md ${
+          className={`pointer-events-auto w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md ${
             submitting
               ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed shadow-none'
               : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'

@@ -2,7 +2,6 @@
 export class ResourceCache {
   private entries = new Map<string, { value: unknown; expiresAt: number }>()
   private pending = new Map<string, Promise<unknown>>()
-  private revision = 0
   private maxEntries: number
   private now: () => number
   constructor(maxEntries = 256, now = () => Date.now()) { this.maxEntries = maxEntries; this.now = now }
@@ -20,24 +19,21 @@ export class ResourceCache {
   }
   async load<T>(key: string, loader: () => Promise<T>, ttl = 300_000, force = false): Promise<T> {
     if (force && this.pending.has(key)) return this.pending.get(key) as Promise<T>
-    if (force) this.invalidate(key)
     const cached = this.get<T>(key)
-    if (cached !== null) return cached
+    if (!force && cached !== null) return cached
     const current = this.pending.get(key)
     if (current) return current as Promise<T>
-    const revision = this.revision
     const request = Promise.resolve().then(loader).then(value => {
-      if (revision === this.revision && this.pending.get(key) === request) this.set(key, value, ttl)
+      if (this.pending.get(key) === request) this.set(key, value, ttl)
       return value
     }).finally(() => { if (this.pending.get(key) === request) this.pending.delete(key) })
     this.pending.set(key, request)
     return request
   }
   invalidate(prefix: string) {
-    this.revision++
     for (const key of this.entries.keys()) if (key.startsWith(prefix)) this.entries.delete(key)
     for (const key of this.pending.keys()) if (key.startsWith(prefix)) this.pending.delete(key)
   }
-  clear() { this.revision++; this.entries.clear(); this.pending.clear() }
+  clear() { this.entries.clear(); this.pending.clear() }
 }
 export const dataCache = new ResourceCache()

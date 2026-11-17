@@ -11,9 +11,10 @@ const pg=new PGlite()
 const file=async path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 try{
  await pg.exec(await file('tests/sql/store2-baseline.sql'))
- for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql','20261117110219_explicit_size_chart_mapping.sql']){
+ for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql','20261117110219_explicit_size_chart_mapping.sql','20261117134112_customer_onboarding_language.sql','20261117134131_approximate_size_preferences.sql']){
   if(migration.includes('history_and_tasks'))await pg.exec(`insert into public.orders(id,user_id,status,delivery_method,created_at,paid_at,receipt_submitted_at) values(9999,'123456','Готов','pickup',now()-interval '30 days',now()-interval '29 days',now()-interval '29 days')`)
   if(migration.includes('local_device_time')){await pg.exec(`insert into auth.users(id) values('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');insert into public.campaigns(name,title,message,button_label,target_type,audience_type,status,scheduled_at,created_by) values('Existing scheduled','Saved','Saved','Open','home','all','scheduled','2099-01-15T15:00:00Z','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')`)}
+  if(migration.includes('customer_onboarding_language'))await pg.exec(`insert into private.store_customer_preferences(user_id,language,name,version) values('889999','uz','Existing customer',4)`)
   await pg.exec(await file('supabase/migrations/'+migration));console.log('Applied locally:',migration)
  }
  const query=async(sql,args=[]) => (await pg.query(sql,args)).rows
@@ -94,5 +95,6 @@ try{
  const {testReminderIntervals}=await import('../tests/sql/reminder-intervals.mjs');await testReminderIntervals(pg)
  const {testLocales}=await import('../tests/sql/locales.mjs');await testLocales(pg)
  await (await import('../tests/sql/local-time.mjs')).testLocalTime(pg)
+ await (await import('./../tests/sql/onboarding.mjs')).default({query,scalar,pg})
  console.log('ALL LOCAL DATABASE CHECKS PASSED')
 } catch(error){console.error(error.message);console.error({position:error.position,internalPosition:error.internalPosition,internalQuery:error.internalQuery});if(error.query)console.error('SQL context:',error.query.slice(0,800));process.exitCode=1}finally{await pg.close()}

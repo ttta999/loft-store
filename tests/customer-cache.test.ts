@@ -101,7 +101,7 @@ test('preferences and restocks prefill only the verified current session and upd
   const action=JSON.parse(String(init?.body)).action
   if(action==='savePreferences')name='Updated'
   if(action==='cancelRestock')rows=[]
-  return Response.json({data:action==='restocks'||action==='cancelRestock'?rows:{name}})
+  return Response.json({data:action==='restocks'||action==='cancelRestock'?rows:{name,addresses:[],sizes:[]}})
  }
  try{
   await storeApi('preferences');await storeApi('restocks')

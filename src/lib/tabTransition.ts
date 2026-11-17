@@ -18,6 +18,9 @@ export function sectionDirection(from: Page, to: Page, backwards: boolean) {
     const a = new URLSearchParams(from.search).get('brand'), b = new URLSearchParams(to.search).get('brand')
     if (a !== b) return Math.sign(Number(!!b) - Number(!!a)) || (backwards ? -1 : 1)
   }
+  const legal = (path:string) => path === '/privacy' || path === '/terms'
+  if (from.pathname === '/profile' && legal(to.pathname)) return 1
+  if (to.pathname === '/profile' && legal(from.pathname)) return -1
   const depth: Record<string, number> = { '/': 0, '/home': 0, '/category': 1, '/catalog': 2, '/brands': 1, '/search': 1, '/all-products': 1 }
   const home = (path: string) => path === '/' || path === '/home'
   const categoryPair = [from.pathname, to.pathname].includes('/category')

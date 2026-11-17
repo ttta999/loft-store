@@ -69,3 +69,20 @@ test('Data API reads reuse consumable responses, while writes, inventory and fai
     assert.equal(calls, 13, 'independently cancellable requests are not shared')
   } finally { globalThis.fetch = original; dataCache.clear() }
 })
+
+test('background refresh keeps bounded stale data, deduplicates requests and cannot overwrite a mutation',async()=>{
+ const cache=new ResourceCache();cache.set('profile',{name:'Saved'},15000)
+ let finish!:(value:{name:string})=>void,calls=0
+ const loader=()=>{calls++;return new Promise<{name:string}>(resolve=>{finish=resolve})}
+ const request=cache.load('profile',loader,15000,true),duplicate=cache.load('profile',loader,15000,true)
+ await Promise.resolve();assert.deepEqual(cache.get('profile'),{name:'Saved'});assert.equal(calls,1)
+ cache.set('profile',{name:'Updated'},15000);finish({name:'Old response'})
+ await Promise.all([request,duplicate]);assert.deepEqual(cache.get('profile'),{name:'Updated'})
+})
+
+test('invalidating one account resource does not discard unrelated pending catalogue reads',async()=>{
+ const cache=new ResourceCache();let finish!:(value:string[])=>void
+ const pending=cache.load('catalog:recommendations:product',()=>new Promise<string[]>(resolve=>{finish=resolve}))
+ await Promise.resolve();cache.invalidate('private:');finish(['product-b']);await pending
+ assert.deepEqual(cache.get('catalog:recommendations:product'),['product-b'])
+})

@@ -11,6 +11,7 @@ for(const [entry,path,action] of entries)test(`return audit ${entry}: ${action},
  }else if(entry==='category'||entry==='subcategory'){
   await page.goto(STORE);await page.getByText('Обувь',{exact:true}).click();await expect(page).toHaveURL(/\/category/);await expect(page.locator('html')).not.toHaveAttribute('data-loft-tab-motion','true');await page.getByRole('button',{name:entry==='category'?/^Все товары/:/Кроссовки/}).click()
  }else await page.goto(STORE+path)
+ await expect(page.locator('[data-onboarding]')).toHaveCount(0)
  await expect(page.locator('html')).not.toHaveAttribute('data-loft-tab-motion','true')
  if(['new','popular','sale'].includes(entry))await expect(page).toHaveURL(/\/all-products/)
  if(entry==='category'||entry==='subcategory')await expect(page).toHaveURL(/\/catalog/)
@@ -51,7 +52,7 @@ for(const kind of ['similar','outfit'])test(`nested ${kind}: return to source pr
 })
 test('return after subscribing to unavailable size restores origin via Telegram Back',async({page,harness})=>{
  harness.db.product_variants[0].stock=0
- await page.goto(STORE);const card=page.locator(`[data-product-placement="new:${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY)
+ await page.goto(STORE);await expect(page.locator('[data-onboarding]')).toHaveCount(0);const card=page.locator(`[data-product-placement="new:${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY)
  await card.locator('img').click();await expect(page.locator('[data-product-hero]')).toBeVisible()
  await page.locator('[data-dialog-trigger="size"]').click();await page.getByRole('dialog',{name:'Выберите размер'}).getByRole('button',{name:/^42/}).click();await expect(page.getByRole('dialog')).toHaveCount(0)
  await page.getByRole('button',{name:'Уведомить о поступлении',exact:true}).click();await expect.poll(()=>harness.db.restocks?.length).toBe(1)
