@@ -49,3 +49,20 @@ for(const kind of ['similar','outfit'])test(`nested ${kind}: return to source pr
  const after=await recommendation.locator('img').boundingBox();expect(Math.abs(after!.y-before!.y)).toBeLessThan(2)
  await page.goBack();await expect(page).toHaveURL(STORE+'/');await expect(home).toBeInViewport()
 })
+test('return after subscribing to unavailable size restores origin via Telegram Back',async({page,harness})=>{
+ harness.db.product_variants[0].stock=0
+ await page.goto(STORE);const card=page.locator(`[data-product-placement="new:${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY)
+ await card.locator('img').click();await expect(page.locator('[data-product-hero]')).toBeVisible()
+ await page.locator('[data-dialog-trigger="size"]').click();await page.getByRole('dialog',{name:'Выберите размер'}).getByRole('button',{name:/^42/}).click();await expect(page.getByRole('dialog')).toHaveCount(0)
+ await page.getByRole('button',{name:'Уведомить о поступлении',exact:true}).click();await expect.poll(()=>harness.db.restocks?.length).toBe(1)
+ await page.evaluate(()=>(window as any).telegramBack());await expect(page).toHaveURL(STORE+'/');await expect(card).toBeInViewport();await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion','dissolve');expect(await page.evaluate(()=>scrollY)).toBe(y)
+ await expect(page.locator('body')).not.toHaveCSS('overflow','hidden')
+})
+test('color change and long description return to the original brand card',async({page,harness})=>{
+ const blue='dddddddd-dddd-4ddd-8ddd-dddddddddddd',red='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+ harness.db.product_colors=[{id:blue,product_id:productId,name_ru:'Синий',name_uz:'Ko‘k',hex_code:'#0000ff',images:[STORE+'/fixture-product.svg?blue'],sort_order:0},{id:red,product_id:productId,name_ru:'Красный',name_uz:'Qizil',hex_code:'#ff0000',images:[STORE+'/fixture-product.svg?red'],sort_order:1}]
+ harness.db.products[0].description_ru='Подробное описание товара. '.repeat(120)
+ await page.goto(STORE+'/brands?brand=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');const card=page.locator(`[data-product-card="${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY),before=await card.locator('img').boundingBox()
+ await card.locator('img').click();await expect(page.getByRole('button',{name:'Красный',exact:true})).toBeVisible();await page.getByRole('button',{name:'Красный',exact:true}).click();await expect(page.locator('[data-product-hero]')).toHaveAttribute('src',/red/)
+ await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await page.goBack();await expect(card).toBeInViewport();await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion','dissolve');expect(await page.evaluate(()=>scrollY)).toBe(y);expect(Math.abs((await card.locator('img').boundingBox())!.y-before!.y)).toBeLessThan(2)
+})

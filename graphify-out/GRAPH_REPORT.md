@@ -1,7 +1,7 @@
 # Graph Report - loft-store-final  (2026-11-17)
 
 ## Corpus Check
-- 340 files · ~203,400 words
+- 340 files · ~203,509 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .css 4, .example 1, (none) 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e41ea206`
+- Built from commit: `bb943cc4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -946,15 +946,15 @@ Nodes (4): 10. Кеширование, 11. Единый визуальный с�
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `ProfilePage.tsx`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
+  _High betweenness centrality (0.064) - this node is a cross-community bridge._
 - **Should `pagePreload.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
 - **Why does `2. Кеширование клиентских разделов` connect `ProfilePage.tsx` to `productSizeChart.ts`, `Финальная доработка интерфейса LOFT Store`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
 - **Should `ProductPage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.10823311748381129 - nodes in this community are weakly interconnected._
-- **Why does `storeApi()` connect `ProfilePage.tsx` to `pagePreload.ts`, `ProductPage.tsx`, `sharing.ts`, `useStore`, `useStore.ts`, `ref_node_assert`, `CartPage.tsx`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+- **Why does `ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ` connect `10. Исправить сохранение настроек напоминаний` to `store2-followup-spec.md`, `11. Упростить главный экран административной панели`, `15. Добавить узбекский язык во всю административную панель`, `12. Упростить раздел настроек админки`, `13. Упростить интерфейс Telegram-рассылок`, `14. Ускорить переключение между страницами админки`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
 - **Should `Анимации и прокрутка` be split into smaller, more focused modules?**
   _Cohesion score 0.0639386189258312 - nodes in this community are weakly interconnected._
 - **Should `Браузерные проверки` be split into smaller, more focused modules?**
