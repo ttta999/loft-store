@@ -1,3 +1,4 @@
+import {ListHeaderCard,EmptyStateCard} from '../components/ProfileCards'
 import {formatLocalDateTime} from '../lib/dateTime'
 import {useLocalTimeZone} from '../lib/useLocalTimeZone'
 import {Bell} from 'lucide-react'
@@ -78,32 +79,6 @@ const getOrderCurrency = (order: any): 'USD' | 'UZS' => {
 
 
 // ✅ Шапка-карточка списка: заголовок + подпись + иконка справа (как шапка заказа)
-function ListHeaderCard({ title, subtitle, icon, transitionKey }: { title: string; subtitle: string; icon: React.ReactNode; transitionKey: string }) {
-  return (
-    <div data-profile-surface={transitionKey} className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center justify-between gap-2">
-      <div className="min-w-0">
-        <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">{title}</h2>
-        <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">{subtitle}</p>
-      </div>
-      <div data-profile-icon className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-        {icon}
-      </div>
-    </div>
-  )
-}
-
-// ✅ Пустое состояние в стиле карточки
-function EmptyStateCard({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
-      <div className="w-14 h-14 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border mx-auto mb-3 flex items-center justify-center">
-        {icon}
-      </div>
-      <p className="text-sm text-[#8A8275] dark:text-gray-300">{text}</p>
-    </div>
-  )
-}
-
 // ✅ Квадратная плитка меню профиля (сетка 2×2)
 function MenuTile({ icon, title, subtitle, onClick, transitionKey }: {
   transitionKey: string

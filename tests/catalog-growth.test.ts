@@ -18,7 +18,7 @@ test('recommendations exclude current/hidden/unavailable items; hand-picked orde
  const result=recommendProducts(a,products,[{target_id:'e',kind:'similar',position:0},{target_id:'b',kind:'similar',position:1},{target_id:'d',kind:'outfit',position:0}],variants,[]);assert.deepEqual(result.similar.map(p=>p.id),['e','b']);assert.deepEqual(result.outfit.map(p=>p.id),['d'])
 })
 test('size chart priority is product, applicable brand, category; unrelated brand never matches',()=>{
- const base={category_id:'shoes',is_active:true},generic={...base,id:'category'},brand={...base,id:'brand',brand_id:'brand-id'},specific={...base,id:'product',product_id:'a'}
+ const base={category_id:'shoes',is_active:true,columns_ru:['Размер'],columns_uz:['O‘lcham'],rows:[['42']]},generic={...base,id:'category'},brand={...base,id:'brand',brand_id:'brand-id'},specific={...base,id:'product',product_id:'a'}
  assert.equal(chooseSizeChart([generic,brand,specific],a,[{id:'brand-id',name:'Zegna'}]).id,'product');assert.equal(chooseSizeChart([generic,brand],a,[{id:'brand-id',name:'Zegna'}]).id,'brand');assert.equal(chooseSizeChart([generic,brand],a,[{id:'brand-id',name:'Other'}]).id,'category')
 })
 test('browser and server launch parameters agree, reject unsafe destinations and retain variant IDs',()=>{

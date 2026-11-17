@@ -77,6 +77,7 @@ export default function ScrollRestoration() {
           })
           // Stop restoring as soon as the user starts scrolling themselves.
           const stop = () => observer.disconnect()
+          window.addEventListener('loft:scroll-restored', stop, { once: true })
           window.addEventListener('wheel', stop, { passive: true, once: true })
           window.addEventListener('touchstart', stop, { passive: true, once: true })
           window.addEventListener('keydown', stop, { once: true })
@@ -89,6 +90,7 @@ export default function ScrollRestoration() {
           prevLocRef.current = location
           return () => {
             observer.disconnect()
+            window.removeEventListener('loft:scroll-restored', stop)
             window.removeEventListener('wheel', stop)
             window.removeEventListener('touchstart', stop)
             window.removeEventListener('keydown', stop)

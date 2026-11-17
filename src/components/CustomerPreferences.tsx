@@ -1,3 +1,4 @@
+import {ListHeaderCard} from './ProfileCards'
 import { useEffect, useState } from 'react'
 import { Check, Plus, Trash2, User, Ruler, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
@@ -18,7 +19,7 @@ export default function CustomerPreferences({section}:{section:'personal'|'sizes
  const commit=async()=>{setBusy(true);try{await save(section==='personal'?{name:name.trim(),phone,delivery_method:method,addresses}:{sizes});setDirty(false);toast.success(ru?'Сохранено':'Saqlandi')}catch(e){toast.error(e instanceof Error?e.message:'Ошибка')}finally{setBusy(false)}}
  const addAddress=()=>{if(!editing)return;if(!editing.label.trim()||editing.address.trim().length<5){toast.error(ru?'Укажите название и полный адрес':'Nom va to‘liq manzilni kiriting');return}setAddresses(old=>[...old.filter(a=>a.id!==editing.id).map(a=>editing.is_default?{...a,is_default:false}:a),{...editing,label:editing.label.trim(),address:editing.address.trim()}]);setEditing(null);setDirty(true)}
  return <div data-loft-content className="p-4 pb-24 text-[#1B2A4A] dark:text-white">
-  <header className={`${card} flex items-center justify-between`}><h1 className="text-xl font-bold">{section==='personal'?(ru?'Личные данные':'Shaxsiy ma’lumotlar'):(ru?'Мои размеры':'Mening o‘lchamlarim')}</h1>{section==='personal'?<User size={24}/>:<Ruler size={24}/>}</header>
+  <ListHeaderCard title={section==='personal'?(ru?'Личные данные':'Shaxsiy ma’lumotlar'):(ru?'Мои размеры':'Mening o‘lchamlarim')} subtitle={section==='personal'?(ru?'Ваши контакты и адреса доставки':'Kontaktlaringiz va yetkazib berish manzillari'):(ru?'Сохраните размеры для удобного выбора товаров':'Mahsulotlarni qulay tanlash uchun o‘lchamlaringizni saqlang')} icon={section==='personal'?<User size={20}/>:<Ruler size={20}/>}/>
   {loading&&<p role="status" className={card}>{ru?'Загрузка...':'Yuklanmoqda...'}</p>}
   {error&&<p role="alert" className={card}>{error}</p>}
   {data&&<>{section==='personal'?<>

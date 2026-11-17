@@ -1,3 +1,5 @@
+import {personalSizeHint} from '../lib/sizeCharts'
+import {useProductSizeChart} from '../lib/productSizeChart'
 import {usePageState} from '../lib/usePageState'
 import {usePreferences} from '../lib/preferences'
 import { RestockControl, useProductVariants } from '../components/RestockControl'
@@ -59,6 +61,7 @@ export default function ProductPage() {
   const [colors, setColors] = useState<ProductColor[]>([])
 
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
+  const chartResource=useProductSizeChart(product || {id})
   const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id) || [])
   const [loading, setLoading] = useState(() => !getCachedProduct(id))
   const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id))
@@ -541,7 +544,7 @@ export default function ProductPage() {
           )}
 
           <SizeSelector
-            hintSize={preferences.data?.sizes.find(s=>s.category===product.category&&s.subcategory===product.subcategory&&s.system===product.size_type)?.size}
+            hintSize={personalSizeHint(chartResource.chart,product,preferences.data?.sizes||[],allSizes)}
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
             allSizes={allSizes}
@@ -550,7 +553,7 @@ export default function ProductPage() {
             language={language}
           />
 
-          <ProductSizeChart key={product.id} product={product} language={language}/>
+          <ProductSizeChart key={product.id} product={product} language={language} resource={chartResource}/>
 
           {chosenVariant&&!chosenVariant.available?<RestockControl key={chosenVariant.id} variant={chosenVariant} product={product} color={language==='ru'?selectedColor?.name_ru:selectedColor?.name_uz||selectedColor?.name_ru} language={language}/>:<button
             onClick={handleAddToCart}

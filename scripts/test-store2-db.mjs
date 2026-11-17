@@ -11,7 +11,7 @@ const pg=new PGlite()
 const file=async path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 try{
  await pg.exec(await file('tests/sql/store2-baseline.sql'))
- for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql']){
+ for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql','20261117110219_explicit_size_chart_mapping.sql']){
   if(migration.includes('history_and_tasks'))await pg.exec(`insert into public.orders(id,user_id,status,delivery_method,created_at,paid_at,receipt_submitted_at) values(9999,'123456','Готов','pickup',now()-interval '30 days',now()-interval '29 days',now()-interval '29 days')`)
   if(migration.includes('local_device_time')){await pg.exec(`insert into auth.users(id) values('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');insert into public.campaigns(name,title,message,button_label,target_type,audience_type,status,scheduled_at,created_by) values('Existing scheduled','Saved','Saved','Open','home','all','scheduled','2099-01-15T15:00:00Z','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')`)}
   await pg.exec(await file('supabase/migrations/'+migration));console.log('Applied locally:',migration)
@@ -30,6 +30,7 @@ try{
  console.log('PASS: profile permissions, isolation, optimistic versions and size validation')
  await assert.rejects(()=>query(`select public.store_admin_size_chart(null,'{}')`),/permission denied|insufficient_privilege/)
  assert.equal(await scalar(`select has_column_privilege('anon','public.size_charts','updated_by','select')`),false)
+ assert.equal(await scalar(`select has_column_privilege('anon','public.size_charts','size_mapping','select')`),true)
  console.log('PASS: size-chart MFA boundary and safe public projection')
  const variant='cccccccc-cccc-4ccc-8ccc-cccccccccccc'
  let subs=await scalar(`select public.store_restock('123456','subscribe',$1)`,[variant]);assert.equal(subs.length,1)
@@ -42,6 +43,16 @@ try{
  await scalar(`select public.store_restock('123456','cancel',null,$1)`,[subs[0].id]);assert.equal(await scalar('select public.store_restock_delivery($1)',[event]),false)
  console.log('PASS: variant subscriptions, ownership, deduplication, stable availability, cancel-before-send')
  await pg.exec(`insert into auth.users(id) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');select set_config('loft.test_admin','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);select set_config('loft.test_aal','aal2',false);insert into public.products(id,name_ru,name_uz,category,subcategory,price_usd,size_type,is_active) values('22222222-2222-4222-8222-222222222222','Другие кроссовки','Krossovka','shoes','sneakers',110,'numeric',true)`)
+ const mapping={source_system:'EU',target_system:'UK',source_column:0,target_column:1}
+ const chartValue={title_ru:'Тест',title_uz:'Test',category_id:'shoes',subcategory_id:'sneakers',columns_ru:['EU','UK'],columns_uz:['EU','UK'],rows:[['42','8']],size_mapping:mapping}
+ const mappedChart=await scalar(`select public.store_admin_size_chart(null,$1)`,[JSON.stringify(chartValue)])
+ assert.deepEqual(await scalar(`select size_mapping from public.size_charts where id=$1`,[mappedChart]),mapping)
+ await assert.rejects(()=>query(`select public.store_admin_size_chart(null,$1)`,[JSON.stringify({...chartValue,size_mapping:{...mapping,source_column:3}})]),/Invalid size mapping/)
+ const previous=await scalar(`select public.store_customer_preferences('123456')`)
+ const converted=await scalar(`select public.store_customer_preferences('123456',$1,$2)`,[JSON.stringify({sizes:[{category:'shoes',subcategory:'sneakers',system:'EU',size:'42'},{category:'shoes',subcategory:'sneakers',system:'numeric',size:'42'}]}),previous.version]);assert.equal(converted.sizes.length,2)
+ await assert.rejects(()=>query(`select public.store_customer_preferences('123456',$1,$2)`,[JSON.stringify({sizes:[{category:'shoes',subcategory:'sneakers',system:'EU',size:'99'}]}),converted.version]),/Invalid size/)
+ await scalar(`select public.store_admin_size_chart($1,null)`,[mappedChart])
+ console.log('PASS: explicit mapping metadata, bounds validation, scoped foreign systems, unknown values rejected')
  const product={name_ru:'Кроссовки',name_uz:'Krossovka',category:'shoes',subcategory:'sneakers',price_usd:100,images:[],size_type:'numeric'}
  const expected={version:0,variants:[{id:variant,stock:2}]}
  const save=(recommendations,stock=3)=>scalar(`select public.store_admin_save_product_recommendations('11111111-1111-4111-8111-111111111111',$1,'[]',$2,$3,$4)`,[JSON.stringify(product),JSON.stringify([{size_value:'42',stock,color_key:null}]),JSON.stringify(expected),JSON.stringify(recommendations)])

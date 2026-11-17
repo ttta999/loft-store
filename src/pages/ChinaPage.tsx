@@ -1,3 +1,4 @@
+import {ListHeaderCard} from '../components/ProfileCards'
 import { motionDistance, motionEase, motionTiming } from '../lib/motion'
 import { motion, useReducedMotion } from 'framer-motion'
 import PlaneFlight from '../components/PlaneFlight'
@@ -187,16 +188,7 @@ export default function ChinaPage() {
 
       <div data-loft-content className="p-4">
         {/* ✅ Шапка-карточка в стиле страницы заказа */}
-        <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
-          <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white">
-            {language === 'ru' ? 'Спецзаказ' : 'Maxsus buyurtma'}
-          </h2>
-          <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-1">
-            {language === 'ru'
-              ? 'Привезём товар по вашему описанию или ссылке'
-              : 'Tavsif yoki havola bo\'yicha mahsulot keltiramiz'}
-          </p>
-        </div>
+        <ListHeaderCard title={language==='ru'?'Спецзаказ':'Maxsus buyurtma'} icon={<Globe size={20}/>}/>
 
         {/* ✅ Единая карточка со строками-иконками */}
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">

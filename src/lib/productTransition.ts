@@ -4,7 +4,7 @@ import { warmPage } from './pagePreload'
 import { clearSharedSources, markSharedElement } from './sharedElement'
 
 type Page = { key: string; pathname: string; search: string }
-type Origin = { id: string; key: string; index: number; placement?: string; src: string }
+type Origin = { id: string; key: string; index: number; placement?: string; src: string; scrollY: number; top: number }
 let intent: Origin | null = null
 let openingPhoto: { id: string; src: string } | null = null
 export const getOpeningPhoto = (id?: string) => openingPhoto && openingPhoto.id === id ? openingPhoto.src : undefined
@@ -51,13 +51,40 @@ export function installProductIntent(location: () => Page) {
     const product = useStore.getState().productsCache?.items.find(item => item.id === card.dataset.productCard)
     if (product) cacheProduct(product)
     if (event.type !== 'click' || !visible(image)) return
-    intent = { id: card.dataset.productCard!, key: location().key, index: cards(card.dataset.productCard!).indexOf(card), placement: card.dataset.productPlacement, src: image.currentSrc || image.src }
+    intent = { id: card.dataset.productCard!, key: location().key, index: cards(card.dataset.productCard!).indexOf(card), placement: card.dataset.productPlacement, src: image.currentSrc || image.src, scrollY: window.scrollY, top: image.getBoundingClientRect().top }
   }
   document.addEventListener('click', capture, true)
   document.addEventListener('pointerover', capture, { passive: true })
   document.addEventListener('pointerdown', capture, { passive: true })
   document.addEventListener('focusin', capture)
   return () => { document.removeEventListener('click', capture, true); document.removeEventListener('pointerover', capture); document.removeEventListener('pointerdown', capture); document.removeEventListener('focusin', capture) }
+}
+/** Restore the list before the native transition captures its destination.
+ * ResizeObserver retries must stop before that capture, not during animation. */
+async function restoreOrigin(origin:Origin,valid:()=>boolean):Promise<HTMLImageElement|null>{
+ const deadline=performance.now()+180
+ let target:HTMLImageElement|null=null
+ // Native View Transitions pause rendering inside their update callback.
+ // Do not await animation frames here: Safari/Chromium can then time out.
+ target=originCard(origin)?.querySelector<HTMLImageElement>('img')||null
+ if(!target)target=await new Promise<HTMLImageElement|null>(resolve=>{
+  const observer=new MutationObserver(()=>{const image=originCard(origin)?.querySelector<HTMLImageElement>('img');if(image&&valid()){observer.disconnect();clearTimeout(timer);resolve(image)}})
+  const timer=setTimeout(()=>{observer.disconnect();resolve(null)},180)
+  observer.observe(document.body,{childList:true,subtree:true})
+ })
+ if(!target||!valid())return null
+ target.loading='eager'
+ if(!target.complete||!target.naturalWidth)await Promise.race([target.decode().catch(()=>{}),new Promise(resolve=>setTimeout(resolve,Math.max(0,deadline-performance.now())))])
+ if(!valid())return null
+ // Stop the general late-list restorer before measuring the target geometry.
+ window.dispatchEvent(new Event('loft:scroll-restored'))
+ window.scrollTo({top:origin.scrollY,behavior:'instant'})
+ markSharedElement(target,photoName)
+ // Flush layout with press styles removed; correct for a clamped list restore.
+ const rect=target.getBoundingClientRect()
+ if(Math.abs(rect.top-origin.top)>1)window.scrollTo({top:window.scrollY+rect.top-origin.top,behavior:'instant'})
+ if(!valid()){target.style.removeProperty('view-transition-name');return null}
+ return target
 }
 export function prepareProductTransition(from: Page, to: Page) {
   clearProductNames()
@@ -69,10 +96,16 @@ export function prepareProductTransition(from: Page, to: Page) {
   const returning = reverse && !!origin
   if (!origin || (!forward && !returning)) return null
   const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
-  if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) return null
+  if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) {
+    if (returning) return {async finish(valid:()=>boolean){const target=await restoreOrigin(origin,valid);target?.style.removeProperty('view-transition-name');markContent();return false}}
+    return null
+  }
   document.documentElement.style.setProperty('--loft-photo-from-radius', radius(source))
   mark(source)
   if (forward) {
+    // Capture the unpressed card, after mark() removes tap-scale interpolation.
+    origin.top=source.getBoundingClientRect().top
+    origin.scrollY=window.scrollY
     openingPhoto = { id: origin.id, src: origin.src }
     origins.set(to.key, origin)
     while (origins.size > 40) origins.delete(origins.keys().next().value!)
@@ -81,7 +114,7 @@ export function prepareProductTransition(from: Page, to: Page) {
   return {
     async finish(valid: () => boolean) {
       markContent()
-      const target = forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : originCard(origin)?.querySelector<HTMLImageElement>('img')
+      const target = returning ? await restoreOrigin(origin, valid) : forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : originCard(origin)?.querySelector<HTMLImageElement>('img')
       if (!target) return false
       // A complete cached image already has a paintable frame. Re-decoding it
       // inside the native update callback freezes the outgoing screen on Safari.
