@@ -90,3 +90,9 @@ test('браузерный Back закрывает редакторы, Forward �
  page.once('dialog',d=>d.dismiss());await page.goBack();await expect(page).toHaveURL(/dialog=edit/);await expect(page.getByRole('textbox',{name:'Заголовок',exact:true})).toHaveValue('Несохранённый текст')
  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Закрыть редактор',exact:true}).click();await expect(page).toHaveURL(ADMIN+'/campaigns');await expect(page.getByRole('dialog')).toHaveCount(0)
 })
+test('редактор сохраняет положение прокрутки исходного списка при открытии и закрытии',async({page,harness})=>{
+ harness.db.size_charts=Array.from({length:24},(_,i)=>({id:`fixture-chart-${i}`,title_ru:`Таблица ${i}`,title_uz:`Jadval ${i}`,category_id:'shoes',subcategory_id:null,brand_id:null,product_id:null,columns_ru:['Размер'],columns_uz:['O‘lcham'],rows:[['42']],is_active:true}))
+ await page.goto(ADMIN+'/size-charts');const edit=page.getByRole('button',{name:'Редактировать таблицу',exact:true}).last();await edit.scrollIntoViewIfNeeded();const scroll=await page.evaluate(()=>scrollY);expect(scroll).toBeGreaterThan(100)
+ await edit.click();await expect(page.getByRole('dialog',{name:'Таблица размеров',exact:true})).toBeVisible();expect(await page.evaluate(()=>scrollY)).toBe(scroll)
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(scroll)
+})
