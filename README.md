@@ -1,4 +1,13 @@
-# React + TypeScript + Vite
+# LOFT Store
+
+## Documentation
+
+- [PRD](docs/PRD.md) — возможности продукта, рабочие процессы и фактические бизнес-правила.
+- [DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md) — палитра, компоненты, адаптивность и действующие анимации.
+- [ARCHITECTURE](docs/ARCHITECTURE.md) — устройство системы, доступ к данным, кеш, интеграции и тестирование.
+- [AGENTS](AGENTS.md) — короткие обязательные правила будущих изменений.
+
+Документы сверены с кодом 17.11.2026. Старые отчёты описывают свои этапы; реализованные функции и ограничения определяются текущим кодом. Ниже сохранены исходные рекомендации шаблона Vite.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
