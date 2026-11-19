@@ -3,7 +3,6 @@ import {ListHeaderCard,EmptyStateCard} from '../components/ProfileCards'
 import {formatLocalDateTime} from '../lib/dateTime'
 import {useLocalTimeZone} from '../lib/useLocalTimeZone'
 import {Bell} from 'lucide-react'
-import SavedSizes from '../components/SavedSizes'
 import MarketingConsent from '../components/MarketingConsent'
 import { RestockSubscriptions } from '../components/RestockControl'
 import CustomerPreferences from '../components/CustomerPreferences'
@@ -885,7 +884,9 @@ export default function ProfilePage() {
     setTheme,
   } = useStore()
 
-  const section = searchParams.get('section') as 'main' | 'orders' | 'china' | 'favorites' | 'settings' | 'personal' | 'sizes' | 'restocks' | null
+  const rawSection = searchParams.get('section')
+  useEffect(()=>{if(rawSection==='sizes'){const next=new URLSearchParams(searchParams);next.delete('section');navigate({pathname:'/profile',search:next.toString()},{replace:true})}},[rawSection,navigate,searchParams])
+  const section = (rawSection==='sizes'?null:rawSection) as 'main' | 'orders' | 'china' | 'favorites' | 'settings' | 'personal' | 'restocks' | null
   const orderIdParam = searchParams.get('order')
   const requestIdParam = searchParams.get('request')
 
@@ -949,7 +950,7 @@ export default function ProfilePage() {
 
   const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
 
-  const openSection = (name: 'favorites' | 'orders' | 'china' | 'settings' | 'personal' | 'sizes' | 'restocks') => navigate(`/profile?section=${name}`)
+  const openSection = (name: 'favorites' | 'orders' | 'china' | 'settings' | 'personal' | 'restocks') => navigate(`/profile?section=${name}`)
   const openOrder = (orderId: string | number) => navigate(`/profile?section=orders&order=${orderId}`)
   const openChinaRequest = (requestId: string | number) => navigate(`/profile?section=china&request=${requestId}`)
 
@@ -1105,7 +1106,6 @@ export default function ProfilePage() {
 
   useEffect(()=>{if(!section||section==='main')void prefetchPersonalPages()},[section])
   if (section === 'restocks') return <RestockSubscriptions language={language}/>
-  if (section === 'sizes') return <SavedSizes/>
   if (section === 'personal') return <CustomerPreferences key={`${section}:${window.Telegram?.WebApp.initData||''}`} section={section}/>
 
   // ✅ ГЛАВНАЯ ПРОФИЛЯ — шапка + 4 квадрата + магазин + соцсети
@@ -1150,7 +1150,6 @@ export default function ProfilePage() {
            {([
             ['favorites',<Heart size={17}/>,language==='ru'?'Избранное':'Sevimlilar',favorites.length?String(favorites.length):''],
             ['personal',<User size={17}/>,language==='ru'?'Личные данные':'Shaxsiy ma’lumotlar',''],
-            ['sizes',<Ruler size={17}/>,language==='ru'?'Мои размеры':'Mening o‘lchamlarim',''],
             ['restocks',<Bell size={17}/>,language==='ru'?'Уведомления о поступлении':'Kelishi haqida xabarlar',''],
             ['settings',<Settings size={17}/>,language==='ru'?'Настройки':'Sozlamalar',language.toUpperCase()+' · '+currency],
            ] as const).map(([key,icon,title,value])=><button key={key} data-profile-link={key} onClick={()=>openSection(key)} className="w-full text-left flex items-center gap-3 p-3.5 bg-[#FBF9F4] dark:bg-dark-card"><span data-profile-icon className="w-9 h-9 shrink-0 rounded-full border border-[#E8E2D5] dark:border-dark-border bg-[#F5F1E8] dark:bg-dark-accent flex items-center justify-center text-[#1B2A4A] dark:text-white">{icon}</span><span className="flex-1 min-w-0 text-sm font-medium text-[#1B2A4A] dark:text-white">{title}</span>{value&&<span className="text-xs text-[#8A8275] dark:text-gray-300">{value}</span>}<ChevronRight size={16} className="shrink-0 text-[#8A8275] dark:text-gray-300"/></button>)}
@@ -1247,7 +1246,6 @@ export default function ProfilePage() {
           />
 
           <MarketingConsent language={language}/>
-          <button type="button" onClick={()=>window.dispatchEvent(new Event('loft:open-tutorial'))} className="w-full text-left mb-3 p-4 rounded-2xl bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border font-medium">{language==='ru'?'Как пользоваться приложением':'Ilovadan qanday foydalanish kerak'}</button>
 
           {/* ✅ Предпочтения: единая карточка со строками и переключателями */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-3 divide-y divide-[#E8E2D5] dark:divide-dark-border">

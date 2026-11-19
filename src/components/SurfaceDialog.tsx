@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { dialogClip, dialogOrigin, lastDialogAction } from '../lib/dialogOrigin'
 import { motionEase, motionEaseCSS, motionTiming } from '../lib/motion'
@@ -9,6 +9,7 @@ export default function SurfaceDialog({ origin, stage, className, children, onCl
   origin: string; stage?: string; className: string; children: ReactNode;
   onClick?: () => void; role?: 'dialog'; label?: string;
 }) {
+  const present=useIsPresent()
   const reduced = useReducedMotion()
   const root = useRef<HTMLDivElement>(null)
   const [source] = useState(() => dialogOrigin(origin))
@@ -25,7 +26,7 @@ export default function SurfaceDialog({ origin, stage, className, children, onCl
     const animation = root.current?.animate([{ clipPath: dialogClip(lastDialogAction()) }, { clipPath: dialogClip(null) }], { duration: motionTiming.section * 1000, easing: motionEaseCSS })
     return () => animation?.cancel()
   }, [stage, reduced])
-  return <motion.div ref={root} data-surface-dialog={origin} data-dialog-stage={stage}
+  return <motion.div data-surface-exiting={present?undefined:"true"} ref={root} data-surface-dialog={origin} data-dialog-stage={stage}
     role={role} aria-label={label} aria-modal={role === 'dialog' ? true : undefined}
     onClick={onClick} className={className} style={{ transitionProperty: 'background-color, color, border-color' }}
     initial={reduced ? false : { clipPath: dialogClip(source), opacity: source ? 1 : 0.9 }}

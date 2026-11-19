@@ -10,14 +10,14 @@ test('personal pages render warm account data during a slow background refresh; 
  await page.goto(STORE+'/profile?section=settings');const before=harness.calls.filter(c=>c.body?.action==='marketingConsent').length
  await page.getByRole('button',{name:'О новости и предложениях',exact:true}).click();await expect(page.getByText(/Получайте новости о новых коллекциях/)).toBeVisible();expect(harness.calls.filter(c=>c.body?.action==='marketingConsent').length).toBe(before);await expect(page.getByRole('switch',{name:'Новости и предложения'})).not.toBeChecked()
 })
-test('first launch requires a saved language, preserves the product link, completes once and can replay',async({page,harness})=>{
+test('first launch requires a saved language, preserves the product link, completes once without a replay setting',async({page,harness})=>{
  harness.db.preferences=[{...preferences,language:'ru',language_source:null,onboarding_completed_at:null}]
  await page.goto(STORE+'/product/'+productId+'?variant=keep-me')
  const dialog=page.locator('[data-onboarding]');await expect(dialog.getByText('Выберите язык / Tilni tanlang')).toBeVisible();await page.screenshot({path:test.info().outputPath('intro.png')});await expect(dialog.getByText('Пропустить',{exact:true})).toHaveCount(0)
- await dialog.getByRole('button',{name:'O‘zbekcha',exact:true}).click();await expect(dialog.getByText('LOFT’ga xush kelibsiz')).toBeVisible();await dialog.getByRole('button',{name:'O‘tkazib yuborish'}).click();await expect(dialog).toHaveCount(0);await expect(page).toHaveURL(new RegExp('/product/'+productId+'\\?variant=keep-me'))
+ await dialog.getByRole('button',{name:'O‘zbekcha',exact:true}).click();await expect(dialog.getByText('LOFT Store’ga xush kelibsiz')).toBeVisible();await dialog.getByRole('button',{name:'O‘tkazib yuborish'}).click();await expect(dialog).toHaveCount(0);await expect(page).toHaveURL(new RegExp('/product/'+productId+'\\?variant=keep-me'))
  expect(harness.db.preferences[0].language).toBe('uz');expect(harness.db.preferences[0].onboarding_completed_at).toBeTruthy()
  await page.reload();await expect(page.locator('[data-product-hero]')).toBeVisible();await expect(dialog).toHaveCount(0)
- await page.goto(STORE+'/profile?section=settings');await page.getByRole('button',{name:'Ilovadan qanday foydalanish kerak'}).click();await expect(dialog.getByText('LOFT’ga xush kelibsiz')).toBeVisible();await expect(dialog.getByText('Выберите язык / Tilni tanlang')).toHaveCount(0);await dialog.getByRole('button',{name:'O‘tkazib yuborish'}).click();await expect(page).toHaveURL(/section=settings/)
+ await page.goto(STORE+'/profile?section=settings');await expect(page.getByRole('button',{name:'Ilovadan qanday foydalanish kerak'})).toHaveCount(0)
 })
 test('legal route returns to settings with the same scroll; floating special action stays above nav and hides for keyboard',async({page})=>{
  await page.goto(STORE+'/profile?section=settings');await page.getByRole('button',{name:/Политика конфиденциальности/}).click();await expect(page).toHaveURL(/\/privacy/);await page.locator('.loft-header button').first().click();await expect(page).toHaveURL(/section=settings/)
@@ -30,14 +30,14 @@ test('failed language choice stays selected and retry saves it; completed tutori
  let failures=1
  await page.route('**/api/store',async route=>{if(route.request().postDataJSON()?.action==='language'&&failures-- >0)return route.fulfill({status:503,json:{error:'offline'}});return route.fallback()})
  await page.goto(STORE+'/profile');const dialog=page.locator('[data-onboarding]');await dialog.getByRole('button',{name:'O‘zbekcha',exact:true}).click();await expect(dialog.getByRole('alert')).toBeVisible();await expect(dialog.getByText('Выберите язык / Tilni tanlang')).toBeVisible()
- await dialog.getByRole('button',{name:'O‘zbekcha',exact:true}).click();await expect(dialog.getByText('LOFT’ga xush kelibsiz')).toBeVisible();await dialog.getByRole('button',{name:'O‘tkazib yuborish'}).click();await expect(dialog).toHaveCount(0)
+ await dialog.getByRole('button',{name:'O‘zbekcha',exact:true}).click();await expect(dialog.getByText('LOFT Store’ga xush kelibsiz')).toBeVisible();await dialog.getByRole('button',{name:'O‘tkazib yuborish'}).click();await expect(dialog).toHaveCount(0)
  await page.route('**/api/store',async route=>route.request().postDataJSON()?.action==='preferences'?route.fulfill({status:503,json:{error:'offline'}}):route.fallback())
  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(dialog).toHaveCount(0)
 })
-test('size and restock sections reuse the verified cache and update after a successful cancellation',async({page,harness})=>{
+test('restock section reuses the verified cache and update after a successful cancellation',async({page,harness})=>{
  harness.db.preferences=[{...preferences,sizes:[{category:'shoes',subcategory:'sneakers',system:'numeric',size:'42'}]}]
  harness.db.restocks=[{id:'sub-fixture',variant_id:harness.db.product_variants[0].id,product_id:productId,size:'42',name_ru:'Тестовые кроссовки'}]
- await page.goto(STORE+'/profile');await page.getByRole('button',{name:/Мои размеры/}).click();await expect(page.getByText('42',{exact:true})).toBeVisible();await page.locator('.loft-header button').first().click()
+ await page.goto(STORE+'/profile');await expect(page.getByRole('button',{name:/Мои размеры/})).toHaveCount(0)
  await page.getByRole('button',{name:/Уведомления о поступлении/}).click();await expect(page.getByText('Тестовые кроссовки',{exact:true})).toBeVisible();await page.getByRole('button',{name:/Отменить/}).click();await expect.poll(()=>harness.db.restocks.length).toBe(0)
  await page.locator('.loft-header button').first().click();await page.getByRole('button',{name:/Уведомления о поступлении/}).click();await expect(page.getByText('Тестовые кроссовки',{exact:true})).toHaveCount(0)
 })

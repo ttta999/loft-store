@@ -5,6 +5,7 @@ let sessionUserId: number | null = null
 let scopeIdentity:string|null=null,scopeVersion=0
 /** Ephemeral cache partition; deliberately independent of unverified Telegram user IDs. */
 export function customerCacheScope(){const identity=window.Telegram?.WebApp.initData||null;if(identity!==scopeIdentity){scopeIdentity=identity;scopeVersion++}return scopeVersion}
+export function verifiedCustomerId(){return window.Telegram?.WebApp.initData===sessionInitData?sessionUserId:null}
 const resourceListeners=new Set<()=>void>()
 export const subscribePrivateResources=(listener:()=>void)=>{resourceListeners.add(listener);return()=>{resourceListeners.delete(listener)}}
 const publishPrivateResources=()=>{for(const listener of resourceListeners)listener()}
@@ -63,6 +64,7 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
       }else if(action==='language'){
         const previous=dataCache.get<{data:Record<string,unknown>}>(privateKey+'preferences',60_000)
         if(previous)dataCache.set(privateKey+'preferences',{...previous,data:{...previous.data,language:payload.language,language_source:'explicit'}},15_000)
+        else dataCache.invalidate(privateKey+'preferences')
       }else if(['subscribeRestock','cancelRestock'].includes(action))dataCache.set(privateKey+'restocks',data,15_000)
       else if(['createOrder','cancelOrder','createRequest','cancelRequest','upload'].includes(action)){
         for(const resource of ['orders','requests'])dataCache.invalidate(privateKey+resource)

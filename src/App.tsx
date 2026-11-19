@@ -1,3 +1,4 @@
+import {activeDismissButton} from './lib/activeSurface'
 import Onboarding from './components/Onboarding'
 import LanguageSync from './components/LanguageSync'
 import LaunchTarget from './components/LaunchTarget'
@@ -39,7 +40,7 @@ function TelegramBackButtonManager() {
 
     // ✅ На внутренних страницах показываем системную кнопку и вешаем history.pop()
     const handleBack = () => {
-      const dismiss = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-loft-dismiss]')).at(-1)
+      const dismiss = activeDismissButton()
       if (dismiss) { dismiss.click(); return }
       const idx = (window.history.state as any)?.idx
       if (typeof idx === 'number' && idx === 0) {
@@ -102,7 +103,7 @@ function AppLayout() {
     }
 
     const handler = () => {
-      const dismiss = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-loft-dismiss]')).at(-1)
+      const dismiss = activeDismissButton()
       if (dismiss) { dismiss.click(); return }
       if (activeTab === 'search') navigate('/')
       else if (onBackClick) onBackClick()

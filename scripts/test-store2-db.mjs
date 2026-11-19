@@ -96,5 +96,6 @@ try{
  const {testLocales}=await import('../tests/sql/locales.mjs');await testLocales(pg)
  await (await import('../tests/sql/local-time.mjs')).testLocalTime(pg)
  await (await import('./../tests/sql/onboarding.mjs')).default({query,scalar,pg})
+ await (await import('../tests/sql/shop-grid.mjs')).default({pg,scalar,file})
  console.log('ALL LOCAL DATABASE CHECKS PASSED')
 } catch(error){console.error(error.message);console.error({position:error.position,internalPosition:error.internalPosition,internalQuery:error.internalQuery});if(error.query)console.error('SQL context:',error.query.slice(0,800));process.exitCode=1}finally{await pg.close()}

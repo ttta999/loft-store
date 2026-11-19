@@ -10,6 +10,7 @@ interface SizeSelectorProps {
   sizeType: SizeType
   availableSizes: string[]
   allSizes?: string[]
+  selectableSizes?: string[]
   selectedSize: string | null
   onSelect: (size: string) => void | boolean | Promise<void | boolean>
   hintSize?: string
@@ -35,6 +36,7 @@ export default function SizeSelector({
   sizeType,
   availableSizes,
   allSizes=availableSizes,
+  selectableSizes=allSizes,
   selectedSize,
   onSelect,
   hintSize, sizeSuggestion, label, profile=false, onRemove, compact=false,
@@ -159,7 +161,7 @@ export default function SizeSelector({
                   return (
                     <button
                       key={size}
-                      disabled={busy} onClick={() => void handleSizeClick(size)}
+                      disabled={busy||!selectableSizes.includes(size)} onClick={() => void handleSizeClick(size)}
                       className={`w-full flex items-center gap-3 p-3.5 text-left transition-colors ${
                         isSelected
                           ? 'bg-[#F5F1E8] dark:bg-dark-accent'
@@ -185,7 +187,7 @@ export default function SizeSelector({
                           : 'font-medium text-[#1B2A4A] dark:text-white'
                       }`}>
                         <span>{size}</span>
-                        {!profile&&!availableSizes.includes(size)&&<><span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии':'Mavjud emas'}</span><span className="mt-1 inline-flex items-center gap-1 text-xs text-[#1B2A4A] dark:text-gold">{language==='ru'?'Уведомить о поступлении':'Kelganda xabar berish'}<Bell size={12}/></span></>}
+                        {!profile&&!availableSizes.includes(size)&&<><span className="block text-xs text-[#8A8275] dark:text-gray-400 mt-1">{language==='ru'?'Нет в наличии':'Mavjud emas'}</span>{selectableSizes.includes(size)&&<span className="mt-1 inline-flex items-center gap-1 text-xs text-[#1B2A4A] dark:text-gold">{language==='ru'?'Уведомить о поступлении':'Kelganda xabar berish'}<Bell size={12}/></span>}</>}
                       </span>
 
                       {(hintSize===size||sizeSuggestion?.candidates.includes(size))&&<span data-size-hint className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-[#F5F1E8] text-[#1B2A4A] dark:bg-gold/15 dark:text-gold whitespace-nowrap shrink-0">{sizeSuggestion&&sizeSuggestion.confidence!=='exact'?<span>≈</span>:<Check size={12}/>}{sizeSuggestion&&sizeSuggestion.confidence!=='exact'?(language==='ru'?'Ваш размер':'O‘lchamingiz'):(language==='ru'?'Ваш размер':'Sizning o‘lchamingiz')}</span>}

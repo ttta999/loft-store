@@ -1,3 +1,4 @@
+import PrimaryActionButton from '../components/PrimaryActionButton'
 import {useFloatingAction} from '../lib/useFloatingAction'
 import {ListHeaderCard} from '../components/ProfileCards'
 import { motionDistance, motionEase, motionTiming } from '../lib/motion'
@@ -314,21 +315,17 @@ export default function ChinaPage() {
 
         {/* ✅ Кнопка отправки */}
         </div>
-        <div data-route-floating className="fixed left-0 right-0 z-40 px-4 pointer-events-none" style={{bottom:`max(${floating.bottom}px, env(safe-area-inset-bottom))`,visibility:floating.keyboard?'hidden':'visible'}}><button
+        <div data-route-floating className="fixed left-0 right-0 z-40 px-4 pointer-events-none" style={{bottom:`max(${floating.bottom}px, env(safe-area-inset-bottom))`,visibility:floating.keyboard?'hidden':'visible'}}><PrimaryActionButton
           ref={submitButton}
           onClick={handleSubmit}
           disabled={submitting}
-          className={`pointer-events-auto w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md ${
-            submitting
-              ? 'bg-[#E8E2D5] dark:bg-dark-accent text-[#8A8275] dark:text-gray-500 cursor-not-allowed shadow-none'
-              : 'bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] hover:bg-[#142038] dark:hover:bg-[#d6b57e]'
-          }`}
+          className="pointer-events-auto"
         >
-          <Send size={20} />
+          <Send size={18} />
           {submitting
             ? (language === 'ru' ? 'Отправка...' : 'Yuborilmoqda...')
             : (language === 'ru' ? 'Отправить заявку' : 'Ariza yuborish')}
-        </button>
+        </PrimaryActionButton>
       </div>
     </div>
   )

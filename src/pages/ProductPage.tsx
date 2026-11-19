@@ -1,3 +1,4 @@
+import {shopSizeOptions} from '../lib/shopSizeGrid'
 import {productSizeSuggestion} from '../lib/sizeConversion'
 import {useProductSizeChart} from '../lib/productSizeChart'
 import {usePageState} from '../lib/usePageState'
@@ -184,7 +185,8 @@ export default function ProductPage() {
   }
 
   const chosenVariant = knownVariants.find(v=>v.color_id===(selectedColor?.id||null)&&v.size_value===(product?.size_type==='one_size'?'One Size':selectedSize))
-  const allSizes=sortSizeStrings([...new Set([...sizes,...knownVariants.filter(v=>v.color_id===(selectedColor?.id||null)).map(v=>v.size_value)])])
+  const actualSizes=sortSizeStrings([...new Set([...sizes,...knownVariants.filter(v=>v.color_id===(selectedColor?.id||null)).map(v=>v.size_value)])])
+  const allSizes=sortSizeStrings(shopSizeOptions(product?.category,product?.subcategory,actualSizes))
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
@@ -546,10 +548,11 @@ export default function ProductPage() {
           )}
 
           <SizeSelector
-            sizeSuggestion={chartResource.result&&!chartResource.error?productSizeSuggestion(chartResource.chart,product,preferences.data?.sizes||[],allSizes):undefined}
+            sizeSuggestion={chartResource.result&&!chartResource.error?productSizeSuggestion(chartResource.chart,product,preferences.data?.sizes||[],actualSizes):undefined}
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
             allSizes={allSizes}
+            selectableSizes={actualSizes}
             selectedSize={selectedSize}
             onSelect={setSelectedSize}
             language={language}

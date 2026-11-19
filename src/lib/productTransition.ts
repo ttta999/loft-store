@@ -1,3 +1,4 @@
+import {productReturnMotion} from './productReturnMotion'
 import { useStore } from '../store/useStore'
 import { cacheProduct } from './productCache'
 import { warmPage } from './pagePreload'
@@ -96,8 +97,9 @@ export function prepareProductTransition(from: Page, to: Page) {
   const returning = reverse && !!origin
   if (!origin || (!forward && !returning)) return null
   const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
+  if(returning)return productReturnMotion(source,valid=>restoreOrigin(origin,valid))
+  if(typeof document.startViewTransition!=='function')return null
   if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) {
-    if (returning) return {async finish(valid:()=>boolean){const target=await restoreOrigin(origin,valid);target?.style.removeProperty('view-transition-name');markContent();return false}}
     return null
   }
   document.documentElement.style.setProperty('--loft-photo-from-radius', radius(source))

@@ -5,7 +5,7 @@ test('profile cards share headers and restock has verified empty state and retry
  await expect(page.getByRole('heading',{name:'Уведомления о поступлении',exact:true})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Пока нет уведомлений о поступлении',exact:true})).toBeVisible()
  await expect(page.locator('[data-profile-icon] svg')).toHaveClass(/bell/)
- await page.goto(STORE+'/profile?section=sizes');await expect(page.getByText('Сохраните размеры для удобного выбора товаров',{exact:true})).toBeVisible()
+ await page.goto(STORE+'/profile?section=sizes');await expect(page).toHaveURL(STORE+'/profile');await expect(page.getByRole('button',{name:/Мои размеры/})).toHaveCount(0)
  await page.goto(STORE+'/profile?section=personal');await expect(page.getByText('Ваши контакты и адреса доставки',{exact:true})).toBeVisible()
  await page.goto(STORE+'/china');await expect(page.getByText('Привезём товар по вашему описанию или ссылке')).toHaveCount(0);await expect(page.locator('[data-profile-icon] svg')).toHaveClass(/globe/)
 })
@@ -59,11 +59,9 @@ test('restock pending response never flashes the empty state',async({page})=>{
  await page.goto(STORE+'/profile?section=restocks');await expect(page.getByRole('status',{name:'Загрузка'})).toBeVisible();await expect(page.getByRole('heading',{name:'Пока нет уведомлений о поступлении'})).toHaveCount(0)
  release();await expect(page.getByRole('heading',{name:'Пока нет уведомлений о поступлении'})).toBeVisible()
 })
-test('profile stores native and explicitly mapped foreign systems separately',async({page,harness})=>{
- harness.db.size_charts=[chart({columns_ru:['Буква','Число'],columns_uz:['Harf','Raqam'],rows:[['M','42']],size_mapping:{source_system:'alphabetical',target_system:'numeric',source_column:0,target_column:1}})]
- await page.goto(STORE+'/profile?section=sizes')
- const system=page.getByRole('combobox',{name:'Кроссовки: система размеров',exact:true});await system.selectOption('alphabetical')
- await page.getByRole('button',{name:/Кроссовки.*Не указан/}).click();await page.getByRole('button',{name:'M',exact:true}).click();await expect.poll(()=>harness.db.preferences?.[0]?.sizes?.[0]?.size).toBe('M')
- await expect(page.getByRole('dialog')).toHaveCount(0);await system.selectOption('numeric');await page.getByRole('button',{name:/Кроссовки.*Не указан/}).click();await page.getByRole('button',{name:'42',exact:true}).click()
- await expect.poll(()=>harness.db.preferences?.[0]?.sizes?.length).toBe(2);expect(harness.db.preferences[0].sizes.map((s:any)=>s.system).sort()).toEqual(['alphabetical','numeric'])
+test('legacy native and mapped preferences survive the removed size page',async({page,harness})=>{
+ const sizes=[{category:'shoes',subcategory:'sneakers',system:'numeric',size:'42'},{category:'shoes',subcategory:'sneakers',system:'alphabetical',size:'M'}]
+ harness.db.preferences=[{name:'Покупатель',phone:'',delivery_method:'pickup',addresses:[],sizes:structuredClone(sizes),version:0}]
+ await page.goto(STORE+'/profile?section=sizes');await expect(page).toHaveURL(STORE+'/profile');expect(harness.db.preferences[0].sizes).toEqual(sizes)
+ await page.getByRole('button',{name:/Личные данные/}).click();await page.getByLabel('Имя',{exact:true}).fill('Другой покупатель');await page.getByRole('button',{name:'Сохранить изменения'}).click();await expect.poll(()=>harness.db.preferences[0].name).toBe('Другой покупатель');expect(harness.db.preferences[0].sizes).toEqual(sizes)
 })

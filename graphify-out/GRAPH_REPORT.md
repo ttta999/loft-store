@@ -1,58 +1,58 @@
-# Graph Report - loft-store-final  (2026-11-17)
+# Graph Report - loft-store-final  (2026-11-19)
 
 ## Corpus Check
-- 356 files · ~216,451 words
+- 365 files · ~218,696 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .css 4, .example 1, (none) 1)
 
 ## Summary
-- 2510 nodes · 4715 edges · 218 communities (188 shown, 30 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 50 edges (avg confidence: 0.91)
+- 2530 nodes · 4783 edges · 209 communities (180 shown, 29 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 52 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d3cce8a6`
+- Built from commit: `869b63c0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- pagePreload.ts
+- App.tsx
 - store.ts
 - react
-- ref_node_test
+- displayMoney
 - Анимации и прокрутка
 - Браузерные проверки
-- useStore
-- Доступ и безопасность
+- BrandsPage.tsx
+- 20261106154106_security_architecture.sql
 - ЧАСТЬ I. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ
 - eslint.config.js
 - Иконки категорий
-- useStore.ts
-- public.china_requests
-- productSizeChart.ts
+- useStore
+- storeApi
+- 20261114162026_store2_reminder_intervals.sql
 - Типы клиентского кода
 - Типы инструментов сборки
 - devDependencies
 - Интеграция Telegram
 - Типы серверного кода
-- private.store_outbox
+- 6. Похожие товары и дополнения к образу
 - Зависимости интерфейса
 - vite
 - Команды проекта
-- Проверка публикации
+- Security architecture — 6 November 2026
 - 11. История действий по заказу
 - Настройки TypeScript
 - public.orders
 - vercel.json
-- store2-baseline.sql
-- ref_node_assert
-- orderState.ts
+- 13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ
+- sizeConversion.ts
+- orderNotifications.ts
 - CartPage.tsx
 - sql/package.json
 - public.products
 - LOFT Store — техническая архитектура
 - 20261113173520_store2_campaigns.sql
-- architecture.test.ts
+- sortSizes.ts
 - ЭТАП 5. TELEGRAM-РАССЫЛКИ
 - dateTime.ts
 - LOFT Store — требования и фактическое поведение продукта
@@ -72,7 +72,7 @@
 - LOFT Store 2.0 — отчёт о реализации
 - 10. Полностью упростить создание и редактирование таблиц размеров
 - store2-followup-spec.md
-- catalog-growth.test.ts
+- campaignDelivery.ts
 - 11. Упростить главный экран административной панели
 - 15. Добавить узбекский язык во всю административную панель
 - 3. Актуальность данных административной панели
@@ -81,7 +81,7 @@
 - 12. Упростить раздел настроек админки
 - store2-spec.md
 - 18. ТЕСТИРОВАНИЕ
-- transitions-dev/SKILL.md
+- Shimmer text
 - Card hover tilt
 - Раздельное оформление и международная поставка спецзаказов
 - 13. Упростить интерфейс Telegram-рассылок
@@ -96,7 +96,7 @@
 - Accordion expand
 - 12. Унифицировать шрифты, заголовки и иконки всей админки
 - 18. Рекомендуемые этапы
-- telegramPhoto.ts
+- 20261114162041_store2_telegram_photos.sql
 - Защита магазина и порядок обновления
 - Accordion expand
 - Avatar group hover
@@ -129,7 +129,7 @@
 - Learn more hover
 - Checkbox check
 - Spinning counter
-- Toggle
+- transitions-dev/SKILL.md
 - Thinking states
 - Reasoning stream
 - Streaming text
@@ -141,7 +141,7 @@
 - 4. Проверить кеширование всех новых страниц клиентского приложения
 - 15. СОХРАНЕНИЕ РАБОТАЮЩЕЙ ЛОГИКИ ЗАКАЗОВ
 - 15. Этапы
-- 2. Новый дизайн сохранения контактов и адреса при оформлении заказа
+- ref_node_assert
 - Banner stacking
 - Card resize
 - Checkbox check
@@ -175,13 +175,12 @@
 - 7. Подключить фирменные анимации ко всем новым страницам админки
 - local-time-spec.md
 - Спецзаказы: заявка → оценка → обычный заказ
-- 01_store_backend.sql
+- public.china_requests
 - ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ
 - ResourceCache
-- 9. Новый главный экран клиентского профиля
+- 09_admin_mfa_and_payment_audit.sql
 - 10.2. Упростить выбор области действия таблицы
-- 5. Персональная подсказка «Ваш размер» при выборе товара
-- 7. Исправить анимации рекомендованных товаров
+- onboarding-hint.test.ts
 - sql/README.md
 - ЧАСТЬ I. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ
 - 7. Исправить несовместимость сохранённых буквенных и цифровых размеров
@@ -193,87 +192,78 @@
 - 8. Исправить обратные анимации карточек товаров во всех разделах
 - 17. ПОРЯДОК ВЫПОЛНЕНИЯ
 - 4. Добавить полноценный пустой экран уведомлений о поступлении
-- sortSizes.ts
-- ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ
 - ЧАСТЬ III. ОБЩИЕ ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ
-- 6. Новый текст отсутствующего размера
-- specialOrderNotifications.ts
-- LaunchTarget.tsx
+- supabase.ts
 - Финальная оптимизация клиента — 17.11.2026
 - Карточки, размеры и интерфейс — 17 ноября 2026
-- 20261113165503_store2_catalog_growth.sql
 - Правила работы с LOFT Store
-- 6. Похожие товары и дополнения к образу
 - Потоки операций
-- 07_reservation_lifecycle.sql
-- 13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ
 - store_payment_confirmation_guard
-- 20261114162041_store2_telegram_photos.sql
 
 ## God Nodes (most connected - your core abstractions)
 1. `public.orders` - 76 edges
-2. `useStore` - 57 edges
+2. `useStore` - 55 edges
 3. `react` - 45 edges
-4. `test` - 41 edges
+4. `test` - 42 edges
 5. `storeApi()` - 38 edges
-6. `STORE` - 36 edges
+6. `STORE` - 37 edges
 7. `public.china_requests` - 34 edges
-8. `ProductPage()` - 27 edges
-9. `ProfilePage()` - 26 edges
-10. `public.products` - 26 edges
+8. `ProductPage()` - 30 edges
+9. `ADMIN` - 26 edges
+10. `ProfilePage()` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Таблицы: загрузка, состояния и кеш` --references--> `ResourceCache`  [INFERRED]
-  docs/product-interface-followup-report.md → src/lib/resourceCache.ts
 - `14.3. Предварительная загрузка страниц` --references--> `warmPage()`  [INFERRED]
   docs/store2-followup-spec.md → src/lib/pagePreload.ts
+- `Таблицы: загрузка, состояния и кеш` --references--> `ResourceCache`  [INFERRED]
+  docs/product-interface-followup-report.md → src/lib/resourceCache.ts
 - `Клиентское приложение` --references--> `usePageState()`  [INFERRED]
   docs/store2-followup-report.md → src/lib/usePageState.ts
 - `7. Товар внутри выбранного бренда` --references--> `BrandsPage()`  [INFERRED]
   docs/seven-fixes.md → src/pages/BrandsPage.tsx
-- `1–2. Персональные страницы и кеш` --references--> `ResourceCache`  [INFERRED]
-  docs/final-client-optimization.md → src/lib/resourceCache.ts
+- `Клиентское приложение` --references--> `ProductRoute()`  [INFERRED]
+  docs/ARCHITECTURE.md → src/App.tsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (218 total, 30 thin omitted)
+## Communities (209 total, 29 thin omitted)
 
-### Community 0 - "pagePreload.ts"
-Cohesion: 0.08
-Nodes (44): App(), AppLayout(), MAIN_TAB_PATHS, ProductRoute(), TabType, TelegramBackButtonManager(), ThemeManager(), AppToaster() (+36 more)
+### Community 0 - "App.tsx"
+Cohesion: 0.07
+Nodes (50): App(), AppLayout(), MAIN_TAB_PATHS, ProductRoute(), TabType, TelegramBackButtonManager(), ThemeManager(), AppToaster() (+42 more)
 
 ### Community 1 - "store.ts"
-Cohesion: 0.13
-Nodes (31): handler(), dbError(), handler(), presentOrder(), privatePath(), signedUrl(), uuid(), handler() (+23 more)
+Cohesion: 0.16
+Nodes (30): handler(), dbError(), handler(), presentOrder(), privatePath(), signedUrl(), uuid(), handler() (+22 more)
 
 ### Community 2 - "react"
-Cohesion: 0.18
-Nodes (14): framer-motion, react, aspects, IntrinsicImage(), PlaneFlight(), uploadPrivateImage(), motionDistance, motionEase (+6 more)
+Cohesion: 0.22
+Nodes (12): framer-motion, aspects, PlaneFlight(), PrimaryActionButton, uploadPrivateImage(), motionDistance, motionEase, motionEaseCSS (+4 more)
 
-### Community 3 - "ref_node_test"
-Cohesion: 0.25
-Nodes (9): escape(), specialNotification(), SpecialSnapshot, deliveryQuote(), formatUsd(), readDeliverySettings(), displayMoney(), moneyNumber() (+1 more)
+### Community 3 - "displayMoney"
+Cohesion: 0.50
+Nodes (6): deliveryQuote(), formatUsd(), readDeliverySettings(), displayMoney(), moneyNumber(), roundUsd()
 
 ### Community 4 - "Анимации и прокрутка"
-Cohesion: 0.06
-Nodes (66): LOFT Store — действующая дизайн-система, Адаптивность и доступность, Анимации: значения из кода, Дополнение: клиентские поверхности (17.11.2026), Правила product transition, Прокрутка, диалоги и уменьшение движения, Типографика и геометрия, Цвета и темы (+58 more)
+Cohesion: 0.05
+Nodes (67): LOFT Store — действующая дизайн-система, Адаптивность и доступность, Анимации: значения из кода, Дополнение: клиентские поверхности (17.11.2026), Интро и возврат товара — 19.11.2026, Переиспользуемые компоненты, Правила product transition, Типографика и геометрия (+59 more)
 
 ### Community 5 - "Браузерные проверки"
-Cohesion: 0.06
-Nodes (26): checkout(), regularCart(), preferences, ADMIN, catalog(), Harness, install(), jwt() (+18 more)
+Cohesion: 0.05
+Nodes (32): checkout(), regularCart(), preferences, ADMIN, catalog(), Harness, install(), jwt() (+24 more)
 
-### Community 6 - "useStore"
+### Community 6 - "BrandsPage.tsx"
 Cohesion: 0.14
-Nodes (38): lucide-react, react-router-dom, CategoryIcon(), Collapse(), IslandHeader(), IslandHeaderProps, ProductCard, catalogMoney() (+30 more)
+Nodes (39): lucide-react, react-router-dom, CategoryIcon(), Collapse(), IslandHeader(), IslandHeaderProps, ProductCard, catalogMoney() (+31 more)
 
-### Community 7 - "Доступ и безопасность"
-Cohesion: 0.09
-Nodes (17): private.store_file_referenced(), private.store_guard_registration(), private.store_notification_config, private.store_registration_invites, private.store_sessions, private.store_update_popularity(), private.store_wake_worker(), public.get_product_popularity() (+9 more)
+### Community 7 - "20261106154106_security_architecture.sql"
+Cohesion: 0.06
+Nodes (32): private.store_expire_reservations(), private.store_file_referenced(), private.store_guard_registration(), private.store_housekeeping(), private.store_notification_config, private.store_registration_invites, private.store_sessions, private.store_update_popularity() (+24 more)
 
 ### Community 8 - "ЧАСТЬ I. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ"
-Cohesion: 0.14
-Nodes (14): 3. Убрать фильтр «Доступный размер» из каталога, 4. Новый интерфейс раздела «Мои размеры», 8. Исправить фото при отправке товара в Telegram, Выбор размера, Дизайн, Оптимизация, Проверка причины, Согласованное решение (+6 more)
+Cohesion: 0.04
+Nodes (45): 2. Новый дизайн сохранения контактов и адреса при оформлении заказа, 3. Убрать фильтр «Доступный размер» из каталога, 4. Новый интерфейс раздела «Мои размеры», 5. Персональная подсказка «Ваш размер» при выборе товара, 6. Новый текст отсутствующего размера, 7. Исправить анимации рекомендованных товаров, 8. Исправить фото при отправке товара в Telegram, 9. Новый главный экран клиентского профиля (+37 more)
 
 ### Community 9 - "eslint.config.js"
 Cohesion: 0.15
@@ -283,17 +273,17 @@ Nodes (12): eslint@^10.3.0, @eslint/js@^10.0.1, eslint-plugin-react-hooks@^7.1.1
 Cohesion: 0.07
 Nodes (28): CategoryIconProps, ICON_MAP, BackpackIcon, BeanieIcon, BeltIcon, BLOCK_ICONS, BootIcon, CapIcon (+20 more)
 
-### Community 11 - "useStore.ts"
+### Community 11 - "useStore"
 Cohesion: 0.11
-Nodes (19): zustand, BottomNavbar(), BottomNavbarProps, TAB_PATHS, TabType, cartAdditionError(), Line, CategoryTree (+11 more)
+Nodes (19): zustand, BottomNavbarProps, TAB_PATHS, TabType, cartAdditionError(), Line, CategoryTree, getCategoriesTree() (+11 more)
 
-### Community 12 - "public.china_requests"
-Cohesion: 0.13
-Nodes (23): private.store_expire_reservations(), private.store_housekeeping(), private.store_uploads, public.store_admin_request_status(), public.store_create_request(), public.store_orphan_files(), store_upload_customer, private.store_queue_order_notifications() (+15 more)
+### Community 12 - "storeApi"
+Cohesion: 0.28
+Nodes (15): 2. Кеширование клиентских разделов, LanguageSync(), MarketingConsent(), AccountIntro(), peekStoreData(), peekStoreResponse(), publishPrivateResources(), resourceListeners (+7 more)
 
-### Community 13 - "productSizeChart.ts"
-Cohesion: 0.20
-Nodes (13): SavedSizeRow(), getSizesLabelRu(), SizeSelector(), SizeSelectorProps, SizeType, chartKey(), getCategoryCharts(), loadProductChart() (+5 more)
+### Community 13 - "20261114162026_store2_reminder_intervals.sql"
+Cohesion: 0.33
+Nodes (6): private.store_reminder_deliveries, public.store_admin_reminder_settings(), public.store_queue_manager_reminders(), public.store_reminder_delivered(), public.store_reminder_ready(), store_reminder_deliveries_stage
 
 ### Community 14 - "Типы клиентского кода"
 Cohesion: 0.11
@@ -315,9 +305,9 @@ Nodes (3): Telegram, WebApp, Window
 Cohesion: 0.14
 Nodes (13): compilerOptions, allowImportingTsExtensions, lib, module, moduleResolution, noEmit, noUnusedLocals, noUnusedParameters (+5 more)
 
-### Community 19 - "private.store_outbox"
-Cohesion: 0.17
-Nodes (14): public.store_claim_notification(), public.store_claim_notification(), private.store_queue_special_order(), public.store_admin_cancel_order(), public.store_cancel_order(), public.store_claim_custom_notification(), public.store_claim_notification(), private.store_queue_special_status() (+6 more)
+### Community 19 - "6. Похожие товары и дополнения к образу"
+Cohesion: 0.29
+Nodes (7): 6.1. Похожие товары, 6.2. Дополнения к образу, 6.3. Настройка в админке, 6.4. Анимации и производительность, 6. Похожие товары и дополнения к образу, Новые блоки карточки товара, Цель
 
 ### Community 20 - "Зависимости интерфейса"
 Cohesion: 0.13
@@ -331,9 +321,9 @@ Nodes (4): vite@^8.0.12, @vitejs/plugin-react@^6.0.1, vite, @vitejs/plugin-react
 Cohesion: 0.22
 Nodes (9): scripts, build, dev, lint, preview, test, test:all, test:csp (+1 more)
 
-### Community 23 - "Проверка публикации"
-Cohesion: 0.22
-Nodes (5): data, env, params, secret, token
+### Community 23 - "Security architecture — 6 November 2026"
+Cohesion: 0.29
+Nodes (6): Deployment order, Inventory and payments, Notifications and monitoring, Security architecture — 6 November 2026, Sessions, registration and files, Validation and limits
 
 ### Community 24 - "11. История действий по заказу"
 Cohesion: 0.07
@@ -345,47 +335,47 @@ Nodes (4): compilerOptions, rewriteRelativeImportExtensions, files, references
 
 ### Community 26 - "public.orders"
 Cohesion: 0.07
-Nodes (39): public.get_product_popularity(), public.store_admin_order_status(), private.store_queue_order_notifications(), public.store_admin_confirm_payment(), public.store_pending_notifications(), public.store_save_screenshot(), public.store_admin_confirm_payment(), private.store_queue_order_notifications() (+31 more)
+Nodes (47): public.get_product_popularity(), public.store_claim_notification(), public.store_admin_order_status(), private.store_queue_order_notifications(), public.store_admin_confirm_payment(), public.store_claim_notification(), public.store_pending_notifications(), public.store_save_screenshot() (+39 more)
 
 ### Community 28 - "vercel.json"
 Cohesion: 0.33
 Nodes (5): maxDuration, functions, api/campaignWorker.ts, headers, rewrites
 
-### Community 51 - "store2-baseline.sql"
-Cohesion: 0.12
-Nodes (8): public.store_finish_upload(), cron.job, cron.schedule(), private.store_outbox, public.brands, public.refunds, public.store_admin_save_product(), storage.buckets
+### Community 51 - "13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ"
+Cohesion: 0.40
+Nodes (5): 13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ, Supabase, Telegram, Административные функции, Клиентские данные
 
-### Community 52 - "ref_node_assert"
-Cohesion: 0.07
-Nodes (24): installed, pg, matchesSize(), chooseSizeChart(), exactSize(), personalSizeHint(), validSizeChart(), alpha (+16 more)
+### Community 52 - "sizeConversion.ts"
+Cohesion: 0.16
+Nodes (17): chooseSizeChart(), exactSize(), personalSizeHint(), validSizeChart(), alpha, convertSize(), productSizeSuggestion(), Row (+9 more)
 
-### Community 53 - "orderState.ts"
-Cohesion: 0.12
-Nodes (31): handler(), 8. Уведомления, задачи и рассылки, customerTranslator(), actions, managerReminder(), StoredItem, StoredRecord, dispatchNotification() (+23 more)
+### Community 53 - "orderNotifications.ts"
+Cohesion: 0.13
+Nodes (27): handler(), 8. Уведомления, задачи и рассылки, customerLanguage(), actions, managerReminder(), StoredItem, StoredRecord, dispatchNotification() (+19 more)
 
 ### Community 54 - "CartPage.tsx"
-Cohesion: 0.15
-Nodes (23): ProductSizeChart(), needsContactSave(), normalizedPhone(), normalizedText(), allocateUzs(), CartPageResource, formatCardNumber(), parsePaymentCards() (+15 more)
+Cohesion: 0.16
+Nodes (22): SurfaceDialog(), needsContactSave(), normalizedPhone(), normalizedText(), allocateUzs(), formatCardNumber(), parsePaymentCards(), PaymentCard (+14 more)
 
 ### Community 55 - "sql/package.json"
 Cohesion: 0.33
 Nodes (6): @electric-sql/pglite, devDependencies, @electric-sql/pglite@0.5.16, name, private, type
 
 ### Community 56 - "public.products"
-Cohesion: 0.13
-Nodes (29): private.store_expire_reservations(), public.store_create_order(), public.store_create_order(), public.store_available_sizes(), public.store_product_available(), public.store_create_order(), public.store_create_order(), public.store_admin_save_delivery() (+21 more)
+Cohesion: 0.08
+Nodes (38): private.store_expire_reservations(), public.store_create_order(), store_customer_pending_orders, store_expiring_reservations, public.store_create_order(), public.store_available_sizes(), public.store_product_available(), public.store_create_order() (+30 more)
 
 ### Community 57 - "LOFT Store — техническая архитектура"
-Cohesion: 0.17
-Nodes (12): LOFT Store — техническая архитектура, Supabase: модель и связи, Telegram и фоновые задачи, Авторизация и безопасность, Административная панель, Клиентское приложение, Общая схема, Ограничения и расхождения (+4 more)
+Cohesion: 0.15
+Nodes (13): LOFT Store — техническая архитектура, Supabase: модель и связи, Telegram и фоновые задачи, Авторизация и безопасность, Административная панель, Изменения интро и product return (19.11.2026), Клиентское приложение, Общая схема (+5 more)
 
 ### Community 60 - "20261113173520_store2_campaigns.sql"
-Cohesion: 0.07
-Nodes (45): private.store_admins, public.store_is_admin(), private.store_audit_payment(), private.store_payment_audit, private.store_payment_reviews, public.store_admin_auth_state(), store_payment_audit, public.store_is_admin() (+37 more)
+Cohesion: 0.09
+Nodes (38): private.store_customer_preferences, campaign_recipients_expired, campaign_recipients_pending, campaign_tests_pending, campaigns_due, private.store_bot_delivery_state, private.store_campaign_audience(), private.store_campaign_freeze() (+30 more)
 
-### Community 61 - "architecture.test.ts"
-Cohesion: 0.32
-Nodes (4): CachedRate, exchangeRate(), valid(), token
+### Community 61 - "sortSizes.ts"
+Cohesion: 0.60
+Nodes (4): LETTER_ORDER, sizeSortKey(), sortSizes(), sortSizeStrings()
 
 ### Community 62 - "ЭТАП 5. TELEGRAM-РАССЫЛКИ"
 Cohesion: 0.08
@@ -393,11 +383,11 @@ Nodes (25): 12.1. Создание рассылки, 12.2. Предпросмо�
 
 ### Community 63 - "dateTime.ts"
 Cohesion: 0.19
-Nodes (18): Локализация и время, RefundSummary(), dateLocale(), dateTimeOptions, formatLocalDate(), formatLocalDateTime(), formatLocalTime(), getDeviceTimeZone() (+10 more)
+Nodes (14): Локализация и время, dateLocale(), dateTimeOptions, formatLocalDate(), formatLocalTime(), getDeviceTimeZone(), localDateKey(), localInputToUtc() (+6 more)
 
 ### Community 64 - "LOFT Store — требования и фактическое поведение продукта"
-Cohesion: 0.13
-Nodes (15): 1. Назначение и пользователи, 2. Возможности и степень готовности, 3. Каталог и варианты, 4. Типы оформления и оплата, 5. Жизненный цикл спецзаказа, 6. Отмена, остатки и финансовый возврат, 7. Валюты, округление, доставка, 9. Границы подтверждения и развитие (+7 more)
+Cohesion: 0.12
+Nodes (16): 1. Назначение и пользователи, 2. Возможности и степень готовности, 3. Каталог и варианты, 4. Типы оформления и оплата, 5. Жизненный цикл спецзаказа, 6. Отмена, остатки и финансовый возврат, 7. Валюты, округление, доставка, 9. Границы подтверждения и развитие (+8 more)
 
 ### Community 65 - "TESTING.md"
 Cohesion: 0.10
@@ -420,16 +410,16 @@ Cohesion: 0.13
 Nodes (15): 21. Проверки клиентского приложения, 22. Проверки административной панели, 23. Регрессионные проверки, Telegram sharing, Анимации товаров, Контакты, Напоминания, Настройки (+7 more)
 
 ### Community 70 - "ProfilePage.tsx"
-Cohesion: 0.11
-Nodes (37): Переиспользуемые компоненты, 2. Кеширование клиентских разделов, sonner, CustomerPreferences(), LanguageSync(), MarketingConsent(), AccountIntro(), EmptyStateCard() (+29 more)
+Cohesion: 0.14
+Nodes (29): sonner, CustomerPreferences(), IntrinsicImage(), EmptyStateCard(), ListHeaderCard(), RefundSummary(), RestockSubscriptions(), invalidateStoreData() (+21 more)
 
 ### Community 71 - "ЭТАП 3. УЛУЧШЕНИЕ КАТАЛОГА И TELEGRAM MINI APP"
 Cohesion: 0.14
 Nodes (14): 7.1. Клиентский интерфейс, 7.2. Серверная логика, 7.3. Telegram-уведомление, 7.4. Управление подписками, 7. Уведомления о поступлении нужного размера, 8. Поделиться товаром прямо в Telegram, Поддержка устройств, Реализация (+6 more)
 
 ### Community 72 - "public"
-Cohesion: 0.14
-Nodes (12): public.store_admin_cancel_order(), public.store_admin_confirm_payment(), public.store_admin_confirm_payment_with_notice(), public.store_admin_delete_product(), public.store_admin_product_visibility(), public.size_charts, public.store_admin_size_chart(), public.store_customer_preferences() (+4 more)
+Cohesion: 0.23
+Nodes (7): public.size_charts, public.store_admin_size_chart(), public.store_customer_preferences(), store_data_revision, public.store_admin_size_chart(), public.store_customer_preferences(), private.store_customer_preferences_before_onboarding()
 
 ### Community 73 - "Transitions.dev"
 Cohesion: 0.15
@@ -444,8 +434,8 @@ Cohesion: 0.15
 Nodes (12): Telegram и деньги, Безопасность, Возвраты, Изменённые файлы, Миграция и совместимость, Обычные заказы и ручные возвраты, Ограничения, Отмена (+4 more)
 
 ### Community 76 - "20261113170735_store2_history_and_tasks.sql"
-Cohesion: 0.11
-Nodes (17): public.store_data_revisions, private.store_admin_action_audit, private.store_journal_changed(), private.store_order_events, private.store_reminder_settings, private.store_tasks(), private.store_within_work_hours(), public.store_admin_order_history() (+9 more)
+Cohesion: 0.10
+Nodes (18): public.store_data_revisions, private.store_admin_action_audit, private.store_journal_changed(), private.store_order_events, private.store_reminder_settings, private.store_tasks(), private.store_within_work_hours(), public.store_admin_order_history() (+10 more)
 
 ### Community 77 - "LOFT Store 2.0 — результат доработок после тестирования"
 Cohesion: 0.15
@@ -463,13 +453,13 @@ Nodes (12): 10.1. Исправить модальное окно, 10.3. Доба
 Cohesion: 0.17
 Nodes (9): LOFT Store 2.0 — доработки после тестирования, 1. Общая задача, 20. Не нарушать работающие сценарии, LOFT Store 2.0 — полный список доработок после тестирования приложения и админки, Возвраты, Общие требования, Обычные заказы, Спецзаказы (+1 more)
 
-### Community 81 - "catalog-growth.test.ts"
-Cohesion: 0.15
-Nodes (15): @supabase/supabase-js, CampaignJob, deliverCampaign(), DeliveryResult, PreparationError, prepareCampaignDelivery(), runCampaignBatch(), CustomerLanguage (+7 more)
+### Community 81 - "campaignDelivery.ts"
+Cohesion: 0.12
+Nodes (23): CampaignJob, deliverCampaign(), DeliveryResult, PreparationError, prepareCampaignDelivery(), runCampaignBatch(), launchParameter(), miniAppBase() (+15 more)
 
 ### Community 82 - "11. Упростить главный экран административной панели"
-Cohesion: 0.25
-Nodes (8): 11. Упростить главный экран административной панели, Адаптивность, Дизайн, Новая структура Dashboard, Порядок компактного списка, Раздел «Каталог», Текущая проблема, Центр задач
+Cohesion: 0.17
+Nodes (12): 11. Упростить главный экран административной панели, 16. Автоматический пересчёт просроченных задач, Адаптивность, Дизайн, Новая структура Dashboard, Обнаруженная проблема, Порядок компактного списка, Раздел «Каталог» (+4 more)
 
 ### Community 83 - "15. Добавить узбекский язык во всю административную панель"
 Cohesion: 0.17
@@ -499,8 +489,8 @@ Nodes (9): 14. ОБЩИЕ ТРЕБОВАНИЯ К ИНТЕРФЕЙСУ, 16. РЕ
 Cohesion: 0.18
 Nodes (11): 18. ТЕСТИРОВАНИЕ, Telegram sharing, Актуальность данных, Личные данные и размеры, Напоминания, Рассылки, Регрессии, Рекомендации (+3 more)
 
-### Community 90 - "transitions-dev/SKILL.md"
-Cohesion: 0.20
+### Community 90 - "Shimmer text"
+Cohesion: 0.29
 Nodes (6): CSS, HTML usage, JavaScript orchestration, Shimmer text, Tunable variables, When to use
 
 ### Community 91 - "Card hover tilt"
@@ -528,8 +518,8 @@ Cohesion: 0.20
 Nodes (10): 24. Этапы реализации, 25. Ограничения, 26. Итоговый отчёт, ЧАСТЬ VI. ПОРЯДОК ВЫПОЛНЕНИЯ, Этап 1. Критичные исправления, Этап 2. Клиентский UX/UI, Этап 3. Навигация и производительность, Этап 4. Упрощение административной панели (+2 more)
 
 ### Community 97 - "VercelResponse"
-Cohesion: 0.17
-Nodes (12): handler(), handler(), handler(), launchParameter(), miniAppBase(), STORE_ORIGIN, StoreTarget, targetLink() (+4 more)
+Cohesion: 0.15
+Nodes (10): handler(), handler(), handler(), CachedRate, exchangeRate(), valid(), VercelRequest, VercelResponse (+2 more)
 
 ### Community 98 - "Card hover tilt"
 Cohesion: 0.20
@@ -558,10 +548,6 @@ Nodes (9): 12.1. Единая типографика, 12.2. Единая шап�
 ### Community 104 - "18. Рекомендуемые этапы"
 Cohesion: 0.22
 Nodes (9): 18. Рекомендуемые этапы, 19. Ограничения, 20. Итоговый отчёт, ЧАСТЬ IV. ПОРЯДОК РЕАЛИЗАЦИИ, Этап 1. Навигация и производительность, Этап 2. Клиентский интерфейс, Этап 3. Единый дизайн административной панели, Этап 4. Редактор таблиц размеров (+1 more)
-
-### Community 105 - "telegramPhoto.ts"
-Cohesion: 0.52
-Nodes (5): sharp, approvedProductImage(), compatiblePhoto(), pending, productTelegramPhoto()
 
 ### Community 106 - "Защита магазина и порядок обновления"
 Cohesion: 0.22
@@ -608,8 +594,8 @@ Cohesion: 0.25
 Nodes (8): 10. Исправить сохранение настроек напоминаний, Валидация, Обнаруженная проблема, Подтверждённая причина, Проверка, Реализация, Серверная логика повторения, Требования
 
 ### Community 117 - "ARCHITECTURE.md"
-Cohesion: 0.14
-Nodes (10): Documentation, Expanding the ESLint configuration, LOFT Store, React Compiler, Deployment order, Inventory and payments, Notifications and monitoring, Security architecture — 6 November 2026 (+2 more)
+Cohesion: 0.15
+Nodes (15): Исправления интро, размеров и обратных переходов — 19.11.2026, @supabase/supabase-js, CustomerLanguage, customerTranslator(), customerTexts, escape(), specialNotification(), SpecialSnapshot (+7 more)
 
 ### Community 118 - "Input clear with dissolve"
 Cohesion: 0.25
@@ -691,8 +677,8 @@ Nodes (6): Checkbox check, CSS, HTML usage, JavaScript orchestration, Tunable va
 Cohesion: 0.29
 Nodes (6): CSS, HTML usage, JavaScript orchestration, Spinning counter, Tunable variables, When to use
 
-### Community 138 - "Toggle"
-Cohesion: 0.29
+### Community 138 - "transitions-dev/SKILL.md"
+Cohesion: 0.20
 Nodes (6): CSS, HTML usage, JavaScript orchestration, Toggle, Tunable variables, When to use
 
 ### Community 139 - "Thinking states"
@@ -739,9 +725,9 @@ Nodes (7): 15. СОХРАНЕНИЕ РАБОТАЮЩЕЙ ЛОГИКИ ЗАКАЗ
 Cohesion: 0.15
 Nodes (12): 15. Этапы, 16. Итоговый отчёт, 1. Общая задача, LOFT Store — исправления карточек товаров, размеров, анимаций и интерфейса, ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ, ЧАСТЬ V. ПОРЯДОК РЕАЛИЗАЦИИ, Этап 1. Клиентские заголовки, Этап 2. Таблицы размеров (+4 more)
 
-### Community 150 - "2. Новый дизайн сохранения контактов и адреса при оформлении заказа"
-Cohesion: 0.25
-Nodes (8): 2. Новый дизайн сохранения контактов и адреса при оформлении заказа, Дополнительные требования, Когда показывать карточку, Новый дизайн, Самовывоз, Светлая тема, Текущая проблема, Тёмная тема
+### Community 150 - "ref_node_assert"
+Cohesion: 0.09
+Nodes (8): sharp, installed, pg, approvedProductImage(), compatiblePhoto(), pending, productTelegramPhoto(), token
 
 ### Community 151 - "Banner stacking"
 Cohesion: 0.29
@@ -875,9 +861,9 @@ Nodes (4): Автоматическое локальное время — рез
 Cohesion: 0.33
 Nodes (5): Изменённые файлы, Миграции Supabase, Поведение, Проверено, Спецзаказы: заявка → оценка → обычный заказ
 
-### Community 184 - "01_store_backend.sql"
-Cohesion: 0.17
-Nodes (7): china_user_request_key, orders_user_request_key, private.store_limits, private.store_outbox, public.store_create_order(), public.store_create_request(), public.store_save_screenshot()
+### Community 184 - "public.china_requests"
+Cohesion: 0.08
+Nodes (26): china_user_request_key, orders_user_request_key, private.store_limits, private.store_outbox, public.store_create_order(), public.store_create_request(), public.store_save_screenshot(), public.store_admin_cancel_order() (+18 more)
 
 ### Community 185 - "ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ"
 Cohesion: 0.40
@@ -887,21 +873,17 @@ Nodes (5): 11. Убрать дублирующую кнопку «Таблицы
 Cohesion: 0.18
 Nodes (5): Browser and page data caching, Дополнение: кеш и размеры (17.11.2026), Кеширование и Realtime, 1–2. Персональные страницы и кеш, ResourceCache
 
-### Community 187 - "9. Новый главный экран клиентского профиля"
-Cohesion: 0.29
-Nodes (7): 9. Новый главный экран клиентского профиля, Адаптивность, Анимации, Компактные строки, Основные карточки, Согласованная структура, Текущая проблема
+### Community 187 - "09_admin_mfa_and_payment_audit.sql"
+Cohesion: 0.18
+Nodes (8): private.store_admins, public.store_is_admin(), private.store_audit_payment(), private.store_payment_audit, private.store_payment_reviews, public.store_admin_auth_state(), store_payment_audit, public.store_is_admin()
 
 ### Community 188 - "10.2. Упростить выбор области действия таблицы"
 Cohesion: 0.50
 Nodes (4): 10.2. Упростить выбор области действия таблицы, Для бренда, Для категории, Для конкретного товара
 
-### Community 189 - "5. Персональная подсказка «Ваш размер» при выборе товара"
-Cohesion: 0.33
-Nodes (6): 5. Персональная подсказка «Ваш размер» при выборе товара, Дизайн, Недоступный размер, Новое поведение, Принципиально важно, Соответствие размеров
-
-### Community 190 - "7. Исправить анимации рекомендованных товаров"
-Cohesion: 0.33
-Nodes (6): 7. Исправить анимации рекомендованных товаров, Дополнения к образу, Обратный переход, Реализация, Текущая проблема, Требования
+### Community 190 - "onboarding-hint.test.ts"
+Cohesion: 0.36
+Nodes (7): key(), OnboardingHint, readOnboardingHint(), writeOnboardingHint(), PANTS_SIZE_GRID, shopSizeOptions(), usesPantsGrid()
 
 ### Community 192 - "ЧАСТЬ I. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ"
 Cohesion: 0.20
@@ -916,8 +898,8 @@ Cohesion: 0.20
 Nodes (10): 9. Переделать кнопки «Добавить» в фирменном стиле LOFT, Бренды, Внешний вид, Категории, Разделы, Расположение, Текущая проблема, Товары (+2 more)
 
 ### Community 195 - "ProductPage.tsx"
-Cohesion: 0.10
-Nodes (34): ProductPhotoViewer(), ProductRecommendations(), RestockControl(), useProductVariants(), customerCacheScope(), createDataFetch(), productParameter(), cacheProduct() (+26 more)
+Cohesion: 0.13
+Nodes (27): Прокрутка, диалоги и уменьшение движения, react, ProductPhotoViewer(), ProductSizeChart(), RestockControl(), getSizesLabelRu(), SizeSelector(), SizeSelectorProps (+19 more)
 
 ### Community 196 - "6. Показывать «Таблицу размеров» только при наличии реальной таблицы"
 Cohesion: 0.22
@@ -943,25 +925,13 @@ Nodes (6): 17. ПОРЯДОК ВЫПОЛНЕНИЯ, Этап 1, Этап 2, Эт
 Cohesion: 0.33
 Nodes (6): 4. Добавить полноценный пустой экран уведомлений о поступлении, Дизайн, Логика, Текст, Текущая проблема, Требуемый дизайн
 
-### Community 202 - "sortSizes.ts"
-Cohesion: 0.60
-Nodes (4): LETTER_ORDER, sizeSortKey(), sortSizes(), sortSizeStrings()
-
-### Community 203 - "ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ"
-Cohesion: 0.50
-Nodes (4): 16. Автоматический пересчёт просроченных задач, Обнаруженная проблема, Требования, ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ
-
 ### Community 204 - "ЧАСТЬ III. ОБЩИЕ ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ"
 Cohesion: 0.50
 Nodes (4): 10. Кеширование, 11. Единый визуальный стиль, 12. Безопасность и совместимость, ЧАСТЬ III. ОБЩИЕ ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ
 
-### Community 205 - "6. Новый текст отсутствующего размера"
-Cohesion: 0.50
-Nodes (4): 6. Новый текст отсутствующего размера, Новый согласованный вариант, Основная кнопка товара, Текущая проблема
-
-### Community 206 - "specialOrderNotifications.ts"
-Cohesion: 0.27
-Nodes (8): escape(), specialOrderNotification(), SpecialOrderSnapshot, nextSpecialStatuses(), SPECIAL_DELIVERY, SPECIAL_PICKUP, specialOrderIds(), usesSpecialFulfillment()
+### Community 207 - "supabase.ts"
+Cohesion: 0.13
+Nodes (22): ProductRecommendations(), useProductVariants(), customerCacheScope(), createDataFetch(), SavedSize, chartKey(), getCategoryCharts(), loadProductChart() (+14 more)
 
 ### Community 208 - "Финальная оптимизация клиента — 17.11.2026"
 Cohesion: 0.18
@@ -971,43 +941,31 @@ Nodes (11): 11–12. Интро и язык аккаунта, 13–14. Telegram,
 Cohesion: 0.22
 Nodes (8): Выполненные восемь пунктов, Какие соответствия известны, Карточки, размеры и интерфейс — 17 ноября 2026, Обратная анимация: найденный механизм, Основные файлы, Проверки, Ручная проверка на реальном iPhone, Таблицы: загрузка, состояния и кеш
 
-### Community 210 - "20261113165503_store2_catalog_growth.sql"
-Cohesion: 0.28
-Nodes (7): private.store_restock_changed(), product_recommendations_target, public.product_recommendations, public.store_pending_notifications(), public.store_restock_delivery(), store_data_revision, store_restock_changed
-
 ### Community 211 - "Правила работы с LOFT Store"
-Cohesion: 0.29
-Nodes (7): Telegram и фоновые действия, Бизнес-инварианты и Supabase, Завершение, Код и интерфейс, Перед изменением, Правила работы с LOFT Store, Проверки
-
-### Community 212 - "6. Похожие товары и дополнения к образу"
-Cohesion: 0.29
-Nodes (7): 6.1. Похожие товары, 6.2. Дополнения к образу, 6.3. Настройка в админке, 6.4. Анимации и производительность, 6. Похожие товары и дополнения к образу, Новые блоки карточки товара, Цель
+Cohesion: 0.15
+Nodes (11): Telegram и фоновые действия, Бизнес-инварианты и Supabase, Завершение, Код и интерфейс, Перед изменением, Правила работы с LOFT Store, Проверки, Documentation (+3 more)
 
 ### Community 213 - "Потоки операций"
 Cohesion: 0.33
 Nodes (6): Админка и Supabase, Заявка и оформление спецзаказа, Отправка уведомления, Подтверждение оплаты, Потоки операций, Создание обычного заказа
 
-### Community 215 - "13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ"
-Cohesion: 0.40
-Nodes (5): 13. ОБЩИЕ ТРЕБОВАНИЯ К БЕЗОПАСНОСТИ, Supabase, Telegram, Административные функции, Клиентские данные
-
 ## Knowledge Gaps
-- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `ProfilePage.tsx`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
-- **Should `pagePreload.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.07686274509803921 - nodes in this community are weakly interconnected._
-- **Why does `2. Кеширование клиентских разделов` connect `ProfilePage.tsx` to `ResourceCache`, `Финальная доработка интерфейса LOFT Store`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
-- **Should `store.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.1347517730496454 - nodes in this community are weakly interconnected._
-- **Why does `ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ` connect `ЧАСТЬ II. АДМИНИСТРАТИВНАЯ ПАНЕЛЬ` to `store2-followup-spec.md`, `11. Упростить главный экран административной панели`, `15. Добавить узбекский язык во всю административную панель`, `10. Исправить сохранение настроек напоминаний`, `12. Упростить раздел настроек админки`, `13. Упростить интерфейс Telegram-рассылок`, `14. Ускорить переключение между страницами админки`?**
-  _High betweenness centrality (0.061) - this node is a cross-community bridge._
+- **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `storeApi`?**
+  _High betweenness centrality (0.112) - this node is a cross-community bridge._
+- **Should `App.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.06838106370543542 - nodes in this community are weakly interconnected._
+- **Why does `2. Кеширование клиентских разделов` connect `storeApi` to `Финальная доработка интерфейса LOFT Store`, `supabase.ts`?**
+  _High betweenness centrality (0.112) - this node is a cross-community bridge._
 - **Should `Анимации и прокрутка` be split into smaller, more focused modules?**
-  _Cohesion score 0.05536568694463431 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05328005328005328 - nodes in this community are weakly interconnected._
+- **Why does `storeApi()` connect `storeApi` to `App.tsx`, `react`, `ProductPage.tsx`, `ProfilePage.tsx`, `BrandsPage.tsx`, `useStore`, `supabase.ts`, `CartPage.tsx`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
 - **Should `Браузерные проверки` be split into smaller, more focused modules?**
-  _Cohesion score 0.06142611683848797 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05226722049151956 - nodes in this community are weakly interconnected._
+- **Should `BrandsPage.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.14223512336719885 - nodes in this community are weakly interconnected._

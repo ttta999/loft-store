@@ -1,3 +1,4 @@
+import {settleExitingSurfaces} from '../lib/activeSurface'
 import { motionDistance, motionEaseCSS, motionTiming } from '../lib/motion'
 import { preloadPage } from '../lib/pagePreload'
 import { clearProductNames, installProductIntent, prepareProductTransition } from '../lib/productTransition'
@@ -43,8 +44,9 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     const modalOnly = samePath && !sectionChanged && !detailChanged && !internalDirection && !hasSurfaceNavigation(displayed, location)
     let transition: ViewTransition | undefined
     let animations: Animation[] = []
+    let cancelPhotoReturn:(()=>void)|undefined
     let clearTabs: (() => void) | undefined
-    const interrupt = () => { transition?.skipTransition(); clearTabs?.() }
+    const interrupt = () => { transition?.skipTransition(); cancelPhotoReturn?.(); clearTabs?.() }
     const stopListening = () => {
       window.removeEventListener('wheel', interrupt)
       window.removeEventListener('touchstart', interrupt)
@@ -66,7 +68,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       if (generation.current !== current) return
       // A quick Back can overlap the final 200ms of a dismissed size sheet.
       // Exclude only exiting overlays from the route snapshot; an open sheet still owns Back.
-      document.querySelectorAll<HTMLElement>('[data-closing-sheet="true"]').forEach(sheet=>{sheet.style.visibility='hidden';sheet.removeAttribute('data-surface-dialog')})
+      settleExitingSurfaces()
       const tabMotion = prepareTabMotion(displayed, location, internalDirection)
       if (tabMotion) {
         clearTabs = tabMotion.cleanup
@@ -79,7 +81,16 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
         void finished.finally(stopListening)
         return
       }
-      const photo = typeof document.startViewTransition === 'function' ? prepareProductTransition(displayed, location) : null
+      const photo = prepareProductTransition(displayed, location)
+      if(photo&&'play' in photo){
+        cancelPhotoReturn=photo.cancel
+        document.documentElement.dataset.loftMotion='product'
+        window.addEventListener('wheel',interrupt,{passive:true});window.addEventListener('touchstart',interrupt,{passive:true});window.addEventListener('pointerdown',interrupt,{passive:true})
+        await photo.play(apply,()=>generation.current===current)
+        stopListening()
+        if(generation.current===current){clearProductNames();delete document.documentElement.dataset.loftMotion;window.dispatchEvent(new Event('loft:transition-end'))}
+        return
+      }
       const profile = !photo && typeof document.startViewTransition === 'function' ? prepareProfileTransition(displayed, location) : null
       const shared = photo || profile
       if (shared) {
@@ -131,6 +142,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
     return () => {
       generation.current++
       transition?.skipTransition()
+      cancelPhotoReturn?.()
       stopListening()
       animations.forEach(animation => animation.cancel())
       clearProductNames()

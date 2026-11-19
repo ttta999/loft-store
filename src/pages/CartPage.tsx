@@ -1,3 +1,4 @@
+import PrimaryActionButton from '../components/PrimaryActionButton'
 import {User} from 'lucide-react'
 import {needsContactSave,normalizedText} from '../lib/contactPreferences'
 import { usePreferences } from '../lib/preferences'
@@ -223,15 +224,14 @@ export default function CartPage() {
             </div>
           </div>
 
-          <button
+          <PrimaryActionButton
             data-dialog-trigger="checkout"
             onClick={openCheckout}
             disabled={preparingCheckout}
-            className="w-full py-3 rounded-xl bg-[#1B2A4A] dark:bg-gold text-white dark:text-[#1B2A4A] font-bold flex items-center justify-center gap-2 hover:bg-[#142038] dark:hover:bg-[#d6b57e] transition-colors"
           >
             <CreditCard size={18} />
             {language === 'ru' ? 'Оформить заказ' : 'Buyurtma berish'}
-          </button>
+          </PrimaryActionButton>
         </div>
       </div>
 

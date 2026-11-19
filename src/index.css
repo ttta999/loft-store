@@ -86,6 +86,7 @@ body {
   --loft-feedback-duration: 150ms;
   --loft-photo-duration: 340ms;
 }
+:root[data-loft-motion="product"] { overflow-anchor: none; }
 ::view-transition { pointer-events: none; }
 ::view-transition-group(root) { animation: none; }
 ::view-transition-old(root) { display: none; }

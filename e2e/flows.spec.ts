@@ -197,6 +197,7 @@ test('создание спецзаказа в магазине отражает
   await page.goto(`${STORE}/china`)
   await page.getByPlaceholder('Например: Zegna Triple Stitch', { exact: true }).fill('Новый спецзаказ из теста')
   await page.getByPlaceholder('https://...', { exact: true }).fill('https://example.test/product')
+  await page.getByPlaceholder('https://...', { exact: true }).blur()
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click()
   await expect.poll(() => harness.db.china_requests.some(r => r.product_name === 'Новый спецзаказ из теста')).toBe(true)
   const manager = await context.newPage()

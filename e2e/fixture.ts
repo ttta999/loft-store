@@ -34,6 +34,7 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
   context.on('page', page => { void h.setup(page) })
   await context.addInitScript(() => {
     const win = window as any
+    window.addEventListener('loft:product-return-start',(event)=>{const detail=(event as CustomEvent).detail;win.lastProductReturn=detail;win.lastTransition={ready:Promise.resolve(),updateCallbackDone:Promise.resolve(),finished:detail.finished}})
     win.Telegram = { WebApp: { initData: 'fixture-signed-login', initDataUnsafe: { user: { id: 900000001, first_name: 'Тестовый покупатель' } }, ready() {}, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick(callback: any) { win.telegramBack = callback }, offClick(callback: any) { if (win.telegramBack === callback) win.telegramBack = null } }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
   })
   await context.route('**/*', async route => {
@@ -70,9 +71,9 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
       if(body?.action==='cancelRestock'){h.db.restocks=(h.db.restocks||[]).filter(s=>s.id!==body.id);return json({data:h.db.restocks})}
       if(body?.action==='language'){if(!h.db.preferences)h.db.preferences=[{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0}];h.db.preferences[0].language=body.language;h.db.preferences[0].language_source='explicit';return json({data:body.language})}
       if(body?.action==='completeOnboarding'){const old=h.db.preferences?.[0];if(!old||old.language_source!=='explicit')return json({error:'Choose language'},400);old.onboarding_completed_at=new Date().toISOString();return json({data:old})}
-      if(body?.action==='marketingConsent'){const old=h.db.preferences?.[0]||{name:'',phone:'',addresses:[],sizes:[],version:0};const data={...old,marketing_enabled:body.enabled,version:old.version+1};h.db.preferences=[data];return json({data})}
+      if(body?.action==='marketingConsent'){const old=h.db.preferences?.[0]||{name:'',phone:'',addresses:[],sizes:[],version:0};const data={language:'ru',language_source:'explicit',onboarding_completed_at:'2026-01-01T00:00:00Z',...old,marketing_enabled:body.enabled,version:old.version+1};h.db.preferences=[data];return json({data})}
       if(body?.action==='preferences')return json({data:{language:'ru',language_source:'explicit',onboarding_completed_at:'2026-01-01T00:00:00Z',...(h.db.preferences?.[0]||{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0})}})
-      if(body?.action==='savePreferences'){const old=h.db.preferences?.[0]||{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0};if(old.version!==body.version)return json({error:'Данные изменились'},409);const data={...old,...body.patch,version:old.version+1};h.db.preferences=[data];return json({data})}
+      if(body?.action==='savePreferences'){const old=h.db.preferences?.[0]||{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[],version:0};if(old.version!==body.version)return json({error:'Данные изменились'},409);const data={language:'ru',language_source:'explicit',onboarding_completed_at:'2026-01-01T00:00:00Z',...old,...body.patch,version:old.version+1};h.db.preferences=[data];return json({data})}
       if (body?.action === 'upload') {
         const path = `private:${body.bucket}/900000001/${body.orderId ? body.orderId + '/' : ''}fixture.png`
         const order = h.db.orders.find(o => String(o.id) === String(body.orderId))
