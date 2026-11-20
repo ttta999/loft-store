@@ -39,3 +39,42 @@ test('concurrent checkout and worker retries send each order notification only o
   assert.equal(sends,2);assert.deepEqual([...completed].sort(),[1,2])
  }finally{globalThis.fetch=original}
 })
+
+test('manager dispatch uses only the configured chat and leaves undeliverable work pending', async () => {
+ const originalFetch = globalThis.fetch
+ const originalChat = process.env.TELEGRAM_MANAGER_CHAT_ID
+ let databaseChat: string | null = '-100900000399'
+ let deliveryFails = false
+ let complete = 0
+ const recipients: string[] = []
+ globalThis.fetch = async (input, init) => {
+  const url = new URL(String(input))
+  if (url.hostname === 'api.telegram.org') {
+   recipients.push(JSON.parse(String(init?.body)).chat_id)
+   return Response.json({ ok: !deliveryFails })
+  }
+  if (url.pathname.endsWith('/store_claim_notification')) return Response.json({ id: 1 })
+  if (url.pathname.endsWith('/store_manager_chat')) return Response.json(databaseChat)
+  if (url.pathname.endsWith('/store_complete_notification')) { complete++; return Response.json(null) }
+  throw new Error('Unexpected RPC')
+ }
+ const dispatch = () => dispatchNotification('900000301', 'request', { ...record, chat_id: '900000301' })
+ try {
+  await dispatch()
+  delete process.env.TELEGRAM_MANAGER_CHAT_ID
+  await dispatch()
+  databaseChat = null
+  await dispatch()
+  process.env.TELEGRAM_MANAGER_CHAT_ID = '@unverified_chat'
+  await dispatch()
+  process.env.TELEGRAM_MANAGER_CHAT_ID = '900000399'
+  deliveryFails = true
+  await dispatch()
+  assert.deepEqual(recipients, ['900000399', '-100900000399', '900000399'])
+  assert.equal(complete, 2)
+ } finally {
+  globalThis.fetch = originalFetch
+  if (originalChat === undefined) delete process.env.TELEGRAM_MANAGER_CHAT_ID
+  else process.env.TELEGRAM_MANAGER_CHAT_ID = originalChat
+ }
+})

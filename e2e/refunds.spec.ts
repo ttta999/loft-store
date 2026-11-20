@@ -68,7 +68,7 @@ for(const theme of ['light','dark'])test(`возвраты: общий пере�
  await page.locator('[data-admin-card="/refunds"]').click()
  await expect(page.getByRole('heading',{name:'Возвраты',exact:true})).toBeVisible()
  await page.evaluate(async()=>{await (window as any).refundTransition?.finished})
- if(await page.evaluate(()=>typeof document.startViewTransition==='function')){await expect.poll(()=>page.evaluate(()=>(window as any).refundTransitions)).toEqual(['surface']);expect(await page.evaluate(()=>(window as any).refundErrors)).toEqual([])}
+ if(await page.evaluate(()=>typeof document.startViewTransition==='function')){await expect.poll(()=>page.evaluate(()=>(window as any).refundTransitions)).toEqual(['forward']);expect(await page.evaluate(()=>(window as any).refundErrors)).toEqual([])}
  const header=page.locator('main > .sticky');await expect(header).toBeVisible()
  await page.getByLabel('Поиск возвратов').fill('1001')
  await page.getByRole('combobox').selectOption('Ожидает возврата')
@@ -87,7 +87,7 @@ for(const theme of ['light','dark'])test(`возвраты: общий пере�
  await page.getByRole('button',{name:'На главную',exact:true}).click()
  await expect(page.locator('[data-admin-card="/refunds"]')).toBeVisible()
  await page.evaluate(async()=>{await (window as any).refundTransition?.finished})
- if(await page.evaluate(()=>typeof document.startViewTransition==='function'))await expect.poll(()=>page.evaluate(()=>(window as any).refundTransitions)).toEqual(['surface','surface'])
+ if(await page.evaluate(()=>typeof document.startViewTransition==='function'))await expect.poll(()=>page.evaluate(()=>(window as any).refundTransitions)).toEqual(['forward','back'])
  await page.locator('[data-admin-card="/refunds"]').click()
  await expect(page.getByLabel('Поиск возвратов')).toHaveValue('1001')
  await expect(page.getByRole('combobox')).toHaveValue('Ожидает возврата')

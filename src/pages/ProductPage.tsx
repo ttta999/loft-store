@@ -1,4 +1,3 @@
-import {shopSizeOptions} from '../lib/shopSizeGrid'
 import {productSizeSuggestion} from '../lib/sizeConversion'
 import {useProductSizeChart} from '../lib/productSizeChart'
 import {usePageState} from '../lib/usePageState'
@@ -34,7 +33,7 @@ import { sortSizeStrings } from '../lib/sortSizes'
 export default function ProductPage() {
   const preferences=usePreferences()
   const { id } = useParams()
-  const knownVariants=useProductVariants(id)
+  const variantSnapshot = useProductVariants(id)
   const launchSelection=useRef('')
   const reduced = useReducedMotion()
   const adding = useRef(false)
@@ -63,7 +62,15 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<any>(() => getCachedProduct(id))
   const chartResource=useProductSizeChart(product || {id})
-  const [sizes, setSizes] = useState<string[]>(() => getCachedSizes(id,selectedColor?.id) || [])
+  const colorId = selectedColor?.id ?? null
+  const sizeScope = `${id}:${colorId ?? ''}`
+  const [availableSizeCache, setAvailableSizeCache] = useState(() => ({
+    scope: sizeScope, values: getCachedSizes(id, selectedColor?.id) ?? [],
+  }))
+  const knownVariants = variantSnapshot?.filter(variant => variant.color_id === colorId)
+  const sizes = knownVariants
+    ? sortSizeStrings(knownVariants.filter(variant => variant.available).map(variant => variant.size_value))
+    : availableSizeCache.scope === sizeScope ? availableSizeCache.values : []
   const [loading, setLoading] = useState(() => !getCachedProduct(id))
   const [sizesLoading, setSizesLoading] = useState(() => !getCachedSizes(id,selectedColor?.id))
 
@@ -94,7 +101,7 @@ export default function ProductPage() {
     setCartState('idle')
     setProduct(cachedProduct)
     setLoading(!cachedProduct)
-    setSizes(cachedSizes || [])
+    setAvailableSizeCache({ scope: sizeScope, values: cachedSizes || [] })
     setSizesLoading(!cachedSizes)
     setColors(getCachedProductColors(id))
     setShowFullScreen(false)
@@ -118,11 +125,11 @@ export default function ProductPage() {
   useEffect(()=>{
     const variantId=new URLSearchParams(location.search).get('variant'),key=`${id}:${variantId}`
     if(!variantId||launchSelection.current===key)return
-    const v=knownVariants.find(v=>v.id===variantId&&v.available)
+    const v=variantSnapshot?.find(v=>v.id===variantId&&v.available)
     if(!v)return
     if(v.color_id&&selectedColor?.id!==v.color_id){const color=colors.find(c=>c.id===v.color_id);if(color)setSelectedColor(color);return}
     if(!sizesLoading&&sizes.includes(v.size_value)){setSelectedSize(v.size_value);launchSelection.current=key}
-  },[knownVariants,colors,sizes,sizesLoading,selectedColor?.id,id])
+  },[variantSnapshot,colors,sizes,sizesLoading,selectedColor?.id,id])
 
   const loadProduct = async () => {
     const cached = getCachedProduct(id)
@@ -170,11 +177,11 @@ export default function ProductPage() {
     if (!id) return
     const request = ++sizesRequest.current
     const cached = getCachedSizes(id, selectedColor?.id)
-    if (cached) { setSizes(sortSizeStrings(cached)); setSizesLoading(false) }
-    else { setSizes([]); setSizesLoading(true) }
+    if (cached) { setAvailableSizeCache({ scope: sizeScope, values: sortSizeStrings(cached) }); setSizesLoading(false) }
+    else { setAvailableSizeCache({ scope: sizeScope, values: [] }); setSizesLoading(true) }
     try {
       const variants = await getProductSizes(id, selectedColor?.id || null)
-      if (activeId.current === id && request === sizesRequest.current) setSizes(sortSizeStrings(variants.map(v => v.size_value)))
+      if (activeId.current === id && request === sizesRequest.current) setAvailableSizeCache({ scope: sizeScope, values: sortSizeStrings(variants.map(v => v.size_value)) })
     } catch (error) { console.error('Ошибка загрузки размеров:', error) }
     finally { if (activeId.current === id && request === sizesRequest.current) setSizesLoading(false) }
   }
@@ -184,9 +191,9 @@ export default function ProductPage() {
     else navigate('/', { replace: true })
   }
 
-  const chosenVariant = knownVariants.find(v=>v.color_id===(selectedColor?.id||null)&&v.size_value===(product?.size_type==='one_size'?'One Size':selectedSize))
-  const actualSizes=sortSizeStrings([...new Set([...sizes,...knownVariants.filter(v=>v.color_id===(selectedColor?.id||null)).map(v=>v.size_value)])])
-  const allSizes=sortSizeStrings(shopSizeOptions(product?.category,product?.subcategory,actualSizes))
+  const chosenSize = product?.size_type === 'one_size' ? 'One Size' : selectedSize
+  const chosenVariant = knownVariants?.find(variant => variant.size_value === chosenSize)
+  const actualSizes = knownVariants ? sortSizeStrings(knownVariants.map(variant => variant.size_value)) : sizes
   const onSale = isProductOnSale(product, saleModeEnabled)
   const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)
   const discountPercent = onSale
@@ -551,8 +558,7 @@ export default function ProductPage() {
             sizeSuggestion={chartResource.result&&!chartResource.error?productSizeSuggestion(chartResource.chart,product,preferences.data?.sizes||[],actualSizes):undefined}
             sizeType={product.size_type || 'numeric'}
             availableSizes={sizes}
-            allSizes={allSizes}
-            selectableSizes={actualSizes}
+            allSizes={actualSizes}
             selectedSize={selectedSize}
             onSelect={setSelectedSize}
             language={language}

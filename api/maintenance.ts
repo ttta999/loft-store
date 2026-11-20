@@ -7,7 +7,7 @@ import { ordinaryOrderNotification, cancellationNotification, refundNotification
 import type { VercelRequest, VercelResponse } from '../server/types.ts'
 import { database, fail, start } from '../server/http.ts'
 import { HttpError } from '../server/auth.ts'
-import { dispatchNotification, send } from '../server/notifications.ts'
+import { dispatchNotification, resolveManagerChat, send } from '../server/notifications.ts'
 
 /** Called by pg_cron/pg_net using a random bearer kept exclusively in Supabase Vault. */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -55,11 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const language=manager?'ru':await customerLanguage(db,claimed.user_id)
           if(p?.restock)p.restock.language=language
           const notice = p?.manager_reminder ? managerReminder(p.manager_reminder) : p?.restock ? restockNotification(p.restock) : p?.ordinary_order ? ordinaryOrderNotification(p.ordinary_order,language) : p?.cancellation ? cancellationNotification(p.cancellation,manager,language) : p?.refund ? refundNotification(p.refund,language) : p?.special_order ? specialOrderNotification(p.special_order,language) : p?.special_request ? specialNotification(p.special_request,language) : { message: p.message, options: undefined }
-          let chat = claimed.user_id
-          if (manager) {
-            chat = process.env.TELEGRAM_MANAGER_CHAT_ID
-            if (!chat) { const result = await db.rpc('store_manager_chat'); if (result.error) throw result.error; chat = result.data }
-          }
+          const chat = manager ? await resolveManagerChat(db) : claimed.user_id
           await send(manager ? process.env.TELEGRAM_MANAGER_BOT_TOKEN : process.env.TELEGRAM_BOT_TOKEN, chat, notice.message, notice.options)
           if(p?.manager_reminder){const {error}=await db.rpc('store_reminder_delivered',{p_event:claimed.id});if(error)throw error}
           if(p?.restock){const result=await db.rpc('store_restock_delivery',{p_event:claimed.id,p_finish:true});if(result.error)throw result.error}

@@ -9,12 +9,25 @@ export async function send(token: string | undefined, chatId: string | undefined
   if (!token || !chatId) throw new Error('Notification configuration missing')
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: options.parse_mode ? message : message.slice(0,4000), ...options, link_preview_options: { is_disabled: true } }),
+    body: JSON.stringify({ chat_id: chatId, text: options.parse_mode ? message : message.slice(0,4000), parse_mode: options.parse_mode, reply_markup: options.reply_markup, link_preview_options: { is_disabled: true } }),
     signal: AbortSignal.timeout(8000),
   })
   const result = await response.json()
   if (!response.ok || !result.ok) throw new Error('Notification delivery failed')
 }
+/** Manager delivery accepts only the fixed deployment or service-only database chat. */
+export async function resolveManagerChat(db: ReturnType<typeof database>): Promise<string> {
+  const configured = process.env.TELEGRAM_MANAGER_CHAT_ID?.trim()
+  let chat = configured
+  if (!chat) {
+    const { data, error } = await db.rpc('store_manager_chat')
+    if (error) throw error
+    chat = typeof data === 'string' ? data.trim() : undefined
+  }
+  if (!chat || !/^-?[1-9]\d{0,15}$/.test(chat)) throw new Error('Manager notification configuration missing or invalid')
+  return chat
+}
+
 // All text and recipients come from persisted records, never from the request body.
 export async function dispatchNotification(userId: string, kind: 'order' | 'request', record: StoredRecord) {
   const db = database()
@@ -24,13 +37,8 @@ export async function dispatchNotification(userId: string, kind: 'order' | 'requ
     const message = kind === 'order'
       ? managerOrderNotification(record).message
       : `🌍 Новый спецзаказ №${record.id}\n📦 ${record.product_name}\n🔗 ${record.link || 'Нет ссылки'}\n📏 ${record.size_color || 'Не указан'}\n💬 ${record.comment || 'Нет комментария'}`
-    let managerChat = process.env.TELEGRAM_MANAGER_CHAT_ID
-    if (!managerChat) {
-      const { data, error } = await db.rpc('store_manager_chat')
-      if (error) throw error
-      managerChat = data || undefined
-    }
-    await send(process.env.TELEGRAM_MANAGER_BOT_TOKEN, managerChat, message, kind === 'order' ? {parse_mode:'HTML'} : {})
+    const managerChat = await resolveManagerChat(db)
+    await send(process.env.TELEGRAM_MANAGER_BOT_TOKEN, managerChat, message, kind === 'order' ? { parse_mode: 'HTML' } : {})
     // A separate outbox row prevents re-sending the manager message if client delivery fails.
     const { error: completeError } = await db.rpc('store_complete_notification', { p_event_id: event.id })
     if (completeError) throw completeError

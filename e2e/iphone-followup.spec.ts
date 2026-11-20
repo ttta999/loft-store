@@ -43,11 +43,15 @@ test('cart and special-request actions share geometry and stay above navigation'
  await page.locator('textarea').fill('Комментарий');if(test.info().project.name!=='desktop')await expect(action).toBeHidden();await page.locator('textarea').blur();await expect(action).toBeVisible();expect(harness.db.china_requests.length).toBe(1)
  await page.screenshot({path:test.info().outputPath('special-action.png')})
 })
-test('pants use eleven shop sizes, unavailable undefined variants cannot be ordered, legacy letters remain',async({page,harness})=>{
+test('pants show only created variants, with subscription for existing zero stock',async({page,harness})=>{
  Object.assign(harness.db.products[0],{category:'clothes',subcategory:'pants',size_type:'combined'});harness.db.product_variants[0].size_value='M'
+ harness.db.product_variants.push({...harness.db.product_variants[0],id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',size_value:'48',stock:0})
  await page.goto(STORE+'/product/'+productId);await page.locator('[data-dialog-trigger="size"]').click();const dialog=page.getByRole('dialog',{name:'Выберите размер'})
- for(const size of ['36','38','40','42','44','46','48','50','52','54','56'])await expect(dialog.getByRole('button',{name:new RegExp('^'+size+' Нет')})).toBeDisabled()
+ for(const size of ['36','38','40','42','44','46','50','52','54','56'])await expect(dialog.getByRole('button',{name:new RegExp('^'+size+'(?: |$)')})).toHaveCount(0)
  await expect(dialog.getByRole('button',{name:'M',exact:true})).toBeEnabled();expect(harness.db.product_variants[0].size_value).toBe('M')
+ await dialog.getByRole('button',{name:/^48 Нет в наличии/}).click()
+ await page.getByRole('button',{name:'Уведомить о поступлении',exact:true}).click()
+ await expect(page.getByRole('button',{name:'Вы подписаны',exact:true})).toBeVisible()
 })
 for(const legacy of [false,true])test(`admin pants grid supports ${legacy?'legacy stock editing':'new products'} without converting variants`,async({page,harness})=>{
  harness.db.categories.push({id:'clothes',name_ru:'Одежда',name_uz:'Kiyim',is_active:true,sort_order:2})
@@ -81,4 +85,41 @@ test('local completion is only a boot hint and a contradictory server account re
  await page.route('**/api/store',async route=>{if(hold&&route.request().postDataJSON()?.action==='preferences')await gate;await route.fallback()})
  await page.reload();await expect(page.locator('[data-onboarding]')).toHaveCount(0);await expect(page.getByRole('heading',{name:/Категории/})).toBeVisible();hold=false;release()
  harness.db.preferences=[{...prefs,language_source:null,onboarding_completed_at:null}];await page.reload();await expect(page.getByRole('heading',{name:'Выберите язык / Tilni tanlang'})).toBeVisible();await expect(page.getByRole('button',{name:'Пропустить',exact:true})).toHaveCount(0)
+})
+
+test('two colors keep separate size grids while the last unit sells and stock returns', async ({ page, harness }) => {
+ const blue = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+ const red = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+ Object.assign(harness.db.products[0], { category: 'clothes', subcategory: 'jeans', size_type: 'numeric' })
+ const image = STORE + '/fixture-product.svg'
+ harness.db.product_colors = [
+  { id: blue, product_id: productId, name_ru: 'Синий', name_uz: 'Ko‘k', hex_code: '#0000ff', images: [image], sort_order: 0 },
+  { id: red, product_id: productId, name_ru: 'Красный', name_uz: 'Qizil', hex_code: '#ff0000', images: [image], sort_order: 1 },
+ ]
+ const row = harness.db.product_variants[0]
+ const grid = ['36','38','40','42','44','46','48','50','52','54','56']
+ harness.db.product_variants = [
+  ...grid.map((size, index) => ({ ...row, id: 'blue-' + index, color_id: blue, size_value: size, stock: 1 })),
+  { ...row, color_id: red, size_value: '50', stock: 1 },
+ ]
+ await page.clock.install()
+ await page.goto(STORE + '/product/' + productId)
+ await page.getByRole('button', { name: 'Синий', exact: true }).click()
+ const trigger = page.locator('[data-dialog-trigger="size"]')
+ const sheet = page.getByRole('dialog', { name: 'Выберите размер' })
+ await trigger.click()
+ for (const size of grid) await expect(sheet.getByRole('button', { name: size, exact: true })).toBeEnabled()
+ await sheet.getByRole('button', { name: '36', exact: true }).click()
+ await page.getByRole('button', { name: 'Красный', exact: true }).click()
+ await trigger.click()
+ await expect(sheet.getByRole('button', { name: '36', exact: true })).toHaveCount(0)
+ await expect(sheet.getByRole('button', { name: '50', exact: true })).toBeEnabled()
+
+ const redVariant = harness.db.product_variants.at(-1)!
+ redVariant.stock = 0
+ await page.clock.fastForward(16_000)
+ await expect(sheet.getByRole('button', { name: /^50 Нет в наличии/ })).toBeEnabled()
+ redVariant.stock = 2
+ await page.clock.fastForward(16_000)
+ await expect(sheet.getByRole('button', { name: '50', exact: true })).toBeEnabled()
 })

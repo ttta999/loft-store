@@ -7,7 +7,7 @@ test('recommendation product round trip uses shared photo and restores its sourc
 })
 test('unavailable real size offers subscription, prevents adding and can be cancelled in profile',async({page,harness})=>{
  harness.db.product_variants[0].stock=0;await page.goto(STORE+`/product/${productId}`);await page.locator('[data-dialog-trigger="size"]').click();await page.getByRole('dialog').getByRole('button',{name:/42.*Нет в наличии/}).click();await page.getByRole('button',{name:'Уведомить о поступлении',exact:true}).click();await expect(page.getByRole('button',{name:'Вы подписаны',exact:true})).toBeVisible();expect(harness.db.restocks.length).toBe(1)
- await expect(page.getByRole('button',{name:'В корзину',exact:true})).toHaveCount(0);await page.goto(STORE+'/profile?section=restocks');await page.getByRole('button',{name:'Отменить подписку',exact:true}).click();await expect(page.getByText('Активных подписок пока нет',{exact:true})).toBeVisible();expect(harness.db.restocks).toHaveLength(0)
+ await expect(page.getByRole('button',{name:'В корзину',exact:true})).toHaveCount(0);await page.goto(STORE+'/profile?section=restocks');await page.getByRole('button',{name:'Отменить подписку',exact:true}).click();await expect(page.getByText('Пока нет уведомлений о поступлении',{exact:true})).toBeVisible();expect(harness.db.restocks).toHaveLength(0)
 })
 test('prepared Telegram sharing invokes chooser without sending a client message',async({page,harness})=>{
  await page.goto(STORE+`/product/${productId}`);await page.evaluate(()=>{(window.Telegram!.WebApp as any).shareMessage=(id:string,callback:(ok:boolean)=>void)=>{(window as any).sharedId=id;callback(true)}})

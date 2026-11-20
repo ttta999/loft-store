@@ -9,9 +9,9 @@ import {readAll} from '../lib/readAll'
 import {supabase} from '../lib/supabase'
 import type {PublicVariant} from '../lib/sizeAvailability'
 export function useProductVariants(productId?:string){
- const [variants,setVariants]=useState<PublicVariant[]>(()=>dataCache.get<PublicVariant[]>('catalog:variant-availability')||[])
+ const [variants,setVariants]=useState<PublicVariant[] | null>(() => dataCache.get<PublicVariant[]>('catalog:variant-availability'))
  useEffect(()=>{if(!productId)return;let active=true,running=false;const load=async()=>{if(running||document.hidden)return;running=true;try{const rows=await dataCache.load('catalog:variant-availability',async()=>{const {data,error}=await readAll(supabase.rpc('store_catalog_variants'));if(error)throw error;return (data||[]) as PublicVariant[]},10000);if(active)setVariants(rows)}catch{/* Stock is revalidated before adding to cart. */}finally{running=false}};void load();const timer=setInterval(()=>void load(),15000);return()=>{active=false;clearInterval(timer)}},[productId])
- return variants.filter(v=>v.product_id===productId)
+ return variants?.filter(v => v.product_id === productId) ?? null
 }
 export function RestockControl({variant,product,color,language}:{variant:PublicVariant;product:any;color?:string;language:string}){
  const [subscription,setSubscription]=useState<any>(null),[busy,setBusy]=useState(false),[checking,setChecking]=useState(true),ru=language==='ru'
