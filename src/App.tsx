@@ -1,3 +1,4 @@
+import { subscribePrivateResources, verifiedCustomerId } from './lib/api'
 import {activeDismissButton} from './lib/activeSurface'
 import Onboarding from './components/Onboarding'
 import LanguageSync from './components/LanguageSync'
@@ -79,17 +80,35 @@ function AppLayout() {
   // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
     const tg = initTelegram()
-    if (!tg) return
+    if (!tg?.initData) return
     let active = true
-    getUserData().then(user => {
-      if (!active) return
-      setTelegramUser(user)
-      useStore.getState().setChatId(user.id)
-      subscribeUser().catch(() => {})
-    }).catch(() => {
-      if (active) { setTelegramUser(null); useStore.getState().setChatId(null) }
+    let running = false
+    let hydratedId: string | null = null
+    const hydrate = async () => {
+      if (running) return
+      running = true
+      try {
+        const user = await getUserData()
+        if (!active || user.id === hydratedId) return
+        hydratedId = user.id
+        setTelegramUser(user)
+        useStore.getState().setChatId(user.id)
+        void subscribeUser().catch(() => {})
+      } catch {
+        if (active && !hydratedId) {
+          setTelegramUser(null)
+          useStore.getState().setChatId(null)
+        }
+      } finally {
+        running = false
+      }
+    }
+    const unsubscribe = subscribePrivateResources(() => {
+      const currentUser = verifiedCustomerId()
+      if (currentUser && String(currentUser) !== hydratedId) void hydrate()
     })
-    return () => { active = false }
+    void hydrate()
+    return () => { active = false; unsubscribe() }
   }, [setTelegramUser])
 
   // ✅ Системная кнопка «назад» Telegram на вкладках

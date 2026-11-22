@@ -50,7 +50,7 @@ export const getProductSoldCount = async (productId: string): Promise<number> =>
 export const getProducts = async (force = false) => {
   if (force) dataCache.invalidate('http:')
   return dataCache.load('catalog:products', async () => {
-    const { data, error } = await readAll(supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }))
+    const { data, error } = await readAll(supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }).retry(false))
     if (error) throw error
     cacheProducts(data || [])
     return data || []
@@ -137,8 +137,8 @@ export const getCategoriesTree = async (force = false): Promise<CategoryTree[] |
   if (force) dataCache.invalidate('http:')
   try {
     const [{ data: cats, error: catsErr }, { data: subs, error: subsErr }] = await Promise.all([
-      supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
-      supabase.from('subcategories').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+      supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }).retry(false),
+      supabase.from('subcategories').select('*').eq('is_active', true).order('sort_order', { ascending: true }).retry(false),
     ])
     if (catsErr || subsErr) {
       console.error('❌ Ошибка загрузки категорий:', catsErr || subsErr)

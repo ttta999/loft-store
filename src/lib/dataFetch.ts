@@ -1,3 +1,4 @@
+import { readWithDeadline } from './readDeadline.ts'
 import { dataCache } from './resourceCache.ts'
 
 /** Cache only successful Data API reads; auth, signed URLs and stock checks stay live. */
@@ -6,6 +7,14 @@ export function createDataFetch(onMutation: () => void) {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
     const method = (init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
     const liveInit: RequestInit = { ...init, cache: 'no-store' }
+    const get = () => readWithDeadline(async signal => {
+      const response = await fetch(input, { ...liveInit, signal })
+      if (!response.body) return response
+      // Keep the deadline through the response body, not just its headers.
+      const body = await response.arrayBuffer()
+      return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers })
+    },
+      init?.signal ?? (input instanceof Request ? input.signal : undefined))
     const table = url.pathname.startsWith('/rest/v1/') ? url.pathname.slice('/rest/v1/'.length).split('/')[0] : null
     if (!table) return fetch(input, liveInit)
     if (table === 'rpc') {
@@ -20,11 +29,11 @@ export function createDataFetch(onMutation: () => void) {
       return response
     }
     // Inventory can change between viewing an item and checkout; never cache its HTTP response.
-    if (table === 'product_variants' || init?.signal || (input instanceof Request && input.signal.aborted)) return fetch(input, liveInit)
+    if (table === 'product_variants' || init?.signal || (input instanceof Request && input.signal.aborted)) return get()
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined))
     const key = `http:${method}:${url.href}:${headers.get('authorization')}:${headers.get('accept')}:${headers.get('range')}:${headers.get('prefer')}`
     const response = await dataCache.load(key, async () => {
-      const response = await fetch(input, liveInit)
+      const response = await get()
       if (!response.ok) throw Object.assign(new Error('Uncached response'), { response })
       return response
     }, ['orders', 'china_requests', 'subscribers'].includes(table) ? 10_000 : 60_000).catch((error: unknown) => {

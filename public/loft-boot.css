@@ -1,0 +1,15 @@
+#loft-boot[hidden] { display: none; }
+#loft-boot {
+  position: fixed; inset: 0; z-index: 9999; display: grid; place-content: center;
+  padding: 1.5rem; text-align: center; background: #f5f1e8; color: #1b2a4a;
+  font: 1rem system-ui, sans-serif;
+}
+#loft-boot p { margin: 1rem 0; }
+#loft-boot button {
+  min-height: 44px; padding: 0.5rem 1rem; border-radius: 0.75rem; border: 0;
+  background: #1b2a4a; color: white; font: inherit; cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  #loft-boot { background: #0e1422; color: white; }
+  #loft-boot button { background: #c9a961; color: #1b2a4a; }
+}

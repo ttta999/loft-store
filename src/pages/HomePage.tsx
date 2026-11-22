@@ -1,9 +1,9 @@
 import HomeProductCard from '../components/ProductCard'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore, filterVisibleProducts } from '../store/useStore'
-import { getProducts } from '../lib/supabase'
+import { getCategoriesTree, getProducts, type CategoryTree } from '../lib/supabase'
 import {
   ArrowRight, ShoppingBag, User as UserIcon, Sparkles,
   FolderOpen, Banknote, Flame, Tag,
@@ -89,12 +89,22 @@ export default function HomePage() {
     popularityMap,
     getPopularityAge,
     telegramUser,
-    ensureCategories,
+    setCategoriesCache,
     categoriesCache,
-  } = useStore(useShallow(state => ({ language: state.language, saleModeEnabled: state.saleModeEnabled, productsCache: state.productsCache, setProductsCache: state.setProductsCache, getProductsCacheAge: state.getProductsCacheAge, popularityMap: state.popularityMap, getPopularityAge: state.getPopularityAge, telegramUser: state.telegramUser, ensureCategories: state.ensureCategories, categoriesCache: state.categoriesCache })))
+  } = useStore(useShallow(state => ({ language: state.language, saleModeEnabled: state.saleModeEnabled, productsCache: state.productsCache, setProductsCache: state.setProductsCache, getProductsCacheAge: state.getProductsCacheAge, popularityMap: state.popularityMap, getPopularityAge: state.getPopularityAge, telegramUser: state.telegramUser, setCategoriesCache: state.setCategoriesCache, categoriesCache: state.categoriesCache })))
 
   const categoriesRaw = categoriesCache?.items || null
-  useEffect(() => { ensureCategories() }, [ensureCategories])
+  const [categoriesError, setCategoriesError] = useState(false)
+  const applyCategories = useCallback((tree: CategoryTree[] | null) => {
+    if (tree) setCategoriesCache(tree)
+    setCategoriesError(tree === null)
+  }, [setCategoriesCache])
+  useEffect(() => {
+    const state = useStore.getState()
+    if (!state.categoriesCache || state.getCategoriesCacheAge() >= 5 * 60_000) {
+      void getCategoriesTree().then(applyCategories)
+    }
+  }, [applyCategories])
   const categories = categoriesRaw || []
   const visibleItems = useMemo(() => filterVisibleProducts(productsCache?.items || [], categoriesRaw), [productsCache, categoriesRaw])
 
@@ -104,6 +114,7 @@ export default function HomePage() {
     return counts
   }, [visibleItems])
 
+  const [productsError, setProductsError] = useState(false)
   const hasLoadedRef = useRef(false)
   const hasLoadedPopularityRef = useRef(false)
 
@@ -127,10 +138,12 @@ export default function HomePage() {
     const hasFreshCache = productsCache && cacheAge < CACHE_FRESH_MS
     if (hasFreshCache && !force) return
 
+    setProductsError(false)
     try {
       const data = await getProducts(force)
       setProductsCache(data)
     } catch (error) {
+      setProductsError(true)
       console.error('Ошибка загрузки товаров:', error)
     }
   }
@@ -169,10 +182,11 @@ export default function HomePage() {
           </div>
 
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
+            {productsError ? <div role="alert"><p>{language === 'ru' ? 'Не удалось загрузить товары' : 'Mahsulotlar yuklanmadi'}</p><button className="mt-3 min-h-11 rounded-xl bg-[#1B2A4A] px-4 text-white" onClick={() => void loadProducts(true)}>{language === 'ru' ? 'Повторить' : 'Qayta urinish'}</button></div> : <>
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-3"></div>
             <p className="text-sm text-[#8A8275] dark:text-gray-300">
               {language === 'ru' ? 'Загрузка товаров...' : 'Mahsulotlar yuklanmoqda...'}
-            </p>
+            </p></>}
           </div>
         </div>
       </div>
@@ -221,7 +235,11 @@ export default function HomePage() {
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border mb-6 overflow-hidden divide-y divide-[#E8E2D5] dark:divide-dark-border">
           {categories.length === 0 ? (
             <div className="p-6 text-center text-sm text-[#8A8275] dark:text-gray-300">
-              {language === 'ru' ? 'Загрузка категорий...' : 'Kategoriyalar yuklanmoqda...'}
+              {categoriesError ? <div role="alert">
+                <p>{language === 'ru' ? 'Не удалось загрузить категории' : 'Kategoriyalar yuklanmadi'}</p>
+                <button type="button" className="mt-2 min-h-11 rounded-xl px-4 font-bold text-[#1B2A4A] dark:text-white" onClick={() => { setCategoriesError(false); void getCategoriesTree(true).then(applyCategories) }}>{language === 'ru' ? 'Повторить' : 'Qayta urinish'}</button>
+              </div> : categoriesRaw ? (language === 'ru' ? 'Категорий пока нет' : 'Hozircha kategoriyalar yo‘q')
+                : (language === 'ru' ? 'Загрузка категорий...' : 'Kategoriyalar yuklanmoqda...')}
             </div>
           ) : (
             categories.map((cat) => (

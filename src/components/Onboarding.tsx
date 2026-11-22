@@ -13,7 +13,7 @@ export default function Onboarding(){
  return identity?<AccountIntro key={identity}/>:null
 }
 function AccountIntro(){
- const {data,retry}=usePreferences(),language=useStore(s=>s.language),setLanguage=useStore(s=>s.setLanguage),reduced=useReducedMotion()
+ const {data,error,retry}=usePreferences(),language=useStore(s=>s.language),setLanguage=useStore(s=>s.setLanguage),reduced=useReducedMotion()
  // An unsafe ID may select a display hint; only the verified account may write one or access data.
  const [hint]=useState(()=>readOnboardingHint(window.Telegram?.WebApp.initDataUnsafe.user?.id))
  const [confirmed,setConfirmed]=useState<Preferences|null>(data),[step,setStep]=useState(0),[direction,setDirection]=useState(1),[moving,setMoving]=useState(false)
@@ -50,5 +50,9 @@ function AccountIntro(){
     <div className="relative flex justify-center my-5" aria-label={`${step+1}/3`}><div className="relative flex gap-2 h-1">{[0,1,2].map(v=><span key={v} className="w-5 h-1 rounded-full bg-[#E8E2D5] dark:bg-dark-border"/>)}<motion.span className="absolute top-0 left-0 w-5 h-1 rounded-full bg-[#C9A961]" animate={{x:step*28}} transition={{duration:reduced?0:motionTiming.page,ease:motionEase}}/></div></div>
     <button className={primary} disabled={busy||moving} onClick={()=>step<2?changeStep(step+1):void finish()}>{busy?(ru?'Сохраняем...':'Saqlanmoqda...'):step===2?(ru?'Начать покупки':'Xaridni boshlash'):(ru?'Далее':'Davom etish')}<ArrowRight size={18}/></button><div className="flex justify-between mt-2 min-h-11">{step>0?<button data-onboarding-back disabled={busy||moving} className="min-h-11 px-3 text-sm disabled:opacity-50" onClick={()=>changeStep(step-1)}>{ru?'Назад':'Orqaga'}</button>:<span/>}{step<2&&<button className="min-h-11 px-3 text-sm text-[#8A8275] dark:text-gray-300 disabled:opacity-50" disabled={busy||moving} onClick={()=>void finish()}>{ru?'Пропустить':'O‘tkazib yuborish'}</button>}</div>
    </>}{failure&&<p role="alert" className="text-sm mt-4">{failure}</p>}
+   {!state&&error&&<div role="alert" className="mt-4 text-center text-sm">
+     <p>{ru?'Не удалось проверить настройки аккаунта':'Hisob sozlamalarini tekshirib bo‘lmadi'}</p>
+     <button type="button" disabled={busy} className="mt-2 min-h-11 px-4 font-bold underline" onClick={retry}>{ru?'Повторить':'Qayta urinish'}</button>
+   </div>}
   </div></motion.div>}</AnimatePresence>
 }

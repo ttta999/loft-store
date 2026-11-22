@@ -77,7 +77,9 @@ for (const theme of ['light', 'dark'] as const) {
     for (const image of await images.all()) {
       await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(32)
       await expect(image).toHaveCSS('object-fit', 'contain')
-      await expect(image.locator('..')).toHaveCSS('background-color', 'rgb(146, 146, 146)')
+      await expect(image).toHaveCSS('background-color', 'rgb(255, 255, 255)')
+      await expect(image.locator('..')).toHaveCSS('width', '36px')
+      await expect(image).toHaveCSS('padding', '4px')
     }
     await expect(logos.filter({ hasNot: page.locator('img') })).toHaveText('Б')
     await page.goto(ADMIN + '/categories')
@@ -90,3 +92,67 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.getByText('Новая подкатегория', { exact: true })).toBeVisible()
   })
 }
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`each route has the same app bar on direct entry and initial navigation in ${colorScheme}`, async ({ page }) => {
+    test.setTimeout(100_000)
+    await page.emulateMedia({ colorScheme })
+    const bar = page.locator('[data-admin-header]:visible')
+    const height = page.viewportSize()!.width >= 768 ? 73 : 97
+    const routes = [
+      '/', '/orders', '/china', '/refunds', '/analytics', '/campaigns',
+      '/catalog', '/products', '/categories', '/brands', '/size-charts', '/settings',
+      '/settings?section=payments', '/settings?section=prices', '/settings?section=sale',
+      '/settings?section=reminders', '/settings?section=theme',
+    ]
+    for (const route of routes) {
+      await page.goto(ADMIN + route)
+      await expect(bar).toHaveCount(1)
+      const heading = bar.locator('h1')
+      await expect(heading).toBeVisible()
+      await expect.poll(() => bar.evaluate(element => element.getBoundingClientRect().height)).toBe(height)
+      await expect.poll(() => bar.evaluate(element => element.getBoundingClientRect().y)).toBe(0)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+      if (route !== '/') {
+        await bar.locator('[data-admin-back]').click()
+        await expect(page).not.toHaveURL(ADMIN + route)
+        await expect(bar).toHaveCount(1)
+        await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
+      }
+      // Complete reads before the next full document reload, which cancels WebKit requests.
+      await page.waitForLoadState('networkidle')
+    }
+  })
+}
+
+test('rapid route interruption leaves one header, the requested route and no horizontal scroll', async ({ page }) => {
+  await page.goto(ADMIN)
+  await page.locator('[data-admin-card="/catalog"]').click()
+  await expect(page).toHaveURL(ADMIN + '/catalog')
+  await page.evaluate(() => history.back())
+  await expect(page).toHaveURL(ADMIN + '/')
+  await page.locator('[data-admin-card="/orders"]').click()
+  await expect(page).toHaveURL(ADMIN + '/orders')
+  await expect(page.locator('[data-admin-header]:visible')).toHaveCount(1)
+  await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('cold module may remain pending while the shared push animates', async ({ page }) => {
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/src/pages/OrdersPage.tsx**', async route => {
+    await pending
+    await route.fallback()
+  })
+  try {
+    await page.goto(ADMIN)
+    await page.locator('[data-admin-card="/orders"]').click()
+    await expect(page).toHaveURL(ADMIN + '/orders')
+    await expect(page.locator('[data-admin-header]:visible h1')).toHaveText('Заказы')
+    await expect(page.getByRole('status', { name: 'Загрузка' })).toBeVisible()
+    await expect(page.locator('[data-admin-header]:visible')).toHaveCount(1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+  } finally { release() }
+  await expect(page.getByRole('button', { name: 'Обновить список' })).toBeVisible()
+})

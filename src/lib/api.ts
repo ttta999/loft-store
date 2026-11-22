@@ -1,3 +1,4 @@
+import { readWithDeadline } from './readDeadline.ts'
 import { dataCache } from './resourceCache.ts'
 let session: Promise<{ token: string; user: NonNullable<Telegram.WebApp['initDataUnsafe']['user']> }> | null = null
 let sessionInitData: string | null = null
@@ -19,10 +20,13 @@ export function authenticate() {
     session = (async () => {
       const initData = window.Telegram?.WebApp.initData
       if (!initData) throw new Error('Для оформления и просмотра заказов откройте магазин через Telegram')
-      const response = await fetch('/api/validateTelegram', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData }),
+      const { response, data } = await readWithDeadline(async signal => {
+        const response = await fetch('/api/validateTelegram', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData }), signal,
+        })
+        return { response, data: await response.json() }
       })
-      const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Не удалось войти через Telegram')
       if (sessionInitData !== initData || window.Telegram?.WebApp.initData !== initData) throw new Error('Сессия Telegram изменилась. Откройте магазин заново.')
       sessionUserId = data.user.id
@@ -46,12 +50,16 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
     const pages: any[] = []
     let cursor: string | null = null
     while (true) {
-      const response = await fetch('/api/store', {
+      const request = async (signal?: AbortSignal) => {
+        const response = await fetch('/api/store', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ action, ...payload, ...(read && cursor ? { cursor } : {}) }),
-      })
-      assertCurrentSession()
-      const data = await response.json()
+          signal,
+        })
+        return { response, data: await response.json() }
+      }
+      const { response, data } = read || ['preferences', 'restocks'].includes(action)
+        ? await readWithDeadline(request) : await request()
       assertCurrentSession()
       if (response.status === 401) { session = null; sessionUserId = null; dataCache.invalidate('private:');publishPrivateResources() }
       if (!response.ok) throw new Error(data.error || 'Не удалось выполнить действие')
