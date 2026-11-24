@@ -467,7 +467,7 @@ export default function CatalogPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div data-transition-product-grid className="grid grid-cols-2 gap-3">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

@@ -434,7 +434,7 @@ export default function SearchPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div data-transition-product-grid className="grid grid-cols-2 gap-3">
             {filteredProducts.map((product: any) => {
               const onSale = isProductOnSale(product, saleModeEnabled)
               const effectivePrice = getEffectivePriceUsd(product, saleModeEnabled)

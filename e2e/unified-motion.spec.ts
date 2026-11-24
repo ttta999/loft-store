@@ -194,3 +194,39 @@ test('изменение избранного не пересоздаёт заг
   await expect(card.locator('svg.lucide-heart')).toHaveClass(/fill-/)
   expect(await heading.evaluate(element => element === (window as any).homeHeading && element.isConnected)).toBe(true)
 })
+
+test('a long catalog keeps visible card geometry and releases the outgoing layer', async ({ page, harness }) => {
+  const base = harness.db.products[0]
+  harness.db.products = Array.from({ length: 90 }, (_, index) => ({
+    ...base,
+    id: '22222222-2222-4222-8222-' + String(index).padStart(12, '0'),
+    name_ru: 'Карточка каталога ' + index,
+  }))
+  await page.goto(STORE)
+  await page.locator('[data-surface-link="category:shoes"]').click()
+  await page.locator('[data-surface-link="catalog:shoes:sneakers"]').click()
+  const products = page.locator('[data-transition-product-grid] [data-product-card]')
+  await expect(products).toHaveCount(90)
+  await page.waitForFunction(() => !document.querySelector('[data-tab-outgoing]'))
+  await products.nth(46).scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    const card = document.querySelectorAll('[data-transition-product-grid] [data-product-card]')[46] as HTMLElement
+    const before = card.getBoundingClientRect()
+    window.addEventListener('loft:tabs-start', () => {
+      const outgoing = document.querySelector('[data-tab-outgoing]')!
+      const match = Array.from(outgoing.querySelectorAll('img')).find(image => image.alt === 'Карточка каталога 46')
+      const cloned = match?.closest('a, button, [style*=absolute]')?.getBoundingClientRect()
+      Object.assign(window, { catalogFrame: {
+        count: outgoing.querySelectorAll('img').length,
+        offset: cloned ? Math.abs(cloned.top - before.top) : null,
+        matches: Boolean(match),
+      } })
+    }, { once: true })
+  })
+  await page.goBack()
+  const frame = await page.evaluate(() => (window as any).catalogFrame)
+  expect(frame.matches).toBe(true)
+  expect(frame.offset).toBeLessThan(3)
+  expect(frame.count).toBeLessThan(24)
+  await expect(page.locator('[data-tab-outgoing], [data-tab-incoming]')).toHaveCount(0)
+})

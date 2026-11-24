@@ -268,7 +268,7 @@ export default function HomePage() {
               surfaceKey="products:sale"
               onMore={() => navigate('/all-products', { state: { sortBy: 'sale' } })}
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div data-transition-product-grid className="grid grid-cols-2 gap-3">
               {discountProducts.map((product, index) => (
                 <HomeProductCard key={product.id} product={product} placement="sale" priority={index < 2} />
               ))}
@@ -286,7 +286,7 @@ export default function HomePage() {
               surfaceKey="products:newest"
               onMore={() => navigate('/all-products', { state: { sortBy: 'newest' } })}
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div data-transition-product-grid className="grid grid-cols-2 gap-3">
               {newProducts.map((product, index) => (
                 <HomeProductCard key={product.id} product={product} placement="new" priority={!discountProducts.length && index < 2} />
               ))}
@@ -304,7 +304,7 @@ export default function HomePage() {
               surfaceKey="products:popular"
               onMore={() => navigate('/all-products', { state: { sortBy: 'popular' } })}
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div data-transition-product-grid className="grid grid-cols-2 gap-3">
               {popularProducts.map((product) => (
                 <HomeProductCard key={product.id} product={product} placement="popular" />
               ))}
