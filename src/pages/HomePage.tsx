@@ -127,13 +127,13 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (hasLoadedPopularityRef.current) return
+    if (!productsCache || hasLoadedPopularityRef.current) return
     hasLoadedPopularityRef.current = true
 
     if (getPopularityAge() > POPULARITY_FRESH_MS) {
       useStore.getState().updatePopularity()
     }
-  }, [])
+  }, [productsCache, getPopularityAge])
 
   const loadProducts = async (force = false) => {
     const cacheAge = getProductsCacheAge()
@@ -198,7 +198,7 @@ export default function HomePage() {
 
   const userName = telegramUser
     ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
-    : (language === 'ru' ? 'Гость' : 'Mehmon')
+    : ''
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
@@ -218,7 +218,7 @@ export default function HomePage() {
           )}
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
-              {language === 'ru' ? `Привет, ${userName.split(' ')[0]}` : `Salom, ${userName.split(' ')[0]}`}
+              {language === 'ru' ? 'Привет' : 'Salom'}{userName ? `, ${userName.split(' ')[0]}` : '!'}
             </h1>
             <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 truncate">
               {language === 'ru' ? 'Что ищете сегодня?' : 'Bugun nima qidiryapsiz?'}
@@ -300,8 +300,8 @@ export default function HomePage() {
               onMore={() => navigate('/all-products', { state: { sortBy: 'sale' } })}
             />
             <div className="grid grid-cols-2 gap-3">
-              {discountProducts.map((product) => (
-                <HomeProductCard key={product.id} product={product} placement="sale" />
+              {discountProducts.map((product, index) => (
+                <HomeProductCard key={product.id} product={product} placement="sale" priority={index < 2} />
               ))}
             </div>
           </div>
@@ -318,8 +318,8 @@ export default function HomePage() {
               onMore={() => navigate('/all-products', { state: { sortBy: 'newest' } })}
             />
             <div className="grid grid-cols-2 gap-3">
-              {newProducts.map((product) => (
-                <HomeProductCard key={product.id} product={product} placement="new" />
+              {newProducts.map((product, index) => (
+                <HomeProductCard key={product.id} product={product} placement="new" priority={!discountProducts.length && index < 2} />
               ))}
             </div>
           </div>

@@ -6,8 +6,7 @@ import LanguageSync from './components/LanguageSync'
 import LaunchTarget from './components/LaunchTarget'
 import { SearchPage, CartPage, ChinaPage, ProfilePage, ProductPage, FavoritesPage, CatalogPage, BrandsPage, CategoryPage, AllProductsPage, PrivacyPage, TermsPage } from './lib/pagePreload'
 import AnimatedRoutes from './components/AnimatedRoutes'
-import AppToaster from './components/AppToaster'
-import { useState, useEffect, useLayoutEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useLayoutEffect } from 'react'
 import { BrowserRouter, Route, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
@@ -20,6 +19,8 @@ import {
   hideTelegramBackButton,
 } from './lib/telegram'
 import { useStore } from './store/useStore'
+
+const AppToaster = lazy(() => import('./components/AppToaster'))
 
 type TabType = 'home' | 'search' | 'cart' | 'china' | 'profile'
 
@@ -76,7 +77,7 @@ function AppLayout() {
     return () => window.removeEventListener('loft:dialog-change', scan)
   }, [])
 
-  const setTelegramUser = useStore((state) => state.setTelegramUser)
+  const setTelegramIdentity = useStore((state) => state.setTelegramIdentity)
 
   useEffect(() => {
     if (!window.Telegram?.WebApp.initData) return
@@ -90,13 +91,11 @@ function AppLayout() {
         const user = await getUserData()
         if (!active || user.id === hydratedId) return
         hydratedId = user.id
-        setTelegramUser(user)
-        useStore.getState().setChatId(user.id)
+        setTelegramIdentity(user)
         void subscribeUser().catch(() => {})
       } catch {
         if (active && !hydratedId) {
-          setTelegramUser(null)
-          useStore.getState().setChatId(null)
+          setTelegramIdentity(null)
         }
       } finally {
         running = false
@@ -108,7 +107,7 @@ function AppLayout() {
     })
     void hydrate()
     return () => { active = false; unsubscribe() }
-  }, [setTelegramUser])
+  }, [setTelegramIdentity])
 
   // ✅ Системная кнопка «назад» Telegram на вкладках
   // (поиск и внутренние разделы профиля: заказы / спецзаказы / избранное / настройки)
@@ -193,7 +192,7 @@ function App() {
       <LaunchTarget />
       <LanguageSync/>
       <Onboarding/>
-      <AppToaster />
+      <Suspense fallback={null}><AppToaster /></Suspense>
 
       {/* ✅ Менеджер системной кнопки Telegram — тоже над Routes */}
       <TelegramBackButtonManager />

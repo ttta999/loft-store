@@ -4,6 +4,7 @@ import {usePageState} from '../lib/usePageState'
 import {usePreferences} from '../lib/preferences'
 import { RestockControl, useProductVariants } from '../components/RestockControl'
 import { shareConfig, shareProduct } from '../lib/sharing'
+import { markStartup } from '../lib/startupTiming'
 import ProductRecommendations from '../components/ProductRecommendations'
 import ProductSizeChart from '../components/ProductSizeChart'
 import { catalogMoney } from '../lib/money'
@@ -391,18 +392,22 @@ export default function ProductPage() {
   }
 
   return (
-    <MotionConfig reducedMotion="user"><div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
+    <MotionConfig reducedMotion="user"><div data-product-surface className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
       {/* ✅ Тосты в текущей теме */}
 
       <IslandHeader needsBack onBack={handleBack} />
 
-      <div data-loft-content className="p-4">
+      <div data-loft-content>
+      <div className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden mb-4 shadow-sm border border-[#E8E2D5] dark:border-dark-border">
           <div className="relative">
             <img data-product-hero={id} style={{ visibility: viewerActive ? 'hidden' : 'visible' }}
               src={openingPhoto || decodedPhoto || images[0] || 'https://via.placeholder.com/500'}
               alt={language === 'ru' ? (product.name_ru || 'Товар') : (product.name_uz || 'Mahsulot')}
               className="w-full aspect-square object-cover cursor-pointer"
+              onLoad={event => {
+                if (images.length && event.currentTarget.naturalWidth) markStartup('first-product-photo')
+              }}
               onClick={() => openFullScreen(currentImageIndex)}
             />
             {onSale && (
@@ -593,6 +598,7 @@ export default function ProductPage() {
       </div>
 
       <ProductRecommendations key={product.id} product={product}/>
+      </div>
 
       <AnimatePresence onExitComplete={() => setViewerActive(false)}>{showFullScreen && (
         <ProductPhotoViewer key="photo-viewer" src={images[fullScreenImageIndex]} aspect={viewerAspect}>

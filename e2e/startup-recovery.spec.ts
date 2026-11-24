@@ -11,6 +11,24 @@ test('a missing entry module shows a retry and reload preserves the product link
   await expect(retry).toBeHidden()
 })
 
+test('entry error is recoverable before an unrelated startup resource finishes', async ({ page }) => {
+  let releaseSdk!: () => void
+  const sdkGate = new Promise<void>(resolve => { releaseSdk = resolve })
+  await page.route('https://telegram.org/**', async route => {
+    await sdkGate
+    await route.fallback()
+  })
+  await page.route(url => url.pathname === '/src/main.tsx', route => route.abort(), { times: 1 })
+
+  try {
+    await page.goto(STORE, { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('#loft-boot-retry')).toBeVisible()
+    expect(await page.evaluate(() => document.readyState)).toBe('interactive')
+  } finally {
+    releaseSdk()
+  }
+})
+
 test('catalog failure can be retried without revalidating Telegram or repeating writes', async ({ page, harness }) => {
   await page.route('**/rest/v1/products?**', route => route.fulfill({
     status: 503, contentType: 'application/json', body: '{"message":"fixture offline"}',

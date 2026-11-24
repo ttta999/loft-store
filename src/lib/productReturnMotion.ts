@@ -1,3 +1,4 @@
+import type { prepareTabMotion } from './tabTransition'
 import { motionEaseCSS, motionTiming } from './motion'
 
 const duration = motionTiming.page * 1000
@@ -5,13 +6,15 @@ const options = { duration, easing: motionEaseCSS, fill: 'forwards' } as const
 
 /** One photo owns the return, below the stationary header, even when WebKit
  * changes the viewport after releasing a size-sheet or gallery scroll lock. */
-export function productReturnMotion(source: HTMLImageElement | null, restore: (valid: () => boolean) => HTMLImageElement | null) {
+export function productReturnMotion(source: HTMLImageElement | null, restore: (valid: () => boolean) => HTMLImageElement | null, prepareSlide: () => ReturnType<typeof prepareTabMotion>) {
   const origin = source?.getBoundingClientRect()
   const viewport = window.visualViewport
+  const headerBottom = document.querySelector('.loft-header')?.getBoundingClientRect().bottom ?? 0
   const layer = source?.complete && source.naturalWidth && origin?.width &&
-    origin.bottom > (viewport?.offsetTop ?? 0) && origin.top < (viewport?.height ?? innerHeight) + (viewport?.offsetTop ?? 0)
+    origin.bottom > Math.max(headerBottom, viewport?.offsetTop ?? 0) && origin.top < (viewport?.height ?? innerHeight) + (viewport?.offsetTop ?? 0)
     ? document.createElement('div') : null
 
+  let slide: ReturnType<typeof prepareTabMotion>
   let animation: Animation | undefined
   const companions: Animation[] = []
   let frame = 0
@@ -35,6 +38,7 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
     animation?.cancel()
     for (const companion of companions) companion.cancel()
     layer?.remove()
+    slide?.cleanup()
     if (target) target.style.visibility = oldVisibility
     window.removeEventListener('resize', schedule)
     viewport?.removeEventListener('resize', schedule)
@@ -67,6 +71,7 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
   return {
     cancel: cleanup,
     async play(apply: () => void, valid: () => boolean) {
+      if (!layer) slide = prepareSlide()
       if (layer && source && origin) {
         layer.dataset.productReturnOverlay = 'true'
         layer.setAttribute('aria-hidden', 'true')
@@ -87,9 +92,14 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
       apply()
       if (!valid() || finishedAlready) { cleanup(); return }
       const destination = restore(valid)
+      if (slide) {
+        await slide.run()
+        cleanup()
+        return
+      }
       const content = document.querySelector<HTMLElement>('[data-loft-content]')
       if (!destination || !layer) {
-        // A hero outside the viewport cannot fly back without crossing the chrome.
+        // The origin may have been removed or filtered out.
         const fade = { duration: motionTiming.feedback * 1000, easing: motionEaseCSS }
         if (content) companions.push(content.animate([{ opacity: 0.88 }, { opacity: 1 }], fade))
         if (layer) companions.push(layer.animate([{ opacity: 1 }, { opacity: 0 }], fade))

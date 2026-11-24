@@ -39,12 +39,13 @@
   window.addEventListener('error', handleAssetError, true);
   window.addEventListener('vite:preloadError', handleChunkError);
   window.addEventListener('loft:boot-error', revealError);
-  // A fast failed module request can finish before this listener is installed.
+  // Module scripts execute before DOMContentLoaded. Check then even if a slow
+  // async SDK or asset is still holding the window load event.
   const checkEntry = () => {
     if (!performance.getEntriesByName('loft:startup:entry', 'mark').length) revealError();
   };
   if (document.readyState === 'complete') checkEntry();
-  else window.addEventListener('load', checkEntry, { once: true });
+  else document.addEventListener('DOMContentLoaded', checkEntry, { once: true });
   retry.addEventListener('click', () => location.reload());
   timer = setTimeout(revealError, 15000);
   const observer = new MutationObserver(() => {

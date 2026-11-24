@@ -1,3 +1,4 @@
+import { markStartup } from '../lib/startupTiming'
 import { catalogMoney } from '../lib/money'
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -5,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { Heart } from 'lucide-react'
 import { useStore, isProductOnSale, getEffectivePriceUsd } from '../store/useStore'
 
-const ProductCard = memo(function ProductCard({ product, placement }: { product: any; placement: string }) {
+const ProductCard = memo(function ProductCard({ product, placement, priority = false }: { product: any; placement: string; priority?: boolean }) {
   const navigate = useNavigate()
   const { language, currency, exchangeRate, saleModeEnabled, addToFavorites, removeFromFavorites } = useStore(useShallow(state => ({ language: state.language, currency: state.currency, exchangeRate: state.exchangeRate, saleModeEnabled: state.saleModeEnabled, addToFavorites: state.addToFavorites, removeFromFavorites: state.removeFromFavorites })))
   const formatPrice = (usd: number) => catalogMoney(usd, currency, exchangeRate, language)
@@ -31,6 +32,12 @@ const ProductCard = memo(function ProductCard({ product, placement }: { product:
       className="self-start bg-[#FBF9F4] dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-[#E8E2D5] dark:border-dark-border hover:shadow-md transition-shadow cursor-pointer">
         <div className="aspect-square bg-[#F5F1E8] dark:bg-dark-accent relative">
           <img
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            decoding="async"
+            onLoad={event => {
+              if (product.images?.[0] && event.currentTarget.naturalWidth) markStartup('first-product-photo')
+            }}
             src={product.images?.[0] || 'https://via.placeholder.com/500'}
             alt={language === 'ru' ? product.name_ru : product.name_uz}
             className="w-full h-full object-cover"

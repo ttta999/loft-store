@@ -6,16 +6,21 @@ for (const placement of ['sale', 'new', 'popular']) {
     const original = harness.db.products[0]
     harness.db.products.push(...Array.from({ length: 11 }, (_, index) => ({ ...original, id: `extra-${index}`, name_ru: `Товар ${index}`, created_at: new Date(Date.now() - (index + 1) * 86400000).toISOString() })))
     await page.goto(STORE)
+    await expect(page.locator('[data-onboarding]')).toHaveCount(0)
     const card = page.locator(`[data-product-placement="${placement}:${productId}"]`)
     await expect(card).toBeVisible()
     await card.scrollIntoViewIfNeeded()
     await expect.poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
     await card.evaluate(element => scrollTo(0, element.getBoundingClientRect().top + scrollY - 110))
-    const scroll = await page.evaluate(() => scrollY)
-    const image = (await card.locator('img').boundingBox())!
     await page.evaluate(() => {
       const native = document.startViewTransition.bind(document)
       ;(window as any).productFrames = []
+      // Playwright can scroll the card while positioning the pointer. Capture
+      // what the user actually clicked, before the route handler runs.
+      document.addEventListener('click', event => {
+        const image = (event.target as Element).closest('[data-product-card]')?.querySelector('img')
+        if (image) Object.assign(window, { tappedCard: { y: scrollY, top: image.getBoundingClientRect().top } })
+      }, { capture: true, once: true })
       document.startViewTransition = callback => {
         const source = document.querySelector<HTMLElement>('[style*="loft-product-photo"]')!
         const frame: any = { y: scrollY, sourceTop: source.getBoundingClientRect().top, sourcePlacement: source.closest('[data-product-placement]')?.getAttribute('data-product-placement'), sourceScale: getComputedStyle(source.closest('[data-product-card]') || source).scale, header: document.querySelector<HTMLElement>('.loft-header')?.style.viewTransitionName }
@@ -47,10 +52,11 @@ for (const placement of ['sale', 'new', 'popular']) {
     }
     await page.evaluate(() => (window as any).productTransition.finished)
     const opening = await page.evaluate(() => (window as any).productFrames[0])
+    const tapped = await page.evaluate(() => (window as Window & { tappedCard: { y: number; top: number } }).tappedCard)
     expect(opening.error).toBeUndefined()
     expect(opening.mode).toBe('product')
-    expect(opening.y).toBe(scroll)
-    expect(Math.abs(opening.sourceTop - image.y)).toBeLessThan(2)
+    expect(opening.y).toBe(tapped.y)
+    expect(Math.abs(opening.sourceTop - tapped.top)).toBeLessThan(2)
     expect(opening.sourcePlacement).toBe(`${placement}:${productId}`)
     expect(opening.sourceScale).toBe('1')
     expect(opening.header).toBe('loft-static-header')
@@ -60,7 +66,7 @@ for (const placement of ['sale', 'new', 'popular']) {
     await page.evaluate(() => window.lastProductReturn?.finished)
     await expect(page.locator('.loft-header')).toBeVisible()
     await expect(page.locator('[data-product-return-overlay]')).toHaveCount(0)
-    expect(await page.evaluate(() => scrollY)).toBe(scroll)
+    expect(await page.evaluate(() => scrollY)).toBe(tapped.y)
     await expect(card).toBeInViewport()
   })
 }

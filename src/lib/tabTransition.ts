@@ -45,10 +45,10 @@ function floating() {
 }
 /** Retain only a noninteractive copy of the outgoing viewport. Live destination
  * content slides independently; fixed chrome never enters a transformed parent. */
-export function prepareTabMotion(from: Page, to: Page, internalDirection = 0) {
+export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, productBack = false) {
   const direction = internalDirection || tabDirection(from, to)
-  const kind = internalDirection ? 'section' : 'tabs'
-  const source = content()
+  const kind = productBack ? 'product-back' : internalDirection ? 'section' : 'tabs'
+  const source = productBack ? document.querySelector<HTMLElement>('[data-product-surface]') : content()
   if (!direction || !source) return null
   const width = innerWidth
   const copies: HTMLElement[] = []
@@ -75,6 +75,10 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0) {
       for (const attribute of [...node.attributes]) if (attribute.name.startsWith('data-')) node.removeAttribute(attribute.name)
       node.style.removeProperty('view-transition-name')
     }
+    if (productBack) {
+      const header = clone.querySelector<HTMLElement>('.loft-header')
+      if (header) Object.assign(header.style, { position: 'static', visibility: 'hidden' })
+    }
     Object.assign(clone.style, { position: 'absolute', top: `${rect.top - top}px`, left: '0px', right: 'auto', bottom: 'auto', width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transition: 'none' })
     clone.scrollTop = element.scrollTop
     viewport.append(clone)
@@ -88,12 +92,14 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0) {
     animations.forEach(animation => animation.cancel())
     copies.forEach(copy => copy.remove())
     targets.forEach(target => target.removeAttribute('data-tab-incoming'))
+    if (productBack) delete document.documentElement.dataset.loftProductSlide
     delete document.documentElement.dataset.loftTabMotion
   }
   return {
     cleanup,
     run() {
       document.documentElement.dataset.loftTabMotion = 'true'
+      if (productBack) document.documentElement.dataset.loftProductSlide = 'true'
       const timing = { duration: motionTiming.page * 1000, easing: motionEaseCSS, fill: 'both' as const }
       for (const element of [content(), floating()]) {
         if (!element) continue

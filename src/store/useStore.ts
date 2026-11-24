@@ -68,6 +68,7 @@ interface AppState {
   setExchangeRate: (rate: number) => void
   setSaleModeEnabled: (enabled: boolean) => void
   setTheme: (theme: Theme) => void
+  setTelegramIdentity: (user: TelegramUser | null) => void
   setTelegramUser: (user: TelegramUser | null) => void
   setProductsCache: (items: any[]) => void
   setCategoriesCache: (items: CategoryTree[]) => void
@@ -157,6 +158,7 @@ export const useStore = create<AppState>()(
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
+      setTelegramIdentity: (user) => set({ telegramUser: user, chatId: user?.id ?? null }),
       setTelegramUser: (user) => set({ telegramUser: user }),
       setProductsCache: (items) => set({ productsCache: { items, updatedAt: Date.now() } }),
       setCategoriesCache: (items) => set({ categoriesCache: { items, updatedAt: Date.now() } }),

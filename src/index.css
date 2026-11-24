@@ -148,4 +148,5 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 @keyframes loft-photo-radius { from { border-radius: var(--loft-photo-from-radius, 16px); } to { border-radius: var(--loft-photo-to-radius, 16px); } }
 
 /* Keep horizontal tab travel inside the viewport without changing vertical scrolling. */
+:root[data-loft-product-slide] .loft-navigation { visibility: hidden; }
 :root[data-loft-tab-motion], :root[data-loft-tab-motion] body, :root[data-loft-tab-motion] #root { overflow-x: clip; }

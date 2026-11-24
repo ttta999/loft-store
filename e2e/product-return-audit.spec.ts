@@ -70,3 +70,76 @@ test('color change and long description return to the original brand card',async
  await card.locator('img').click();await expect(page.getByRole('button',{name:'Красный',exact:true})).toBeVisible();await page.getByRole('button',{name:'Красный',exact:true}).click();await expect(page.locator('[data-product-hero]')).toHaveAttribute('src',/red/)
  await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await page.goBack();await expect(card).toBeInViewport();await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion','dissolve');expect(await page.evaluate(()=>scrollY)).toBe(y);expect(Math.abs((await card.locator('img').boundingBox())!.y-before!.y)).toBeLessThan(2)
 })
+
+type ReturnRect = {left: number; right: number; top: number}
+type ReturnFrame = {out: ReturnRect; incoming: ReturnRect; header: ReturnRect; nav: string; overlay: boolean}
+type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number}
+type ReturnWindow = Window & {scrolledReturn: Promise<ReturnProbe>; productOriginScroll: number; telegramBack: () => void}
+
+for (const back of ['island', 'telegram'] as const) {
+ test(`offscreen product return without size selection keeps both pages visible during ${back} Back`, async ({page, harness}) => {
+  harness.db.products[0].description_ru = 'Подробное описание товара. '.repeat(250)
+  await page.goto(STORE)
+  const card = page.locator(`[data-product-placement="new:${productId}"]`)
+  const image = card.locator('img')
+  await image.scrollIntoViewIfNeeded()
+  await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0)
+  await page.evaluate(() => {
+   document.addEventListener('click', () => Object.assign(window, {productOriginScroll: scrollY}), {once:true,capture:true})
+  })
+  await image.click()
+  const listScroll = await page.evaluate(() => (window as ReturnWindow).productOriginScroll)
+  const hero = page.locator('[data-product-hero]')
+  await expect(hero).toBeVisible()
+  await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion', 'product')
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
+  await expect(hero).not.toBeInViewport()
+
+  await page.evaluate(() => {
+   const sample = (element: Element) => {
+    const rect = element.getBoundingClientRect()
+    return { left: rect.left, right: rect.right, top: rect.top }
+   }
+   const probe = new Promise(resolve => {
+    window.addEventListener('loft:tabs-start', event => {
+     const {kind, direction, animations, finished} = (event as CustomEvent).detail
+     if (kind !== 'product-back') { resolve({kind}); return }
+     const outgoing = document.querySelector('[data-tab-outgoing]')!
+     const incoming = document.querySelector('[data-tab-incoming]')!
+     const header = document.querySelector('.loft-header')!
+     const nav = document.querySelector('.loft-navigation')!
+     const start = sample(outgoing)
+     const initialHeader = sample(header)
+     const duration = animations[0].effect.getTiming().duration
+     const frames: ReturnFrame[] = []
+     const frame = () => {
+      if (!outgoing.isConnected) return
+      frames.push({out: sample(outgoing), incoming: sample(incoming), header: sample(header),
+       nav: getComputedStyle(nav).visibility, overlay: !!document.querySelector('[data-product-return-overlay]')})
+      requestAnimationFrame(frame)
+     }
+     requestAnimationFrame(frame)
+     void finished.then(() => resolve({kind, direction, duration, start, initialHeader, frames, width: innerWidth}))
+    }, {once: true})
+   })
+   Object.assign(window, {scrolledReturn: probe})
+  })
+  if (back === 'telegram') await page.evaluate(() => (window as ReturnWindow).telegramBack())
+  else await page.locator('.loft-header button').first().click()
+  await expect(page.locator('[data-tab-outgoing]')).toHaveCount(1)
+  const result = await page.evaluate(() => (window as ReturnWindow).scrolledReturn)
+  expect(result).toMatchObject({kind: 'product-back', direction: -1, duration: 340})
+  expect(result.frames.length).toBeGreaterThan(2)
+  expect(result.frames.some((frame) => frame.out.left > 20 && frame.out.left < result.width - 20)).toBe(true)
+  for (const frame of result.frames) {
+   expect(frame.incoming.right).toBeGreaterThanOrEqual(frame.out.left - 2)
+   expect(frame.header).toEqual(result.initialHeader)
+   expect(frame.nav).toBe('hidden')
+   expect(frame.overlay).toBe(false)
+  }
+  await expect(page.locator('[data-tab-outgoing]')).toHaveCount(0)
+  await expect(page.locator('.loft-navigation')).toHaveCSS('visibility', 'visible')
+  await expect(card).toBeInViewport()
+  expect(await page.evaluate(() => scrollY)).toBe(listScroll)
+ })
+}

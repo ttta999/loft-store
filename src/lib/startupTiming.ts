@@ -1,4 +1,4 @@
-type StartupStage = 'entry' | 'sdk' | 'interface' | 'ready' | 'session-start' | 'session-verified' | 'preferences' | 'catalog-start' | 'catalog-settled'
+type StartupStage = 'entry' | 'sdk' | 'interface' | 'ready' | 'session-start' | 'session-verified' | 'preferences' | 'catalog-start' | 'catalog-settled' | 'first-product-photo'
 
 /** Navigation-local User Timing entries. No session data, URLs or network logging. */
 export function markStartup(stage: StartupStage) {
