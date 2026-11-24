@@ -1,7 +1,7 @@
 import { test, expect, STORE, productId } from './fixture'
 
 test('a missing entry module shows a retry and reload preserves the product link', async ({ page }) => {
-  await page.route('**/src/main.tsx', route => route.abort(), { times: 1 })
+  await page.route(url => url.pathname === '/src/main.tsx', route => route.fulfill({ status: 404, contentType: 'text/plain', body: 'Missing fixture module' }), { times: 1 })
   await page.goto(STORE + '/product/' + productId)
   const retry = page.locator('#loft-boot-retry')
   await expect(retry).toBeVisible()
@@ -125,4 +125,35 @@ test('a late Telegram SDK releases the shell without waiting for catalogue', asy
     expect(stages).toEqual([...stages].sort((a, b) => a - b))
     await expect(page.locator('#loft-boot')).toBeHidden()
   } finally { release() }
+})
+
+test('an SDK failure before the module evaluates immediately exposes recovery', async ({ page, harness }) => {
+  let releaseEntry!: () => void
+  const entryGate = new Promise<void>(resolve => { releaseEntry = resolve })
+  let sdkFails = true
+  await page.route('https://telegram.org/js/telegram-web-app.js', route => sdkFails
+    ? route.fulfill({ status: 404, contentType: 'text/plain', body: 'Missing fixture SDK' })
+    : route.fulfill({ contentType: 'application/javascript', body: 'window.Telegram = window.fixtureDeferredTelegram' }))
+  // Give the entry script a unique URL so WebKit cannot use a dev preload
+  // that was dispatched before the test installed its module gate.
+  await page.route(url => url.pathname === '/' && url.searchParams.has('sdk-early-error'), async route => {
+    const response = await route.fetch()
+    await route.fulfill({ response, body: (await response.text()).replace('/src/main.tsx', '/src/main.tsx?hold-for-sdk') })
+  })
+  await page.route(url => url.pathname === '/src/main.tsx' && url.search.includes('hold-for-sdk'), async route => {
+    await entryGate
+    await route.fallback()
+  })
+
+  try {
+    await page.goto(STORE + '/?sdk-early-error=1#tgWebAppVersion=9.1&fixture-sdk=pending', { waitUntil: 'commit' })
+    await expect(page.locator('html')).toHaveAttribute('data-loft-sdk', 'failed')
+    expect(await page.evaluate(() => performance.getEntriesByName('loft:startup:entry').length)).toBe(0)
+    releaseEntry()
+    await expect(page.locator('#loft-boot-retry')).toBeVisible({ timeout: 3500 })
+    expect(harness.calls.some(call => call.path === '/api/validateTelegram')).toBe(false)
+    sdkFails = false
+    await page.locator('#loft-boot-retry').click()
+    await expect(page.locator('html')).toHaveAttribute('data-telegram-ready', 'true')
+  } finally { releaseEntry() }
 })

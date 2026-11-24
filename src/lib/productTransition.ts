@@ -37,6 +37,7 @@ export function clearProductNames() {
   clearSharedSources()
   if (openingPhoto) { openingPhoto = null; window.dispatchEvent(new Event('loft:product-photo-end')) }
   delete document.documentElement.dataset.loftPhotoCrossfade
+  delete document.documentElement.dataset.loftOpeningSource
   document.documentElement.style.removeProperty('--loft-photo-from-radius')
   document.documentElement.style.removeProperty('--loft-photo-to-radius')
   document.querySelectorAll('[data-loft-snapshot]').forEach(element => element.removeAttribute('data-loft-snapshot'))
@@ -107,16 +108,15 @@ export function prepareProductTransition(from: Page, to: Page) {
   }
   intent = null
   return {
-    async finish(valid: () => boolean) {
+    finish(valid: () => boolean) {
       markContent()
       const target = document.querySelector<HTMLImageElement>('[data-product-hero]')
-      if (!target) return false
-      // Reuse the decoded source frame when possible. Keep the existing bounded
-      // decode path for engines that have not supplied it to the new image yet.
-      if (!target.complete || !target.naturalWidth) {
-        await Promise.race([target.decode().catch(() => {}), new Promise(resolve => setTimeout(resolve, 180))])
-      }
-      if (!valid() || !visible(target) || (target.currentSrc || target.src) !== origin.src) return false
+      if (!valid() || !target || (target.currentSrc || target.src) !== origin.src) return false
+      const rect = target.getBoundingClientRect()
+      if (!rect.width || rect.bottom <= 0 || rect.top >= innerHeight || getComputedStyle(target).visibility === 'hidden') return false
+      // The decoded source snapshot can move to the destination box immediately.
+      // A cold destination image must not stall the native update callback.
+      if (!target.complete || !target.naturalWidth) document.documentElement.dataset.loftOpeningSource = 'true'
       document.documentElement.style.setProperty('--loft-photo-to-radius', radius(target))
       mark(target)
       return true

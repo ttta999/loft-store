@@ -47,6 +47,12 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
         retry: !!boot && !boot.hidden && !document.getElementById('loft-boot-retry')?.hidden,
       }]
     }, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick(callback: any) { win.telegramBack = callback }, offClick(callback: any) { if (win.telegramBack === callback) win.telegramBack = null } }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
+    if (location.hash.includes('fixture-display=preview')) {
+      win.Telegram.WebApp.initDataUnsafe.user = {
+        id: 1111, first_name: 'Preview', last_name: 'Only', username: 'forged', photo_url: 'https://avatar.fixture.test/photo.png',
+      }
+    }
+    if (location.hash.includes('fixture-display=browser')) delete win.Telegram
     if (location.hash.includes('fixture-sdk=pending')) {
       win.fixtureDeferredTelegram = win.Telegram
       delete win.Telegram

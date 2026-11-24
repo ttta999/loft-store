@@ -4,8 +4,10 @@ import './index.css'
 import App from './App.tsx'
 import { announceTelegramReady } from './lib/telegram'
 import { warmPage } from './lib/pagePreload'
+import { initializeTelegramDisplayUser } from './lib/telegramDisplayUser'
 import { markStartup } from './lib/startupTiming'
 
+document.documentElement.dataset.loftEntry = 'true'
 markStartup('entry')
 warmPage(location.pathname)
 
@@ -18,17 +20,15 @@ function waitForTelegram(): Promise<void> {
   if (window.Telegram?.WebApp || !launchedInTelegram) return Promise.resolve()
 
   return new Promise((resolve, reject) => {
-    const sdk = document.getElementById('telegram-sdk')
-    const done = () => {
+    const settle = () => {
       clearTimeout(deadline)
-      sdk?.removeEventListener('load', done)
-      sdk?.removeEventListener('error', done)
+      window.removeEventListener('loft:sdk-settled', settle)
       if (window.Telegram?.WebApp) { markStartup('sdk'); resolve() }
       else reject(new Error('Telegram SDK unavailable'))
     }
-    const deadline = setTimeout(done, 8000)
-    sdk?.addEventListener('load', done, { once: true })
-    sdk?.addEventListener('error', done, { once: true })
+    const deadline = setTimeout(settle, 8000)
+    window.addEventListener('loft:sdk-settled', settle, { once: true })
+    if (document.documentElement.dataset.loftSdk) settle()
   })
 }
 
@@ -53,6 +53,7 @@ void waitForTelegram().then(() => {
   if (window.Telegram?.WebApp.initData) {
     try { sessionStorage.setItem('loft-telegram-tab', '1') } catch { /* Private browsing. */ }
   }
+  initializeTelegramDisplayUser()
   createRoot(document.getElementById('root')!).render(
     <StrictMode><StartupBoundary><App /></StartupBoundary></StrictMode>,
   )

@@ -10,7 +10,7 @@ if (!existsSync(resolve(admin, 'src/App.tsx'))) throw new Error('Set LOFT_ADMIN_
 process.env.VITE_SUPABASE_URL = 'https://fixture.supabase.co'
 process.env.VITE_SUPABASE_ANON_KEY = 'fixture-anon-key'
 for (const [root, port] of [[process.cwd(), 4173], [admin, 4174]]) {
-  const server = await createServer({ root, cacheDir: resolve('/private/tmp', `loft-e2e-vite-${port}`), configFile: false, plugins: [react()], css: { postcss: { plugins: [tailwind({ base: root })] } }, server: { host: '127.0.0.1', port, strictPort: true } })
+  const server = await createServer({ root, cacheDir: resolve('/private/tmp', `loft-e2e-vite-${port}`), configFile: false, plugins: [react()], css: { postcss: { plugins: [tailwind({ base: root })] } }, server: { host: '127.0.0.1', port, strictPort: true, hmr: false, watch: null } })
   await server.listen()
   console.log(`Fixture server: http://127.0.0.1:${port}`)
 }

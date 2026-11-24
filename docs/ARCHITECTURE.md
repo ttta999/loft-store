@@ -31,6 +31,8 @@ flowchart LR
 
 Источник версий: [package.json](../package.json), [lockfile](../package-lock.json), [package.json админки](https://github.com/ttta999/loft-store-admin/blob/main/package.json). React 19, TypeScript 6, React Router 7, Vite 8, Tailwind CSS 4, Supabase JS 2, Lucide/React Icons, Sonner. Магазин дополнительно использует Zustand и Framer Motion; `sharp` обрабатывает изображения на сервере. `@twa-dev/sdk` объявлен зависимостью, но фактическая интеграция в просмотренных исходниках идёт через `window.Telegram.WebApp` и Telegram script, а не найденный импорт этого пакета. Админка использует native Web Animations/View Transitions, без зависимости от Framer Motion/Zustand. Тесты: Node test runner, Playwright и отдельный PGlite для SQL. Это не Next.js, не SSR и не платёжный gateway.
 
+[Наблюдатель SDK](../public/loft-sdk.js) регистрирует результат загрузки асинхронного скрипта до первого выполнения React. [Точка входа](../src/main.tsx) использует уже известный результат либо ожидает не дольше текущего таймаута. Ошибка выводит экран восстановления. Предварительные [данные отображения Telegram](../src/lib/telegramDisplayUser.ts) содержат только имя, username и HTTPS-аватар. Они живут в памяти до серверной проверки. Приватные запросы используют подписанный initData прежним способом.
+
 | Каталог | Ответственность |
 |---|---|
 | `src/pages/` | Клиентские экраны |

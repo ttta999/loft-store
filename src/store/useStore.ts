@@ -25,6 +25,8 @@ interface TelegramUser {
   languageCode: string
 }
 
+export type TelegramDisplayUser = Pick<TelegramUser, 'firstName' | 'lastName' | 'username' | 'photoUrl'>
+
 // ✅ CartItem с поддержкой цвета
 export interface CartItem {
   productId: string
@@ -59,6 +61,8 @@ interface AppState {
   favorites: FavoriteItem[]
   chatId: string | null
   telegramUser: TelegramUser | null
+  telegramDisplayUser: TelegramDisplayUser | null
+  setTelegramDisplayUser: (user: TelegramDisplayUser | null) => void
   productsCache: CachedProducts | null
   categoriesCache: CachedCategories | null
   popularityMap: Record<string, number> | null
@@ -148,6 +152,8 @@ export const useStore = create<AppState>()(
       favorites: [],
       chatId: null,
       telegramUser: null,
+      telegramDisplayUser: null,
+      setTelegramDisplayUser: (user) => set({ telegramDisplayUser: user }),
       productsCache: null,
       categoriesCache: null,
       popularityMap: null,
@@ -158,7 +164,7 @@ export const useStore = create<AppState>()(
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
       setSaleModeEnabled: (enabled) => set({ saleModeEnabled: enabled }),
       setTheme: (theme) => set({ theme }),
-      setTelegramIdentity: (user) => set({ telegramUser: user, chatId: user?.id ?? null }),
+      setTelegramIdentity: (user) => set({ telegramUser: user, telegramDisplayUser: null, chatId: user?.id ?? null }),
       setTelegramUser: (user) => set({ telegramUser: user }),
       setProductsCache: (items) => set({ productsCache: { items, updatedAt: Date.now() } }),
       setCategoriesCache: (items) => set({ categoriesCache: { items, updatedAt: Date.now() } }),

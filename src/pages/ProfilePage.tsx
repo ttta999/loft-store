@@ -1,3 +1,5 @@
+import { TelegramAvatar } from '../components/TelegramAvatar'
+import { useTelegramDisplayUser } from '../lib/telegramDisplayUser'
 import {prefetchPersonalPages} from '../lib/api'
 import {ListHeaderCard,EmptyStateCard} from '../components/ProfileCards'
 import {formatLocalDateTime} from '../lib/dateTime'
@@ -868,7 +870,8 @@ export default function ProfilePage() {
   useLocalTimeZone()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const telegramUser = useStore((state) => state.telegramUser)
+  const telegramUser = useTelegramDisplayUser()
+  const displayName = [telegramUser?.firstName, telegramUser?.lastName].filter(Boolean).join(' ') || telegramUser?.username
   const { setShowBackButton, setOnBackClick } = useOutletContext<OutletContextType>()
   const {
     language,
@@ -1116,27 +1119,15 @@ export default function ProfilePage() {
           {/* ✅ Шапка: аватар + имя (как шапка заказа) */}
           <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3">
             <div className="flex items-center gap-3">
-              {telegramUser?.photoUrl ? (
-                <img
-                  src={telegramUser.photoUrl}
-                  alt="Avatar"
-                  className="w-14 h-14 rounded-full object-cover border border-[#E8E2D5] dark:border-dark-border flex-shrink-0"
-                />
-              ) : (
-                <div className="w-14 h-14 bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-full flex items-center justify-center flex-shrink-0">
-                  <User size={24} className="text-[#8A8275] dark:text-gray-300" />
-                </div>
-              )}
+              <TelegramAvatar url={telegramUser?.photoUrl} large />
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
-                  {telegramUser
-                    ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
-                    : (language === 'ru' ? 'Гость' : 'Mehmon')}
+                  {displayName || (language === 'ru' ? 'Профиль' : 'Profil')}
                 </h2>
                 <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5 truncate">
                   {telegramUser?.username
                     ? `@${telegramUser.username}`
-                    : (language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring')}
+                    : (!telegramUser ? (language === 'ru' ? 'Войдите через Telegram' : 'Telegram orqali kiring') : ' ')}
                 </p>
               </div>
             </div>

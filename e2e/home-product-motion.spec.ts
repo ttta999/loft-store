@@ -132,3 +132,36 @@ test('первое касание: модуль товара готовится 
   await page.evaluate(() => (window as any).coldTransition.finished)
   expect(await page.evaluate(() => scrollY)).toBe(scroll)
 })
+
+test('opening a cold destination uses the decoded source snapshot without waiting for decode', async ({ page }) => {
+  await page.goto(STORE)
+  await expect(page.locator('[data-onboarding]')).toHaveCount(0)
+  const card = page.locator(`[data-product-placement="new:${productId}"] img`)
+  await card.scrollIntoViewIfNeeded()
+  await expect.poll(() => card.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
+  await page.evaluate(() => {
+    const width = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'naturalWidth')!
+    const nativeDecode = HTMLImageElement.prototype.decode
+    Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', {
+      ...width, get() { return this.hasAttribute('data-product-hero') ? 0 : width.get!.call(this) },
+    })
+    HTMLImageElement.prototype.decode = function () {
+      return this.hasAttribute('data-product-hero') ? new Promise(() => {}) : nativeDecode.call(this)
+    }
+    const nativeTransition = document.startViewTransition.bind(document)
+    document.startViewTransition = callback => {
+      const transition = nativeTransition(callback)
+      Object.assign(window, { coldPhotoFrame: transition.ready.then(() => ({
+        useSource: document.documentElement.dataset.loftOpeningSource,
+        layout: document.querySelector('[data-product-hero]')?.getBoundingClientRect().width,
+      })) })
+      return transition
+    }
+  })
+  await card.click()
+  await expect(page.locator('html')).toHaveAttribute('data-loft-opening-source', 'true')
+  const frame = await page.evaluate(() => (window as Window & {coldPhotoFrame: Promise<{ useSource: string; layout: number }>}).coldPhotoFrame)
+  expect(frame.useSource).toBe('true')
+  expect(frame.layout).toBeGreaterThan(0)
+  await expect(page.locator('html')).not.toHaveAttribute('data-loft-opening-source')
+})

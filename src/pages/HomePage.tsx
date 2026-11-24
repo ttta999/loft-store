@@ -1,3 +1,5 @@
+import { TelegramAvatar } from '../components/TelegramAvatar'
+import { useTelegramDisplayUser } from '../lib/telegramDisplayUser'
 import { markStartup } from '../lib/startupTiming'
 import HomeProductCard from '../components/ProductCard'
 import { useNavigate } from 'react-router-dom'
@@ -6,7 +8,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useStore, filterVisibleProducts } from '../store/useStore'
 import { getCategoriesTree, getProducts, type CategoryTree } from '../lib/supabase'
 import {
-  ArrowRight, ShoppingBag, User as UserIcon, Sparkles,
+  ArrowRight, ShoppingBag, Sparkles,
   FolderOpen, Banknote, Flame, Tag,
 } from 'lucide-react'
 import CategoryIcon from '../components/CategoryIcon'
@@ -69,6 +71,7 @@ const getItemsLabelRu = (count: number): string => {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const telegramUser = useTelegramDisplayUser()
   // Prepare the product module after the first paint, before a first touch.
   // Pointer prefetch alone is too late on phones (there is no hover).
   useEffect(() => {
@@ -89,10 +92,9 @@ export default function HomePage() {
     getProductsCacheAge,
     popularityMap,
     getPopularityAge,
-    telegramUser,
     setCategoriesCache,
     categoriesCache,
-  } = useStore(useShallow(state => ({ language: state.language, saleModeEnabled: state.saleModeEnabled, productsCache: state.productsCache, setProductsCache: state.setProductsCache, getProductsCacheAge: state.getProductsCacheAge, popularityMap: state.popularityMap, getPopularityAge: state.getPopularityAge, telegramUser: state.telegramUser, setCategoriesCache: state.setCategoriesCache, categoriesCache: state.categoriesCache })))
+  } = useStore(useShallow(state => ({ language: state.language, saleModeEnabled: state.saleModeEnabled, productsCache: state.productsCache, setProductsCache: state.setProductsCache, getProductsCacheAge: state.getProductsCacheAge, popularityMap: state.popularityMap, getPopularityAge: state.getPopularityAge, setCategoriesCache: state.setCategoriesCache, categoriesCache: state.categoriesCache })))
 
   const categoriesRaw = categoriesCache?.items || null
   const [categoriesError, setCategoriesError] = useState(false)
@@ -165,57 +167,15 @@ export default function HomePage() {
     discountProducts: saleModeEnabled ? visibleItems.filter(product => product.sale_price != null && Number(product.sale_price) > 0).slice(0, 6) : [],
   }), [visibleItems, popularityMap, saleModeEnabled])
 
-  if (!productsCache) {
-    return (
-      <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-20">
-        <div data-loft-content className="p-4">
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border flex items-center justify-center flex-shrink-0">
-              <ShoppingBag size={18} className="text-[#1B2A4A] dark:text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-[#1B2A4A] dark:text-white truncate">
-                LOFT MENS SHOP
-              </h1>
-              <p className="text-xs text-[#8A8275] dark:text-gray-300 mt-0.5">
-                {language === 'ru' ? 'Магазин мужской одежды' : 'Erkaklar kiyimi do\'koni'}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
-            {productsError ? <div role="alert"><p>{language === 'ru' ? 'Не удалось загрузить товары' : 'Mahsulotlar yuklanmadi'}</p><button className="mt-3 min-h-11 rounded-xl bg-[#1B2A4A] px-4 text-white" onClick={() => void loadProducts(true)}>{language === 'ru' ? 'Повторить' : 'Qayta urinish'}</button></div> : <>
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-3"></div>
-            <p className="text-sm text-[#8A8275] dark:text-gray-300">
-              {language === 'ru' ? 'Загрузка товаров...' : 'Mahsulotlar yuklanmoqda...'}
-            </p></>}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-
   const userName = telegramUser
-    ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim()
+    ? `${telegramUser.firstName} ${telegramUser.lastName || ''}`.trim() || telegramUser.username
     : ''
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24">
       <div data-loft-content className="p-4">
         <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl p-4 border border-[#E8E2D5] dark:border-dark-border mb-3 flex items-center gap-3">
-          {telegramUser?.photoUrl ? (
-            <img
-              decoding="async"
-              src={telegramUser.photoUrl}
-              alt="Avatar"
-              className="w-12 h-12 rounded-full object-cover border border-[#E8E2D5] dark:border-dark-border flex-shrink-0"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-[#F5F1E8] dark:bg-dark-accent border border-[#E8E2D5] dark:border-dark-border rounded-full flex items-center justify-center flex-shrink-0">
-              <UserIcon size={22} className="text-[#8A8275] dark:text-gray-300" />
-            </div>
-          )}
+          <TelegramAvatar url={telegramUser?.photoUrl} />
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-[#1B2A4A] dark:text-white truncate">
               {language === 'ru' ? 'Привет' : 'Salom'}{userName ? `, ${userName.split(' ')[0]}` : '!'}
@@ -229,6 +189,15 @@ export default function HomePage() {
           </div>
         </div>
 
+        {!productsCache ? (
+          <div className="bg-[#FBF9F4] dark:bg-dark-card rounded-2xl border border-[#E8E2D5] dark:border-dark-border p-8 text-center">
+            {productsError ? <div role="alert"><p>{language === 'ru' ? 'Не удалось загрузить товары' : 'Mahsulotlar yuklanmadi'}</p><button className="mt-3 min-h-11 rounded-xl bg-[#1B2A4A] px-4 text-white" onClick={() => void loadProducts(true)}>{language === 'ru' ? 'Повторить' : 'Qayta urinish'}</button></div> : <>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B2A4A] dark:border-gold mx-auto mb-3"></div>
+            <p className="text-sm text-[#8A8275] dark:text-gray-300">
+              {language === 'ru' ? 'Загрузка товаров...' : 'Mahsulotlar yuklanmoqda...'}
+            </p></>}
+          </div>
+        ) : <>
         <SectionHeader
           icon={<FolderOpen size={14} className="text-[#1B2A4A] dark:text-white" />}
           title={language === 'ru' ? 'Категории' : 'Kategoriyalar'}
@@ -358,6 +327,7 @@ export default function HomePage() {
             </p>
           </div>
         )}
+        </>}
       </div>
     </div>
   )

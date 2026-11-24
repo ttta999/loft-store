@@ -78,3 +78,22 @@ test('Analytics preserves selected period and cached results while its fresh rea
   }
   await expect(page.getByText('$740', {exact:true}).first()).toBeVisible()
 })
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`Dashboard keeps four independent controls on a transparent sticky header in ${colorScheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme })
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 844 })
+      await page.goto(ADMIN)
+      const shell = page.locator('[data-admin-header]')
+      await expect(shell).toHaveCSS('position', 'sticky')
+      await expect(shell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+      await expect(shell).toHaveCSS('border-bottom-color', 'rgba(0, 0, 0, 0)')
+      await expect(shell.getByRole('heading', { name: 'LOFT Админ Панель' })).toBeVisible()
+      await expect(shell.getByRole('button')).toHaveCount(3)
+      await page.locator('[data-admin-card="/catalog"]').click()
+      await expect(shell.getByRole('heading', { name: 'Каталог' })).toBeVisible()
+      await expect(shell).toHaveCSS('background-color', colorScheme === 'dark' ? 'rgb(11, 17, 30)' : 'rgb(245, 241, 232)')
+    }
+  })
+}

@@ -107,6 +107,12 @@ body {
 ::view-transition-image-pair(loft-product-photo) { isolation: isolate; overflow: clip; border-radius: var(--loft-photo-to-radius, 16px); animation: loft-photo-radius var(--loft-photo-duration) var(--loft-photo-ease) both; }
 ::view-transition-old(loft-product-photo) { display: none; }
 ::view-transition-new(loft-product-photo) { animation: none; width: 100%; height: 100%; object-fit: cover; }
+:root[data-loft-motion="product"]::view-transition-new(loft-content) { animation: none; }
+:root[data-loft-opening-source]::view-transition-old(loft-product-photo) {
+  display: block; animation: none; width: 100%; height: 100%; object-fit: cover;
+}
+:root[data-loft-opening-source]::view-transition-new(loft-product-photo) { visibility: hidden; }
+
 :root[data-loft-motion="dissolve"]::view-transition-group(loft-product-photo) { animation: none; }
 :root[data-loft-motion="dissolve"]::view-transition-old(loft-product-photo) { display: block; animation: loft-fade-out 160ms ease-out both; }
 :root[data-loft-motion="dissolve"]::view-transition-new(loft-product-photo) { animation: loft-fade-in 180ms ease-out both; }

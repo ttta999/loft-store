@@ -21,7 +21,7 @@ for(const [entry,path,action] of entries)test(`return audit ${entry}: ${action},
  await card.scrollIntoViewIfNeeded();await expect.poll(()=>image.evaluate((i:HTMLImageElement)=>i.naturalWidth)).toBeGreaterThan(0)
  const before=(await image.boundingBox())!,scroll=await page.evaluate(()=>scrollY)
  await page.evaluate(()=>{const start=document.startViewTransition.bind(document);(window as any).captures=[];document.startViewTransition=callback=>{const t=start(callback);(window as any).lastTransition=t;t.ready.then(()=>{(window as any).captures.push({mode:document.documentElement.dataset.loftMotion,y:scrollY})}).catch(()=>{});return t}})
- if(entry==='favorites')await card.getByRole('link').first().click();else await image.click()
+ if(entry==='favorites')await card.getByRole('link').first().click();else await image.click({ position: { x: 24, y: 60 } })
  await expect(page.locator('[data-product-hero]')).toBeVisible();await page.evaluate(()=>(window as any).lastTransition.finished)
  if(action==='gallery'){
   await page.locator('[data-product-hero]').click();const dialog=page.getByRole('dialog',{name:'Просмотр фото'});await expect(dialog).toBeVisible();await dialog.getByRole('button').first().click();await expect(dialog).toHaveCount(0)
@@ -142,4 +142,32 @@ for (const back of ['island', 'telegram'] as const) {
   await expect(card).toBeInViewport()
   expect(await page.evaluate(() => scrollY)).toBe(listScroll)
  })
+}
+
+for (const fraction of [0.6, 0.8]) {
+  test(`a ${fraction * 100}% visible product photo selects the right return animation`, async ({ page, harness }) => {
+    harness.db.products[0].description_ru = 'Описание для проверки прокрутки. '.repeat(100)
+    await page.goto(STORE)
+    await expect(page.locator('[data-onboarding]')).toHaveCount(0)
+    const source = page.locator(`[data-product-placement="new:${productId}"] img`)
+    await source.click()
+    const hero = page.locator('[data-product-hero]')
+    await expect.poll(() => hero.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0)
+    await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion', 'product')
+    const actual = await hero.evaluate((node, fraction) => {
+      const rect = node.getBoundingClientRect(), header = document.querySelector('.loft-header')!
+      scrollTo(0, scrollY + rect.top + rect.height * (1 - fraction) - header.getBoundingClientRect().bottom)
+      const result = node.getBoundingClientRect()
+      return (Math.min(result.bottom, innerHeight) - Math.max(result.top, header.getBoundingClientRect().bottom)) / result.height
+    }, fraction)
+    expect(actual).toBeCloseTo(fraction, 1)
+    await page.evaluate(() => {
+      window.addEventListener('loft:product-return-start', () => { document.documentElement.dataset.testProductRoute = 'photo' }, { once: true })
+      window.addEventListener('loft:tabs-start', () => { document.documentElement.dataset.testProductRoute = 'slide' }, { once: true })
+    })
+    await page.locator('.loft-header button').first().click()
+    await expect(page.locator('html')).toHaveAttribute('data-test-product-route', fraction > 0.7 ? 'photo' : 'slide')
+    await expect(page.locator('[data-product-return-overlay], [data-tab-outgoing]')).toHaveCount(0)
+    await expect(source).toBeInViewport()
+  })
 }

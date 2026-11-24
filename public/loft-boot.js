@@ -42,7 +42,7 @@
   // Module scripts execute before DOMContentLoaded. Check then even if a slow
   // async SDK or asset is still holding the window load event.
   const checkEntry = () => {
-    if (!performance.getEntriesByName('loft:startup:entry', 'mark').length) revealError();
+    if (document.documentElement.dataset.loftEntry !== 'true') revealError();
   };
   if (document.readyState === 'complete') checkEntry();
   else document.addEventListener('DOMContentLoaded', checkEntry, { once: true });
