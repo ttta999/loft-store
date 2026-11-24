@@ -60,32 +60,24 @@ export function installProductIntent(location: () => Page) {
   document.addEventListener('focusin', capture)
   return () => { document.removeEventListener('click', capture, true); document.removeEventListener('pointerover', capture); document.removeEventListener('pointerdown', capture); document.removeEventListener('focusin', capture) }
 }
-/** Restore the list before the native transition captures its destination.
- * ResizeObserver retries must stop before that capture, not during animation. */
-async function restoreOrigin(origin:Origin,valid:()=>boolean):Promise<HTMLImageElement|null>{
- const deadline=performance.now()+180
- let target:HTMLImageElement|null=null
- // Native View Transitions pause rendering inside their update callback.
- // Do not await animation frames here: Safari/Chromium can then time out.
- target=originCard(origin)?.querySelector<HTMLImageElement>('img')||null
- if(!target)target=await new Promise<HTMLImageElement|null>(resolve=>{
-  const observer=new MutationObserver(()=>{const image=originCard(origin)?.querySelector<HTMLImageElement>('img');if(image&&valid()){observer.disconnect();clearTimeout(timer);resolve(image)}})
-  const timer=setTimeout(()=>{observer.disconnect();resolve(null)},180)
-  observer.observe(document.body,{childList:true,subtree:true})
- })
- if(!target||!valid())return null
- target.loading='eager'
- if(!target.complete||!target.naturalWidth)await Promise.race([target.decode().catch(()=>{}),new Promise(resolve=>setTimeout(resolve,Math.max(0,deadline-performance.now())))])
- if(!valid())return null
- // Stop the general late-list restorer before measuring the target geometry.
- window.dispatchEvent(new Event('loft:scroll-restored'))
- window.scrollTo({top:origin.scrollY,behavior:'instant'})
- markSharedElement(target,photoName)
- // Flush layout with press styles removed; correct for a clamped list restore.
- const rect=target.getBoundingClientRect()
- if(Math.abs(rect.top-origin.top)>1)window.scrollTo({top:window.scrollY+rect.top-origin.top,behavior:'instant'})
- if(!valid()){target.style.removeProperty('view-transition-name');return null}
- return target
+/** Use the committed list geometry. A cold or filtered-out origin dissolves
+ * immediately, so a delayed image cannot move the destination after paint. */
+function restoreOrigin(origin: Origin, valid: () => boolean): HTMLImageElement | null {
+  const target = originCard(origin)?.querySelector<HTMLImageElement>('img')
+  // The route restorer must not race the product return for control of scroll.
+  window.dispatchEvent(new Event('loft:scroll-restored'))
+  window.scrollTo({ top: origin.scrollY, behavior: 'instant' })
+  if (!target || !valid()) return null
+  mark(target)
+  const rect = target.getBoundingClientRect()
+  if (rect.width && Math.abs(rect.top - origin.top) > 1) {
+    window.scrollTo({ top: window.scrollY + rect.top - origin.top, behavior: 'instant' })
+  }
+  // The card reserves an image box even before this instance decodes its
+  // cached resource. Land on that box without waiting for a second fetch.
+  target.loading = 'eager'
+  const destination = target.getBoundingClientRect()
+  return destination.width > 0 && destination.bottom > 0 && destination.top < innerHeight ? target : null
 }
 export function prepareProductTransition(from: Page, to: Page) {
   clearProductNames()
@@ -116,15 +108,14 @@ export function prepareProductTransition(from: Page, to: Page) {
   return {
     async finish(valid: () => boolean) {
       markContent()
-      const target = returning ? await restoreOrigin(origin, valid) : forward ? document.querySelector<HTMLImageElement>('[data-product-hero]') : originCard(origin)?.querySelector<HTMLImageElement>('img')
+      const target = document.querySelector<HTMLImageElement>('[data-product-hero]')
       if (!target) return false
-      // A complete cached image already has a paintable frame. Re-decoding it
-      // inside the native update callback freezes the outgoing screen on Safari.
+      // Reuse the decoded source frame when possible. Keep the existing bounded
+      // decode path for engines that have not supplied it to the new image yet.
       if (!target.complete || !target.naturalWidth) {
         await Promise.race([target.decode().catch(() => {}), new Promise(resolve => setTimeout(resolve, 180))])
       }
-      if (!valid() || !visible(target) || (forward && (target.currentSrc || target.src) !== origin.src)) return false
-      if ((target.currentSrc || target.src) !== (source.currentSrc || source.src)) document.documentElement.dataset.loftPhotoCrossfade = 'true'
+      if (!valid() || !visible(target) || (target.currentSrc || target.src) !== origin.src) return false
       document.documentElement.style.setProperty('--loft-photo-to-radius', radius(target))
       mark(target)
       return true

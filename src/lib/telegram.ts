@@ -1,4 +1,5 @@
 import { authenticate, storeApi } from './api'
+import { markStartup } from './startupTiming'
 
 // ✅ Расширенные типы Telegram WebApp.
 // В проектном .d.ts может не быть BackButton/HapticFeedback —
@@ -27,13 +28,14 @@ const getWebApp = (): TelegramWebAppExtended | null => {
   return (window as any).Telegram?.WebApp ?? null
 }
 
-export const initTelegram = () => {
-  if (window.Telegram?.WebApp) {
-    window.Telegram.WebApp.ready()
-    window.Telegram.WebApp.expand()
-    return window.Telegram.WebApp
-  }
-  return null
+export function announceTelegramReady() {
+  const webApp = window.Telegram?.WebApp
+  const root = document.documentElement
+  if (!webApp || root.dataset.telegramReady === 'true') return
+  webApp.ready()
+  root.dataset.telegramReady = 'true'
+  markStartup('ready')
+  webApp.expand()
 }
 
 export const getUserData = async () => {

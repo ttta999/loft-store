@@ -13,16 +13,29 @@ test('admin sections share one directional page animation and return to their or
   })
   const root = page.locator('html')
   const directions: string[] = []
+  await page.evaluate(() => {
+    const originals = { header: document.querySelector('[data-admin-header]'), island: document.querySelector('[data-admin-island]') }
+    Object.assign(window, { adminHeaderIdentity: originals })
+  })
   const transition = async (destination: string, direction: string, button: () => Promise<void>) => {
     await button()
     await expect(page).toHaveURL(ADMIN + destination)
     directions.push(direction)
     await expect(root).toHaveAttribute('data-test-directions', directions.join(','))
     await expect(root).not.toHaveAttribute('data-admin-motion', /.+/)
+    expect(await page.evaluate(() => {
+      const original = (window as Window & { adminHeaderIdentity?: { header: Element; island: Element } }).adminHeaderIdentity
+      return original?.header === document.querySelector('[data-admin-header]') &&
+        original?.island === document.querySelector('[data-admin-island]')
+    })).toBe(true)
+    if (destination === '/') await expect(page.getByRole('heading', { name: 'LOFT Админ Панель' })).toBeVisible()
   }
   const open = (path: string) => transition(path, 'forward', () => page.locator(`[data-admin-card="${path}"]`).click())
   const back = (path: string) => transition(path, 'back', () => page.goBack().then(() => {}))
+  test.setTimeout(70_000)
   for (const path of ['/orders', '/china', '/refunds', '/analytics', '/campaigns']) {
+    await open(path)
+    await back('/')
     await open(path)
     await back('/')
   }
@@ -30,10 +43,14 @@ test('admin sections share one directional page animation and return to their or
   for (const path of ['/products', '/categories', '/brands', '/size-charts']) {
     await open(path)
     await back('/catalog')
+    await open(path)
+    await back('/catalog')
   }
   await back('/')
   await open('/settings')
   for (const section of ['payments', 'prices', 'sale', 'reminders', 'theme']) {
+    await open('/settings?section=' + section)
+    await back('/settings')
     await open('/settings?section=' + section)
     await back('/settings')
   }
@@ -108,7 +125,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     for (const route of routes) {
       await page.goto(ADMIN + route)
       await expect(bar).toHaveCount(1)
-      const heading = bar.locator('h1')
+      const heading = bar.locator('h1:visible')
       await expect(heading).toBeVisible()
       await expect.poll(() => bar.evaluate(element => element.getBoundingClientRect().height)).toBe(height)
       await expect.poll(() => bar.evaluate(element => element.getBoundingClientRect().y)).toBe(0)
@@ -149,10 +166,47 @@ test('cold module may remain pending while the shared push animates', async ({ p
     await page.goto(ADMIN)
     await page.locator('[data-admin-card="/orders"]').click()
     await expect(page).toHaveURL(ADMIN + '/orders')
-    await expect(page.locator('[data-admin-header]:visible h1')).toHaveText('Заказы')
+    await expect(page.locator('[data-admin-header]:visible h1:visible')).toHaveText('Заказы')
     await expect(page.getByRole('status', { name: 'Загрузка' })).toBeVisible()
     await expect(page.locator('[data-admin-header]:visible')).toHaveCount(1)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
   } finally { release() }
   await expect(page.getByRole('button', { name: 'Обновить список' })).toBeVisible()
+})
+
+test('dashboard title stays centered and all three island actions work', async ({ page, harness }) => {
+  await page.goto(ADMIN)
+  const island = page.locator('[data-admin-island]')
+  await expect(island).toHaveText('LOFT Админ Панель')
+  const centered = () => island.evaluate(element => {
+    const box = element.getBoundingClientRect()
+    const grid = element.closest('[data-admin-heading]')!.getBoundingClientRect()
+    return Math.abs(box.left + box.width / 2 - grid.left - grid.width / 2)
+  })
+  expect(await centered()).toBeLessThan(1)
+  const bell = page.getByTitle('Уведомления о новых заказах и спецзаказах')
+  await bell.click()
+  const menu = page.locator('[data-notification-menu]')
+  await expect(menu).toBeVisible()
+  expect(await menu.evaluate(element => {
+    const { left, right } = element.getBoundingClientRect()
+    return left >= 0 && right <= innerWidth
+  })).toBe(true)
+  await bell.click()
+  await expect(menu).toHaveCount(0)
+  const refresh = page.getByRole('button', { name: 'Обновить', exact: true })
+  const orderReads = harness.calls.filter(call => call.path === '/rest/v1/orders').length
+  await refresh.click()
+  await expect.poll(() => harness.calls.filter(call => call.path === '/rest/v1/orders').length).toBeGreaterThan(orderReads)
+  expect(await centered()).toBeLessThan(1)
+  await page.screenshot({ path: test.info().outputPath('dashboard-island.png') })
+  await page.getByRole('button', { name: 'Выйти', exact: true }).click()
+  await expect(page).toHaveURL(ADMIN + '/login')
+  await expect(island).toHaveCount(0)
+})
+
+test('unrecognized settings sections open the settings menu', async ({ page }) => {
+  await page.goto(ADMIN + '/settings?section=constructor')
+  await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
+  await expect(page.locator('[data-admin-card="/settings?section=prices"]')).toBeVisible()
 })

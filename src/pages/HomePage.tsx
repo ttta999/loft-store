@@ -1,3 +1,4 @@
+import { markStartup } from '../lib/startupTiming'
 import HomeProductCard from '../components/ProductCard'
 import { useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -121,7 +122,8 @@ export default function HomePage() {
   useEffect(() => {
     if (hasLoadedRef.current) return
     hasLoadedRef.current = true
-    loadProducts()
+    markStartup('catalog-start')
+    void loadProducts().finally(() => markStartup('catalog-settled'))
   }, [])
 
   useEffect(() => {

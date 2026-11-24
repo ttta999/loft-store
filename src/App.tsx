@@ -1,3 +1,4 @@
+import { markStartup } from './lib/startupTiming'
 import { subscribePrivateResources, verifiedCustomerId } from './lib/api'
 import {activeDismissButton} from './lib/activeSurface'
 import Onboarding from './components/Onboarding'
@@ -12,7 +13,7 @@ import BottomNavbar from './components/BottomNavbar'
 import IslandHeader from './components/IslandHeader'
 import HomePage from './pages/HomePage'
 import {
-  initTelegram,
+  announceTelegramReady,
   getUserData,
   subscribeUser,
   setupTelegramBackButton,
@@ -77,10 +78,8 @@ function AppLayout() {
 
   const setTelegramUser = useStore((state) => state.setTelegramUser)
 
-  // ✅ Telegram инициализация — один раз, сохраняем в store
   useEffect(() => {
-    const tg = initTelegram()
-    if (!tg?.initData) return
+    if (!window.Telegram?.WebApp.initData) return
     let active = true
     let running = false
     let hydratedId: string | null = null
@@ -176,6 +175,18 @@ function ThemeManager() {
 function ProductRoute(){const location=useLocation();return <ProductPage key={location.key}/>}
 
 function App() {
+  useLayoutEffect(() => {
+    markStartup('interface')
+    // The intro or route shell has committed, including on a direct URL.
+    document.getElementById('loft-boot')?.setAttribute('hidden', '')
+    announceTelegramReady()
+    if (!window.Telegram?.WebApp) {
+      const sdk = document.getElementById('telegram-sdk')
+      sdk?.addEventListener('load', announceTelegramReady, { once: true })
+      return () => sdk?.removeEventListener('load', announceTelegramReady)
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <ThemeManager />

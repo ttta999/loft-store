@@ -81,14 +81,14 @@ test('возврат пролистывает назад, нажатие кно�
 
 test('админка: повторное открытие списка использует кеш; остальные страницы загружаются отдельными модулями', async ({ page, harness }) => {
   await page.goto(ADMIN)
-  await expect(page.getByText(/Панель управления|Главная панель/).first()).toBeVisible()
+  await expect(page.getByRole('heading', {name:'LOFT Админ Панель', exact:true})).toBeVisible()
   // Initial revision synchronization may legitimately invalidate the first homepage read.
   await page.waitForLoadState('networkidle')
   const before = harness.calls.filter(c => c.path.endsWith('/orders')).length
   await page.getByRole('button', { name: /Заказы/ }).first().click()
   await expect(page.getByRole('button', { name: /Заказ №1001/ })).toBeVisible()
   await page.goBack()
-  await expect(page.getByText(/Панель управления|Главная панель/).first()).toBeVisible()
+  await expect(page.getByRole('heading', {name:'LOFT Админ Панель', exact:true})).toBeVisible()
   await page.getByRole('button', { name: /Заказы/ }).first().click()
   await expect(page.getByRole('button', { name: /Заказ №1001/ })).toBeVisible()
   expect(harness.calls.filter(c => c.path.endsWith('/orders')).length).toBe(before)

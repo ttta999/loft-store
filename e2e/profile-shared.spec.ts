@@ -10,7 +10,7 @@ async function track(page: import('@playwright/test').Page) {
     }) as EventListener)
     const original = document.startViewTransition.bind(document)
     document.startViewTransition = callback => {
-      const record: any = {}; win.transitions.push(record)
+      const record: any = { scroll: window.scrollY }; win.transitions.push(record)
       const transition = original(callback); win.sharedTransition = transition
       record.source = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => ({ name: element.style.viewTransitionName, placement: element.closest('[data-product-placement]')?.getAttribute('data-product-placement') }))
       transition.ready.then(() => { record.mode = document.documentElement.dataset.loftMotion; record.names = Array.from(document.querySelectorAll<HTMLElement>('[style*=view-transition-name]')).map(element => element.style.viewTransitionName); record.targetPlacement = document.querySelector('[style*="loft-product-photo"]')?.closest('[data-product-placement]')?.getAttribute('data-product-placement'); record.direction = document.documentElement.style.getPropertyValue('--loft-tab-direction'); record.enter = getComputedStyle(document.documentElement, '::view-transition-new(loft-tab-in)').animationName }).catch((error: Error) => { record.error = error.message })
@@ -36,7 +36,6 @@ for (const placement of ['sale', 'new', 'popular']) {
     const card = page.locator(`[data-product-placement="${placement}:${productId}"]`)
     await card.scrollIntoViewIfNeeded()
     await expect.poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
-    const scroll = await page.evaluate(() => scrollY)
     await track(page)
     await card.click()
     await expect(page.locator('[data-product-hero]')).toBeVisible()
@@ -45,10 +44,10 @@ for (const placement of ['sale', 'new', 'popular']) {
     await expect(page.locator('[data-product-hero]')).toHaveAttribute('src', /red=1/)
     await page.goBack()
     await expect(card).toBeVisible()
-    const closing = await finished(page, 'product')
-    expect(closing.names).toContain('loft-product-photo')
-    expect(closing.targetPlacement).toBe(`${placement}:${productId}`)
-    expect(await page.evaluate(() => scrollY)).toBe(scroll)
+    await expect.poll(() => page.evaluate(() => window.lastProductReturn?.placement)).toBe(`${placement}:${productId}`)
+    await page.evaluate(() => window.lastProductReturn?.finished)
+    await expect(page.locator('[data-product-return-overlay]')).toHaveCount(0)
+    expect(Math.abs(await page.evaluate(() => scrollY) - opening.scroll)).toBeLessThanOrEqual(1)
     await expect(card).toBeInViewport()
   })
 }

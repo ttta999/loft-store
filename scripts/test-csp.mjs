@@ -39,7 +39,7 @@ try{
  await store.waitForFunction(()=>!document.documentElement.dataset.loftMotion && document.querySelector('[data-product-hero]')?.complete);
  await store.screenshot({path:resolve(artifacts,'store.png')});
  const manager=await context.newPage();await manager.goto('http://127.0.0.1:4174/');await manager.waitForLoadState('networkidle');
- await manager.getByRole('heading',{name:'LOFT Admin Panel'}).waitFor();await manager.screenshot({path:resolve(artifacts,'admin.png')});
+ await manager.getByRole('heading',{name:'LOFT Админ Панель'}).waitFor();await manager.screenshot({path:resolve(artifacts,'admin.png')});
  await manager.goto('http://127.0.0.1:4174/products');await manager.getByRole('button',{name:'Редактировать',exact:true}).click();
  assert.equal(await manager.getByPlaceholder('Например: Loro Piana Summer Walk',{exact:true}).inputValue(),'Тестовые кроссовки');
  assert.deepEqual(h.errors,[]);assert.deepEqual(h.blocked,[]);assert.deepEqual(cspErrors,[]);

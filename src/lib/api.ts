@@ -1,3 +1,4 @@
+import { markStartup } from './startupTiming.ts'
 import { readWithDeadline } from './readDeadline.ts'
 import { dataCache } from './resourceCache.ts'
 let session: Promise<{ token: string; user: NonNullable<Telegram.WebApp['initDataUnsafe']['user']> }> | null = null
@@ -20,6 +21,7 @@ export function authenticate() {
     session = (async () => {
       const initData = window.Telegram?.WebApp.initData
       if (!initData) throw new Error('Для оформления и просмотра заказов откройте магазин через Telegram')
+      markStartup('session-start')
       const { response, data } = await readWithDeadline(async signal => {
         const response = await fetch('/api/validateTelegram', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -30,6 +32,7 @@ export function authenticate() {
       if (!response.ok) throw new Error(data.error || 'Не удалось войти через Telegram')
       if (sessionInitData !== initData || window.Telegram?.WebApp.initData !== initData) throw new Error('Сессия Telegram изменилась. Откройте магазин заново.')
       sessionUserId = data.user.id
+      markStartup('session-verified')
       return data
     })().catch(error => {
       if (sessionInitData === currentInitData) { session = null; sessionUserId = null }
@@ -89,6 +92,7 @@ export async function storeApi(action: string, payload: Record<string, unknown> 
   }
   const result = await (read || ['preferences','restocks'].includes(action) ? dataCache.load(`private:${user.id}:${action}`, execute, 15_000,options.force===true) : execute())
   assertCurrentSession()
+  if (action === 'preferences') markStartup('preferences')
   publishPrivateResources()
   return result
 }

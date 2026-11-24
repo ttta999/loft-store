@@ -21,7 +21,7 @@ test('админка: защищённые страницы, аналитика 
   harness.db.orders[0].payment_status = 'paid'
   harness.db.orders[0].paid_at = new Date().toISOString()
   await page.goto(ADMIN)
-  await expect(page.getByText(/Панель управления|Главная панель/).first()).toBeVisible()
+  await expect(page.getByRole('heading', {name:'LOFT Админ Панель', exact:true})).toBeVisible()
   await page.goto(`${ADMIN}/analytics`)
   await expect(page.getByText('Тестовые кроссовки', { exact: true })).toBeVisible()
   const photo = page.getByRole('img', { name: 'Тестовые кроссовки', exact: true })

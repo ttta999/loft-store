@@ -1,4 +1,9 @@
 import { test as base, expect, type BrowserContext, type Page } from '@playwright/test'
+declare global {
+  interface Window {
+    lastProductReturn?: { finished: Promise<void>; placement?: string | null }
+  }
+}
 export const STORE = 'http://127.0.0.1:4173'
 export const ADMIN = 'http://127.0.0.1:4174'
 const adminId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
@@ -34,8 +39,18 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
   context.on('page', page => { void h.setup(page) })
   await context.addInitScript(() => {
     const win = window as any
-    window.addEventListener('loft:product-return-start',(event)=>{const detail=(event as CustomEvent).detail;win.lastProductReturn=detail;win.lastTransition={ready:Promise.resolve(),updateCallbackDone:Promise.resolve(),finished:detail.finished}})
-    win.Telegram = { WebApp: { initData: 'fixture-signed-login', initDataUnsafe: { user: { id: 900000001, first_name: 'Тестовый покупатель' } }, ready() {}, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick(callback: any) { win.telegramBack = callback }, offClick(callback: any) { if (win.telegramBack === callback) win.telegramBack = null } }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
+    window.addEventListener('loft:product-return-start',(event)=>{const detail=(event as CustomEvent).detail;win.lastProductReturn={...detail,placement:document.querySelector('[data-product-card][data-loft-shared-source]')?.getAttribute('data-product-placement')};win.lastTransition={ready:Promise.resolve(),updateCallbackDone:Promise.resolve(),finished:detail.finished}})
+    win.Telegram = { WebApp: { initData: 'fixture-signed-login', initDataUnsafe: { user: { id: 900000001, first_name: 'Тестовый покупатель' } }, ready() {
+      const boot = document.getElementById('loft-boot')
+      win.fixtureReady = [...(win.fixtureReady || []), {
+        interface: !!document.querySelector('#root .loft-header, #root [data-onboarding]'),
+        retry: !!boot && !boot.hidden && !document.getElementById('loft-boot-retry')?.hidden,
+      }]
+    }, expand() {}, close() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, BackButton: { show() {}, hide() {}, onClick(callback: any) { win.telegramBack = callback }, offClick(callback: any) { if (win.telegramBack === callback) win.telegramBack = null } }, HapticFeedback: { impactOccurred() {}, selectionChanged() {}, notificationOccurred() {} } } }
+    if (location.hash.includes('fixture-sdk=pending')) {
+      win.fixtureDeferredTelegram = win.Telegram
+      delete win.Telegram
+    }
   })
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method()

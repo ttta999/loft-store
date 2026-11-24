@@ -44,8 +44,9 @@ for (const section of ['newest', 'popular', 'sale']) {
     await page.evaluate(() => (window as any).lastTransition.finished)
     await page.goBack()
     await expect(card).toBeVisible()
-    await page.evaluate(() => (window as any).lastTransition.finished)
-    expect(await page.evaluate(() => (window as any).frames)).toEqual([{ source: true, mode: 'product' }, { source: true, mode: 'product' }])
+    expect(await page.evaluate(() => (window as any).frames)).toEqual([{ source: true, mode: 'product' }])
+    await expect.poll(() => page.evaluate(() => window.lastProductReturn?.placement)).toBe(`all-${section}:${productId}`)
+    await page.evaluate(() => window.lastProductReturn?.finished)
     expect(await page.evaluate(() => scrollY)).toBe(scroll)
     await filters.click()
     await expect(page.getByRole('button', { name: 'Кроссовки', exact: true })).toHaveClass(/bg-\[#1B2A4A\]/)
@@ -95,6 +96,8 @@ test('фильтры раскрываются и закрываются без �
   await page.waitForFunction(() => !document.documentElement.hasAttribute('data-loft-motion'))
   const toggle = page.getByRole('button', { name: /Фильтры и сортировка/ })
   for (const open of [true, false]) {
+    // Sample the panel, independently of Playwright scrolling its click target.
+    await toggle.scrollIntoViewIfNeeded()
     await page.evaluate(() => {
       ;(window as any).filterFrames = []
       const sample = () => {

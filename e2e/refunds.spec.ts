@@ -86,7 +86,7 @@ for(const theme of ['light','dark'])test(`возвраты: общий пере�
  await expect(page.getByRole('heading',{name:'Возвраты',exact:true})).toBeVisible()
  await page.evaluate(async()=>{await (window as any).refundTransition?.finished})
  if(await page.evaluate(()=>typeof document.startViewTransition==='function')){await expect.poll(()=>page.evaluate(()=>(window as any).refundTransitions)).toEqual(['forward']);expect(await page.evaluate(()=>(window as any).refundErrors)).toEqual([])}
- const header=page.locator('main > .sticky');await expect(header).toBeVisible()
+ const header=page.locator('[data-admin-header]');await expect(header).toBeVisible()
  await page.getByLabel('Поиск возвратов').fill('1001')
  await page.getByRole('combobox').selectOption('Ожидает возврата')
  const row=page.locator('[data-refund-row="1"]');
@@ -129,4 +129,48 @@ test('возвраты: уменьшение движения отключает
  await page.getByRole('button',{name:'На главную',exact:true}).click()
  await expect(page.locator('[data-admin-card="/refunds"]')).toBeVisible()
  await expect(page.locator('[data-admin-frame]')).toHaveCount(0)
+})
+
+test('linked order bypasses cached filters, centers and highlights the final row, and Back restores the refund', async ({ page, harness }) => {
+  const target = harness.db.orders[0]
+  Object.assign(target, { status: 'Отменён', created_at: '2024-01-01T00:00:00Z' })
+  for (let i = 1; i <= 18; i++) {
+    harness.db.orders.push({ ...target, id: target.id + i, status: 'Активный', created_at: '2025-01-01T00:00:00Z' })
+  }
+  harness.db.refunds = [{ id: 1, order_id: target.id, status: 'Возврат выполнен', created_at: target.created_at, orders: target }]
+  const initial = structuredClone(harness.db.orders)
+  await page.goto(ADMIN + '/orders')
+  const filters = page.getByRole('combobox')
+  await filters.selectOption('Активный')
+  await expect(page.locator('#admin-order-1001')).toHaveCount(0)
+  await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
+  expect(await page.evaluate(() => scrollY)).toBe(0)
+
+  await page.locator('[data-admin-back]').click()
+  await page.locator('[data-admin-card="/refunds"]').click()
+  const query = page.getByRole('textbox', { name: 'Поиск возвратов' })
+  await query.fill(String(target.id))
+  await page.getByRole('button', { name: /Возврат №1/ }).click()
+  const linked = page.getByRole('button', { name: 'Открыть заказ', exact: true })
+  await expect(linked).toBeVisible()
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await linked.click()
+    await expect(page).toHaveURL(ADMIN + '/orders?order=1001')
+    const card = page.locator('#admin-order-1001')
+    await expect(card.locator('[data-order-summary]')).toHaveAttribute('aria-expanded', 'true')
+    await expect(filters).toHaveValue('Активный')
+    await expect(card).toHaveAttribute('data-order-highlight', 'true')
+    await expect.poll(() => card.evaluate(row => {
+      const header = document.querySelector('[data-admin-header]')!.getBoundingClientRect()
+      const rect = row.getBoundingClientRect()
+      const anchor = rect.height <= innerHeight - header.bottom ? rect : row.querySelector('[data-order-summary]')!.getBoundingClientRect()
+      return Math.abs((anchor.top + anchor.bottom) / 2 - (innerHeight + header.bottom) / 2)
+    })).toBeLessThan(10)
+    await page.locator('[data-admin-back]').click()
+    await expect(page).toHaveURL(ADMIN + '/refunds')
+    await expect(query).toHaveValue(String(target.id))
+    await expect(linked).toBeVisible()
+  }
+  expect(harness.db.orders).toEqual(initial)
 })

@@ -10,10 +10,20 @@ import { captureTransitionChrome, clearTransitionChrome } from '../lib/transitio
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
+import IslandHeader from './IslandHeader'
 import ScrollRestoration, { captureScrollPosition } from './ScrollRestoration'
 
+function RouteLoading() {
+  return <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg">
+    <IslandHeader />
+    <div className="min-h-[50vh] grid place-items-center" role="status" aria-label="Загрузка / Yuklanmoqda">
+      <div className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+    </div>
+  </div>
+}
+
 function RouteFrame() {
-  return <><ScrollRestoration /><Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-label="Загрузка"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /></div>}><Outlet /></Suspense></>
+  return <><ScrollRestoration /><Suspense fallback={<RouteLoading />}><Outlet /></Suspense></>
 }
 
 /** Shared elements move; destination chrome has static, unmatched snapshots. */

@@ -66,3 +66,45 @@ test('a stalled Telegram validation expires and the intro can retry the read', a
     expect(harness.calls.some(call => ['createOrder', 'language'].includes(call.body?.action))).toBe(false)
   } finally { release() }
 })
+
+test('Telegram ready exposes the committed interface on first entry and reload before customer data', async ({ page }) => {
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/api/validateTelegram', async route => {
+    await pending
+    await route.fallback().catch(() => {})
+  })
+  try {
+    const entry = STORE + '/product/' + productId
+    await page.goto(entry, { waitUntil: 'domcontentloaded' })
+    for (const repeat of [false, true]) {
+      if (repeat) await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.locator('html')).toHaveAttribute('data-telegram-ready', 'true')
+      await expect(page).toHaveURL(entry)
+      expect(await page.evaluate(() => performance.getEntriesByName('loft:startup:ready').length)).toBe(1)
+      expect(await page.evaluate(() => performance.getEntriesByName('loft:startup:session-verified').length)).toBe(0)
+      const readyFrames = await page.evaluate(() => (window as Window & { fixtureReady?: unknown }).fixtureReady)
+      expect(readyFrames).toEqual([{ interface: true, retry: false }])
+    }
+  } finally { release() }
+})
+
+test('a late Telegram SDK releases the shell without waiting for catalogue', async ({ page }) => {
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('https://telegram.org/js/telegram-web-app.js', async route => {
+    await pending
+    await route.fulfill({ contentType: 'application/javascript', body: 'window.Telegram = window.fixtureDeferredTelegram' })
+  })
+  try {
+    await page.goto(STORE + '/#tgWebAppVersion=9.1&fixture-sdk=pending', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('#loft-boot')).toBeVisible()
+    await expect(page.locator('html')).not.toHaveAttribute('data-telegram-ready', 'true')
+    release()
+    await expect(page.locator('html')).toHaveAttribute('data-telegram-ready', 'true')
+    const stages = await page.evaluate(() => ['entry', 'sdk', 'interface', 'ready'].map(stage =>
+      performance.getEntriesByName('loft:startup:' + stage)[0]?.startTime))
+    expect(stages).toEqual([...stages].sort((a, b) => a - b))
+    await expect(page.locator('#loft-boot')).toBeHidden()
+  } finally { release() }
+})
