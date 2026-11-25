@@ -12,6 +12,7 @@ import { useScrollLock } from '../lib/useScrollLock'
 import { motionEase, motionTiming } from '../lib/motion'
 import ProductPhotoViewer from '../components/ProductPhotoViewer'
 import { getOpeningPhoto } from '../lib/productTransition'
+import { markProductBackInput } from '../lib/productReturnTrace'
 import { useDecodedImage } from '../lib/useDecodedImage'
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
@@ -188,6 +189,7 @@ export default function ProductPage() {
   }
 
   const handleBack = () => {
+    markProductBackInput('island')
     if (Number(history.state?.idx) > 0) navigate(-1)
     else navigate('/', { replace: true })
   }

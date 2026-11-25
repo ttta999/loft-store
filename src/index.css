@@ -173,3 +173,6 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 [data-product-return-surface][data-tab-incoming] > .loft-navigation {
   bottom: var(--loft-return-navigation-bottom);
 }
+
+/* Clip rasterization to the visible viewport even when the catalog is long. */
+[data-loft-return-clip] { clip-path: var(--loft-return-clip); }

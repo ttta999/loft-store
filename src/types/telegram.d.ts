@@ -21,6 +21,7 @@ declare namespace Telegram {
       offClick(callback: () => void): void
     }
     initDataUnsafe: {
+      start_param?: string
       user?: {
         id: number
         first_name: string

@@ -1,4 +1,6 @@
 import { motionEaseCSS, motionTiming } from './motion'
+import { visibleGridCards } from './transitionGrid'
+import type { ProductReturnTrace } from './productReturnTrace'
 type Page = { pathname: string; search?: string }
 const order: Record<string, number> = { '/': 0, '/home': 0, '/cart': 1, '/china': 2, '/profile': 3 }
 export function tabDirection(from: Page, to: Page) {
@@ -62,26 +64,7 @@ function cloneViewport(element: HTMLElement, top: number, bottom: number, cloneB
       const grid = node.cloneNode(false) as HTMLElement
       const rect = node.getBoundingClientRect()
       Object.assign(grid.style, { position: 'relative', height: `${rect.height}px` })
-      const cards = node.children
-      const columns = getComputedStyle(node).gridTemplateColumns.split(' ').length
-      const overscan = 16
-      if (rect.bottom < top - overscan || rect.top > bottom + overscan) return grid
-      let first = 0
-      let end = Math.ceil(cards.length / columns)
-      while (first < end) {
-        const middle = Math.floor((first + end) / 2)
-        const start = middle * columns
-        let rowBottom = -Infinity
-        for (let index = start; index < Math.min(start + columns, cards.length); index++) {
-          rowBottom = Math.max(rowBottom, cards[index].getBoundingClientRect().bottom)
-        }
-        if (rowBottom < top - overscan) first = middle + 1
-        else end = middle
-      }
-      for (let index = first * columns; index < cards.length; index++) {
-        const card = cards[index]
-        const box = card.getBoundingClientRect()
-        if (box.top > bottom + overscan) break
+      for (const { card, box } of visibleGridCards(node, rect, top, bottom, 16)) {
         const clone = cloneBranch(card) as HTMLElement
         Object.assign(clone.style, {
           position: 'absolute', margin: '0', gridArea: 'auto',
@@ -103,7 +86,7 @@ function cloneViewport(element: HTMLElement, top: number, bottom: number, cloneB
 }
 
 /** Move a noninteractive outgoing viewport and the live destination. */
-export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, productBack = false) {
+export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, productBack = false, trace?: ProductReturnTrace) {
   const direction = internalDirection || tabDirection(from, to)
   const kind = productBack ? 'product-back' : internalDirection ? 'section' : 'tabs'
   const source = productBack ? document.querySelector<HTMLElement>('[data-product-surface]') : content()
@@ -114,8 +97,9 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
   const targets: HTMLElement[] = []
   const animations: Animation[] = []
   let cleaned = false
+  let firstFrame = 0
   let incomingNavigation: HTMLElement | null = null
-  let releaseNavigationAnchor: (() => void) | undefined
+  let releaseViewport: (() => void) | undefined
   const header = internalDirection ? Array.from(document.querySelectorAll<HTMLElement>('.loft-header')).at(-1) : null
   const navigation = internalDirection ? document.querySelector<HTMLElement>('.loft-navigation') : null
   const headerBottom = header?.getBoundingClientRect().bottom ?? 0
@@ -165,15 +149,18 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
   // surface. Other section transitions retain their modal stacking order.
   snapshot(source, productBack ? 30 : internalDirection ? 60 : 5)
   snapshot(floating(), 40)
+  trace?.mark('outgoingPrepared', copies.length)
   const cleanup = () => {
     if (cleaned) return
     cleaned = true
+    cancelAnimationFrame(firstFrame)
     animations.forEach(animation => animation.cancel())
     copies.forEach(copy => copy.remove())
     targets.forEach(target => target.removeAttribute('data-tab-incoming'))
-    releaseNavigationAnchor?.()
+    releaseViewport?.()
     if (incomingNavigation) incomingNavigation.inert = false
     delete document.documentElement.dataset.loftTabMotion
+    trace?.finish()
   }
   return {
     cleanup,
@@ -189,31 +176,53 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
       const incomingContent = content()
       const incomingFloating = floating()
       const surface = incomingNavigation?.closest<HTMLElement>('[data-product-return-surface]')
-      // Pages with their own fixed controls or portal content keep their
-      // existing containing blocks. The catalog and its bar can move as one.
-      const sharedSurface = surface && incomingContent && surface.contains(incomingContent) &&
-        !incomingFloating && !incomingContent.querySelector('.fixed, .sticky') ? surface : null
-      if (sharedSurface && incomingNavigation) {
+      // Keep fixed controls and portal content in their original containing blocks.
+      const canClip = productBack && incomingContent && !incomingContent.querySelector('.fixed, .sticky')
+      const sharedSurface = canClip && surface?.contains(incomingContent) && !incomingFloating ? surface : null
+      const clipped = sharedSurface || (canClip && incomingContent.querySelector('[data-transition-product-grid]') ? incomingContent : null)
+      if (clipped) {
         const visualViewport = window.visualViewport
-        const viewportBottomOffset = incomingNavigation.getBoundingClientRect().bottom - innerHeight
-        const syncNavigationAnchor = () => {
-          const bottom = sharedSurface.getBoundingClientRect().bottom - innerHeight - viewportBottomOffset
-          sharedSurface.style.setProperty('--loft-return-navigation-bottom', `${bottom}px`)
+        const viewportBottomOffset = sharedSurface && incomingNavigation
+          ? incomingNavigation.getBoundingClientRect().bottom - innerHeight : 0
+        let viewportFrame = 0
+        let previous = ''
+        const syncViewport = () => {
+          const rect = clipped.getBoundingClientRect()
+          const bottom = rect.bottom - innerHeight - viewportBottomOffset
+          const viewportTop = visualViewport?.offsetTop ?? 0
+          const viewportBottom = Math.min(innerHeight, viewportTop + (visualViewport?.height ?? innerHeight))
+          const clip = `inset(${viewportTop - rect.top}px 0 ${rect.bottom - viewportBottom}px)`
+          const geometry = `${bottom} ${clip}`
+          if (geometry === previous) return
+          previous = geometry
+          if (sharedSurface) clipped.style.setProperty('--loft-return-navigation-bottom', `${bottom}px`)
+          clipped.style.setProperty('--loft-return-clip', clip)
         }
-        syncNavigationAnchor()
-        const observer = new ResizeObserver(syncNavigationAnchor)
-        observer.observe(sharedSurface)
-        window.addEventListener('resize', syncNavigationAnchor)
-        window.addEventListener('scroll', syncNavigationAnchor, { passive: true })
-        visualViewport?.addEventListener('resize', syncNavigationAnchor)
-        visualViewport?.addEventListener('scroll', syncNavigationAnchor)
-        releaseNavigationAnchor = () => {
+        const scheduleViewport = () => {
+          if (viewportFrame) return
+          viewportFrame = requestAnimationFrame(() => {
+            viewportFrame = 0
+            syncViewport()
+          })
+        }
+        syncViewport()
+        clipped.dataset.loftReturnClip = ''
+        const observer = new ResizeObserver(syncViewport)
+        observer.observe(clipped)
+        window.addEventListener('resize', scheduleViewport)
+        window.addEventListener('scroll', scheduleViewport, { passive: true })
+        visualViewport?.addEventListener('resize', scheduleViewport)
+        visualViewport?.addEventListener('scroll', scheduleViewport)
+        releaseViewport = () => {
+          cancelAnimationFrame(viewportFrame)
           observer.disconnect()
-          window.removeEventListener('resize', syncNavigationAnchor)
-          window.removeEventListener('scroll', syncNavigationAnchor)
-          visualViewport?.removeEventListener('resize', syncNavigationAnchor)
-          visualViewport?.removeEventListener('scroll', syncNavigationAnchor)
-          sharedSurface.style.removeProperty('--loft-return-navigation-bottom')
+          window.removeEventListener('resize', scheduleViewport)
+          window.removeEventListener('scroll', scheduleViewport)
+          visualViewport?.removeEventListener('resize', scheduleViewport)
+          visualViewport?.removeEventListener('scroll', scheduleViewport)
+          delete clipped.dataset.loftReturnClip
+          clipped.style.removeProperty('--loft-return-navigation-bottom')
+          clipped.style.removeProperty('--loft-return-clip')
         }
       }
       const timing = { duration: motionTiming.page * 1000, easing: motionEaseCSS, fill: 'both' as const }
@@ -229,13 +238,31 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
         ;(copy.firstElementChild as HTMLElement).scrollTop = Number(copy.dataset.sourceScroll)
         animations.push(copy.animate([{ translate: '0px 0' }, { translate: `${-direction * width}px 0` }], timing))
       }
-      // The outgoing slice and the arriving surface use the same clock.
-      const startTime = document.timeline.currentTime
-      if (productBack && startTime !== null) {
-        for (const animation of animations) animation.startTime = startTime
+      const finished = Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+        if (!cleaned) trace?.mark('animationFinished')
+        cleanup()
+      })
+      const announce = () => window.dispatchEvent(new CustomEvent('loft:tabs-start', { detail: { kind, direction, animations, finished } }))
+      if (productBack && animations.length) {
+        trace?.mark('animationsCreated', animations.length)
+        for (const animation of animations) {
+          animation.pause()
+          animation.currentTime = 0
+        }
+        // The previous timeline tick can predate the React commit and image
+        // setup. Hold the prepared layers at zero until the browser's next frame.
+        firstFrame = requestAnimationFrame(timestamp => {
+          const startTime = document.timeline.currentTime ?? timestamp
+          for (const animation of animations) {
+            animation.play()
+            animation.startTime = startTime
+          }
+          trace?.sample(animations[0], incoming.find(element => element !== null), width)
+          announce()
+        })
+      } else {
+        announce()
       }
-      const finished = Promise.allSettled(animations.map(animation => animation.finished)).then(() => { cleanup() })
-      window.dispatchEvent(new CustomEvent('loft:tabs-start', { detail: { kind, direction, animations, finished } }))
       return finished
     },
   }

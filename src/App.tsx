@@ -1,3 +1,4 @@
+import { markProductBackInput } from './lib/productReturnTrace'
 import { markStartup } from './lib/startupTiming'
 import { subscribePrivateResources, verifiedCustomerId } from './lib/api'
 import {activeDismissButton} from './lib/activeSurface'
@@ -45,6 +46,7 @@ function TelegramBackButtonManager() {
     const handleBack = () => {
       const dismiss = activeDismissButton()
       if (dismiss) { dismiss.click(); return }
+      if (path.startsWith('/product/')) markProductBackInput('telegram')
       const idx = (window.history.state as any)?.idx
       if (typeof idx === 'number' && idx === 0) {
         // ✅ Если в стеке больше нет страниц — возвращаемся на главную

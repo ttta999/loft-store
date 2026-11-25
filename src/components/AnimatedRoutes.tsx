@@ -11,6 +11,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode 
 import { flushSync } from 'react-dom'
 import { Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import IslandHeader from './IslandHeader'
+import { beginProductReturnTrace, rememberProductReturnTraceMode } from '../lib/productReturnTrace'
 import ScrollRestoration, { captureScrollPosition } from './ScrollRestoration'
 
 function RouteLoading() {
@@ -35,7 +36,10 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
   const [displayed, setDisplayed] = useState(location)
   const generation = useRef(0)
   const historyIndex = useRef(Number(history.state?.idx) || 0)
-  useEffect(() => installProductIntent(() => latest.current), [])
+  useEffect(() => {
+    rememberProductReturnTraceMode()
+    return installProductIntent(() => latest.current)
+  }, [])
   useEffect(() => installSurfaceIntent(() => latest.current), [])
   useEffect(() => installDialogOrigins(), [])
 
@@ -74,6 +78,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
       setDisplayed(location)
       return
     }
+    const returnTrace = backwards && displayed.pathname.startsWith('/product/') ? beginProductReturnTrace() : undefined
     void preloadPage(location.pathname).catch(() => {}).then(async () => {
       if (generation.current !== current) return
       // A quick Back can overlap the final 200ms of a dismissed size sheet.
@@ -91,7 +96,7 @@ export default function AnimatedRoutes({ children }: { children: ReactNode }) {
         void finished.finally(stopListening)
         return
       }
-      const photo = prepareProductTransition(displayed, location)
+      const photo = prepareProductTransition(displayed, location, returnTrace)
       if(photo&&'play' in photo){
         cancelPhotoReturn=photo.cancel
         document.documentElement.dataset.loftMotion='product'

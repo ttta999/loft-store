@@ -2,6 +2,9 @@ import { test, expect, STORE, productId } from './fixture'
 
 for (const placement of ['sale', 'new', 'popular']) {
   test(`главная / ${placement}: нажатие фото сохраняет исходный кадр и возвращает к той же карточке`, async ({ page, harness, browserName }) => {
+    // Use a landscape width where the square hero can actually meet the 70% threshold.
+    const viewport = page.viewportSize()
+    if (viewport && viewport.width > 900) await page.setViewportSize({ ...viewport, width: 850 })
     harness.db.settings.find(row => row.key === 'sale_mode_enabled')!.value.enabled = true
     const original = harness.db.products[0]
     harness.db.products.push(...Array.from({ length: 11 }, (_, index) => ({ ...original, id: `extra-${index}`, name_ru: `Товар ${index}`, created_at: new Date(Date.now() - (index + 1) * 86400000).toISOString() })))

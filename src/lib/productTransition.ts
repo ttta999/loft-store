@@ -1,5 +1,7 @@
 import {prepareTabMotion} from './tabTransition'
 import {productReturnMotion} from './productReturnMotion'
+import { captureReturnPhotos, retainReturnPhotos, takeReturnPhotos } from './productReturnPhotos'
+import type { ProductReturnTrace } from './productReturnTrace'
 import { useStore } from '../store/useStore'
 import { cacheProduct } from './productCache'
 import { warmPage } from './pagePreload'
@@ -81,7 +83,7 @@ function restoreOrigin(origin: Origin, valid: () => boolean): HTMLImageElement |
   const destination = target.getBoundingClientRect()
   return destination.width > 0 && destination.bottom > 0 && destination.top < innerHeight ? target : null
 }
-export function prepareProductTransition(from: Page, to: Page) {
+export function prepareProductTransition(from: Page, to: Page, trace?: ProductReturnTrace) {
   clearProductNames()
   const openingId = to.pathname.match(/^\/product\/([^/]+)$/)?.[1]
   const saved = origins.get(from.key)
@@ -91,7 +93,13 @@ export function prepareProductTransition(from: Page, to: Page) {
   const returning = reverse && !!origin
   if (!origin || (!forward && !returning)) return null
   const source = forward ? originCard(origin)?.querySelector<HTMLImageElement>('img') || null : document.querySelector<HTMLImageElement>('[data-product-hero]')
-  if(returning)return productReturnMotion(source, valid => restoreOrigin(origin, valid), () => prepareTabMotion(from, to, -1, true))
+  if (returning) return productReturnMotion(
+    source,
+    valid => restoreOrigin(origin, valid),
+    () => prepareTabMotion(from, to, -1, true, trace),
+    takeReturnPhotos(from.key),
+    trace,
+  )
   if(typeof document.startViewTransition!=='function')return null
   if (!visible(source) || (forward && (source.currentSrc || source.src) !== origin.src)) {
     return null
@@ -107,8 +115,10 @@ export function prepareProductTransition(from: Page, to: Page) {
     while (origins.size > 40) origins.delete(origins.keys().next().value!)
   }
   intent = null
+  const photos = captureReturnPhotos()
   return {
     finish(valid: () => boolean) {
+      if (valid()) retainReturnPhotos(to.key, photos)
       markContent()
       const target = document.querySelector<HTMLImageElement>('[data-product-hero]')
       if (!valid() || !target || (target.currentSrc || target.src) !== origin.src) return false

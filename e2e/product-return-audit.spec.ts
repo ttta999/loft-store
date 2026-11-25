@@ -66,9 +66,9 @@ test('color change and long description return to the original brand card',async
  const blue='dddddddd-dddd-4ddd-8ddd-dddddddddddd',red='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
  harness.db.product_colors=[{id:blue,product_id:productId,name_ru:'Синий',name_uz:'Ko‘k',hex_code:'#0000ff',images:[STORE+'/fixture-product.svg?blue'],sort_order:0},{id:red,product_id:productId,name_ru:'Красный',name_uz:'Qizil',hex_code:'#ff0000',images:[STORE+'/fixture-product.svg?red'],sort_order:1}]
  harness.db.products[0].description_ru='Подробное описание товара. '.repeat(120)
- await page.goto(STORE+'/brands?brand=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');const card=page.locator(`[data-product-card="${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY),before=await card.locator('img').boundingBox()
- await card.locator('img').click();await expect(page.getByRole('button',{name:'Красный',exact:true})).toBeVisible();await page.getByRole('button',{name:'Красный',exact:true}).click();await expect(page.locator('[data-product-hero]')).toHaveAttribute('src',/red/)
- await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await page.goBack();await expect(card).toBeInViewport();await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion','dissolve');expect(await page.evaluate(()=>scrollY)).toBe(y);expect(Math.abs((await card.locator('img').boundingBox())!.y-before!.y)).toBeLessThan(2)
+ await page.goto(STORE+'/brands?brand=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');const card=page.locator(`[data-product-card="${productId}"]`);await card.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY),before=await card.getByRole('img').boundingBox()
+ await card.getByRole('img').click();await expect(page.getByRole('button',{name:'Красный',exact:true})).toBeVisible();await page.getByRole('button',{name:'Красный',exact:true}).click();await expect(page.locator('[data-product-hero]')).toHaveAttribute('src',/red/)
+ await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));await page.goBack();await expect(card).toBeInViewport();await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion','dissolve');expect(await page.evaluate(()=>scrollY)).toBe(y);expect(Math.abs((await card.getByRole('img').boundingBox())!.y-before!.y)).toBeLessThan(2)
 })
 
 type ReturnRect = {left: number; right: number; top: number}
@@ -252,3 +252,76 @@ test('the mounted navigation indicator still moves between tabs in 250 ms', asyn
     return parseFloat(getComputedStyle(node).left) - selected.offsetLeft
   })).toBe(0)
 })
+
+for (const action of ['scroll', 'size'] as const) {
+  test(`scrolled ${action} return reuses the painted catalog photos before the first movement`, async ({ page, harness }) => {
+    harness.db.products[0].description_ru = 'Описание для проверки возврата. '.repeat(260)
+    const second = '22222222-2222-4222-8222-222222222222'
+    harness.db.products.push({
+      ...harness.db.products[0], id: second, name_ru: 'Товар рядом', images: [STORE + '/fixture-product.svg?neighbor'],
+    })
+    let returning = false
+    let releasePhoto!: () => void
+    const photoGate = new Promise<void>(resolve => { releasePhoto = resolve })
+    await page.route('**/fixture-product.svg?neighbor', async route => {
+      if (returning) await photoGate
+      await route.fulfill({
+        headers: { 'cache-control': 'no-store' },
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#376091"/></svg>',
+      })
+    })
+    await page.goto(STORE + (action === 'size' ? '/?tgWebAppStartParam=loft_motion_diagnostics' : '/'))
+    const origin = page.locator(`[data-product-placement="new:${productId}"] img`)
+    const neighbor = page.locator(`[data-product-placement="new:${second}"] img`)
+    await origin.scrollIntoViewIfNeeded()
+    await expect(neighbor).toBeInViewport()
+    await expect.poll(() => neighbor.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
+    await neighbor.evaluate(photo => Object.assign(window, { priorCatalogPhoto: photo }))
+    await origin.click()
+    const hero = page.locator('[data-product-hero]')
+    await expect(hero).toBeVisible()
+    await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion')
+    if (action === 'size') {
+      await page.locator('[data-dialog-trigger="size"]').click()
+      await page.getByRole('button', { name: '42', exact: true }).click()
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+    }
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
+    await expect(hero).not.toBeInViewport()
+    await page.evaluate(id => {
+      window.addEventListener('loft:tabs-start', event => {
+        const stage = document.querySelector('[data-tab-incoming]')!
+        const { animations } = (event as CustomEvent<{ animations: Animation[] }>).detail
+        const reused = stage.querySelector(`[data-product-placement="new:${id}"] [data-loft-return-photo]`)
+        const original = (window as Window & { priorCatalogPhoto?: Element }).priorCatalogPhoto
+        const clock = animations[0].currentTime
+        document.documentElement.dataset.testReturnReady = JSON.stringify({
+          original: reused === original, clipped: getComputedStyle(stage).clipPath !== 'none', clock,
+        })
+      }, { once: true })
+    }, second)
+    returning = true
+    try {
+      if (action === 'size') await page.evaluate(() => (window as ReturnWindow).telegramBack())
+      else await page.locator('.loft-header button').first().click()
+      await expect(page.locator('html')).toHaveAttribute('data-test-return-ready', /"original":true,"clipped":true,"clock":0[},]/)
+      await expect(page.locator('[data-tab-outgoing]')).toHaveCount(0)
+      if (action === 'size') {
+        await page.getByRole('button', { name: 'Motion trace', exact: true }).click()
+        const report = JSON.parse(await page.getByRole('textbox', { name: 'Motion trace' }).inputValue())
+        expect(report.input).toBe('telegram')
+        expect(report.marks.map((entry: {phase: string}) => entry.phase)).toEqual([
+          'routeObserved', 'preparationStarted', 'outgoingPrepared', 'catalogCommitted', 'scrollRestored',
+          'visiblePhotos', 'animationsCreated', 'frameCallback', 'animationFinished', 'layersRemoved',
+        ])
+        expect(JSON.stringify(report)).not.toContain('fixture-signed-login')
+        await page.getByRole('button', { name: 'Close', exact: true }).click()
+      }
+    } finally {
+      releasePhoto()
+    }
+    await expect(page.locator('[data-loft-return-photo]')).toHaveCount(0)
+    await expect(neighbor).toBeInViewport()
+  })
+}

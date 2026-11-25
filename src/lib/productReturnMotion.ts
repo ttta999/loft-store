@@ -1,4 +1,6 @@
 import type { prepareTabMotion } from './tabTransition'
+import { showReturnPhotos, type takeReturnPhotos } from './productReturnPhotos'
+import type { ProductReturnTrace } from './productReturnTrace'
 import { motionEaseCSS, motionTiming } from './motion'
 
 const duration = motionTiming.page * 1000
@@ -6,7 +8,7 @@ const options = { duration, easing: motionEaseCSS, fill: 'forwards' } as const
 
 /** One photo owns the return, below the stationary header, even when WebKit
  * changes the viewport after releasing a size-sheet or gallery scroll lock. */
-export function productReturnMotion(source: HTMLImageElement | null, restore: (valid: () => boolean) => HTMLImageElement | null, prepareSlide: () => ReturnType<typeof prepareTabMotion>) {
+export function productReturnMotion(source: HTMLImageElement | null, restore: (valid: () => boolean) => HTMLImageElement | null, prepareSlide: () => ReturnType<typeof prepareTabMotion>, photos: ReturnType<typeof takeReturnPhotos>, trace?: ProductReturnTrace) {
   const origin = source?.getBoundingClientRect()
   const viewport = window.visualViewport
   const headerBottom = document.querySelector('.loft-header')?.getBoundingClientRect().bottom ?? 0
@@ -78,7 +80,10 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
   return {
     cancel: cleanup,
     async play(apply: () => void, valid: () => boolean) {
-      if (!layer) slide = prepareSlide()
+      if (!layer) {
+        trace?.mark('preparationStarted')
+        slide = prepareSlide()
+      }
       if (layer && source && origin) {
         layer.dataset.productReturnOverlay = 'true'
         layer.setAttribute('aria-hidden', 'true')
@@ -91,6 +96,7 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
         })
       }
       apply()
+      if (slide) trace?.mark('catalogCommitted')
       if (!valid() || finishedAlready) { cleanup(); return }
       // Reuse the old decoded image after React has detached its route. Avoid
       // a second decode or an empty replacement over the restored card.
@@ -104,7 +110,14 @@ export function productReturnMotion(source: HTMLImageElement | null, restore: (v
       }
       const destination = restore(valid)
       if (slide) {
-        await slide.run()
+        trace?.mark('scrollRestored')
+        const visiblePhotos = showReturnPhotos(photos)
+        trace?.mark('visiblePhotos', visiblePhotos.visible, visiblePhotos.loaded, visiblePhotos.reused)
+        try {
+          await slide.run()
+        } finally {
+          visiblePhotos.release()
+        }
         cleanup()
         return
       }
