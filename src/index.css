@@ -154,6 +154,12 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 
 @keyframes loft-photo-radius { from { border-radius: var(--loft-photo-from-radius, 16px); } to { border-radius: var(--loft-photo-to-radius, 16px); } }
 
+[data-nav-indicator] {
+  transition-property: left, width, opacity, background-color;
+  transition-duration: 250ms, 250ms, 250ms, 300ms;
+  transition-timing-function: var(--loft-motion-ease);
+}
+
 /* Keep horizontal tab travel inside the viewport without changing vertical scrolling. */
 :root[data-loft-tab-motion], :root[data-loft-tab-motion] body, :root[data-loft-tab-motion] #root { overflow-x: clip; }
 

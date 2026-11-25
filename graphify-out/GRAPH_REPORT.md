@@ -1,7 +1,7 @@
 # Graph Report - loft33-store  (2026-11-25)
 
 ## Corpus Check
-- 375 files · ~227,520 words
+- 375 files · ~227,692 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 7 file(s) not represented in the graph (top: .css 5, .example 1, (none) 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `73fc7e66`
+- Built from commit: `3c062b49`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -221,12 +221,12 @@
 ## Surprising Connections (you probably didn't know these)
 - `Таблицы: загрузка, состояния и кеш` --references--> `ResourceCache`  [INFERRED]
   docs/product-interface-followup-report.md → src/lib/resourceCache.ts
-- `14.3. Предварительная загрузка страниц` --references--> `warmPage()`  [INFERRED]
-  docs/store2-followup-spec.md → src/lib/pagePreload.ts
 - `Клиентское приложение` --references--> `usePageState()`  [INFERRED]
   docs/store2-followup-report.md → src/lib/usePageState.ts
 - `7. Товар внутри выбранного бренда` --references--> `BrandsPage()`  [INFERRED]
   docs/seven-fixes.md → src/pages/BrandsPage.tsx
+- `14.3. Предварительная загрузка страниц` --references--> `warmPage()`  [INFERRED]
+  docs/store2-followup-spec.md → src/lib/pagePreload.ts
 - `Изменения интро и product return (19.11.2026)` --references--> `verifiedCustomerId()`  [INFERRED]
   docs/ARCHITECTURE.md → src/lib/api.ts
 
@@ -974,15 +974,15 @@ Nodes (4): announceRecovery(), handleAssetError(), handleChunkError(), revealErr
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `ResourceCache`?**
-  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+  _High betweenness centrality (0.110) - this node is a cross-community bridge._
 - **Should `App.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.06605222734254992 - nodes in this community are weakly interconnected._
 - **Why does `2. Кеширование клиентских разделов` connect `ResourceCache` to `Финальная доработка интерфейса LOFT Store`, `ProfilePage.tsx`, `api.ts`?**
-  _High betweenness centrality (0.102) - this node is a cross-community bridge._
+  _High betweenness centrality (0.109) - this node is a cross-community bridge._
 - **Should `ProductPage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.08627450980392157 - nodes in this community are weakly interconnected._
 - **Why does `storeApi()` connect `ProfilePage.tsx` to `App.tsx`, `ProductPage.tsx`, `react`, `api.ts`, `useStore`, `CartPage.tsx`, `ResourceCache`?**
-  _High betweenness centrality (0.057) - this node is a cross-community bridge._
+  _High betweenness centrality (0.071) - this node is a cross-community bridge._
 - **Should `ProfilePage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.11524822695035461 - nodes in this community are weakly interconnected._
 - **Should `AnimatedRoutes.tsx` be split into smaller, more focused modules?**

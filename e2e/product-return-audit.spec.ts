@@ -73,7 +73,7 @@ test('color change and long description return to the original brand card',async
 
 type ReturnRect = {left: number; right: number; top: number}
 type ReturnFrame = {out: ReturnRect; incoming: ReturnRect; header: ReturnRect; nav: string; navRect: ReturnRect; reusedPhoto: boolean; overlay: boolean}
-type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number;
+type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number; sampledOffsets: number[];
  initialChrome: { clocks: number[]; layers: number[]; sharedSurface: boolean; inset: number; viewportAnchor: number; indicatorTransitions: number; indicatorReady: boolean }}
 type ReturnWindow = Window & {scrolledReturn: Promise<ReturnProbe>; productOriginScroll: number; telegramBack: () => void}
 
@@ -132,13 +132,29 @@ for (const back of ['island', 'telegram'] as const) {
        (animation.effect as KeyframeEffect).target === incoming).length === 1 && nav.getAnimations().length === 0,
       inset: nav.getBoundingClientRect().bottom - nav.firstElementChild!.getBoundingClientRect().bottom,
       viewportAnchor: innerHeight - nav.getBoundingClientRect().bottom,
-      indicatorTransitions: indicator.getAnimations().length,
+      indicatorTransitions: indicator.getAnimations().filter(animation =>
+       animation instanceof CSSTransition && ['left', 'width', 'opacity'].includes(animation.transitionProperty)).length,
       indicatorReady: parseFloat(style.left) === active.offsetLeft &&
        parseFloat(style.width) === active.offsetWidth && style.opacity === '1',
      }
      const start = sample(outgoing)
      const initialHeader = sample(header)
-     const duration = animations[0].effect.getTiming().duration
+     const effects = animations as Animation[]
+     const duration = effects[0].effect!.getTiming().duration
+     const startTime = effects[0].startTime
+     // WebKit can advance accelerated geometry between two synchronous
+     // getBoundingClientRect() calls. Seek both layers to the same timestamp
+     // for the subpixel comparison, then observe the uninterrupted playback.
+     for (const effect of effects) effect.pause()
+     const sampledOffsets = [0, 25, 50, 85, 120, 150, 200, 250, 300, 340].map(time => {
+      for (const effect of effects) effect.currentTime = time
+      return sample(incoming).left - sample(nav).left
+     })
+     for (const effect of effects) {
+      effect.currentTime = 0
+      effect.play()
+      effect.startTime = startTime
+     }
      const frames: ReturnFrame[] = []
      const frame = () => {
       if (!outgoing.isConnected) return
@@ -147,7 +163,7 @@ for (const back of ['island', 'telegram'] as const) {
       requestAnimationFrame(frame)
      }
      requestAnimationFrame(frame)
-     void finished.then(() => resolve({kind, direction, duration, start, initialHeader, initialChrome, frames, width: innerWidth}))
+     void finished.then(() => resolve({kind, direction, duration, start, initialHeader, initialChrome, sampledOffsets, frames, width: innerWidth}))
     }, {once: true})
    })
    Object.assign(window, {scrolledReturn: probe})
@@ -167,6 +183,7 @@ for (const back of ['island', 'telegram'] as const) {
   expect(viewportAnchor).toBeCloseTo(0, 0)
   expect(indicatorReady).toBe(true)
   expect(indicatorTransitions).toBe(0)
+  for (const offset of result.sampledOffsets) expect(offset).toBeCloseTo(result.sampledOffsets[0], 0)
   expect(result.frames.length).toBeGreaterThan(2)
   expect(result.frames.some((frame) => frame.out.left > 20 && frame.out.left < result.width - 20)).toBe(true)
   for (const frame of result.frames) {
@@ -174,7 +191,6 @@ for (const back of ['island', 'telegram'] as const) {
    expect(frame.header).toEqual(result.initialHeader)
    expect(frame.nav).toBe('visible')
    expect(frame.reusedPhoto).toBe(true)
-   expect(frame.incoming.left - frame.navRect.left).toBeCloseTo(result.frames[0].incoming.left - result.frames[0].navRect.left, 0)
    expect(frame.navRect.top).toBe(result.frames[0].navRect.top)
    expect(frame.overlay).toBe(false)
   }
@@ -216,3 +232,23 @@ for (const fraction of [0.6, 0.8]) {
     await expect(source).toBeInViewport()
   })
 }
+
+test('the mounted navigation indicator still moves between tabs in 250 ms', async ({ page }) => {
+  await page.goto(STORE)
+  const marker = page.locator('[data-nav-indicator]')
+  await expect(marker).toBeVisible()
+  await marker.evaluate(node => {
+    node.addEventListener('transitionrun', event => {
+      if ((event as TransitionEvent).propertyName !== 'left') return
+      const animation = node.getAnimations().find(effect =>
+        effect instanceof CSSTransition && effect.transitionProperty === 'left')
+      node.setAttribute('data-test-tab-duration', String(animation?.effect?.getTiming().duration))
+    })
+  })
+  await page.locator('[data-nav-tab="cart"]').click()
+  await expect(marker).toHaveAttribute('data-test-tab-duration', '250')
+  await expect.poll(() => marker.evaluate(node => {
+    const selected = document.querySelector<HTMLElement>('[data-nav-tab="cart"]')!
+    return parseFloat(getComputedStyle(node).left) - selected.offsetLeft
+  })).toBe(0)
+})
