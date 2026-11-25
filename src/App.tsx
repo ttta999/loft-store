@@ -143,7 +143,7 @@ function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-24 transition-colors duration-300">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-dark-bg pb-[calc(4.5rem+var(--loft-navigation-bottom))] transition-colors duration-300">
       <IslandHeader
         needsBack={needsBack}
         onBack={handleBack}
@@ -151,10 +151,10 @@ function AppLayout() {
         onSearchClick={handleSearchClick}
       />
 
-      {/* ✅ Outlet рендерит страницу БЕЗ размонтирования layout */}
-      <main data-loft-content><Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} /></main>
-
-      <BottomNavbar activeTab={activeTab} />
+      <div data-product-return-surface>
+        <main data-loft-content><Outlet context={{ showBackButton, setShowBackButton, onBackClick, setOnBackClick }} /></main>
+        <BottomNavbar activeTab={activeTab} />
+      </div>
     </div>
   )
 }

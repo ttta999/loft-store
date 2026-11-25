@@ -24,11 +24,13 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
   const { language, cart } = useStore(useShallow(state => ({ language: state.language, cart: state.cart })))
   const navigate = useNavigate()
   const pill = useRef<HTMLDivElement>(null)
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 })
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null)
   useLayoutEffect(() => {
     const measure = () => {
       const selected = pill.current?.querySelector<HTMLElement>('[data-active="true"]')
-      setIndicator(selected ? { left: selected.offsetLeft, width: selected.offsetWidth } : { left: 0, width: 0 })
+      const left = selected?.offsetLeft ?? 0
+      const width = selected?.offsetWidth ?? 0
+      setIndicator(previous => previous?.left === left && previous.width === width ? previous : { left, width })
     }
     measure()
     const observer = new ResizeObserver(measure)
@@ -64,11 +66,12 @@ export default function BottomNavbar({ activeTab }: BottomNavbarProps) {
   ]
 
   return (
-    <div className="loft-navigation fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 pointer-events-none">
+    <div className="loft-navigation fixed bottom-0 left-0 right-0 z-50 px-4 pb-[var(--loft-navigation-bottom)] pt-2 pointer-events-none">
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* ✅ ЛЕВАЯ «ПИЛЮЛЯ» — 3 кнопки, как на фото */}
         <div ref={pill} className="relative flex-1 bg-[#FBF9F4] dark:bg-dark-card border border-[#E8E2D5] dark:border-dark-border rounded-full shadow-lg flex items-center justify-around py-2 px-2">
-          <span data-nav-indicator aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[250ms]" style={{ transitionTimingFunction: 'var(--loft-motion-ease)', left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />
+          {/* Mount at the measured geometry. Later tab changes animate from it. */}
+          {indicator && <span data-nav-indicator aria-hidden="true" className="absolute top-2 bottom-2 rounded-full bg-[#E8E2D5] dark:bg-dark-accent pointer-events-none transition-[left,width,opacity] duration-[250ms]" style={{ transitionTimingFunction: 'var(--loft-motion-ease)', left: indicator.left, width: indicator.width, opacity: indicator.width ? 1 : 0 }} />}
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id

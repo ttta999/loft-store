@@ -102,8 +102,7 @@ function cloneViewport(element: HTMLElement, top: number, bottom: number, cloneB
   return copy(element) as HTMLElement
 }
 
-/** Retain only a noninteractive copy of the outgoing viewport. Live destination
- * content slides independently; fixed chrome never enters a transformed parent. */
+/** Move a noninteractive outgoing viewport and the live destination. */
 export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, productBack = false) {
   const direction = internalDirection || tabDirection(from, to)
   const kind = productBack ? 'product-back' : internalDirection ? 'section' : 'tabs'
@@ -116,6 +115,7 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
   const animations: Animation[] = []
   let cleaned = false
   let incomingNavigation: HTMLElement | null = null
+  let releaseNavigationAnchor: (() => void) | undefined
   const header = internalDirection ? Array.from(document.querySelectorAll<HTMLElement>('.loft-header')).at(-1) : null
   const navigation = internalDirection ? document.querySelector<HTMLElement>('.loft-navigation') : null
   const headerBottom = header?.getBoundingClientRect().bottom ?? 0
@@ -161,7 +161,9 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
     viewport.append(clone)
     copies.push(viewport)
   }
-  snapshot(source, internalDirection ? 60 : 5)
+  // Keep the product slice below the live header and the arriving catalog
+  // surface. Other section transitions retain their modal stacking order.
+  snapshot(source, productBack ? 30 : internalDirection ? 60 : 5)
   snapshot(floating(), 40)
   const cleanup = () => {
     if (cleaned) return
@@ -169,6 +171,7 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
     animations.forEach(animation => animation.cancel())
     copies.forEach(copy => copy.remove())
     targets.forEach(target => target.removeAttribute('data-tab-incoming'))
+    releaseNavigationAnchor?.()
     if (incomingNavigation) incomingNavigation.inert = false
     delete document.documentElement.dataset.loftTabMotion
   }
@@ -183,8 +186,39 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
       }
       incomingNavigation = productBack ? document.querySelector<HTMLElement>('.loft-navigation') : null
       if (incomingNavigation) incomingNavigation.inert = true
+      const incomingContent = content()
+      const incomingFloating = floating()
+      const surface = incomingNavigation?.closest<HTMLElement>('[data-product-return-surface]')
+      // Pages with their own fixed controls or portal content keep their
+      // existing containing blocks. The catalog and its bar can move as one.
+      const sharedSurface = surface && incomingContent && surface.contains(incomingContent) &&
+        !incomingFloating && !incomingContent.querySelector('.fixed, .sticky') ? surface : null
+      if (sharedSurface && incomingNavigation) {
+        const visualViewport = window.visualViewport
+        const viewportBottomOffset = incomingNavigation.getBoundingClientRect().bottom - innerHeight
+        const syncNavigationAnchor = () => {
+          const bottom = sharedSurface.getBoundingClientRect().bottom - innerHeight - viewportBottomOffset
+          sharedSurface.style.setProperty('--loft-return-navigation-bottom', `${bottom}px`)
+        }
+        syncNavigationAnchor()
+        const observer = new ResizeObserver(syncNavigationAnchor)
+        observer.observe(sharedSurface)
+        window.addEventListener('resize', syncNavigationAnchor)
+        window.addEventListener('scroll', syncNavigationAnchor, { passive: true })
+        visualViewport?.addEventListener('resize', syncNavigationAnchor)
+        visualViewport?.addEventListener('scroll', syncNavigationAnchor)
+        releaseNavigationAnchor = () => {
+          observer.disconnect()
+          window.removeEventListener('resize', syncNavigationAnchor)
+          window.removeEventListener('scroll', syncNavigationAnchor)
+          visualViewport?.removeEventListener('resize', syncNavigationAnchor)
+          visualViewport?.removeEventListener('scroll', syncNavigationAnchor)
+          sharedSurface.style.removeProperty('--loft-return-navigation-bottom')
+        }
+      }
       const timing = { duration: motionTiming.page * 1000, easing: motionEaseCSS, fill: 'both' as const }
-      for (const element of [content(), floating(), incomingNavigation]) {
+      const incoming = sharedSurface ? [sharedSurface] : [incomingContent, incomingFloating, incomingNavigation]
+      for (const element of incoming) {
         if (!element) continue
         element.dataset.tabIncoming = 'true'
         targets.push(element)
@@ -194,6 +228,11 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
         document.body.append(copy)
         ;(copy.firstElementChild as HTMLElement).scrollTop = Number(copy.dataset.sourceScroll)
         animations.push(copy.animate([{ translate: '0px 0' }, { translate: `${-direction * width}px 0` }], timing))
+      }
+      // The outgoing slice and the arriving surface use the same clock.
+      const startTime = document.timeline.currentTime
+      if (productBack && startTime !== null) {
+        for (const animation of animations) animation.startTime = startTime
       }
       const finished = Promise.allSettled(animations.map(animation => animation.finished)).then(() => { cleanup() })
       window.dispatchEvent(new CustomEvent('loft:tabs-start', { detail: { kind, direction, animations, finished } }))

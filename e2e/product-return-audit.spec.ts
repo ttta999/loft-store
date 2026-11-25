@@ -73,7 +73,8 @@ test('color change and long description return to the original brand card',async
 
 type ReturnRect = {left: number; right: number; top: number}
 type ReturnFrame = {out: ReturnRect; incoming: ReturnRect; header: ReturnRect; nav: string; navRect: ReturnRect; reusedPhoto: boolean; overlay: boolean}
-type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number}
+type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number;
+ initialChrome: { clocks: number[]; layers: number[]; sharedSurface: boolean; inset: number; viewportAnchor: number; indicatorTransitions: number; indicatorReady: boolean }}
 type ReturnWindow = Window & {scrolledReturn: Promise<ReturnProbe>; productOriginScroll: number; telegramBack: () => void}
 
 for (const back of ['island', 'telegram'] as const) {
@@ -85,6 +86,9 @@ for (const back of ['island', 'telegram'] as const) {
   harness.db.product_recommendations = [{ product_id: productId, target_id: second, kind: 'similar', position: 0 }]
 
   await page.goto(STORE)
+  await page.locator('html').evaluate(node => {
+   node.style.setProperty('--tg-safe-area-inset-bottom', '34px')
+  })
   const card = page.locator(`[data-product-placement="new:${productId}"]`)
   const image = card.locator('img')
   await image.scrollIntoViewIfNeeded()
@@ -118,6 +122,20 @@ for (const back of ['island', 'telegram'] as const) {
      const incoming = document.querySelector('[data-tab-incoming]')!
      const header = document.querySelector('.loft-header')!
      const nav = document.querySelector('.loft-navigation')!
+     const indicator = nav.querySelector('[data-nav-indicator]')!
+     const active = nav.querySelector<HTMLElement>('[data-active="true"]')!
+     const style = getComputedStyle(indicator)
+     const initialChrome = {
+      clocks: animations.map((animation: Animation) => animation.startTime),
+      layers: [outgoing, incoming, header].map(element => Number(getComputedStyle(element).zIndex)),
+      sharedSurface: incoming.contains(nav) && animations.filter((animation: Animation) =>
+       (animation.effect as KeyframeEffect).target === incoming).length === 1 && nav.getAnimations().length === 0,
+      inset: nav.getBoundingClientRect().bottom - nav.firstElementChild!.getBoundingClientRect().bottom,
+      viewportAnchor: innerHeight - nav.getBoundingClientRect().bottom,
+      indicatorTransitions: indicator.getAnimations().length,
+      indicatorReady: parseFloat(style.left) === active.offsetLeft &&
+       parseFloat(style.width) === active.offsetWidth && style.opacity === '1',
+     }
      const start = sample(outgoing)
      const initialHeader = sample(header)
      const duration = animations[0].effect.getTiming().duration
@@ -129,7 +147,7 @@ for (const back of ['island', 'telegram'] as const) {
       requestAnimationFrame(frame)
      }
      requestAnimationFrame(frame)
-     void finished.then(() => resolve({kind, direction, duration, start, initialHeader, frames, width: innerWidth}))
+     void finished.then(() => resolve({kind, direction, duration, start, initialHeader, initialChrome, frames, width: innerWidth}))
     }, {once: true})
    })
    Object.assign(window, {scrolledReturn: probe})
@@ -139,6 +157,16 @@ for (const back of ['island', 'telegram'] as const) {
   await expect(page.locator('[data-tab-outgoing]')).toHaveCount(1)
   const result = await page.evaluate(() => (window as ReturnWindow).scrolledReturn)
   expect(result).toMatchObject({kind: 'product-back', direction: -1, duration: 340})
+  const { clocks, layers, sharedSurface, inset, viewportAnchor, indicatorReady, indicatorTransitions } = result.initialChrome
+  expect(clocks[0]).not.toBeNull()
+  expect(new Set(clocks).size).toBe(1)
+  expect(layers[0]).toBeLessThan(layers[1])
+  expect(layers[1]).toBeLessThan(layers[2])
+  expect(sharedSurface).toBe(true)
+  expect(inset).toBeCloseTo(34, 0)
+  expect(viewportAnchor).toBeCloseTo(0, 0)
+  expect(indicatorReady).toBe(true)
+  expect(indicatorTransitions).toBe(0)
   expect(result.frames.length).toBeGreaterThan(2)
   expect(result.frames.some((frame) => frame.out.left > 20 && frame.out.left < result.width - 20)).toBe(true)
   for (const frame of result.frames) {
@@ -161,6 +189,9 @@ for (const back of ['island', 'telegram'] as const) {
 for (const fraction of [0.6, 0.8]) {
   test(`a ${fraction * 100}% visible product photo selects the right return animation`, async ({ page, harness }) => {
     harness.db.products[0].description_ru = 'Описание для проверки прокрутки. '.repeat(100)
+    // A full-width square hero in the desktop preset cannot be 80% visible.
+    const viewport = page.viewportSize()
+    if (viewport && viewport.width > 900) await page.setViewportSize({ ...viewport, width: 850 })
     await page.goto(STORE)
     await expect(page.locator('[data-onboarding]')).toHaveCount(0)
     const source = page.locator(`[data-product-placement="new:${productId}"] img`)

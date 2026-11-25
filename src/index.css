@@ -79,6 +79,7 @@ body {
 /* Product imagery carries the expressive motion. Chrome is never snapshotted separately. */
 /* Feedback is immediate; larger movements start gently and settle without overshoot. */
 :root {
+  --loft-navigation-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
   --loft-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --loft-photo-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --loft-press-duration: 80ms;
@@ -155,3 +156,14 @@ svg { transition: fill 180ms ease-out, color 180ms ease-out; }
 
 /* Keep horizontal tab travel inside the viewport without changing vertical scrolling. */
 :root[data-loft-tab-motion], :root[data-loft-tab-motion] body, :root[data-loft-tab-motion] #root { overflow-x: clip; }
+
+/* The catalog and fixed bar share one horizontal transform on product Back.
+   Compensate for the temporary fixed containing block on the vertical axis. */
+[data-product-return-surface][data-tab-incoming] {
+  position: relative;
+  z-index: 35;
+  overflow-x: clip;
+}
+[data-product-return-surface][data-tab-incoming] > .loft-navigation {
+  bottom: var(--loft-return-navigation-bottom);
+}

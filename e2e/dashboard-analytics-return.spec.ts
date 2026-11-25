@@ -8,6 +8,8 @@ for (const [route, minutes] of [['/catalog', 2], ['/settings', 5], ['/refunds', 
     await page.goto(ADMIN)
     await expect(page.getByText('$633', { exact: true })).toBeVisible()
     await page.locator(`[data-admin-card="${route}"]`).click()
+    // The URL changes before the destination is committed and starts its slide.
+    await expect(page.locator('[data-admin-back]')).toBeVisible()
     await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
     await page.clock.setFixedTime(new Date(Date.now() + minutes * 60_000))
     let releaseOrders!: () => void
