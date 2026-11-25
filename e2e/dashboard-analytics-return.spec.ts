@@ -17,30 +17,29 @@ for (const [route, minutes] of [['/catalog', 2], ['/settings', 5], ['/refunds', 
       await request.fallback()
     })
     await page.evaluate(() => {
-      const start = document.startViewTransition?.bind(document)
-      if (!start) return
-      document.startViewTransition = callback => {
-        const transition = start(callback)
-        Object.assign(window, { dashboardFirstFrame: transition.ready.then(() => ({
-          heading: document.querySelector('[data-admin-island] h1')?.textContent,
-          oldHeader: getComputedStyle(document.documentElement, '::view-transition-old(loft-admin-header)').display,
+      window.addEventListener('loft:admin-live-header', () => {
+        const header = document.querySelector('[data-admin-header]')!
+        const island = header.querySelector('[data-admin-island]')!
+        const box = island.getBoundingClientRect()
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+        Object.assign(window, { dashboardFirstFrame: {
+          heading: island.querySelector('h1')?.textContent,
+          live: island.contains(hit),
+          top: header.getBoundingClientRect().top,
           direction: document.documentElement.dataset.adminMotion,
-          sizes: Array.from(document.querySelectorAll('[data-admin-header] button'), button => {
+          sizes: Array.from(header.querySelectorAll('button'), button => {
             const { width, height } = button.getBoundingClientRect()
             return [width, height]
           }),
-        })) })
-        return transition
-      }
+        } })
+      }, { once: true })
     })
     try {
       await page.locator('[data-admin-header] [data-admin-back]').click()
       await expect(page.getByRole('heading', {name: 'LOFT Админ Панель'})).toBeVisible()
       await expect(page.getByText('$633', { exact: true })).toBeVisible()
-      const frame = await page.evaluate(() => (window as Window & { dashboardFirstFrame?: Promise<{
-        heading?: string; oldHeader: string; direction?: string; sizes: number[][]
-      }> }).dashboardFirstFrame)
-      if (frame) expect(frame).toEqual({ heading: 'LOFT Админ Панель', oldHeader: 'none', direction: 'back', sizes: [[40, 40], [40, 40], [40, 40]] })
+      const frame = await page.evaluate(() => (window as Window & { dashboardFirstFrame?: unknown }).dashboardFirstFrame)
+      expect(frame).toEqual({ heading: 'LOFT Админ Панель', live: true, top: 0, direction: 'back', sizes: [[40, 40], [40, 40], [40, 40]] })
       await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
       harness.db.orders[0].total_price_usd = 741
     } finally {
@@ -123,8 +122,9 @@ test('Dashboard retains expired data on failure and clears it across login', asy
   const ordersUrl = '**/rest/v1/orders?*'
   await page.route(ordersUrl, route => route.fulfill({ status: 400, headers: { 'access-control-allow-origin': '*' }, json: { message: 'Fixture read failure' } }))
   await page.locator('[data-admin-back]').click()
-  await expect(page.getByText('Не удалось обновить. Показаны последние данные.', { exact: false })).toBeVisible()
+  await expect(page.locator('[data-sonner-toast]').getByText('Не удалось обновить. Показаны последние данные.')).toBeVisible()
   await expect(page.getByText('$633', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-dashboard-refresh]')).toHaveAttribute('data-dashboard-refresh', 'error')
   await page.getByRole('button', { name: 'Выйти', exact: true }).click()
   await expect(page).toHaveURL(ADMIN + '/login')
   await expect(page.getByText('$633', { exact: true })).toHaveCount(0)
@@ -185,4 +185,51 @@ test('Analytics keeps its cards while uncached periods load and ignores a late p
   await expect(results).toHaveAttribute('data-fixture-mounted', 'original')
   await expect(results.getByText('$45', { exact: true }).first()).toBeVisible()
   await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion', /.+/)
+})
+
+test('Dashboard refresh owns a stable button and keeps timestamps out of the stats layout', async ({ page, harness }) => {
+  await page.goto(ADMIN)
+  const stats = page.locator('[data-dashboard-stats]')
+  const button = page.getByRole('button', { name: 'Обновить', exact: true })
+  await expect(stats).toBeVisible()
+  const top = (await stats.boundingBox())!.y
+  const island = page.locator('[data-admin-island]')
+  if (page.viewportSize()!.width >= 768) {
+    const box = (await island.boundingBox())!
+    expect(top - box.y - box.height).toBeGreaterThanOrEqual(16)
+    expect(top - box.y - box.height).toBeLessThanOrEqual(21)
+  }
+  const btnBox = await button.boundingBox()
+  let release!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  let reads = 0
+  await page.route('**/rest/v1/orders?*', async route => {
+    if (!new URL(route.request().url()).searchParams.get('select')?.startsWith('*')) return route.fallback()
+    reads++
+    await gate
+    return route.fallback()
+  })
+  try {
+    await button.click()
+    await expect(button).toHaveAttribute('aria-busy', 'true')
+    await expect(button).toHaveAttribute('aria-disabled', 'true')
+    await expect(button.locator('svg')).toHaveClass(/animate-spin/)
+    await button.evaluate(element => (element as HTMLElement).click())
+    await expect.poll(() => reads).toBe(1)
+    await expect(stats).toBeVisible()
+    expect((await stats.boundingBox())!.y).toBe(top)
+    await expect(page.getByText('Данные обновляются…', { exact: true })).toHaveCount(0)
+    await expect(page.locator('#dashboard-refresh-info')).toHaveCSS('opacity', '1')
+  } finally {
+    release()
+  }
+  await expect(button).toHaveAttribute('data-dashboard-refresh', 'success')
+  await expect(button.locator('svg')).toHaveClass(/dashboard-refresh-success/)
+  await expect(button).toHaveAttribute('data-dashboard-refresh', 'idle')
+  expect(await button.boundingBox()).toEqual(btnBox)
+  expect((await stats.boundingBox())!.y).toBe(top)
+  expect(reads).toBe(1)
+  await expect(page.locator('#dashboard-refresh-info')).toContainText('Последнее обновление:')
+  await expect(page.getByText(/^Обновлено:/)).toHaveCount(0)
+  expect(harness.errors).toEqual([])
 })

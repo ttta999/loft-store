@@ -1,17 +1,17 @@
-# Graph Report - loft24-release-store  (2026-11-24)
+# Graph Report - loft24-release-store  (2026-11-25)
 
 ## Corpus Check
-- 375 files · ~226,745 words
+- 375 files · ~227,152 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 7 file(s) not represented in the graph (top: .css 5, .example 1, (none) 1)
 
 ## Summary
-- 2580 nodes · 4884 edges · 218 communities (187 shown, 31 thin omitted)
+- 2580 nodes · 4883 edges · 218 communities (187 shown, 31 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 59 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4399f86a`
+- Built from commit: `d1f42db7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -222,12 +222,12 @@
 10. `ADMIN` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `7. Товар внутри выбранного бренда` --references--> `BrandsPage()`  [INFERRED]
-  docs/seven-fixes.md → src/pages/BrandsPage.tsx
 - `Таблицы: загрузка, состояния и кеш` --references--> `ResourceCache`  [INFERRED]
   docs/product-interface-followup-report.md → src/lib/resourceCache.ts
 - `Клиентское приложение` --references--> `usePageState()`  [INFERRED]
   docs/store2-followup-report.md → src/lib/usePageState.ts
+- `7. Товар внутри выбранного бренда` --references--> `BrandsPage()`  [INFERRED]
+  docs/seven-fixes.md → src/pages/BrandsPage.tsx
 - `14.3. Предварительная загрузка страниц` --references--> `warmPage()`  [INFERRED]
   docs/store2-followup-spec.md → src/lib/pagePreload.ts
 - `Изменения интро и product return (19.11.2026)` --references--> `verifiedCustomerId()`  [INFERRED]
@@ -264,7 +264,7 @@ Nodes (32): checkout(), regularCart(), preferences, ADMIN, catalog(), Harness, i
 
 ### Community 6 - "useStore"
 Cohesion: 0.11
-Nodes (33): zustand, ProductCard, ProductRecommendations(), customerCacheScope(), SavedSize, getEffectivePriceUsd(), isProductOnSale(), readAll() (+25 more)
+Nodes (32): zustand, ProductCard, ProductRecommendations(), customerCacheScope(), SavedSize, getEffectivePriceUsd(), isProductOnSale(), readAll() (+24 more)
 
 ### Community 7 - "20261106154106_security_architecture.sql"
 Cohesion: 0.06
@@ -359,8 +359,8 @@ Cohesion: 0.24
 Nodes (14): dateLocale(), dateTimeOptions, formatLocalDate(), formatLocalDateTime(), formatLocalTime(), getDeviceTimeZone(), localDateKey(), localInputToUtc() (+6 more)
 
 ### Community 54 - "CartPage.tsx"
-Cohesion: 0.17
-Nodes (20): needsContactSave(), normalizedPhone(), normalizedText(), allocateUzs(), formatCardNumber(), parsePaymentCards(), PaymentCard, PaymentCards (+12 more)
+Cohesion: 0.15
+Nodes (21): needsContactSave(), normalizedPhone(), normalizedText(), allocateUzs(), formatCardNumber(), parsePaymentCards(), PaymentCard, PaymentCards (+13 more)
 
 ### Community 55 - "sql/package.json"
 Cohesion: 0.33
@@ -992,16 +992,16 @@ Nodes (4): announceRecovery(), handleAssetError(), handleChunkError(), revealErr
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `2. Кеширование клиентских разделов` connect `storeApi` to `ResourceCache`, `Финальная доработка интерфейса LOFT Store`?**
-  _High betweenness centrality (0.109) - this node is a cross-community bridge._
+- **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `storeApi`?**
+  _High betweenness centrality (0.095) - this node is a cross-community bridge._
 - **Should `App.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.05109218807848945 - nodes in this community are weakly interconnected._
-- **Why does `Финальная доработка интерфейса LOFT Store` connect `Финальная доработка интерфейса LOFT Store` to `final-interface-spec.md`, `storeApi`?**
-  _High betweenness centrality (0.107) - this node is a cross-community bridge._
+- **Why does `2. Кеширование клиентских разделов` connect `storeApi` to `ResourceCache`, `Финальная доработка интерфейса LOFT Store`?**
+  _High betweenness centrality (0.094) - this node is a cross-community bridge._
 - **Should `ProductPage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09343200740055504 - nodes in this community are weakly interconnected._
 - **Why does `storeApi()` connect `storeApi` to `App.tsx`, `ProductPage.tsx`, `ProfilePage.tsx`, `react`, `useStore`, `CartPage.tsx`?**
-  _High betweenness centrality (0.071) - this node is a cross-community bridge._
+  _High betweenness centrality (0.058) - this node is a cross-community bridge._
 - **Should `ProfilePage.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09487179487179487 - nodes in this community are weakly interconnected._
 - **Should `AnimatedRoutes.tsx` be split into smaller, more focused modules?**

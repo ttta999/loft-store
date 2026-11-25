@@ -45,9 +45,9 @@ function floating() {
 }
 /** Keep the grid's full footprint, but copy only the rows the outgoing
  * viewport can show. Grid rows are ordered, so long lists need few layout reads. */
-function cloneViewport(element: HTMLElement, top: number, bottom: number) {
+function cloneViewport(element: HTMLElement, top: number, bottom: number, cloneBranch: (element: Node) => Node) {
   const grids = element.querySelectorAll<HTMLElement>('[data-transition-product-grid]')
-  if (!grids.length) return element.cloneNode(true) as HTMLElement
+  if (!grids.length) return cloneBranch(element) as HTMLElement
 
   const branches = new Set<Element>()
   for (const grid of grids) {
@@ -70,14 +70,19 @@ function cloneViewport(element: HTMLElement, top: number, bottom: number) {
       let end = Math.ceil(cards.length / columns)
       while (first < end) {
         const middle = Math.floor((first + end) / 2)
-        if (cards[middle * columns].getBoundingClientRect().bottom < top - overscan) first = middle + 1
+        const start = middle * columns
+        let rowBottom = -Infinity
+        for (let index = start; index < Math.min(start + columns, cards.length); index++) {
+          rowBottom = Math.max(rowBottom, cards[index].getBoundingClientRect().bottom)
+        }
+        if (rowBottom < top - overscan) first = middle + 1
         else end = middle
       }
       for (let index = first * columns; index < cards.length; index++) {
         const card = cards[index]
         const box = card.getBoundingClientRect()
         if (box.top > bottom + overscan) break
-        const clone = card.cloneNode(true) as HTMLElement
+        const clone = cloneBranch(card) as HTMLElement
         Object.assign(clone.style, {
           position: 'absolute', margin: '0', gridArea: 'auto',
           top: `${box.top - rect.top}px`, left: `${box.left - rect.left}px`,
@@ -89,7 +94,7 @@ function cloneViewport(element: HTMLElement, top: number, bottom: number) {
     }
     const clone = node.cloneNode(false)
     for (const child of node.childNodes) {
-      clone.appendChild(child instanceof Element && branches.has(child) ? copy(child) : child.cloneNode(true))
+      clone.appendChild(child instanceof Element && branches.has(child) ? copy(child) : cloneBranch(child))
     }
     return clone
   }
@@ -106,9 +111,11 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
   if (!direction || !source) return null
   const width = innerWidth
   const copies: HTMLElement[] = []
+  const photos: { source: HTMLImageElement; placeholder: HTMLImageElement }[] = []
   const targets: HTMLElement[] = []
   const animations: Animation[] = []
   let cleaned = false
+  let incomingNavigation: HTMLElement | null = null
   const header = internalDirection ? Array.from(document.querySelectorAll<HTMLElement>('.loft-header')).at(-1) : null
   const navigation = internalDirection ? document.querySelector<HTMLElement>('.loft-navigation') : null
   const headerBottom = header?.getBoundingClientRect().bottom ?? 0
@@ -125,7 +132,21 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
     viewport.setAttribute('aria-hidden', 'true')
     viewport.inert = true
     Object.assign(viewport.style, { position: 'fixed', left: `${rect.left}px`, top: `${top}px`, width: `${rect.width}px`, height: `${bottom - top}px`, overflow: 'hidden', pointerEvents: 'none', zIndex: String(zIndex), transition: 'none' })
-    const clone = cloneViewport(element, top, bottom)
+    const clone = cloneViewport(element, top, bottom, branch => {
+      const copy = branch.cloneNode(true)
+      if (productBack && branch instanceof Element && copy instanceof Element) {
+        const originals = branch.querySelectorAll('img')
+        const placeholders = copy.querySelectorAll('img')
+        originals.forEach((image, index) => {
+          if (!image.complete || !image.naturalWidth) return
+          const box = image.getBoundingClientRect()
+          if (box.width && box.height && box.bottom > top && box.top < bottom) {
+            photos.push({ source: image, placeholder: placeholders[index] })
+          }
+        })
+      }
+      return copy
+    })
     for (const node of [clone, ...clone.querySelectorAll<HTMLElement>('*')]) {
       node.removeAttribute('id')
       for (const attribute of [...node.attributes]) if (attribute.name.startsWith('data-')) node.removeAttribute(attribute.name)
@@ -148,16 +169,22 @@ export function prepareTabMotion(from: Page, to: Page, internalDirection = 0, pr
     animations.forEach(animation => animation.cancel())
     copies.forEach(copy => copy.remove())
     targets.forEach(target => target.removeAttribute('data-tab-incoming'))
-    if (productBack) delete document.documentElement.dataset.loftProductSlide
+    if (incomingNavigation) incomingNavigation.inert = false
     delete document.documentElement.dataset.loftTabMotion
   }
   return {
     cleanup,
     run() {
       document.documentElement.dataset.loftTabMotion = 'true'
-      if (productBack) document.documentElement.dataset.loftProductSlide = 'true'
+      // React removed the previous product. Keep its already decoded photos
+      // alive for the outgoing frame instead of repainting fresh lazy clones.
+      for (const { source, placeholder } of photos) {
+        if (!source.isConnected) placeholder.replaceWith(source)
+      }
+      incomingNavigation = productBack ? document.querySelector<HTMLElement>('.loft-navigation') : null
+      if (incomingNavigation) incomingNavigation.inert = true
       const timing = { duration: motionTiming.page * 1000, easing: motionEaseCSS, fill: 'both' as const }
-      for (const element of [content(), floating()]) {
+      for (const element of [content(), floating(), incomingNavigation]) {
         if (!element) continue
         element.dataset.tabIncoming = 'true'
         targets.push(element)

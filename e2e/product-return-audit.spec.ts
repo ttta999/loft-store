@@ -72,13 +72,18 @@ test('color change and long description return to the original brand card',async
 })
 
 type ReturnRect = {left: number; right: number; top: number}
-type ReturnFrame = {out: ReturnRect; incoming: ReturnRect; header: ReturnRect; nav: string; overlay: boolean}
+type ReturnFrame = {out: ReturnRect; incoming: ReturnRect; header: ReturnRect; nav: string; navRect: ReturnRect; reusedPhoto: boolean; overlay: boolean}
 type ReturnProbe = {kind: string; direction: number; duration: number; frames: ReturnFrame[]; initialHeader: ReturnRect; width: number}
 type ReturnWindow = Window & {scrolledReturn: Promise<ReturnProbe>; productOriginScroll: number; telegramBack: () => void}
 
 for (const back of ['island', 'telegram'] as const) {
  test(`offscreen product return without size selection keeps both pages visible during ${back} Back`, async ({page, harness}) => {
   harness.db.products[0].description_ru = 'Подробное описание товара. '.repeat(250)
+  const second = '22222222-2222-4222-8222-222222222222'
+  harness.db.products.push({ ...harness.db.products[0], id: second, name_ru: 'Второй товар' })
+  harness.db.product_variants.push({ ...harness.db.product_variants[0], id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', product_id: second })
+  harness.db.product_recommendations = [{ product_id: productId, target_id: second, kind: 'similar', position: 0 }]
+
   await page.goto(STORE)
   const card = page.locator(`[data-product-placement="new:${productId}"]`)
   const image = card.locator('img')
@@ -94,8 +99,13 @@ for (const back of ['island', 'telegram'] as const) {
   await expect(page.locator('html')).not.toHaveAttribute('data-loft-motion', 'product')
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
   await expect(hero).not.toBeInViewport()
+  const recommendation = page.locator(`[data-product-placement="recommendation:${productId}:similar:${second}"] img`)
+  await recommendation.scrollIntoViewIfNeeded()
+  await expect.poll(() => recommendation.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
 
   await page.evaluate(() => {
+   const photo = document.querySelector<HTMLImageElement>('[data-product-placement^="recommendation:"] img')!
+
    const sample = (element: Element) => {
     const rect = element.getBoundingClientRect()
     return { left: rect.left, right: rect.right, top: rect.top }
@@ -115,7 +125,7 @@ for (const back of ['island', 'telegram'] as const) {
      const frame = () => {
       if (!outgoing.isConnected) return
       frames.push({out: sample(outgoing), incoming: sample(incoming), header: sample(header),
-       nav: getComputedStyle(nav).visibility, overlay: !!document.querySelector('[data-product-return-overlay]')})
+       nav: getComputedStyle(nav).visibility, navRect: sample(nav), reusedPhoto: outgoing.contains(photo) && photo.complete && photo.naturalWidth > 0, overlay: !!document.querySelector('[data-product-return-overlay]')})
       requestAnimationFrame(frame)
      }
      requestAnimationFrame(frame)
@@ -134,11 +144,15 @@ for (const back of ['island', 'telegram'] as const) {
   for (const frame of result.frames) {
    expect(frame.incoming.right).toBeGreaterThanOrEqual(frame.out.left - 2)
    expect(frame.header).toEqual(result.initialHeader)
-   expect(frame.nav).toBe('hidden')
+   expect(frame.nav).toBe('visible')
+   expect(frame.reusedPhoto).toBe(true)
+   expect(frame.incoming.left - frame.navRect.left).toBeCloseTo(result.frames[0].incoming.left - result.frames[0].navRect.left, 0)
+   expect(frame.navRect.top).toBe(result.frames[0].navRect.top)
    expect(frame.overlay).toBe(false)
   }
   await expect(page.locator('[data-tab-outgoing]')).toHaveCount(0)
   await expect(page.locator('.loft-navigation')).toHaveCSS('visibility', 'visible')
+  await expect(page.locator('.loft-navigation')).not.toHaveAttribute('inert', '')
   await expect(card).toBeInViewport()
   expect(await page.evaluate(() => scrollY)).toBe(listScroll)
  })
