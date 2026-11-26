@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { localAuth, sql } from './session-fixture.mjs'
 import { verifyCatalogue } from './catalogue.mjs'
 
-const { account, client, enroll, otp, owner } = await localAuth()
+const { account, client, enroll, otp, owner, url, anonKey } = await localAuth()
 const admin = await account()
 const verified = await enroll(admin.api)
 const migration = new URL('../../supabase/migrations/20261126183000_require_verified_admin_mfa.sql', import.meta.url)
@@ -80,10 +80,26 @@ assert.ok(!(await admin.api.storage.from(bucket).createSignedUrl(path,30)).error
 assert.deepEqual((await ordinary.api.from('orders').select('id')).data, [])
 console.log('PASS: real RLS, RPC and Storage enforce the AAL2 boundary')
 
+const buyers = ['900009900', '900009901'].map(id => ({ id, hash: randomBytes(32).toString('hex') }))
+for (const buyer of buyers) {
+  await rpc(owner, 'store_register_session', { p_hash: buyer.hash, p_user: buyer.id })
+  assert.equal(await rpc(owner, 'store_validate_session', { p_hash: buyer.hash, p_user: buyer.id }), true)
+}
+assert.equal(await rpc(owner, 'store_validate_session', { p_hash: buyers[0].hash, p_user: buyers[1].id }), false)
+console.log('PASS: synthetic customer sessions remain scoped to their own customer')
+
 await verifyCatalogue(admin.api, owner, guest)
 
-const sessionId = checkId(JSON.parse(Buffer.from(verified.access.access_token.split('.')[1], 'base64url')).session_id)
+const retiredAccessToken = verified.access.access_token
+const sessionId = checkId(JSON.parse(Buffer.from(retiredAccessToken.split('.')[1], 'base64url')).session_id)
 assert.ok(!(await admin.api.auth.signOut({ scope: 'local' })).error)
 assert.equal(sql(`select count(*) from auth.sessions where id='${sessionId}'`), '0')
 assert.equal(await allowed(passwordOnly), false)
+const afterRevocation = await fetch(url + '/rest/v1/rpc/store_is_admin', {
+  method: 'POST',
+  headers: { apikey: anonKey, Authorization: 'Bearer ' + retiredAccessToken, 'Content-Type': 'application/json' },
+  body: '{}',
+})
+if (afterRevocation.ok) assert.equal(await afterRevocation.json(), false)
+else assert.ok([401, 403].includes(afterRevocation.status))
 console.log('PASS: local Supabase Auth removes the server session on sign out')
