@@ -11,6 +11,13 @@ const pg=new PGlite()
 const file=async path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 try{
  await pg.exec(await file('tests/sql/store2-baseline.sql'))
+ // Model the historical grants, then apply the actual migration that revoked them.
+ await pg.exec(`
+   create function cron.alter_job(bigint, active boolean) returns void language sql as $$ select null::void $$;
+   grant select, insert, update, delete on public.products, public.product_colors, public.product_variants to authenticated;
+   grant select on public.product_variants to anon;
+ `)
+ await pg.exec(await file('supabase/migrations/20261106161926_enforce_security_architecture.sql'))
  for(const migration of ['20261113161430_store2_live_data.sql','20261113162424_store2_customer_preferences.sql','20261113165503_store2_catalog_growth.sql','20261113170735_store2_history_and_tasks.sql','20261113171316_store2_worker_helper_grants.sql','20261113173520_store2_campaigns.sql','20261113174041_store2_campaign_claim_cleanup.sql','20261114065022_store2_campaign_delivery_guard.sql','20261114162026_store2_reminder_intervals.sql','20261114162041_store2_telegram_photos.sql','20261114162050_store2_locales_and_restock_tick.sql','20261116133217_local_device_time_and_utc_campaigns.sql','20261117110219_explicit_size_chart_mapping.sql','20261117134112_customer_onboarding_language.sql','20261117134131_approximate_size_preferences.sql']){
   if(migration.includes('history_and_tasks'))await pg.exec(`insert into public.orders(id,user_id,status,delivery_method,created_at,paid_at,receipt_submitted_at) values(9999,'123456','Готов','pickup',now()-interval '30 days',now()-interval '29 days',now()-interval '29 days')`)
   if(migration.includes('local_device_time')){await pg.exec(`insert into auth.users(id) values('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');insert into public.campaigns(name,title,message,button_label,target_type,audience_type,status,scheduled_at,created_by) values('Existing scheduled','Saved','Saved','Open','home','all','scheduled','2099-01-15T15:00:00Z','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')`)}
@@ -19,6 +26,29 @@ try{
  }
  const query=async(sql,args=[]) => (await pg.query(sql,args)).rows
  const scalar=async(sql,args=[])=>Object.values((await query(sql,args))[0])[0]
+ const catalogueAcl = await query(`
+   select r.name as role, c.name as relation, p.name as privilege,
+          has_table_privilege(r.name, c.name, p.name) as allowed
+   from (values ('anon'), ('authenticated'), ('service_role')) r(name)
+   cross join (values ('public.products'), ('public.product_colors'), ('public.product_variants')) c(name)
+   cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) p(name)
+ `)
+ for (const check of catalogueAcl) {
+   const allowed = check.role === 'service_role' ||
+     (check.privilege === 'SELECT' && check.relation !== 'public.product_variants')
+   assert.equal(check.allowed, allowed, `${check.role} ${check.privilege} ${check.relation}`)
+ }
+ const writableColumns = await scalar(`
+   select count(*)::int
+   from pg_attribute a
+   cross join (values ('anon'), ('authenticated')) r(name)
+   where a.attrelid in ('public.products'::regclass, 'public.product_colors'::regclass, 'public.product_variants'::regclass)
+     and a.attnum > 0 and not a.attisdropped
+     and (has_column_privilege(r.name, a.attrelid, a.attnum, 'INSERT')
+       or has_column_privilege(r.name, a.attrelid, a.attnum, 'UPDATE'))
+ `)
+ assert.equal(writableColumns, 0)
+ console.log('PASS: catalogue table and column ACLs after the historical revoke and subsequent migrations')
  await pg.exec(`insert into public.categories(id,name_ru,name_uz,is_active) values('shoes','Обувь','Poyabzal',true);insert into public.subcategories(id,category_id,name_ru,name_uz,size_type,sizes,is_active) values('sneakers','shoes','Кроссовки','Krossovka','numeric','["41","42","43"]',true);insert into public.products(id,name_ru,name_uz,category,subcategory,price_usd,size_type,is_active) values('11111111-1111-4111-8111-111111111111','Кроссовки','Krossovka','shoes','sneakers',100,'numeric',true);insert into public.product_variants(id,product_id,size_value,stock) values('cccccccc-cccc-4ccc-8ccc-cccccccccccc','11111111-1111-4111-8111-111111111111','42',0)`)
  assert.equal(await scalar(`select has_function_privilege('anon','public.store_customer_preferences(text,jsonb,bigint)','execute')`),false)
  assert.equal(await scalar(`select has_function_privilege('authenticated','public.store_restock(text,text,uuid,uuid)','execute')`),false)

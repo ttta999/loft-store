@@ -30,6 +30,20 @@ test('all ordinary stages produce HTML linked notices without repayment after re
  assert.doesNotMatch(ordinaryOrderNotification({...base,stage:'Передан курьеру',courier_link:'javascript:alert(1)'}).message,/Отследить/)
  assert.match(ordinaryOrderNotification({...base,stage:'Передан курьеру',courier_link:'https://track.test/?a=1&b=2'}).message,/&amp;b=2/)
 })
+test('courier handoff formats the full customer notice with optional tracking on the server', () => {
+ const delivery = { ...base, delivery_method: 'delivery', status: 'Выдан' }
+ const expected = [
+  '🚚 <b>Заказ №42 передан курьеру</b>',
+  'Ваш заказ передан курьеру для доставки по указанному адресу.',
+  'Пожалуйста, оставайтесь на связи.',
+ ].join('\n\n')
+ for (const courier_link of [null, '', '   ']) {
+  assert.equal(ordinaryOrderNotification({ ...delivery, courier_link }).message, expected)
+ }
+ const courier_link = 'https://example.test/courier/42'
+ assert.equal(ordinaryOrderNotification({ ...delivery, courier_link }).message,
+  expected + '\n\nОтследить доставку: ' + courier_link)
+})
 test('cancellation and refund templates never disclose internal manager data',()=>{
  const n=cancellationNotification({id:42,source:'store',reason:'<b>unsafe & reason</b>',refund_status:'Проверка платежа',manager_comment:'secret'})
  assert.match(n.message,/&lt;b&gt;unsafe &amp; reason/);assert.doesNotMatch(n.message,/secret|Сумма к возврату/)
