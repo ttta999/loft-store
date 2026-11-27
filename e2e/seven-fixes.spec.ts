@@ -4,13 +4,20 @@ for(const exit of ['app','telegram'])test(`новые товары: боково
  const original=harness.db.products[0];harness.db.products.push(...Array.from({length:12},(_,i)=>({...original,id:`extra-${i}`,name_ru:`Товар ${i}`,created_at:new Date(Date.now()-(i+1)*86400000).toISOString()})))
  await page.goto(STORE)
  const more=page.locator('[data-surface-link="products:newest"]').getByRole('button',{name:'Больше',exact:true})
- await more.scrollIntoViewIfNeeded();const scroll=await page.evaluate(()=>scrollY)
+ await more.scrollIntoViewIfNeeded()
+ await more.evaluate(button=>{
+  button.addEventListener('click',()=>{
+   (window as Window & { collectionClickScroll?:number }).collectionClickScroll=scrollY
+  },{capture:true,once:true})
+ })
  await page.evaluate(()=>{(window as any).slides=[];window.addEventListener('loft:tabs-start',(event:any)=>{(window as any).slides.push({direction:event.detail.direction,kind:event.detail.kind});(window as any).lastSlide=event.detail.finished})})
  await more.click();await expect(page).toHaveURL(STORE+'/all-products');await page.evaluate(async()=>{await (window as any).lastSlide})
  await expect.poll(()=>page.evaluate(()=>(window as any).slides)).toEqual([{direction:1,kind:'section'}])
  if(exit==='app')await page.locator('.loft-header button').click();else await page.evaluate(()=>(window as any).telegramBack())
  await expect(page).toHaveURL(STORE+'/');await page.evaluate(async()=>{await (window as any).lastSlide})
  await expect.poll(()=>page.evaluate(()=>(window as any).slides)).toEqual([{direction:1,kind:'section'},{direction:-1,kind:'section'}])
+ const scroll=await page.evaluate(()=>(window as Window & { collectionClickScroll?:number }).collectionClickScroll)
+ expect(scroll).toEqual(expect.any(Number))
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(scroll)
  await expect(more).toBeInViewport()
 })

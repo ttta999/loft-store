@@ -30,6 +30,7 @@ async function finished(page: import('@playwright/test').Page, mode: string) {
 
 for (const placement of ['sale', 'new', 'popular']) {
   test(`главная / ${placement}: фото возвращается в тот же раздел среди повторяющихся товаров`, async ({ page, harness }) => {
+    if (test.info().project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 1440 })
     harness.db.settings.find(row => row.key === 'sale_mode_enabled')!.value.enabled = true
     harness.db.product_colors = [{ id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', product_id: productId, name_ru: 'Красный', name_uz: 'Qizil', hex_code: '#ff0000', images: [STORE + '/fixture-product.svg?red=1'], sort_order: 0 }]
     await page.goto(STORE)
@@ -93,18 +94,21 @@ for (const [section, item, id] of [['orders', 'order', 1001], ['china', 'request
 }
 
 for (const document of ['privacy', 'terms']) {
-  test(`настройки / ${document}: документ раскрывается из своей строки и возвращается`, async ({ page }) => {
+  test(`настройки / ${document}: документ открывается боковым переходом и возвращается к своей строке`, async ({ page }) => {
     await page.goto(`${STORE}/profile?section=settings`)
     const row = page.locator(`[data-profile-link="${document}"]`)
     await row.scrollIntoViewIfNeeded()
     await track(page)
     await row.click()
     await expect(page.locator(`[data-profile-surface="${document}"]`)).toBeVisible()
-    await page.evaluate(() => (window as any).sharedTransition.finished)
-    expect(await page.evaluate(() => (window as any).transitions.at(-1).mode)).toBe('profile')
+    const forward = await finished(page, 'section')
+    expect(forward.direction).toBe('1')
+    expect(forward.names).toEqual([])
     await page.goBack()
     await expect(row).toBeVisible()
-    await finished(page, 'profile')
+    const back = await finished(page, 'section')
+    expect(back.direction).toBe('-1')
+    expect(back.names).toEqual([])
     await expect(row).toBeInViewport()
   })
 }

@@ -4,9 +4,17 @@ test('manager saves repeat interval 5 independently of each reminder rule',async
  await page.getByRole('switch',{name:'Оплата не проверена',exact:true}).click();await page.getByLabel('Срок: Оплата не проверена',{exact:true}).fill('2');await page.getByRole('button',{name:'Сохранить: Оплата не проверена',exact:true}).click();await expect.poll(()=>harness.db.reminders[0].value.rules.payment_review.enabled).toBe(true);expect(harness.db.reminders[0].value.repeat_hours).toBe(5)
  await page.reload();await expect(page.getByLabel('Интервал повторения',{exact:true})).toHaveValue('5')
 })
-test('saved size changes and deletion use the existing bottom sheet, with server acknowledgement',async({page,harness})=>{
- await page.goto(STORE+'/profile?section=sizes');await page.getByRole('button',{name:/Кроссовки.*Не указан/}).click();let sheet=page.getByRole('dialog',{name:'Выберите размер'});await sheet.getByRole('button',{name:'42',exact:true}).click();await expect(sheet).toHaveCount(0);await expect.poll(()=>harness.db.preferences?.[0]?.sizes?.[0]?.size).toBe('42')
- await page.getByRole('button',{name:/Кроссовки.*42/}).click();await sheet.getByRole('button',{name:'Удалить сохранённый размер'}).click();await expect.poll(()=>harness.db.preferences[0].sizes.length).toBe(0)
+test('old saved-size links preserve historical sizes when the customer saves their contacts',async({page,harness})=>{
+ const sizes=[{category:'shoes',subcategory:'sneakers',size:'42'}]
+ harness.db.preferences=[{name:'Тестовый покупатель',phone:'+998000000000',delivery_method:'pickup',addresses:[],sizes,version:1}]
+ await page.goto(STORE+'/profile?section=sizes')
+ await expect(page).toHaveURL(STORE+'/profile')
+ await expect(page.getByRole('button',{name:/Мои размеры/})).toHaveCount(0)
+ await page.getByRole('button',{name:/Личные данные/}).click()
+ await page.getByLabel('Имя',{exact:true}).fill('Обновлённое имя')
+ await page.getByRole('button',{name:'Сохранить изменения',exact:true}).click()
+ await expect.poll(()=>harness.db.preferences[0].name).toBe('Обновлённое имя')
+ expect(harness.db.preferences[0].sizes).toEqual(sizes)
 })
 test('checkout offers branded opt-in only for normalized changed contacts',async({page,harness})=>{
  harness.db.preferences=[{name:'Тестовый покупатель',phone:'+998901234567',delivery_method:'pickup',addresses:[],sizes:[],version:1}]

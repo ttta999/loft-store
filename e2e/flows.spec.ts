@@ -20,8 +20,10 @@ test('админка: защищённые страницы, аналитика 
   harness.db.orders[0].status = 'Доставлен'
   harness.db.orders[0].payment_status = 'paid'
   harness.db.orders[0].paid_at = new Date().toISOString()
+  const tasks = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/rpc/store_admin_tasks') && response.request().method() === 'POST')
   await page.goto(ADMIN)
   await expect(page.getByRole('heading', {name:'LOFT Админ Панель', exact:true})).toBeVisible()
+  expect((await tasks).ok()).toBe(true)
   await page.goto(`${ADMIN}/analytics`)
   await expect(page.getByText('Тестовые кроссовки', { exact: true })).toBeVisible()
   const photo = page.getByRole('img', { name: 'Тестовые кроссовки', exact: true })

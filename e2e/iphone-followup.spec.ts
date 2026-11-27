@@ -23,6 +23,7 @@ test('removed profile links redirect safely and never modify stored size prefere
  await page.getByRole('button',{name:/Настройки/}).click();await expect(page.getByRole('button',{name:/Как пользоваться приложением/})).toHaveCount(0);expect(harness.db.preferences[0].sizes).toEqual(sizes)
 })
 for(const [entry,path] of [['home','/'],['brand','/brands?brand=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'],['category','/catalog?category=shoes&subcategory=sneakers'],['search','/search?q=Тестовые']] as const)test(`rapid size/Back ${entry} survives viewport changes, restores the card and can reopen`,async({page})=>{
+ if (test.info().project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 1900 })
  if(entry==='category'){await page.goto(STORE);await page.getByText('Обувь',{exact:true}).click();await page.getByRole('button',{name:/Кроссовки/}).click()}else await page.goto(STORE+path)
  if(entry==='category'){await expect(page).toHaveURL(/\/catalog/);await expect(page.locator('[data-surface^="catalog:"]')).toBeVisible()}
  await expect(page.locator('html')).not.toHaveAttribute('data-loft-tab-motion','true')

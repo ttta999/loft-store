@@ -105,7 +105,11 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
     }
     if (url.hostname === supabaseHost) {
       h.calls.push({ method, path: url.pathname, body })
-      if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': '*', 'access-control-allow-headers': '*' } })
+      if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
+        'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '',
+      } })
       if (url.pathname.includes('/auth/v1/token')) return json(session('aal1'))
       if (url.pathname.endsWith('/auth/v1/user')) return json(user())
       if (url.pathname.endsWith('/auth/v1/logout')) return json({})

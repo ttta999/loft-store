@@ -2,6 +2,7 @@ import { test, expect, STORE, ADMIN, productId } from './fixture'
 
 for (const section of ['newest', 'popular', 'sale']) {
   test(`${section}: фильтры сохраняют карточки, фото непрерывно открывается и возвращается в список`, async ({ page, harness }) => {
+    if (test.info().project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 1440 })
     harness.db.settings.find(s => s.key === 'sale_mode_enabled')!.value.enabled = true
     const original = harness.db.products[0]
     harness.db.products.push(...Array.from({ length: 10 }, (_, i) => ({ ...original, id: `extra-${i}`, name_ru: `Товар ${i}`, sale_price: null, created_at: new Date(Date.now() - (i + 1) * 86400000).toISOString() })))
