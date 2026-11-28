@@ -169,6 +169,17 @@ test('cold module may remain pending while the shared push animates', async ({ p
     await expect(page.locator('[data-admin-header]:visible h1:visible')).toHaveText('Заказы')
     await expect(page.getByRole('status', { name: 'Загрузка' })).toBeVisible()
     await expect(page.locator('[data-admin-header]:visible')).toHaveCount(1)
+    const viewport = await page.evaluate(() => ({
+      overflow: getComputedStyle(document.documentElement).overflowX,
+      scrolled: scrollX,
+      contentWidth: document.querySelector('[data-admin-page]')?.clientWidth,
+    }))
+    expect(viewport.overflow).toBe('clip')
+    expect(viewport.scrolled).toBe(0)
+    expect(viewport.contentWidth).toBeLessThanOrEqual(page.viewportSize()!.width)
+    // A translated page contributes to scrollWidth before the snapshot is removed.
+    // Check the real layout width while the module is still blocked, after the animation.
+    await expect(page.locator('html')).not.toHaveAttribute('data-admin-motion')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
   } finally { release() }
   await expect(page.getByRole('button', { name: 'Обновить список' })).toBeVisible()

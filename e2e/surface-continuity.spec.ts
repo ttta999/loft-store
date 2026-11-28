@@ -35,19 +35,34 @@ async function finished(page: Page, direction: number) {
   await expect(page.locator('[data-tab-outgoing], [data-tab-incoming], [data-loft-chrome]')).toHaveCount(0)
   await expect(page.locator('html')).not.toHaveAttribute('data-loft-tab-motion')
 }
-async function midpoint(page: Page, name: string) {
+async function pauseAtMidpoint(page: Page) {
   await page.evaluate(() => {
-    for (const animation of (window as any).surfaceAnimations) { animation.pause(); animation.currentTime = 170 }
+    window.addEventListener('loft:tabs-start', event => {
+      const { animations } = (event as CustomEvent<{ animations: Animation[] }>).detail
+      for (const animation of animations) {
+        animation.pause()
+        animation.currentTime = 170
+      }
+    }, { once: true })
   })
-  const path = test.info().outputPath(name + '.png')
-  await page.screenshot({ path })
-  await test.info().attach(name, { path, contentType: 'image/png' })
-  await page.evaluate(() => { for (const animation of (window as any).surfaceAnimations) animation.play() })
+}
+async function midpoint(page: Page, name: string) {
+  await page.waitForFunction(() => (window as any).surfaceAnimations?.every(
+    (animation: Animation) => animation.playState === 'paused' && animation.currentTime === 170,
+  ))
+  try {
+    const path = test.info().outputPath(name + '.png')
+    await page.screenshot({ path })
+    await test.info().attach(name, { path, contentType: 'image/png' })
+  } finally {
+    await page.evaluate(() => { for (const animation of (window as any).surfaceAnimations) animation.play() })
+  }
 }
 
 test('категория и подкатегория пролистываются на ширину экрана, Back меняет направление', async ({ page }) => {
   await page.goto(STORE)
   await track(page)
+  await pauseAtMidpoint(page)
   await page.locator('[data-surface-link="category:shoes"]').click()
   await expect(page.locator('[data-surface="category:shoes"]')).toBeVisible()
   await midpoint(page, 'category-page-slide')
@@ -69,6 +84,7 @@ for (const [section, prefix, id] of [['orders', 'order', 1001], ['china', 'reque
     await page.locator(`[data-profile-link="${section}"]`).click()
     await expect(page.locator(`[data-profile-surface="${section}"]`)).toBeVisible()
     await finished(page, 1)
+    await pauseAtMidpoint(page)
     await page.locator(`[data-profile-link="${prefix}:${id}"]`).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await midpoint(page, section + '-page-slide')

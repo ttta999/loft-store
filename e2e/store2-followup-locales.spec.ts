@@ -4,7 +4,10 @@ const setUz=async(page:any)=>{await page.goto(ADMIN+'/settings?section=theme');a
 test('all admin screens use UZ labels, keep canonical filters and preserve per-manager language',async({page,harness},info)=>{
  test.setTimeout(60000);await setUz(page)
  for(const [path,title] of [['/','LOFT Админ Панель'],['/orders','Buyurtmalar'],['/china','Maxsus buyurtmalar'],['/catalog','Katalog'],['/products','Mahsulotlar'],['/categories','Kategoriyalar'],['/brands','Brendlar'],['/size-charts','O‘lcham jadvallari'],['/refunds','Qaytarishlar'],['/analytics','Tahlil'],['/campaigns','Xabar tarqatmalari'],['/settings','Sozlamalar'],['/settings?section=reminders','Bildirishnomalar va eslatmalar']]){
-  await page.goto(ADMIN+path);await expect(page.getByRole('heading',{name:title,exact:true}).first()).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
+  await page.goto(ADMIN+path)
+  await expect(page.getByRole('heading',{name:title,exact:true}).first()).toBeVisible()
+  if(path==='/')await expect(page.getByRole('button',{name:/Maxsus buyurtmalarni baholash/})).toContainText('1')
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
  }
  await page.getByLabel('Takrorlash oralig‘i',{exact:true}).fill('5');await page.getByRole('button',{name:'Ish vaqtini saqlash',exact:true}).click();await expect.poll(()=>harness.db.reminders[0].value.repeat_hours).toBe(5);await expect(page.getByLabel('Muddat: To‘lov tekshirilmagan',{exact:true})).toBeVisible();await expect(page.getByRole('switch',{name:'Telegram: To‘lov tekshirilmagan',exact:true})).toBeVisible()
  await page.goto(ADMIN+'/orders');const select=page.locator('select').first();await expect(select.locator('option[value="Активный"]')).toContainText('Qabul');await select.selectOption('Активный');expect(await select.inputValue()).toBe('Активный');await expect(page.getByRole('button',{name:/Buyurtma №1001.*Тестовый покупатель/})).toBeVisible()

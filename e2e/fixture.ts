@@ -19,7 +19,7 @@ export function catalog() {
     product_variants: [{ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', product_id: productId, size_value: '42', color_id: null, stock: 5 }],
     product_colors: [],
     settings: [
-      { key: 'payment_cards', value: { UZS: { number: '5614382959503289', holder: 'Fixture UZS' }, USD: { number: '4023057010852969', holder: 'Fixture USD' } }, updated_at: now() },
+      { key: 'payment_cards', value: { UZS: { number: '0000000000000001', holder: 'Fixture UZS' }, USD: { number: '0000000000000002', holder: 'Fixture USD' } }, updated_at: now() },
       { key: 'exchange_rate', value: { rate: 12000, version: 1 }, updated_at: now() },
       { key: 'sale_mode_enabled', value: { enabled: false }, updated_at: now() },
       { key: 'delivery_price', value: { price: 30000 }, updated_at: now() },
@@ -105,7 +105,11 @@ export async function install(context: BrowserContext, supabaseHost = 'fixture.s
     }
     if (url.hostname === supabaseHost) {
       h.calls.push({ method, path: url.pathname, body })
-      if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': '*', 'access-control-allow-headers': '*' } })
+      if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
+        'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '',
+      } })
       if (url.pathname.includes('/auth/v1/token')) return json(session('aal1'))
       if (url.pathname.endsWith('/auth/v1/user')) return json(user())
       if (url.pathname.endsWith('/auth/v1/logout')) return json({})

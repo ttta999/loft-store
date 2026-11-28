@@ -27,6 +27,7 @@ test('подразделы настроек сохраняют общую шап
 })
 test('таблица под размером; персональная подсказка справа и не выбирает размер',async({page,harness})=>{
  harness.db.preferences=[{name:'',phone:'',delivery_method:'pickup',addresses:[],sizes:[{category:'shoes',subcategory:'sneakers',system:'numeric',size:'42'}],version:1}]
+ harness.db.size_charts=[{id:'99999999-9999-4999-8999-999999999998',title_ru:'Таблица обуви',title_uz:'Poyabzal jadvali',category_id:'shoes',subcategory_id:'sneakers',brand_id:null,product_id:null,columns_ru:['EU'],columns_uz:['EU'],rows:[['42']],is_active:true,updated_at:new Date().toISOString()}]
  await page.goto(STORE+'/product/'+productId)
  const size=page.locator('[data-dialog-trigger="size"]'),chart=page.locator('[data-dialog-origin="size-chart"]')
  await expect(chart).toBeVisible();expect((await chart.boundingBox())!.y).toBeGreaterThan((await size.boundingBox())!.y)

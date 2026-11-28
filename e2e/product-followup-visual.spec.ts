@@ -1,9 +1,19 @@
 import {test,expect,STORE,ADMIN} from './fixture'
-for(const theme of ['light','dark'] as const)for(const language of ['ru','uz'] as const)test(`followup surfaces ${theme} ${language}`,async({page},info)=>{
+for(const theme of ['light','dark'] as const)for(const language of ['ru','uz'] as const)test(`followup surfaces ${theme} ${language}`,async({page,harness},info)=>{
+ harness.db.preferences=[{language,language_source:'explicit'}]
  test.setTimeout(60000);await page.emulateMedia({colorScheme:theme})
  await page.addInitScript(({language})=>{localStorage.setItem('loft-store',JSON.stringify({state:{language,theme:'system'},version:0}));localStorage.setItem('loft-admin-language:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',language)}, {language})
- for(const path of ['/china','/profile?section=sizes','/profile?section=personal','/profile?section=restocks']){
-  await page.goto(STORE+path);await expect(page.locator('[data-profile-icon]')).toBeVisible();await expect(page.getByRole('heading').last()).toBeVisible()
+ for(const path of ['/china','/profile?section=settings','/profile?section=personal','/profile?section=restocks'] as const){
+  await page.goto(STORE+path)
+  const title=({
+   '/china':['Спецзаказ','Maxsus buyurtma'],
+   '/profile?section=settings':['Настройки','Sozlamalar'],
+   '/profile?section=personal':['Личные данные','Shaxsiy ma’lumotlar'],
+   '/profile?section=restocks':['Уведомления о поступлении','Kelishi haqida xabarlar'],
+  } as const)[path]![language==='ru'?0:1]
+  const heading=page.getByRole('heading',{name:title,exact:true})
+  await expect(heading).toBeVisible()
+  await expect(heading.locator('../..').locator('[data-profile-icon]')).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
   await page.screenshot({path:info.outputPath(`${path.replace(/[^a-z]/g,'-')}-${theme}-${language}.png`),animations:'disabled'})
  }

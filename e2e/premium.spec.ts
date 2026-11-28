@@ -86,7 +86,8 @@ for (const entry of ['home', 'catalog', 'search', 'brands', 'favorites', 'profil
     await page.goBack()
     await expect(page).toHaveURL(source)
     await expect(card).toBeVisible()
-    await page.evaluate(() => (window as any).photoTransition.finished)
+    await page.evaluate(() => window.lastTransition?.finished)
+    await expect(page.locator('[data-product-return-overlay], [data-tab-outgoing]')).toHaveCount(0)
     await expect(page.locator('.loft-header')).toHaveCSS('view-transition-name', 'none')
   })
 }
@@ -94,6 +95,7 @@ for (const entry of ['home', 'catalog', 'search', 'brands', 'favorites', 'profil
 test('самолётик и подтверждение появляются только после успешного ответа, ошибка сохраняет форму', async ({ page, harness }) => {
   await page.goto(`${STORE}/china`)
   await page.getByPlaceholder('Например: Zegna Triple Stitch', { exact: true }).fill('Тест полёта')
+  await page.getByPlaceholder('Например: Zegna Triple Stitch').blur()
   harness.failAction = 'createRequest'
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Отправить заявку', exact: true })).toBeEnabled()

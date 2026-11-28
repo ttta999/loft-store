@@ -3,6 +3,7 @@ import { test, expect, STORE, ADMIN } from './fixture'
 test('спецзаказ: Готово возвращает на главную, повторный вход открывает пустую форму', async ({ page }) => {
   await page.goto(STORE + '/china')
   await page.getByPlaceholder('Например: Zegna Triple Stitch').fill('Zegna Triple Stitch')
+  await page.getByPlaceholder('Например: Zegna Triple Stitch').blur()
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Заявка отправлена!', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Новый спецзаказ', exact: true })).toHaveCount(0)
